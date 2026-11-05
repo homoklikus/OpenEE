@@ -193,4 +193,23 @@ Zmienione:
 * dokumentacja: `README.md`, `docs/ARCHITEKTURA.md`, `docs/HISTORIA.md`, `docs/MAPA_DROGOWA.md`.
 
 ## 11. Git i GitHub
-Opisany w osobnej sekcji raportu publikacji etapu – patrz §12.
+* **Stan wyjściowy:** `origin/main` = lokalne `main` = `82ef227`, przed etapem bez zmian zdalnych.
+* **Commity etapu (lokalnie, gałąź `main`):**
+  * `f3d337f` – kod, testy i dokumentacja etapu 4;
+  * kolejny commit – ten raport ze stanem publikacji.
+* **Audyt przed commitem:**
+  * 33 pliki tekstowe, 0 plików binarnych;
+  * brak formatów gry (ssa, cem, sst, tga, wav, mp3, scn, dat, png, mp4);
+  * brak ścieżek prywatnych, adresów e-mail i tokenów.
+* **Materiały z zasobami EE pozostają lokalne:** `wyniki/etap4/` (ignorowane).
+* **Test czystej kopii** (klon w osobnym katalogu, Godot importuje projekt od zera):
+  * bez instalacji EE: 93 testy, 40 zaliczonych, 53 jawnie pominiętych, 0 błędów;
+  * z instalacją: 95 testów, 92 zaliczone, 3 pominięte z powodem (dane z `przygotuj_dane_lokalne.sh` / pełny audyt warstw), 0 błędów;
+  * drzewo robocze pozostało czyste.
+* **Publikacja:** **nie wypchnięto.** Sesja nie ma uwierzytelnienia GitHub (konto niepołączone, brak poświadczeń
+  w maszynie). Zdalne `main` nadal wskazuje `82ef227`, więc publikacja będzie zwykłym przewinięciem do przodu,
+  bez force push. Polecenie do wykonania w katalogu projektu na komputerze z dostępem do GitHub:
+  ```
+  cd "/media/precell/Inne/Projekty AI/EE Projekt/OpenEE"
+  git push origin main
+  ```
