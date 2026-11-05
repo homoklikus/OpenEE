@@ -228,6 +228,34 @@ func wczytaj_model(klucz: String, kontekst: Dictionary = {}) -> Mesh:
 	return _importery["cem"].importuj(r.dane, k)
 
 
+var _cache_cem := {}
+
+## Pełny model CEM (klatki + hierarchia, etap 4) – współdzielony, w pamięci podręcznej; null gdy brak/błąd.
+func wczytaj_model_cem(klucz: String) -> ModelCEM:
+	if _cache_cem.has(klucz):
+		return _cache_cem[klucz]
+	var r := znajdz(klucz)
+	var m: ModelCEM = null
+	if r.is_empty():
+		Dziennik.uwaga("zasoby", "Brak modelu %s" % klucz)
+	else:
+		m = ModelCEM.z_danych(r.dane)
+		if m.blad != "":
+			Dziennik.blad("zasoby", "%s: %s" % [klucz, m.blad]); m = null
+	_cache_cem[klucz] = m
+	return m
+
+
+## Animacja wypieczona do tekstury (AnimacjaVAT) dla modelu + tekstury dbgraphics; null gdy brak modelu.
+func wczytaj_animacje(klucz: String, kontekst: Dictionary = {}) -> AnimacjaVAT:
+	var m := wczytaj_model_cem(klucz)
+	if m == null:
+		return null
+	var k := kontekst.duplicate()
+	k["klucz"] = klucz; k["zasoby"] = self
+	return AnimacjaVAT.wypiecz(m, k)
+
+
 ## Dźwięk wg klucza; zwraca {"strumien": AudioStream, "zrodlo", "warstwa", "dane"} lub {}.
 func wczytaj_dzwiek(klucz: String) -> Dictionary:
 	var r := znajdz(klucz)

@@ -2,12 +2,18 @@
 
 Kolejność orientacyjna; każdy etap kończy się testami, dokumentacją i weryfikacją, że w zmianach nie ma zasobów gry.
 
-## Najbliżej (0.4)
-* Bezpieczne porównanie wizualne z oryginalnym EE (gra w izolowanym serwerze X, bez sterowania pulpitem użytkownika).
-* Animacja wody, ściany brzegowe mapy, mapy kosmiczne.
+## Zrobione w 0.4.0-dev (etap 4)
+* Animacje modeli CEM (klatki, sekwencje dbgraphics), modele potomne z transformacjami, odtwarzacz instancji.
+* Animacja wody (klatki i tempo z dbterrain; bez tabeli faz 33×33).
+* Szybsza dekompresja DCL w GDScript (3×).
+
+## Najbliżej (0.4.x / 0.5)
+* Bezpieczne porównanie wizualne z oryginalnym EE (gra w izolowanym serwerze X, osobny prefiks Wine) – po zgodzie
+  autora projektu; rozstrzygnięcie tempa animacji, interpolacji, skrętności obrazu i poziomu wody.
+* Sterowanie proceduralne części (orbital_*, wieżyczki, koła), znaczenie gniazda 3 i parametru sekwencji.
+* Tabela faz wody 33×33, poziom wody z rekordu terenu, ściany brzegowe mapy, mapy kosmiczne.
 * Pełny odczyt listy celów jednostki (3 scenariusze EE).
-* Animacje modeli CEM (klatki), modele potomne.
-* Szybsze wczytywanie (DCL natywnie w Godocie lub pamięć podręczna rozpakowanych danych).
+* Pamięć podręczna rozpakowanych danych (gdy wczytywanie pełnych map będzie wąskim gardłem).
 
 ## Dalej (0.5–0.7)
 * Kamera i sterowanie jak w grze, zaznaczanie jednostek, minimapa.

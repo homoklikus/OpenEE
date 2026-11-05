@@ -34,12 +34,20 @@ void fragment() {
 }
 """
 
+## Woda – etap 4: animowany zestaw klatek z dbterrain (Available = 1 → TilesX·TilesY klatek, np. Water_OceanB_1…16),
+## klatka = floor(czas / ms_na_klatke) mod liczba [H: ms_na_klatke = pole „<Used by animated terrains>” = 100].
+## Silnik wybiera materiał wody z tabeli 33×33 wg (c mod 33, r mod 33) [K] – zawartość tabeli nieodtworzona,
+## OpenEE: wszystkie pola w tej samej fazie [ograniczenie].
 const SHADER_WODY := """
 shader_type spatial;
 render_mode cull_disabled, blend_mix, depth_draw_never;
-uniform sampler2D tekstura : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2DArray klatki : source_color, filter_linear_mipmap, repeat_disable;
+uniform int liczba_klatek = 1;
+uniform float s_na_klatke = 0.1;
+uniform bool animacja = true;
 void fragment() {
-	ALBEDO = texture(tekstura, UV).rgb;
+	float k = animacja ? mod(floor(TIME / s_na_klatke), float(liczba_klatek)) : 0.0;
+	ALBEDO = texture(klatki, vec3(UV, k)).rgb;
 	ALPHA = COLOR.a;
 	ROUGHNESS = 0.6; SPECULAR = 0.3;
 }
@@ -66,6 +74,45 @@ func _init(scenariusz: ScenariuszEE, tabela_terenow: Array, skala := 1.0) -> voi
 	skala_wysokosci = skala
 	for r in tabela_terenow:
 		tereny[int(r.ID)] = r
+
+
+var statystyka_wody := {}
+
+
+## Pliki klatek animowanego terenu (woda): <baza>_1 … <baza>_N, N = TilesX·TilesY (dbterrain) [D: Water_OceanB 16×1].
+func pliki_klatek(tid: int) -> PackedStringArray:
+	var t: Dictionary = tereny.get(tid, {})
+	var out := PackedStringArray()
+	if t.is_empty() or int(t["Available: 0-No, 1-Animated, 65536-Static"]) != 1:
+		return out
+	var baza := String(t.Pathname).to_lower().replace("\\", "/").trim_suffix(".sst")
+	for i in maxi(1, int(t["Tyles on X axis"]) * int(t["Tiles on Y axis"])):
+		out.append("%s_%d.sst" % [baza, i + 1])
+	return out
+
+
+## Czas klatki wody w ms – pole „<Used by animated terrains>” rekordu wody (100) [H].
+func ms_na_klatke_wody() -> float:
+	var v := float(tereny.get(ID_WODY, {}).get("<Used by animated terrains>", 0))
+	return v if v > 0.0 else 100.0
+
+
+func klatki_wody_obrazy(zasoby) -> Array[Image]:
+	var out: Array[Image] = []
+	if not tereny.has(ID_WODY) or zasoby == null:
+		return out
+	for p in pliki_klatek(ID_WODY):
+		var im: Image = zasoby.wczytaj_teksture(p)
+		if im == null:
+			continue
+		im = im.duplicate(); im.clear_mipmaps()
+		if im.is_compressed(): im.decompress()
+		im.convert(Image.FORMAT_RGBA8)
+		if not out.is_empty() and im.get_size() != out[0].get_size():
+			im.resize(out[0].get_width(), out[0].get_height())
+		im.generate_mipmaps()
+		out.append(im)
+	return out
 
 
 ## Plik wariantu tekstury terenu `tid` dla pola (r, c) [K].
@@ -236,17 +283,19 @@ func zbuduj(r0: int, c0: int, n: int, zasoby: Node) -> Node3D:
 		var mat2 := ShaderMaterial.new()
 		var sh2 := Shader.new(); sh2.code = SHADER_WODY
 		mat2.shader = sh2
-		var wimg: Image = zasoby.wczytaj_teksture(plik_wariantu(ID_WODY, 0, 0)) if tereny.has(ID_WODY) else null
-		if wimg:
-			wimg = wimg.duplicate(); wimg.clear_mipmaps()
-			if wimg.is_compressed(): wimg.decompress()
-			wimg.convert(Image.FORMAT_RGBA8); wimg.generate_mipmaps()
-			mat2.set_shader_parameter("tekstura", ImageTexture.create_from_image(wimg))
+		var klatki_wody := klatki_wody_obrazy(zasoby)
+		if not klatki_wody.is_empty():
+			var ta := Texture2DArray.new(); ta.create_from_images(klatki_wody)
+			mat2.set_shader_parameter("klatki", ta)
+			mat2.set_shader_parameter("liczba_klatek", klatki_wody.size())
+			mat2.set_shader_parameter("s_na_klatke", ms_na_klatke_wody() / 1000.0)
+		statystyka_wody = {"klatki": klatki_wody.size(), "ms_na_klatke": ms_na_klatke_wody()}
 		var mw := MeshInstance3D.new()
 		mw.name = "Woda"; mw.mesh = m2; mw.material_override = mat2
 		mw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		wezel.add_child(mw)
 	statystyka = {"pola": pola, "warstwy_dodatkowe": warstw_suma, "warstwy_tablicy": obrazy.size(),
 		"pola_bez_tekstury": brak, "pola_wody": pola_wody, "trojkaty": idx.size() / 3 + widx.size() / 3,
-		"czas_siatki_ms": (t1 - t0) / 1000.0, "czas_gpu_upload_ms": (Time.get_ticks_usec() - t1) / 1000.0}
+		"czas_siatki_ms": (t1 - t0) / 1000.0, "czas_gpu_upload_ms": (Time.get_ticks_usec() - t1) / 1000.0,
+		"woda": statystyka_wody}
 	return wezel

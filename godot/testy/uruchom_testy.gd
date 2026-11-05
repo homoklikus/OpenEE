@@ -3,6 +3,7 @@ extends SceneTree
 ## Etap 1 (zachowane): SSA/DCL/CEM/SST zgodne z Pythonem, warstwy, zdarzenia.
 ## Etap 2: instalacje, tabele db, scenariusz (teren + obiekty), CEM 1.3, teksty Language.dll, lokalizacja audio.
 ## Etap 3: mieszanie tekstur terenu, warianty, woda, klify, scenariusze EE (wersja 231), orientacja obiektów.
+## Etap 4: animacje CEM (klatki, sekwencje dbgraphics, interpolacja), hierarchia części, odtwarzanie (testy/testy_etapu4.gd).
 ## Launcher: teksty UI PL/EN, model profili/modów/języka (w pamięci, bez zapisu), ikony, budowa sceny launchera.
 
 var wyniki: Array = []
@@ -93,6 +94,7 @@ func _initialize() -> void:
 	else:
 		_testy_warstw(K, Z)
 	await _testy_etapu3(K, Z)
+	await TestyEtapu4.new(self).uruchom(K, Z)
 	await _testy_launchera(K, Z)
 
 	var out: String = K.katalog_openee.path_join("wyniki/testy_godot.json")

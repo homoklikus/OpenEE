@@ -6,7 +6,8 @@ godot/                 projekt Godot 4.7 (otwórz ten katalog w edytorze)
   silnik/rdzen/        Konfiguracja, Dziennik, Zdarzenia (autoload)
   silnik/zasoby/       Zasoby – warstwy i źródła zasobów, wyszukiwanie plików w instalacjach (autoload)
   silnik/importery/    SSA, DCL, SST/TGA, CEM, db, SCN, Language.dll, WAV/MP3
-  silnik/render/       TerenEE – teren wg reguł silnika EE
+  silnik/render/       TerenEE – teren wg reguł silnika EE (z animacją wody)
+  silnik/animacja/     SekwencjeAnimacji (dbgraphics), AnimacjaVAT (klatki w teksturze), OdtwarzaczAnimacji
   silnik/api/          zalążek API modów
   sceny/               sceny podglądu: scenariusz, teren, diagnostyka; kamera RTS
   launcher/            launcher (UI, model, motyw, ikony, teksty PL/EN)
@@ -113,3 +114,25 @@ Ekran startowy pokazuje instalację, aktywne warstwy, źródła i ostatnie wpisy
   narożników) i siatki wody. Reguły: `docs/FORMATY_ETAP3.md`.
 * `ScenariuszEE` czyta scenariusze EE (231) i AoC (250); gramatyka rekordu z warunkami wersji w `dane/gramatyka_jednostki.json`.
 * Obiekty: transformacja z macierzy rekordu; egzemplarze powtarzalnych siatek grupowane w MultiMesh.
+
+## Etap 4 – animacje modeli i hierarchia części
+Dane modelu są oddzielone od stanu instancji:
+
+| Warstwa | Klasa | Rola |
+|---|---|---|
+| dane modelu | `silnik/importery/model_cem.gd` (`ModelCEM`) | wszystkie klatki CEM 2.0/1.3, części w kolejności rodzic → dzieci, lokalne macierze na klatkę, punkty tag; `globalna(i, k)` = T_rodzic · T_lokalna |
+| sekwencje | `silnik/animacja/sekwencje_animacji.gd` (`SekwencjeAnimacji`) | zakresy klatek, czas cyklu, pętla, zdarzenia, dźwięki – z rekordu dbgraphics; stany (atak, ruch, bezczynność, śmierć, czynności) wyłącznie wg gniazd z danych |
+| zasób renderowania | `silnik/animacja/animacja_vat.gd` (`AnimacjaVAT`) | wypieka wszystkie części (z hierarchią) do tekstury float; jedna siatka + shader; współdzielona przez wszystkie instancje |
+| stan instancji | `silnik/animacja/odtwarzacz_animacji.gd` (`OdtwarzaczAnimacji`) | sekwencja, faza, prędkość, pauza na kanał; zapis 4 liczb do celu (MultiMesh/MeshInstance3D) tylko przy zmianie stanu; zegar globalny `czas_animacji` (project.godot `[shader_globals]`) |
+
+Przepływ: `Zasoby.wczytaj_model_cem` (pamięć podręczna) → `Zasoby.wczytaj_animacje` → `AnimacjaVAT` →
+`siatka` (MeshInstance3D, kolor gracza w uniformie) albo `siatka_multimesh()` (kolor = kolor instancji, stan = dane
+własne instancji). Statyczny import (`ImporterModeli.importuj`) korzysta z tego samego `ModelCEM` (klatka 0 z hierarchią).
+
+Renderer scenariusza (`sceny/test_scenariusz.gd`): obiekty z sekwencją bezczynności → jeden animowany MultiMesh na model;
+pozostałe → dotychczasowe grupowanie statyczne (model + tekstura + kolor). Brak animacji lub błędny zakres → klatka 0.
+
+Scena diagnostyczna: `sceny/diag_animacji.tscn` (`./uruchom_openee.sh animacje …`) – wybór grafiki, sekwencje,
+pauza, prędkość, interpolacja, drzewo części z osiami, film, pomiary. Testy: `testy/testy_etapu4.gd` (syntetyczne
+modele `testy/cem_syntetyczny.gd` – bez danych komercyjnych).
+

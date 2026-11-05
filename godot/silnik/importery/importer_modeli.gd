@@ -218,6 +218,17 @@ func _material(img: Image, kolor: Color, gracz: bool) -> ShaderMaterial:
 	return mat
 
 
+## Siatka statyczna z klatki `kontekst.klatka` (domyślnie 0). Etap 4: każda część (w tym potomne) jest
+## przekształcona przez hierarchię ModelCEM.globalna – wcześniej części potomne (koła, wieżyczki) leżały w środku
+## modelu bez swojej macierzy.
+func _siatka_modelu(mc: ModelCEM, mesh: ArrayMesh, kontekst: Dictionary) -> void:
+	var k: int = kontekst.get("klatka", 0)
+	for i in mc.czesci.size():
+		var c: Dictionary = mc.czesci[i]
+		_siatka({"materialy": c.materialy, "pozycje": mc.pozycje_modelu(i, k), "normalne": mc.normalne_modelu(i, k),
+			"uv": c.uv}, mesh, kontekst)
+
+
 func _siatka(m: Dictionary, mesh: ArrayMesh, kontekst: Dictionary) -> void:
 	var zasoby = kontekst.get("zasoby")
 	var tex_db: String = kontekst.get("tekstura", "")
@@ -254,10 +265,10 @@ func _siatka(m: Dictionary, mesh: ArrayMesh, kontekst: Dictionary) -> void:
 
 
 func importuj(dane: PackedByteArray, kontekst: Dictionary) -> Variant:
-	var m := parsuj(dane)
-	if m.has("blad"):
-		ImporterEE.zglos("blad", "importer_modeli", "%s: %s" % [kontekst.get("klucz", "?"), m.blad])
+	var mc := ModelCEM.z_danych(dane)
+	if mc.blad != "":
+		ImporterEE.zglos("blad", "importer_modeli", "%s: %s" % [kontekst.get("klucz", "?"), mc.blad])
 		return null
 	var mesh := ArrayMesh.new()
-	_siatka(m, mesh, kontekst)
+	_siatka_modelu(mc, mesh, kontekst)
 	return mesh

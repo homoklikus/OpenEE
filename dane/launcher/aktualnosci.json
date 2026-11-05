@@ -4,6 +4,17 @@
   {
    "data": "2026-11-05",
    "tytul": {
+    "pl": "OpenEE 0.4.0-dev",
+    "en": "OpenEE 0.4.0-dev"
+   },
+   "tekst": {
+    "pl": "Etap 4: animacje jednostek z oryginalnych modeli, części potomne (koła, wieżyczki), animowana woda.",
+    "en": "Stage 4: unit animations from the original models, child parts (wheels, turrets), animated water."
+   }
+  },
+  {
+   "data": "2026-11-05",
+   "tytul": {
     "pl": "OpenEE 0.3.0-dev",
     "en": "OpenEE 0.3.0-dev"
    },

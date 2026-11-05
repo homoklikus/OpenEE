@@ -4,6 +4,8 @@ extends Node3D
 ## Argumenty (po "--"): --kampania=AOCRoman.ssa | EETheGreeks.ssa  --scenariusz="soldiers for rome" --okno=r0,c0,n
 ##                      --zrzut=<plik.png> --kamera=blisko --bez-obiektow --teren=etap2 (stary renderer – porównanie)
 ##                      --pomiar=<klatki> (czas klatki, wywołania rysowania, pamięć → raport JSON)
+##                      --bez-animacji (etap 4: jednostki statyczne, klatka 0 – porównanie)
+## Etap 4: jednostki z sekwencją bezczynności (dbgraphics) animowane przez AnimacjaVAT w MultiMesh na model.
 ## Etap 3: teren budowany przez TerenEE (reguły mieszania tekstur, wariantów i wody silnika EE),
 ##         scenariusze Empire Earth (wersja 231) z katalogu „Empire Earth/Data/Campaigns”.
 
@@ -229,6 +231,8 @@ func _obiekty_mapy() -> void:
 	var wezel := Node3D.new(); wezel.name = "Obiekty"; add_child(wezel)
 	var roznice_h: Array[float] = []
 	var grupy := {}            # klucz siatki → [Transform3D]
+	var anim_grupy := {}       # model|tekstura → {model, tex, lista: [[Transform3D, kolor, sekwencja]]}
+	var bez_anim := "--bez-animacji" in OS.get_cmdline_user_args()
 	for g in range(scn.gracze.size()):
 		var gracz: Dictionary = scn.gracze[g]
 		var kolor: Color = gracz.kolor if g > 0 else Color(1, 1, 1)
@@ -249,6 +253,20 @@ func _obiekty_mapy() -> void:
 			var tex := String(gr.get("Texture path", "")).to_lower().replace("\\", "/")
 			var bb := int(ob.get("Always face camera", 0)) != 0
 			var kl := "%s|%s|%s|%s" % [model, tex, kolor.to_html(), bb]
+			# etap 4: obiekt z sekwencją bezczynności (dbgraphics, > 1 klatki) → animowany MultiMesh (VAT)
+			var q_bezcz := {} if (bez_anim or bb) else _bezczynnosc(gr)
+			if not q_bezcz.is_empty():
+				var skala_a := float(u.get("c174", 0.0))
+				if skala_a <= 0: skala_a = float(ob.get("Graphic size", 1.0))
+				if skala_a <= 0: skala_a = 1.0
+				var ka := "%s|%s" % [model, tex]
+				if not anim_grupy.has(ka): anim_grupy[ka] = {"model": model, "tex": tex, "lista": []}
+				anim_grupy[ka].lista.append([Transform3D(_baza_obiektu(tr) * skala_a, Vector3(x, _wys_w(x, z), z)), kolor, q_bezcz])
+				licz.pokazane += 1
+				typy[String(ob.get("Name", "?"))] = typy.get(String(ob.get("Name", "?")), 0) + 1
+				var ut_a := int(ob.get("Unit type", -1))
+				rodzaje[ut_a] = rodzaje.get(ut_a, 0) + 1
+				continue
 			if not siatki.has(kl):
 				siatki[kl] = Zasoby.wczytaj_model(model, {"tekstura": tex, "kolor_gracza": kolor, "billboard": bb})
 			var mesh: Mesh = siatki[kl]
@@ -291,6 +309,7 @@ func _obiekty_mapy() -> void:
 				wezel.add_child(mi)
 				n_pojed += 1
 	raport["grupowanie"] = {"wlaczone": not bez_grup, "multimeshe": n_mm, "wezly_pojedyncze": n_pojed, "prog": PROG_GRUPY}
+	raport["animacje"] = _animowane(anim_grupy, wezel, bez_anim)
 	raport["obiekty"] = licz
 	if not roznice_h.is_empty():
 		roznice_h.sort()
@@ -303,6 +322,54 @@ func _obiekty_mapy() -> void:
 	for k in top.slice(0, 15): tt[k] = typy[k]
 	raport["obiekty_typy_top"] = tt
 	raport["modele_unikalne"] = siatki.size()
+
+
+var _sek_cache := {}
+
+## Sekwencja bezczynności grafiki (SekwencjeAnimacji, gniazdo 2/3) – {} gdy brak albo ≤ 1 klatki.
+func _bezczynnosc(gr: Dictionary) -> Dictionary:
+	var id := int(gr.get("ID", -1))
+	if not _sek_cache.has(id):
+		var q := SekwencjeAnimacji.z_rekordu(gr).bezczynnosc()
+		_sek_cache[id] = q if int(q.get("klatki", 1)) > 1 and float(q.get("klatki_na_s", 0.0)) > 0.0 else {}
+	return _sek_cache[id]
+
+
+## Animowane obiekty: jeden MultiMesh na model (kolor gracza = kolor instancji, stan animacji = dane własne
+## instancji, faza losowa z ziarnem = indeks – powtarzalne zrzuty). Brak animacji/modelu → obiekt statyczny klatki 0.
+func _animowane(anim_grupy: Dictionary, wezel: Node3D, wylaczone: bool) -> Dictionary:
+	var odtw := OdtwarzaczAnimacji.new(); odtw.name = "OdtwarzaczAnimacji"; add_child(odtw)
+	var t0 := Time.get_ticks_usec()
+	var inst := 0; var nmm := 0; var zast := 0
+	var los := RandomNumberGenerator.new(); los.seed = 20261105
+	for ka in anim_grupy:
+		var g: Dictionary = anim_grupy[ka]
+		var anim := Zasoby.wczytaj_animacje(g.model, {"tekstura": g.tex})
+		var lista: Array = g.lista
+		var bledne := anim == null
+		if anim:
+			for e in lista:
+				if int(e[2].do) >= anim.klatki: bledne = true
+		if bledne:
+			# brak animacji albo zakres sekwencji poza modelem (błąd danych) → klatka 0 statycznie (obiekt nie znika)
+			for e in lista:
+				var mi := MeshInstance3D.new(); mi.mesh = Zasoby.wczytaj_model(g.model, {"tekstura": g.tex, "kolor_gracza": e[1]})
+				mi.transform = e[0]; wezel.add_child(mi); zast += 1
+			continue
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true; mm.use_custom_data = true
+		mm.mesh = anim.siatka_multimesh(); mm.instance_count = lista.size()
+		for i in lista.size():
+			var e: Array = lista[i]
+			mm.set_instance_transform(i, e[0]); mm.set_instance_color(i, e[1])
+			var k := odtw.dodaj(mm, i)
+			odtw.odtworz(k, e[2], los.randf() * float(e[2].klatki))
+		var mmi := MultiMeshInstance3D.new(); mmi.multimesh = mm; mmi.name = "anim_" + g.model.get_file()
+		wezel.add_child(mmi)
+		inst += lista.size(); nmm += 1
+	return {"wylaczone": wylaczone, "modele": nmm, "instancje": inst, "statyczne_zastepcze": zast,
+		"czas_wypiekania_ms": snappedf((Time.get_ticks_usec() - t0) / 1000.0, 0.1)}
 
 
 ## Baza (obrót) obiektu z macierzy GETransformation rekordu (t[0..11], wiersze) – etap 3 [D]: oś modelu muru po
@@ -351,7 +418,7 @@ func _scena() -> void:
 	lab.add_theme_color_override("font_color", Color.WHITE)
 	lab.add_theme_color_override("font_outline_color", Color.BLACK)
 	lab.add_theme_constant_override("outline_size", 4)
-	lab.text = "OpenEE – etap 3: %s\nOkno %d×%d pól (r0=%d c0=%d), obiekty: %s\nŹródło: %s; warstwy: %s\nSterowanie: WASD/strzałki, kółko, Q/E, R" % [
+	lab.text = "OpenEE – etap 4: %s\nOkno %d×%d pól (r0=%d c0=%d), obiekty: %s\nŹródło: %s; warstwy: %s\nSterowanie: WASD/strzałki, kółko, Q/E, R" % [
 		raport.get("scenariusz", "?").get_file(), n, n, okno.x, okno.y, raport.get("obiekty", {}).get("pokazane", 0),
 		Konfiguracja.zrodlo_gry, ", ".join(Konfiguracja.aktywne_warstwy)]
 	cl.add_child(lab); add_child(cl)

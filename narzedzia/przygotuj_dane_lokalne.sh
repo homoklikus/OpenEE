@@ -21,6 +21,7 @@ krok "scenariusze AoC (gracze/obiekty)";           python3 narzedzia/test_gracze
 krok "scenariusze EE i AoC (wzorzec 52 plików)";   python3 narzedzia/test_scenariuszy_ee.py "$REF"
 krok "orientacja modeli (mury)";                   python3 narzedzia/test_orientacji_modeli.py "$REF"
 krok "ciągłość wariantów tekstur";                 python3 narzedzia/test_ciaglosci_tekstur.py "$REF" >/dev/null
+krok "animacje CEM i sekwencje dbgraphics (etap 4)"; python3 narzedzia/analiza_animacji.py "$REF" wyniki/analiza_animacji.json >/dev/null
 if [ -n "$SPOL" ]; then
   [ -d "$SPOL/Empire Earth" ] || { echo "Nie znaleziono '$SPOL/Empire Earth'"; exit 1; }
   krok "manifest archiwów (instalacja 2)";        python3 narzedzia/manifest_archiwow.py "$SPOL" audyt/manifest_archiwow.json

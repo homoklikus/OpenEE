@@ -4,27 +4,32 @@
 posiadanej instalacji Empire Earth Gold Edition / The Art of Conquest. Projekt nie jest oficjalnie powiązany z właścicielami
 marki Empire Earth.**
 
-Wersja: **0.3.0-dev** – wersja rozwojowa, niedokończony silnik. Wzorem jest OpenMW: kod silnika jest nowy, a wszystkie
+Wersja: **0.4.0-dev** – wersja rozwojowa, niedokończony silnik. Wzorem jest OpenMW: kod silnika jest nowy, a wszystkie
 grafiki, modele, dźwięki i teksty gry są wczytywane wprost z instalacji użytkownika (tylko do odczytu). Repozytorium nie
 zawiera żadnych zasobów Empire Earth – patrz [docs/ZASOBY_ORYGINALNE.md](docs/ZASOBY_ORYGINALNE.md).
 
 ## Co już działa
 * Odczyt archiwów **SSA** i dekompresja **DCL/PK01** (implementacja własna, w GDScript i Pythonie; w Pythonie opcjonalnie w C).
 * Import tekstur **SST/TGA** i modeli **CEM** (wersje 2.0 i 1.3), z materiałem koloru gracza.
+* **Animacje modeli** z oryginalnych danych: klatki CEM, sekwencje z tabeli `dbgraphics` (atak, ruch, bezczynność,
+  śmierć, prace), hierarchia części (koła, wieżyczki) z transformacjami na klatkę, niezależna faza każdej jednostki,
+  animowana woda – [docs/FORMATY_ETAP4.md](docs/FORMATY_ETAP4.md). Scena diagnostyczna: `./uruchom_openee.sh animacje`.
 * Odczyt **scenariuszy** Empire Earth 1.x (wersja 231) i The Art of Conquest (wersja 250): teren, wysokości, gracze, obiekty.
 * **Teren** odtwarzany według reguł oryginalnego silnika: mieszanie tekstur w narożnikach pól, warianty tekstur, woda
   z łagodnym brzegiem, klify jako tekstury i wysokości – [docs/FORMATY_ETAP3.md](docs/FORMATY_ETAP3.md).
-* **Budynki i statyczne jednostki** w scenie podglądu (pozycja i obrót z danych scenariusza, kolory graczy),
-  **grupowanie modeli** (MultiMesh) dla dużych map.
+* **Budynki i jednostki** w scenie podglądu (pozycja i obrót z danych scenariusza, kolory graczy), jednostki
+  w animacji bezczynności, **grupowanie modeli** (MultiMesh) – statycznych i animowanych – dla dużych map.
 * Tabele gry `db*.dat` (obiekty, grafiki, dźwięki, tereny…).
 * **Lokalizacja PL/EN** ładowana z instalacji użytkownika – osobny wybór języka tekstów, głosów i kampanii
   ([docs/LOKALIZACJA.md](docs/LOKALIZACJA.md)).
 * **Launcher** (PL/EN): wybór instalacji, profil gry, język, nakładki, uruchamianie scen podglądu.
-* **66 testów automatycznych** (część wymaga instalacji gry – bez niej są jawnie pomijane).
+* **95 testów automatycznych** (część wymaga instalacji gry – bez niej są jawnie pomijane).
 
-## Ograniczenia (stan 0.3.0-dev)
+## Ograniczenia (stan 0.4.0-dev)
 * **Brak rozgrywki** – brak ekonomii, walki, SI, interfejsu gry; sceny są podglądem danych.
-* Brak animacji jednostek i symulacji (modele w klatce 0).
+* Animacje odtwarzane z danych, ale tempo (czas cyklu z `dbgraphics`) i interpolacja między klatkami to hipotezy
+  do potwierdzenia w grze; brak sterowania proceduralnego (celowanie wieżyczek, obrót części `orbital_*`, toczenie kół).
+* Brak symulacji: jednostki nie poruszają się po mapie.
 * Niepełny odczyt trzech scenariuszy kampanii EE (polimorficzna lista celów jednostki – jeden gracz częściowo).
 * **Brak potwierdzonego porównania wizualnego z oryginalnym Empire Earth** – zgodność wynika z analizy formatów i testów
   na danych, nie z porównania zrzutów z gry.
@@ -56,7 +61,10 @@ zawiera żadnych zasobów Empire Earth – patrz [docs/ZASOBY_ORYGINALNE.md](doc
    ```
 
 Podgląd scenariusza z wiersza poleceń: `godot --path godot res://sceny/test_scenariusz.tscn -- --kampania=EETheGreeks.ssa --scenariusz="trojan war"`
-(opcje: `--okno=r0,c0,n | pelne`, `--kamera=blisko`, `--zrzut=plik.png`, `--pomiar=N`).
+(opcje: `--okno=r0,c0,n | pelne`, `--kamera=blisko`, `--zrzut=plik.png`, `--pomiar=N`, `--bez-animacji`).
+
+Scena animacji: `./uruchom_openee.sh animacje --model=Phalanx --sekwencja=atak` (albo `--galeria=Phalanx;Citizen Paleo;Cannon - 12 Pounder`,
+`--pomiar=100,1000,4000`, `--film=katalog`).
 
 ## Dokumentacja
 * [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md) – struktura silnika i projektu
