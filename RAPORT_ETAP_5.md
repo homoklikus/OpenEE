@@ -169,4 +169,21 @@ rasteryzacji CPU, więc liczą się koszty symulacji mierzone osobno.
 * wyniki pomiarów `pomiar_*.json`.
 
 ## 10. Git i GitHub
-Uzupełniane przy publikacji – patrz koniec raportu.
+* **Stan wyjściowy:** `origin/main` = lokalne `main` = `509f812`; przed etapem drzewo było czyste.
+* **Commity etapu (lokalnie, gałąź `main`):**
+  * `334b12f` – kod, testy, dokumentacja;
+  * kolejny – ten raport ze stanem publikacji.
+* **Audyt przed commitem:**
+  * 40 plików tekstowych, 0 binarnych;
+  * brak formatów gry (ssa, cem, sst, tga, wav, mp3, scn, dat, png, mp4);
+  * brak ścieżek prywatnych, adresów e-mail i tokenów.
+* **Pliki tylko lokalne:** nagrania, zrzuty i pomiary w `wyniki/etap5/`, sekwencje kroków w `cache/` (ignorowane).
+* **Test czystej kopii** (osobny klon, import od zera):
+  * bez instalacji EE: 118 testów, 60 zaliczonych, 58 jawnie pominiętych, 0 błędów;
+  * z instalacją w projekcie: 121/121.
+* **Publikacja:** **nie wypchnięto** – sesja nie ma uwierzytelnienia GitHub. Zdalne `main` = `509f812`, więc wystarczy
+  zwykłe przewinięcie do przodu, bez force push:
+  ```
+  cd "/media/precell/Inne/Projekty AI/EE Projekt/OpenEE"
+  git push origin main
+  ```
