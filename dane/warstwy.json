@@ -1,0 +1,79 @@
+{
+ "opis": "Definicje warstw zasobów OpenEE (etap 2). Warstwy plików bazowych wynikają z manifestu instalacji; nakładki są niezależne od wyboru instalacji bazowej.",
+ "warstwy": [
+  {
+   "id": "vanilla",
+   "nazwa": "Empire Earth (oryginał)",
+   "priorytet": 0,
+   "niezalezna": true,
+   "uwagi": "Etap 2: potwierdzone SHA-256 względem instalacji GOG (hashdb)."
+  },
+  {
+   "id": "aoc",
+   "nazwa": "The Art of Conquest",
+   "priorytet": 10,
+   "wymaga": [
+    "vanilla"
+   ],
+   "niezalezna": true
+  },
+  {
+   "id": "localization",
+   "nazwa": "Lokalizacja (obecnie: polska)",
+   "priorytet": 20,
+   "jezyk": "pl",
+   "niezalezna": false,
+   "uwagi": "Nakładka localization/<język>: manifest dane/lokalizacja/<język>/manifest.json; osobny wybór języka tekstów, głosów i kampanii."
+  },
+  {
+   "id": "neoee",
+   "nazwa": "NeoEE",
+   "priorytet": 30,
+   "niezalezna": false,
+   "uwagi": "Pliki wykonywalne z sekcją .neoee – OpenEE ich nie używa; warstwa istotna dla konfiguracji/lobby."
+  },
+  {
+   "id": "drexmod",
+   "nazwa": "dreXmod",
+   "priorytet": 40,
+   "niezalezna": true,
+   "uwagi": "Data/dxm – motywy interfejsu i lobby; w pełni oddzielne katalogi."
+  },
+  {
+   "id": "nieustalone",
+   "nazwa": "Pochodzenie nieustalone (np. łatki binarne DLL, mapy losowe społeczności)",
+   "priorytet": 5,
+   "pseudo": true
+  },
+  {
+   "id": "user_mods",
+   "nazwa": "Mody użytkownika",
+   "priorytet": 100,
+   "niezalezna": true,
+   "uwagi": "Przyszłe mody – katalog OpenEE/mody/<nazwa>/ z własnym manifestem (etap kolejny)."
+  },
+  {
+   "id": "hd_nieustalone",
+   "nazwa": "Luźne nadpisania HD z instalacji społecznościowej (autor nieustalony)",
+   "priorytet": 50,
+   "nakladka": true,
+   "zrodlo": "spolecznosciowa"
+  },
+  {
+   "id": "platforma_gog",
+   "nazwa": "Pliki platformy GOG (instalator, ddraw/dxcfg)",
+   "priorytet": -1,
+   "pseudo": true
+  },
+  {
+   "id": "mieszane:vanilla+localization",
+   "nazwa": "data.ssa EE społecznościowe: oryginał + 462 polskie głosy",
+   "pseudo": true
+  },
+  {
+   "id": "mieszane:aoc+localization",
+   "nazwa": "data.ssa AoC społecznościowe: oryginał + 80 głosów, 6 grafik, 21 cywilizacji PL",
+   "pseudo": true
+  }
+ ]
+}

@@ -1,0 +1,60 @@
+# OpenEE – .gitignore. Repozytorium NIE może zawierać zasobów Empire Earth ani danych wygenerowanych z instalacji
+# (docs/ZASOBY_ORYGINALNE.md). Przed commitem zawsze sprawdź: git status / git diff --cached --stat
+
+# --- dane lokalne generowane z instalacji użytkownika ---
+/cache/
+/wyniki/
+/audyt/
+/kopie/
+/dane/lokalizacja/
+/SUMY_SHA256.txt
+# teksty gry w pakiecie schematu EE DB Editor
+/dane/schemat_db_eedbeditor/AOC/language.txt
+
+# --- ustawienia użytkownika ---
+/konfiguracja/uzytkownik.cfg
+/konfiguracja/profile_uzytkownika.json
+
+# --- zabezpieczenie: formaty zasobów i plików gry ---
+*.ssa
+*.cem
+*.sst
+*.tga
+*.wav
+*.mp3
+*.bik
+*.exe
+*.dll
+*.scn
+*.dat
+*.civ
+*.rms
+*.hashdb
+*.png
+*.jpg
+*.jpeg
+# wyjątek: własna grafika nagłówka launchera (dane/launcher/grafika/ZRODLO.md)
+!/dane/launcher/grafika/*.png
+
+# --- Godot ---
+godot/.godot/
+*.import
+export_presets.cfg
+.mono/
+/Godot_v4*
+
+# --- Python / C ---
+__pycache__/
+*.py[cod]
+*.so
+*.o
+
+# --- inne ---
+*.log
+*.tmp
+*.bak
+*~
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

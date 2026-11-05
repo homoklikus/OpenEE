@@ -1,0 +1,6023 @@
+{
+"zrodlo": "EE DB Editor (Forlini91), GPLv3 – patrz dane/schemat_db_eedbeditor/ZRODLO.md",
+"tabele": {
+"dbobjects": [
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"Family ID",
+4,
+"LINK",
+null
+],
+[
+"Unknown",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#2",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Health",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#3",
+4,
+"INTEGER",
+null
+],
+[
+"Min range",
+4,
+"FLOAT",
+null
+],
+[
+"Max range",
+4,
+"FLOAT",
+null
+],
+[
+"Line of sight",
+4,
+"FLOAT",
+null
+],
+[
+"Attack reload time",
+4,
+"FLOAT",
+null
+],
+[
+"Area of effect",
+4,
+"FLOAT",
+null
+],
+[
+"Speed",
+4,
+"FLOAT",
+null
+],
+[
+"Acceleration/Deceleration",
+4,
+"FLOAT",
+null
+],
+[
+"Idle turning speed",
+4,
+"FLOAT",
+null
+],
+[
+"Moving turning speed",
+4,
+"FLOAT",
+null
+],
+[
+"Unknown#4",
+4,
+"FLOAT",
+null
+],
+[
+"<PROBABLY> Is air unit",
+4,
+"INTEGER",
+null
+],
+[
+"Flight time",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#5",
+4,
+"FLOAT",
+null
+],
+[
+"Attack angle",
+4,
+"FLOAT",
+null
+],
+[
+"<PROBABLY> Attack from the side",
+4,
+"INTEGER",
+null
+],
+[
+"Weapon to hit ID",
+4,
+"LINK",
+null
+],
+[
+"Attack",
+4,
+"INTEGER",
+null
+],
+[
+"Shock armor",
+4,
+"INTEGER",
+null
+],
+[
+"Arrow armor",
+4,
+"INTEGER",
+null
+],
+[
+"Pierce armor",
+4,
+"INTEGER",
+null
+],
+[
+"Gun armor",
+4,
+"INTEGER",
+null
+],
+[
+"Laser armor",
+4,
+"INTEGER",
+null
+],
+[
+"Missile armor",
+4,
+"INTEGER",
+null
+],
+[
+"Projectile ID",
+4,
+"LINK",
+null
+],
+[
+"Family attack type",
+4,
+"RANGE",
+null
+],
+[
+"Unknown#6",
+4,
+"INTEGER",
+null
+],
+[
+"Graphic size",
+4,
+"FLOAT",
+null
+],
+[
+"TAI Script",
+52,
+"STRING",
+null
+],
+[
+"Unit type",
+4,
+"ENUM",
+null
+],
+[
+"Never used",
+4,
+"INTEGER",
+null
+],
+[
+"Button ID",
+4,
+"LINK",
+null
+],
+[
+"Graphic ID",
+4,
+"LINK",
+null
+],
+[
+"Build rate",
+4,
+"FLOAT",
+null
+],
+[
+"Iron gather rate",
+4,
+"FLOAT",
+null
+],
+[
+"Farm gather rate",
+4,
+"FLOAT",
+null
+],
+[
+"Gold gather rate",
+4,
+"FLOAT",
+null
+],
+[
+"Stone gather rate",
+4,
+"FLOAT",
+null
+],
+[
+"Wood gather rate",
+4,
+"FLOAT",
+null
+],
+[
+"Hunt gather rate",
+4,
+"FLOAT",
+null
+],
+[
+"Forage gather rate",
+4,
+"FLOAT",
+null
+],
+[
+"Creation sound",
+4,
+"LINK",
+null
+],
+[
+"Action sound 1",
+4,
+"LINK",
+null
+],
+[
+"Action sound 2",
+4,
+"LINK",
+null
+],
+[
+"Selection sound 1",
+4,
+"LINK",
+null
+],
+[
+"Selection sound 2",
+4,
+"LINK",
+null
+],
+[
+"Death sound",
+4,
+"LINK",
+null
+],
+[
+"<PROBABLY> Can build",
+4,
+"BOOLEAN",
+null
+],
+[
+"Button/Command ID",
+4,
+"LINK",
+null
+],
+[
+"Button/Command ID#2",
+4,
+"LINK",
+null
+],
+[
+"Button/Command ID#3",
+4,
+"LINK",
+null
+],
+[
+"Button/Command ID#4",
+4,
+"LINK",
+null
+],
+[
+"Button/Command ID#5",
+4,
+"LINK",
+null
+],
+[
+"Button/Command ID#6",
+4,
+"LINK",
+null
+],
+[
+"Button/Command ID#7",
+4,
+"LINK",
+null
+],
+[
+"Button/Command ID#8",
+4,
+"LINK",
+null
+],
+[
+"Button/Command ID#9",
+4,
+"LINK",
+null
+],
+[
+"Never changes",
+4,
+"INTEGER",
+null
+],
+[
+"Square occupied",
+4,
+"INTEGER",
+null
+],
+[
+"Resource type",
+4,
+"ENUM",
+null
+],
+[
+"Resource amount",
+4,
+"FLOAT",
+null
+],
+[
+"Always face camera",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#7",
+4,
+"INTEGER",
+null
+],
+[
+"Rotting time",
+4,
+"FLOAT",
+null
+],
+[
+"Population count",
+4,
+"INTEGER",
+null
+],
+[
+"Transport capacity",
+4,
+"INTEGER",
+null
+],
+[
+"Show area effect stat",
+1,
+"BOOLEAN",
+null
+],
+[
+"Show repair stat",
+1,
+"BOOLEAN",
+null
+],
+[
+"Show shock armor stat",
+1,
+"BOOLEAN",
+null
+],
+[
+"Show pierce armor stat",
+1,
+"BOOLEAN",
+null
+],
+[
+"Show arrow armor stat",
+1,
+"BOOLEAN",
+null
+],
+[
+"Show laser armor stat",
+1,
+"BOOLEAN",
+null
+],
+[
+"Show gun armor stat",
+1,
+"BOOLEAN",
+null
+],
+[
+"Show missile armor stat",
+1,
+"BOOLEAN",
+null
+],
+[
+"Show range",
+4,
+"INTEGER",
+null
+],
+[
+"Morale bonus",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#8",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#9",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#10",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#2",
+4,
+"INTEGER",
+null
+],
+[
+"Flight altitude",
+4,
+"FLOAT",
+null
+],
+[
+"Language ID",
+4,
+"LANGUAGE",
+null
+],
+[
+"Unknown#11",
+4,
+"INTEGER",
+null
+],
+[
+"Healer heal amount",
+4,
+"INTEGER",
+null
+],
+[
+"Health regeneration",
+4,
+"INTEGER",
+null
+],
+[
+"Can garrison in air transports",
+1,
+"BOOLEAN",
+null
+],
+[
+"Can garrison in land transports",
+1,
+"BOOLEAN",
+null
+],
+[
+"Can garrison in sea transports",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never used#3",
+1,
+"INTEGER",
+null
+],
+[
+"Object type",
+4,
+"ENUM",
+null
+],
+[
+"Unknown#12",
+4,
+"INTEGER",
+null
+],
+[
+"Circle selection size",
+4,
+"FLOAT",
+null
+],
+[
+"Shadow size",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#4",
+4,
+"INTEGER",
+null
+],
+[
+"Size in formation",
+4,
+"FLOAT",
+null
+],
+[
+"Size of collider",
+4,
+"FLOAT",
+null
+],
+[
+"Collidable",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#13",
+1,
+"INTEGER",
+null
+],
+[
+"Unknown#14",
+1,
+"INTEGER",
+null
+],
+[
+"Unknown#15",
+1,
+"INTEGER",
+null
+],
+[
+"Unknown#16",
+4,
+"FLOAT",
+null
+],
+[
+"Initial projectile angle",
+4,
+"FLOAT",
+null
+],
+[
+"Ammo amount",
+4,
+"INTEGER",
+null
+],
+[
+"<PROBABLY> Drop bombs",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#17",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#18",
+1,
+"BOOLEAN",
+null
+],
+[
+"<PROBABLY> Parabolic projectile",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#19",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#5",
+4,
+"INTEGER",
+null
+],
+[
+"Category 1",
+4,
+"INTEGER",
+null
+],
+[
+"Category 2",
+4,
+"INTEGER",
+null
+],
+[
+"Category 3",
+4,
+"INTEGER",
+null
+],
+[
+"Category 4",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#20",
+4,
+"INTEGER",
+null
+],
+[
+"Updrade ID",
+4,
+"LINK",
+null
+],
+[
+"<Used by units/buildings who can convert>",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#21",
+4,
+"FLOAT",
+null
+],
+[
+"Can be owned by a player",
+1,
+"BOOLEAN",
+null
+],
+[
+"Can be owned by \"World\"",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#22",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#23",
+1,
+"BOOLEAN",
+null
+],
+[
+"You can kill this object with Delete key",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#24",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#25",
+1,
+"INTEGER",
+null
+],
+[
+"Never used#6",
+1,
+"INTEGER",
+null
+],
+[
+"Low health effect ID",
+4,
+"LINK",
+null
+],
+[
+"Death effect ID",
+4,
+"LINK",
+null
+],
+[
+"Start of attack ID",
+4,
+"LINK",
+null
+],
+[
+"Unknown GFX effect",
+4,
+"LINK",
+null
+],
+[
+"Movement effect",
+4,
+"LINK",
+null
+],
+[
+"Unknown GFX effect#2",
+4,
+"LINK",
+null
+],
+[
+"Heal other effect ID",
+4,
+"LINK",
+null
+],
+[
+"Unknown GFX effect#3",
+4,
+"LINK",
+null
+],
+[
+"Unknown GFX effect#4",
+4,
+"LINK",
+null
+],
+[
+"Get hit effect ID",
+4,
+"LINK",
+null
+],
+[
+"Permanent effect",
+4,
+"LINK",
+null
+],
+[
+"Unused GFX effect",
+4,
+"LINK",
+null
+],
+[
+"Projectile effect",
+4,
+"LINK",
+null
+],
+[
+"Unused GFX effect#2",
+4,
+"LINK",
+null
+],
+[
+"Unused GFX effect#3",
+4,
+"LINK",
+null
+],
+[
+"Unused GFX effect#4",
+4,
+"LINK",
+null
+],
+[
+"Unused GFX effect#5",
+4,
+"LINK",
+null
+],
+[
+"Unused GFX effect#6",
+4,
+"LINK",
+null
+],
+[
+"Unknown GFX effect#5",
+4,
+"LINK",
+null
+],
+[
+"<only used by volcano-projectile and meteor>",
+4,
+"INTEGER",
+null
+],
+[
+"Attack effect ID",
+4,
+"LINK",
+null
+],
+[
+"Disease effect ID 1",
+4,
+"LINK",
+null
+],
+[
+"Disease effect ID 2",
+4,
+"LINK",
+null
+],
+[
+"Diffraction shield effect ID",
+4,
+"LINK",
+null
+],
+[
+"Pulse cannon effect ID",
+4,
+"LINK",
+null
+],
+[
+"Battle cry effect ID",
+4,
+"LINK",
+null
+],
+[
+"Bomb hole effect ID",
+4,
+"LINK",
+null
+],
+[
+"Unused GFX effect#7",
+4,
+"LINK",
+null
+],
+[
+"Unknown GFX effect#6",
+4,
+"LINK",
+null
+],
+[
+"Never used#7",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#26",
+4,
+"INTEGER",
+null
+],
+[
+"<only used by ships>",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#8",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#9",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#10",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#11",
+4,
+"INTEGER",
+null
+],
+[
+"dbterrain.dat Grass, Snow",
+1,
+"BOOLEAN",
+null
+],
+[
+"Elevation: Deep water",
+1,
+"BOOLEAN",
+null
+],
+[
+"dbterrain.dat Rock, Stones and Artificial",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#27",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#28",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#29",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#30",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#31",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#32",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#33",
+1,
+"BOOLEAN",
+null
+],
+[
+"dbterrain.dat Asphalt",
+1,
+"BOOLEAN",
+null
+],
+[
+"Elevation: cliffs",
+1,
+"BOOLEAN",
+null
+],
+[
+"Elevation: Shallow water",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#34",
+1,
+"BOOLEAN",
+null
+],
+[
+"dbterrain.dat Sand",
+1,
+"BOOLEAN",
+null
+],
+[
+"dbterrain.dat Space",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#35",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#36",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never used#12",
+1,
+"INTEGER",
+null
+],
+[
+"Never used#13",
+1,
+"INTEGER",
+null
+],
+[
+"Area Effect ID",
+4,
+"LINK",
+null
+],
+[
+"Area Effect ID#2",
+4,
+"LINK",
+null
+],
+[
+"Area Effect ID#3",
+4,
+"LINK",
+null
+],
+[
+"Area Effect ID#4",
+4,
+"LINK",
+null
+],
+[
+"Never used#14",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#15",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#16",
+4,
+"INTEGER",
+null
+],
+[
+"Carry capacity",
+4,
+"FLOAT",
+null
+],
+[
+"Unknown#37",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#17",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#38",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never used#18",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#39",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never used#19",
+1,
+"INTEGER",
+null
+],
+[
+"Unknown#40",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#41",
+4,
+"INTEGER",
+null
+],
+[
+"Debris on death",
+4,
+"LINK",
+null
+],
+[
+"Debris on death#2",
+4,
+"LINK",
+null
+],
+[
+"Unknown#42",
+4,
+"INTEGER",
+null
+],
+[
+"Stealth discover range",
+4,
+"INTEGER",
+null
+],
+[
+"Interaction type",
+4,
+"INTEGER",
+null
+],
+[
+"Max citizens garrison",
+4,
+"INTEGER",
+null
+],
+[
+"Initial garrisoned citizens",
+4,
+"INTEGER",
+null
+],
+[
+"Garrison upgrade object to",
+4,
+"LINK",
+null
+],
+[
+"Plane refuel location",
+4,
+"INTEGER",
+null
+],
+[
+"<Seems related to ships...>",
+4,
+"INTEGER",
+null
+],
+[
+"Wonder bonus",
+4,
+"ENUM",
+null
+],
+[
+"Effect apply to",
+4,
+"LINK",
+null
+],
+[
+"Unknown#43",
+4,
+"FLOAT",
+null
+],
+[
+"Unknown#44",
+4,
+"FLOAT",
+null
+],
+[
+"Friendly damage mult",
+4,
+"FLOAT",
+null
+],
+[
+"Garrison citizens bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Unknown#45",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#20",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#46",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#47",
+4,
+"INTEGER",
+null
+],
+[
+"Num techs it can build",
+4,
+"INTEGER",
+null
+],
+[
+"Tech ID",
+4,
+"LINK",
+null
+],
+[
+"Is building?",
+1,
+"BOOLEAN",
+null
+],
+[
+"Stealth",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#48",
+1,
+"BOOLEAN",
+null
+],
+[
+"<Seems related to aircraft, but the clubman...>",
+1,
+"INTEGER",
+null
+],
+[
+"Unknown#49",
+4,
+"INTEGER",
+null
+],
+[
+"Spawn on death",
+4,
+"LINK",
+null
+],
+[
+"Power",
+4,
+"INTEGER",
+null
+],
+[
+"Power recover rate",
+4,
+"INTEGER",
+null
+],
+[
+"Default stance",
+4,
+"LINK",
+null
+],
+[
+"Conversion time",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#50",
+4,
+"FLOAT",
+null
+],
+[
+"Healing range / Ability range",
+4,
+"FLOAT",
+null
+],
+[
+"Unknown#51",
+4,
+"FLOAT",
+null
+],
+[
+"<PROBABLY> Load range",
+4,
+"FLOAT",
+null
+],
+[
+"<PROBABLY> Unload range",
+4,
+"FLOAT",
+null
+],
+[
+"Can walk through trees",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never used#21",
+1,
+"BOOLEAN",
+null
+],
+[
+"Unknown#52",
+1,
+"BOOLEAN",
+null
+],
+[
+"Can attack area",
+1,
+"BOOLEAN",
+null
+],
+[
+"<PROBABLY> Melee attack",
+1,
+"BOOLEAN",
+null
+],
+[
+"Garrison heal rate",
+1,
+"INTEGER",
+null
+],
+[
+"Unknown#53",
+1,
+"INTEGER",
+null
+],
+[
+"Unknown#54",
+1,
+"INTEGER",
+null
+],
+[
+"Unknown string",
+100,
+"STRING",
+null
+],
+[
+"Unknown string#2",
+100,
+"STRING",
+null
+],
+[
+"Never used#22",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#23",
+4,
+"INTEGER",
+null
+],
+[
+"Can build tech",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#2",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#3",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#4",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#5",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#6",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#7",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#8",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#9",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#10",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#11",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#12",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#13",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#14",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#15",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#16",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#17",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#18",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#19",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#20",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#21",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#22",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#23",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#24",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#25",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#26",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#27",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#28",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#29",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#30",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#31",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#32",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#33",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#34",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#35",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#36",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#37",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#38",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#39",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#40",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#41",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#42",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#43",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#44",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#45",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#46",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#47",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#48",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#49",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#50",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#51",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#52",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#53",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#54",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#55",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#56",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#57",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#58",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#59",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#60",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#61",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#62",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#63",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#64",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#65",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#66",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#67",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#68",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#69",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#70",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#71",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#72",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#73",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#74",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#75",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#76",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#77",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#78",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#79",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#80",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#81",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#82",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#83",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#84",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#85",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#86",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#87",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#88",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#89",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#90",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#91",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#92",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#93",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#94",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#95",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#96",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#97",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#98",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#99",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#100",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#101",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#102",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#103",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#104",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#105",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#106",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#107",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#108",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#109",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#110",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#111",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#112",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#113",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#114",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#115",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#116",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#117",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#118",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#119",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#120",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#121",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#122",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#123",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#124",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#125",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#126",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#127",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#128",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#129",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#130",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#131",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#132",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#133",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#134",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#135",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#136",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#137",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#138",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#139",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#140",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#141",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#142",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#143",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#144",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#145",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#146",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#147",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#148",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#149",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#150",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#151",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#152",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#153",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#154",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#155",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#156",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#157",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#158",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#159",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#160",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#161",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#162",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#163",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#164",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#165",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#166",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#167",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#168",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#169",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#170",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#171",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#172",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#173",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#174",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#175",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#176",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#177",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#178",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#179",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#180",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#181",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#182",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#183",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#184",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#185",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#186",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#187",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#188",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#189",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#190",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#191",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#192",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#193",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#194",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#195",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#196",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#197",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#198",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#199",
+4,
+"LINK",
+null
+],
+[
+"Can build tech#200",
+4,
+"LINK",
+null
+],
+[
+"Unknown#55",
+4,
+"INTEGER",
+null
+]
+],
+"dbgraphics": [
+[
+"String size",
+4,
+"INTEGER",
+null
+],
+[
+"Name 1",
+0,
+"DYNAMIC_STRING",
+0
+],
+[
+"String size#2",
+4,
+"INTEGER",
+null
+],
+[
+"Model path",
+0,
+"DYNAMIC_STRING",
+2
+],
+[
+"String size#3",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path",
+0,
+"DYNAMIC_STRING",
+4
+],
+[
+"String size#4",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#2",
+0,
+"DYNAMIC_STRING",
+6
+],
+[
+"String size#5",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#2",
+0,
+"DYNAMIC_STRING",
+8
+],
+[
+"String size#6",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#3",
+0,
+"DYNAMIC_STRING",
+10
+],
+[
+"String size#7",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#3",
+0,
+"DYNAMIC_STRING",
+12
+],
+[
+"String size#8",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#4",
+0,
+"DYNAMIC_STRING",
+14
+],
+[
+"String size#9",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#4",
+0,
+"DYNAMIC_STRING",
+16
+],
+[
+"String size#10",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#5",
+0,
+"DYNAMIC_STRING",
+18
+],
+[
+"String size#11",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#5",
+0,
+"DYNAMIC_STRING",
+20
+],
+[
+"String size#12",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#6",
+0,
+"DYNAMIC_STRING",
+22
+],
+[
+"String size#13",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#6",
+0,
+"DYNAMIC_STRING",
+24
+],
+[
+"String size#14",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#7",
+0,
+"DYNAMIC_STRING",
+26
+],
+[
+"String size#15",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#7",
+0,
+"DYNAMIC_STRING",
+28
+],
+[
+"String size#16",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#8",
+0,
+"DYNAMIC_STRING",
+30
+],
+[
+"String size#17",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#8",
+0,
+"DYNAMIC_STRING",
+32
+],
+[
+"String size#18",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#9",
+0,
+"DYNAMIC_STRING",
+34
+],
+[
+"String size#19",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#9",
+0,
+"DYNAMIC_STRING",
+36
+],
+[
+"String size#20",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#10",
+0,
+"DYNAMIC_STRING",
+38
+],
+[
+"String size#21",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#10",
+0,
+"DYNAMIC_STRING",
+40
+],
+[
+"String size#22",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#11",
+0,
+"DYNAMIC_STRING",
+42
+],
+[
+"String size#23",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#11",
+0,
+"DYNAMIC_STRING",
+44
+],
+[
+"String size#24",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#12",
+0,
+"DYNAMIC_STRING",
+46
+],
+[
+"String size#25",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#12",
+0,
+"DYNAMIC_STRING",
+48
+],
+[
+"String size#26",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#13",
+0,
+"DYNAMIC_STRING",
+50
+],
+[
+"String size#27",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#13",
+0,
+"DYNAMIC_STRING",
+52
+],
+[
+"String size#28",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#14",
+0,
+"DYNAMIC_STRING",
+54
+],
+[
+"String size#29",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#14",
+0,
+"DYNAMIC_STRING",
+56
+],
+[
+"String size#30",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#15",
+0,
+"DYNAMIC_STRING",
+58
+],
+[
+"String size#31",
+4,
+"INTEGER",
+null
+],
+[
+"Model path#15",
+0,
+"DYNAMIC_STRING",
+60
+],
+[
+"String size#32",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#16",
+0,
+"DYNAMIC_STRING",
+62
+],
+[
+"String size#33",
+4,
+"INTEGER",
+null
+],
+[
+"Texture path#17",
+0,
+"DYNAMIC_STRING",
+64
+],
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#2",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#3",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#4",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#5",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#6",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#7",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#8",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#9",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#10",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#11",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#2",
+4,
+"LINK",
+null
+],
+[
+"Unknown#12",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#13",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#14",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#15",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#16",
+4,
+"INTEGER",
+null
+],
+[
+"Never used",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#17",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#18",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#3",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#4",
+4,
+"LINK",
+null
+],
+[
+"Unknown#19",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#20",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#21",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#22",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#23",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#24",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#25",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#2",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#5",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#6",
+4,
+"LINK",
+null
+],
+[
+"Unknown#26",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#27",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#28",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#29",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#30",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#31",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#32",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#3",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#7",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#8",
+4,
+"LINK",
+null
+],
+[
+"Unknown#33",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#34",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#35",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#36",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#37",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#4",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#38",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#39",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#40",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#41",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#42",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#43",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#44",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#5",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#6",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#7",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#45",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#8",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#9",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#10",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#9",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#10",
+4,
+"LINK",
+null
+],
+[
+"Unknown#46",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#47",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#48",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#49",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#50",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#51",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#52",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#11",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#11",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#12",
+4,
+"LINK",
+null
+],
+[
+"Unknown#53",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#54",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#55",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#56",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#57",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#58",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#59",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#12",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#13",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#14",
+4,
+"LINK",
+null
+],
+[
+"Unknown#60",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#61",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#62",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#63",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#64",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#65",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#66",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#13",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#15",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#16",
+4,
+"LINK",
+null
+],
+[
+"Unknown#67",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#68",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#69",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#70",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#71",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#72",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#73",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#14",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#17",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#18",
+4,
+"LINK",
+null
+],
+[
+"Unknown#74",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#75",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#76",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#77",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#78",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#79",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#80",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#15",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#19",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#20",
+4,
+"LINK",
+null
+],
+[
+"Unknown#81",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#82",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#83",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#84",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#85",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#86",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#87",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#16",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#21",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#22",
+4,
+"LINK",
+null
+],
+[
+"Unknown#88",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#89",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#90",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#91",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#92",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#93",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#94",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#95",
+4,
+"INTEGER",
+null
+],
+[
+"Sound ID#23",
+4,
+"LINK",
+null
+],
+[
+"Sound ID#24",
+4,
+"LINK",
+null
+],
+[
+"Unknown#96",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#97",
+4,
+"BOOLEAN",
+null
+],
+[
+"Unknown#98",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#99",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#17",
+4,
+"INTEGER",
+null
+],
+[
+"<Some entries have link to themselves",
+4,
+"LINK",
+null
+],
+[
+"Unknown#100",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#101",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#18",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#102",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#103",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#104",
+4,
+"FLOAT",
+null
+],
+[
+"Unknown#105",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#106",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#19",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#107",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#108",
+4,
+"INTEGER",
+null
+]
+],
+"dbsounds": [
+[
+"String size",
+4,
+"INTEGER",
+null
+],
+[
+"Pathname",
+0,
+"DYNAMIC_STRING",
+0
+],
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#2",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#3",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#4",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#5",
+4,
+"INTEGER",
+null
+],
+[
+"Never used",
+4,
+"INTEGER",
+null
+]
+],
+"dbcolortable": [
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Player - Red",
+4,
+"FLOAT",
+null
+],
+[
+"Player - Green",
+4,
+"FLOAT",
+null
+],
+[
+"Player - Blue",
+4,
+"FLOAT",
+null
+],
+[
+"Model - Red",
+4,
+"FLOAT",
+null
+],
+[
+"Model - Green",
+4,
+"FLOAT",
+null
+],
+[
+"Model - Blue",
+4,
+"FLOAT",
+null
+],
+[
+"Lighting - Red",
+4,
+"FLOAT",
+null
+],
+[
+"Lighting - Green",
+4,
+"FLOAT",
+null
+],
+[
+"Lighting - Blue",
+4,
+"FLOAT",
+null
+],
+[
+"Never used",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#2",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#3",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#4",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#5",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#6",
+4,
+"FLOAT",
+null
+]
+],
+"dbterrain": [
+[
+"String size",
+4,
+"INTEGER",
+null
+],
+[
+"Pathname",
+0,
+"DYNAMIC_STRING",
+0
+],
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Terrain gray type",
+4,
+"LINK",
+null
+],
+[
+"Language ID",
+4,
+"LANGUAGE",
+null
+],
+[
+"Valid",
+4,
+"BOOLEAN",
+null
+],
+[
+"Terrain family",
+4,
+"ENUM",
+null
+],
+[
+"Tyles on X axis",
+4,
+"INTEGER",
+null
+],
+[
+"Tiles on Y axis",
+4,
+"INTEGER",
+null
+],
+[
+"Available: 0-No, 1-Animated, 65536-Static",
+4,
+"INTEGER",
+null
+],
+[
+"Terrain type",
+4,
+"LINK",
+null
+],
+[
+"Object from ID (1)",
+4,
+"LINK",
+null
+],
+[
+"Object from ID (2)",
+4,
+"LINK",
+null
+],
+[
+"Object from ID (3)",
+4,
+"LINK",
+null
+],
+[
+"Object to ID (1)",
+4,
+"LINK",
+null
+],
+[
+"Object to ID (2)",
+4,
+"LINK",
+null
+],
+[
+"Object to ID (3)",
+4,
+"LINK",
+null
+],
+[
+"<Probably> Chance spawn object per tile",
+4,
+"INTEGER",
+null
+],
+[
+"<Used by animated terrains>",
+4,
+"INTEGER",
+null
+],
+[
+"<Used by animated terrains>#2",
+4,
+"INTEGER",
+null
+],
+[
+"Color: Red",
+4,
+"INTEGER",
+null
+],
+[
+"Color: Green",
+4,
+"INTEGER",
+null
+],
+[
+"Color: Blue",
+4,
+"INTEGER",
+null
+],
+[
+"Never used",
+4,
+"INTEGER",
+null
+],
+[
+"Amb Marsh 1",
+4,
+"FLOAT",
+null
+],
+[
+"Amb Marsh 2",
+4,
+"FLOAT",
+null
+],
+[
+"Is an ambient terrain? (Yes = 16777216)",
+4,
+"INTEGER",
+null
+]
+],
+"dbterraintype": [
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#2",
+4,
+"INTEGER",
+null
+],
+[
+"Language ID",
+4,
+"LANGUAGE",
+null
+],
+[
+"Unknown#3",
+4,
+"INTEGER",
+null
+],
+[
+"Unknown#4",
+4,
+"INTEGER",
+null
+]
+],
+"dbcliffterrain": [
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Terrain ID",
+4,
+"LINK",
+null
+],
+[
+"Terrain ID#2",
+4,
+"LINK",
+null
+],
+[
+"Never used",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#2",
+4,
+"INTEGER",
+null
+]
+],
+"dbfamily": [
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Hovercraft, UFO, Rock thrower",
+4,
+"INTEGER",
+null
+],
+[
+"Frigate",
+4,
+"INTEGER",
+null
+],
+[
+"Machine gun",
+4,
+"INTEGER",
+null
+],
+[
+"Galley",
+4,
+"INTEGER",
+null
+],
+[
+"Tank",
+4,
+"INTEGER",
+null
+],
+[
+"AT Gun",
+4,
+"INTEGER",
+null
+],
+[
+"Catapult, Bombard",
+4,
+"INTEGER",
+null
+],
+[
+"AA Tower, Stinger, Flat halftrack",
+4,
+"INTEGER",
+null
+],
+[
+"<Unused by objects>",
+4,
+"INTEGER",
+null
+],
+[
+"Sea king",
+4,
+"INTEGER",
+null
+],
+[
+"Field weapon",
+4,
+"INTEGER",
+null
+],
+[
+"<Unused by objects>#2",
+4,
+"INTEGER",
+null
+],
+[
+"Fighter, Cruiser",
+4,
+"INTEGER",
+null
+],
+[
+"Cavalry spear",
+4,
+"INTEGER",
+null
+],
+[
+"Pre-atomic gun infantry",
+4,
+"INTEGER",
+null
+],
+[
+"ICBM",
+4,
+"INTEGER",
+null
+],
+[
+"Cavalry gun",
+4,
+"INTEGER",
+null
+],
+[
+"Halbedier",
+4,
+"INTEGER",
+null
+],
+[
+"Submarine",
+4,
+"INTEGER",
+null
+],
+[
+"Ram, Sampson",
+4,
+"INTEGER",
+null
+],
+[
+"Animals",
+4,
+"INTEGER",
+null
+],
+[
+"Archer, Javelin",
+4,
+"INTEGER",
+null
+],
+[
+"<Unused by objects>#3",
+4,
+"INTEGER",
+null
+],
+[
+"Mech Minotaur",
+4,
+"INTEGER",
+null
+],
+[
+"<Unused by objects>#4",
+4,
+"INTEGER",
+null
+],
+[
+"Elite Guard",
+4,
+"INTEGER",
+null
+],
+[
+"Grigor II, Mech Hyperion",
+4,
+"INTEGER",
+null
+],
+[
+"Mech Zeus",
+4,
+"INTEGER",
+null
+],
+[
+"Mech Pandora",
+4,
+"INTEGER",
+null
+],
+[
+"Mech Ares",
+4,
+"INTEGER",
+null
+],
+[
+"AT Aircraft",
+4,
+"INTEGER",
+null
+],
+[
+"Bomber",
+4,
+"INTEGER",
+null
+],
+[
+"Modern/Future gun infantry",
+4,
+"INTEGER",
+null
+],
+[
+"AT Tank",
+4,
+"INTEGER",
+null
+],
+[
+"Battleship",
+4,
+"INTEGER",
+null
+],
+[
+"AT Helicopter",
+4,
+"INTEGER",
+null
+],
+[
+"Mech Poseidon, Mech Hades",
+4,
+"INTEGER",
+null
+],
+[
+"Medic, Mech Apollo",
+4,
+"INTEGER",
+null
+],
+[
+"Citizen, Diplomat",
+4,
+"INTEGER",
+null
+],
+[
+"Crossbow, Sniper, Mech Tempest",
+4,
+"INTEGER",
+null
+],
+[
+"Carrier fighter",
+4,
+"INTEGER",
+null
+],
+[
+"Gunship Helicopter",
+4,
+"INTEGER",
+null
+],
+[
+"Persian cavalry",
+4,
+"INTEGER",
+null
+],
+[
+"Barbarian, Celtic, Gallic",
+4,
+"INTEGER",
+null
+],
+[
+"Tower",
+4,
+"INTEGER",
+null
+],
+[
+"Flamethrower, Howitzer",
+4,
+"INTEGER",
+null
+],
+[
+"Viking",
+4,
+"INTEGER",
+null
+],
+[
+"Priest, Priest Tower",
+4,
+"INTEGER",
+null
+],
+[
+"Sword",
+4,
+"INTEGER",
+null
+],
+[
+"Cavalry sword",
+4,
+"INTEGER",
+null
+],
+[
+"Partisan",
+4,
+"INTEGER",
+null
+],
+[
+"Atomic Submarine",
+4,
+"INTEGER",
+null
+],
+[
+"Bazooka",
+4,
+"INTEGER",
+null
+],
+[
+"Spear",
+4,
+"INTEGER",
+null
+],
+[
+"Cavalry archer",
+4,
+"INTEGER",
+null
+],
+[
+"Heroes",
+4,
+"INTEGER",
+null
+],
+[
+"Hand Cannoner",
+4,
+"INTEGER",
+null
+],
+[
+"Mortar",
+4,
+"INTEGER",
+null
+],
+[
+"Red Baron",
+4,
+"INTEGER",
+null
+],
+[
+"Fishing boat",
+4,
+"INTEGER",
+null
+],
+[
+"Anti-Missile Battery",
+4,
+"INTEGER",
+null
+],
+[
+"Capitol ship",
+4,
+"INTEGER",
+null
+],
+[
+"Space fighter",
+4,
+"INTEGER",
+null
+],
+[
+"Space corvette",
+4,
+"INTEGER",
+null
+],
+[
+"ICBM (Power)",
+4,
+"INTEGER",
+null
+],
+[
+"Space turret",
+4,
+"INTEGER",
+null
+],
+[
+"Never used",
+4,
+"INTEGER",
+null
+],
+[
+"Never used#2",
+4,
+"INTEGER",
+null
+]
+],
+"dbunitset": [
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Family ID",
+4,
+"LINK",
+null
+],
+[
+"Family ID#2",
+4,
+"LINK",
+null
+],
+[
+"Family ID#3",
+4,
+"LINK",
+null
+],
+[
+"Family ID#4",
+4,
+"LINK",
+null
+],
+[
+"Family ID#5",
+4,
+"LINK",
+null
+],
+[
+"Family ID#6",
+4,
+"LINK",
+null
+],
+[
+"Family ID#7",
+4,
+"LINK",
+null
+],
+[
+"Family ID#8",
+4,
+"LINK",
+null
+],
+[
+"Object ID",
+4,
+"LINK",
+null
+],
+[
+"Object ID#2",
+4,
+"LINK",
+null
+],
+[
+"Object ID#3",
+4,
+"LINK",
+null
+],
+[
+"Object ID#4",
+4,
+"LINK",
+null
+],
+[
+"Object ID#5",
+4,
+"LINK",
+null
+],
+[
+"Object ID#6",
+4,
+"LINK",
+null
+],
+[
+"Object ID#7",
+4,
+"LINK",
+null
+],
+[
+"Object ID#8",
+4,
+"LINK",
+null
+],
+[
+"Include unit set...",
+4,
+"LINK",
+null
+],
+[
+"Exclude unit set",
+4,
+"LINK",
+null
+],
+[
+"Is the first set in the list",
+4,
+"INTEGER",
+null
+]
+],
+"dbmusic": [
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Another name",
+56,
+"STRING",
+null
+],
+[
+"Unknown",
+4,
+"FLOAT",
+null
+],
+[
+"Unknown#2",
+4,
+"FLOAT",
+null
+],
+[
+"Time",
+4,
+"FLOAT",
+null
+],
+[
+"Never changes",
+4,
+"INTEGER",
+null
+],
+[
+"Never changes#2",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#3",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#4",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#5",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#6",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#7",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#8",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#9",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#10",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#11",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#12",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#13",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#14",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#15",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never changes#16",
+1,
+"BOOLEAN",
+null
+],
+[
+"Never used",
+1,
+"INTEGER",
+null
+]
+],
+"dbbuttons": [
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Texture",
+100,
+"STRING",
+null
+],
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"<only used by espionage center>",
+4,
+"INTEGER",
+null
+],
+[
+"<only used by farm and espionage center>",
+4,
+"INTEGER",
+null
+],
+[
+"Position",
+4,
+"ENUM",
+null
+],
+[
+"Unknown",
+4,
+"INTEGER",
+null
+]
+],
+"dbcivilization": [
+[
+"Sequence number",
+4,
+"INTEGER",
+null
+],
+[
+"ID",
+4,
+"INTEGER",
+null
+],
+[
+"Name",
+100,
+"STRING",
+null
+],
+[
+"Language ID",
+4,
+"LANGUAGE",
+null
+],
+[
+"Cost increment",
+4,
+"INTEGER",
+null
+],
+[
+"Unit set ID",
+4,
+"LINK",
+null
+],
+[
+"Attack bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Attack bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Health bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Health bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Attack speed bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Attack speed bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Armor bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Armor bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Range bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Range bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Speed bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Speed bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Flight time bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Flight time bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Area damage bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Area damage bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Hunting & foraging bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Hunting & foraging bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Wood cutting bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Wood cutting bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Gold mining bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Gold mining bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Farming bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Farming bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Stone mining bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Stone mining bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Iron mining bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Iron mining bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Build time reduction",
+4,
+"FLOAT",
+null
+],
+[
+"Build time reduction cost",
+4,
+"FLOAT",
+null
+],
+[
+"Conversion resistance bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Conversion resistance bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Fishing bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Fishing bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Repair bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Repair bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Area effect bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Area effect bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Mountain combat bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Mountain combat bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Population cap bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Population cap bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Area conversion bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Area conversion bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Cost reduction",
+4,
+"FLOAT",
+null
+],
+[
+"Cost reduction cost",
+4,
+"FLOAT",
+null
+],
+[
+"Night-time LOS bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Night-tme LOS bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Slavery bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Slavery bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Capitol upgrade bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Capitol upgrade bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Heroes bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Heroes bonus cost",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 1 bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 1 cost",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 2 bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 2 cost",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 3 bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 3 cost",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 4 bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 4 cost",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 5 bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 5 cost",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 6 bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 6 cost",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 7 bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 7 cost",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 8 bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 8 cost",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 9 bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 9 cost",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 10 bonus",
+4,
+"FLOAT",
+null
+],
+[
+"Placeholder 10 cost",
+4,
+"FLOAT",
+null
+],
+[
+"Never used",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#2",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#3",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#4",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#5",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#6",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#7",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#8",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#9",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#10",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#11",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#12",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#13",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#14",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#15",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#16",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#17",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#18",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#19",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#20",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#21",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#22",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#23",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#24",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#25",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#26",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#27",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#28",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#29",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#30",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#31",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#32",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#33",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#34",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#35",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#36",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#37",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#38",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#39",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#40",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#41",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#42",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#43",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#44",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#45",
+4,
+"FLOAT",
+null
+],
+[
+"Never used#46",
+4,
+"FLOAT",
+null
+]
+]
+}
+}

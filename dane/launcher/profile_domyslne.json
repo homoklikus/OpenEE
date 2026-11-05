@@ -1,0 +1,17 @@
+{
+ "opis": "Wbudowane profile gry launchera OpenEE. zrodlo = nazwa instalacji z [instalacje], gra = aoc|ee, mody = nakładki warstw (kolejność = priorytet). Profili wbudowanych nie można usuwać ani zmieniać – zmiana modów tworzy kopię.",
+ "profile": [
+  {"id": "vanilla_aoc", "nazwa": {"pl": "Vanilla (EE + AoC)", "en": "Vanilla (EE + AoC)"},
+   "opis": {"pl": "Oryginalna gra bez modyfikacji.", "en": "Original game without modifications."},
+   "zrodlo": "referencyjna", "gra": "aoc", "mody": []},
+  {"id": "vanilla_ee", "nazwa": {"pl": "Vanilla (tylko Empire Earth)", "en": "Vanilla (Empire Earth only)"},
+   "opis": {"pl": "Gra podstawowa bez dodatku The Art of Conquest.", "en": "Base game without The Art of Conquest."},
+   "zrodlo": "referencyjna", "gra": "ee", "mody": []},
+  {"id": "vanilla_hd", "nazwa": {"pl": "Vanilla + tekstury HD", "en": "Vanilla + HD textures"},
+   "opis": {"pl": "Oryginał z nakładką luźnych tekstur HD z instalacji społecznościowej.", "en": "Original with the loose HD texture overlay from the community install."},
+   "zrodlo": "referencyjna", "gra": "aoc", "mody": ["hd_nieustalone"]},
+  {"id": "spolecznosciowa", "nazwa": {"pl": "Instalacja społecznościowa", "en": "Community install"},
+   "opis": {"pl": "Dane z instalacji społecznościowej (PL, NeoEE, dreXmod) jako baza.", "en": "Community install (PL, NeoEE, dreXmod) as the data base."},
+   "zrodlo": "spolecznosciowa", "gra": "aoc", "mody": []}
+ ]
+}

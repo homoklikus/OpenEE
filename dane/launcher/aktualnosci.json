@@ -1,0 +1,60 @@
+{
+ "opis": "Lokalne, statyczne aktualności launchera (bez pobierania z sieci). Pola tytul/tekst: słowniki język → tekst.",
+ "wpisy": [
+  {
+   "data": "2026-11-05",
+   "tytul": {
+    "pl": "OpenEE 0.3.0-dev",
+    "en": "OpenEE 0.3.0-dev"
+   },
+   "tekst": {
+    "pl": "Etap 3: mieszanie tekstur terenu jak w silniku EE, scenariusze EE 1.x, orientacja obiektów.",
+    "en": "Stage 3: terrain texture blending as in the EE engine, EE 1.x scenarios, object orientation."
+   }
+  },
+  {
+   "data": "2026-11-05",
+   "tytul": {
+    "pl": "OpenEE 0.2.0-dev",
+    "en": "OpenEE 0.2.0-dev"
+   },
+   "tekst": {
+    "pl": "Etap 2: scenariusz z instalacji GOG – teren, obiekty i kolory graczy.",
+    "en": "Stage 2: a scenario from the GOG install – terrain, objects and player colours."
+   }
+  },
+  {
+   "data": "2026-11-05",
+   "tytul": {
+    "pl": "Polska lokalizacja",
+    "en": "Polish localisation"
+   },
+   "tekst": {
+    "pl": "Głosy, narracja i teksty PL jako osobna warstwa; wybór języka niezależny.",
+    "en": "Polish voices, narration and texts as a separate layer; independent language choice."
+   }
+  },
+  {
+   "data": "2026-11-04",
+   "tytul": {
+    "pl": "Plan rozwoju",
+    "en": "Roadmap"
+   },
+   "tekst": {
+    "pl": "Mapa → Jednostki → Rozgrywka → Tryb pełny",
+    "en": "Map → Units → Gameplay → Full mode"
+   }
+  },
+  {
+   "data": "2026-11-03",
+   "tytul": {
+    "pl": "Etap 1",
+    "en": "Stage 1"
+   },
+   "tekst": {
+    "pl": "Audyt instalacji, czytniki formatów SSA/SST/CEM/SCN, szkielet projektu Godot.",
+    "en": "Install audit, SSA/SST/CEM/SCN readers, Godot project skeleton."
+   }
+  }
+ ]
+}
