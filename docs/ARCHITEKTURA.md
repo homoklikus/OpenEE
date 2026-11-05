@@ -8,6 +8,8 @@ godot/                 projekt Godot 4.7 (otwórz ten katalog w edytorze)
   silnik/importery/    SSA, DCL, SST/TGA, CEM, db, SCN, Language.dll, WAV/MP3
   silnik/render/       TerenEE – teren wg reguł silnika EE (z animacją wody)
   silnik/animacja/     SekwencjeAnimacji (dbgraphics), AnimacjaVAT (klatki w teksturze), OdtwarzaczAnimacji
+  silnik/symulacja/    Symulacja, JednostkaSym, MapaNawigacji, PolitykaRuchu, Sciezki (A*), ZegarSymulacji,
+                       Zaznaczanie, WidokJednostek, SterowanieRTS, UkladEE
   silnik/api/          zalążek API modów
   sceny/               sceny podglądu: scenariusz, teren, diagnostyka; kamera RTS
   launcher/            launcher (UI, model, motyw, ikony, teksty PL/EN)
@@ -135,4 +137,23 @@ pozostałe → dotychczasowe grupowanie statyczne (model + tekstura + kolor). Br
 Scena diagnostyczna: `sceny/diag_animacji.tscn` (`./uruchom_openee.sh animacje …`) – wybór grafiki, sekwencje,
 pauza, prędkość, interpolacja, drzewo części z osiami, film, pomiary. Testy: `testy/testy_etapu4.gd` (syntetyczne
 modele `testy/cem_syntetyczny.gd` – bez danych komercyjnych).
+
+## Etap 5 – symulacja jednostek i sterowanie RTS
+Rozdzielone warstwy (katalog `silnik/symulacja/`):
+
+| Warstwa | Klasa | Uwagi |
+|---|---|---|
+| dane ze scenariusza | `JednostkaSym.DaneJednostki` | niezmienne (typ, właściciel, pozycja, kurs, skala); scenariusz na dysku nietknięty |
+| stan w symulacji | `JednostkaSym` | id, typ, właściciel, pozycja, kurs, stan ruchu, cel, ścieżka, prędkość (dbobjects), stan animacji |
+| logika przemieszczania | `Symulacja` (RefCounted) | stały krok 0,05 s, kolejka rozkazów (wykonanie na początku taktu), porządek wg id, zdarzenia taktu |
+| nawigacja | `MapaNawigacji`, `PolitykaRuchu`, `Sciezki` | kategorie pól z danych mapy, flagi dbobjects, A* + składowe spójności |
+| czas | `ZegarSymulacji` (Node) | akumulator; 0..N taktów na klatkę; `alfa` do interpolacji renderu |
+| renderowanie i animacja | `WidokJednostek` (Node3D) | MultiMesh na model (VAT), interpolacja transformacji, sekwencje ruch/bezczynność, pierścienie, trasa |
+| sterowanie | `SterowanieRTS` (Node) + `Zaznaczanie` | LPM/PPM → rozkazy; trafienia promienia bez węzłów |
+
+Symulacja nie zna węzłów Godota – widok czyta stan i zdarzenia (`trasa`, `animacja`, `stop`, `trasa_odrzucona`).
+Rozszerzenia przewidziane: rozkazy jako dane (kolejki, multiplayer: wymiana rozkazów), `usun_jednostke`, wiele
+zaznaczonych (`zaznaczone` jest listą), polityki dla innych typów ruchu, zapis stanu (`skrot_stanu` jako zalążek).
+Scena: `sceny/rts_test.gd` (dziedziczy `test_scenariusz.gd` przez punkty rozszerzeń `_przejmij_obiekt`
+i `_po_zbudowaniu`), uruchamianie: `./uruchom_openee.sh rts`.
 

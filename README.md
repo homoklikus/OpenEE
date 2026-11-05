@@ -4,7 +4,7 @@
 posiadanej instalacji Empire Earth Gold Edition / The Art of Conquest. Projekt nie jest oficjalnie powiązany z właścicielami
 marki Empire Earth.**
 
-Wersja: **0.4.0-dev** – wersja rozwojowa, niedokończony silnik. Wzorem jest OpenMW: kod silnika jest nowy, a wszystkie
+Wersja: **0.5.0-dev** – wersja rozwojowa, niedokończony silnik. Wzorem jest OpenMW: kod silnika jest nowy, a wszystkie
 grafiki, modele, dźwięki i teksty gry są wczytywane wprost z instalacji użytkownika (tylko do odczytu). Repozytorium nie
 zawiera żadnych zasobów Empire Earth – patrz [docs/ZASOBY_ORYGINALNE.md](docs/ZASOBY_ORYGINALNE.md).
 
@@ -19,17 +19,22 @@ zawiera żadnych zasobów Empire Earth – patrz [docs/ZASOBY_ORYGINALNE.md](doc
   z łagodnym brzegiem, klify jako tekstury i wysokości – [docs/FORMATY_ETAP3.md](docs/FORMATY_ETAP3.md).
 * **Budynki i jednostki** w scenie podglądu (pozycja i obrót z danych scenariusza, kolory graczy), jednostki
   w animacji bezczynności, **grupowanie modeli** (MultiMesh) – statycznych i animowanych – dla dużych map.
+* **Pierwszy interaktywny ruch jednostek (RTS):** zaznaczanie myszą, rozkaz ruchu, trasy A* na mapie wyprowadzonej
+  z danych scenariusza (woda, klify, granice, budynki, drzewa), przechodniość z flag `dbobjects`, prędkość z tabel,
+  animacje ruchu i bezczynności, stały krok symulacji – [docs/FORMATY_ETAP5.md](docs/FORMATY_ETAP5.md).
+  Scena: `./uruchom_openee.sh rts` (LPM – zaznacz, PPM – idź, P – trasa, spacja – pauza).
 * Tabele gry `db*.dat` (obiekty, grafiki, dźwięki, tereny…).
 * **Lokalizacja PL/EN** ładowana z instalacji użytkownika – osobny wybór języka tekstów, głosów i kampanii
   ([docs/LOKALIZACJA.md](docs/LOKALIZACJA.md)).
 * **Launcher** (PL/EN): wybór instalacji, profil gry, język, nakładki, uruchamianie scen podglądu.
-* **95 testów automatycznych** (część wymaga instalacji gry – bez niej są jawnie pomijane).
+* **121 testów automatycznych** (część wymaga instalacji gry – bez niej są jawnie pomijane).
 
-## Ograniczenia (stan 0.4.0-dev)
+## Ograniczenia (stan 0.5.0-dev)
 * **Brak rozgrywki** – brak ekonomii, walki, SI, interfejsu gry; sceny są podglądem danych.
 * Animacje odtwarzane z danych, ale tempo (czas cyklu z `dbgraphics`) i interpolacja między klatkami to hipotezy
   do potwierdzenia w grze; brak sterowania proceduralnego (celowanie wieżyczek, obrót części `orbital_*`, toczenie kół).
-* Brak symulacji: jednostki nie poruszają się po mapie.
+* Ruch jednostek bez unikania kolizji i formacji; jedna jednostka zaznaczana naraz; brak walki, ekonomii i SI.
+  Reguły przechodniości i prędkość częściowo przybliżone (FORMATY_ETAP5 §2–3).
 * Niepełny odczyt trzech scenariuszy kampanii EE (polimorficzna lista celów jednostki – jeden gracz częściowo).
 * **Brak potwierdzonego porównania wizualnego z oryginalnym Empire Earth** – zgodność wynika z analizy formatów i testów
   na danych, nie z porównania zrzutów z gry.

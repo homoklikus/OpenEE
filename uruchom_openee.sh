@@ -5,6 +5,7 @@
 #   ./uruchom_openee.sh scenariusz scenariusz testowy etapu 2 (Soldiers for Rome)
 #   ./uruchom_openee.sh test       test graficzny etapu 1 (teren + model)
 #   ./uruchom_openee.sh testy      testy automatyczne bez okna (bez instalacji EE część testów jest pomijana)
+#   ./uruchom_openee.sh rts [opcje]       scena RTS (etap 5): Troja, zaznaczanie LPM, ruch PPM
 #   ./uruchom_openee.sh animacje [opcje]  scena diagnostyczna animacji CEM (etap 4), np. --model=Phalanx --sekwencja=atak
 # Godot 4.7: zmienna GODOT, polecenie godot4/godot w PATH albo plik Godot_v4*_linux.x86_64 obok projektu.
 cd "$(dirname "$(readlink -f "$0")")"
@@ -22,5 +23,6 @@ case "$1" in
   scenariusz) exec "$GODOT" --path godot res://sceny/test_scenariusz.tscn ;;
   testy) exec "$GODOT" --headless --path godot --script res://testy/uruchom_testy.gd ;;
   animacje) shift; exec "$GODOT" --path godot res://sceny/diag_animacji.tscn -- "$@" ;;
+  rts) shift; exec "$GODOT" --path godot res://sceny/rts_test.tscn -- --kampania=EETheGreeks.ssa "--scenariusz=trojan war" --kamera=blisko "$@" ;;
   *)     exec "$GODOT" --path godot res://launcher/launcher.tscn ;;
 esac

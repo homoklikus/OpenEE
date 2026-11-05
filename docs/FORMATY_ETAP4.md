@@ -78,8 +78,9 @@ Przyjęte: **czas cyklu sekwencji = wartość × 0,01 s** (`SekwencjeAnimacji.CZ
 ### 3.1 Obserwacje dotyczące skrętności (niekonkluzywne)
 * Toczenie koła armaty w klatkach ataku oraz kierunki obrotu części `orbital_cw/ccw` w `gun_tempest_13` są w
   interpretacji prawoskrętnej odwrotne do oczekiwanych – zgodne z układem lewoskrętnym (D3D) [H].
-* Punkt `attack` piechoty leży głównie po stronie −Y (79/129 modeli) → przód jednostek to −Y modelu [D]; strona
-  broni (±X) – bez przewagi (26/31), więc nie rozstrzyga lustrzaności.
+* ~~Punkt `attack` piechoty leży głównie po stronie −Y (79/129 modeli) → przód jednostek to −Y modelu~~ – **sprostowane
+  w etapie 5**: średnia obejmowała klatki śmierci; w klatkach ruchu/ataku/bezczynności `attack` leży po +Y, a stopa
+  podparta w chodzie przesuwa się w −Y ⇒ przód = +Y (FORMATY_ETAP5 §3). Strona broni (±X) nie rozstrzyga lustrzaności.
 * OpenEE **nie zmienia** układu osi – kwestia pozostaje otwarta (porównanie z grą).
 
 ## 4. Woda [K + H]

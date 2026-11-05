@@ -4,6 +4,17 @@
   {
    "data": "2026-11-05",
    "tytul": {
+    "pl": "OpenEE 0.5.0-dev",
+    "en": "OpenEE 0.5.0-dev"
+   },
+   "tekst": {
+    "pl": "Etap 5: zaznaczanie i ruch jednostek po mapach EE (trasy A*, woda, klify, budynki), animacje ruchu.",
+    "en": "Stage 5: selecting and moving units on EE maps (A* paths, water, cliffs, buildings), walk animations."
+   }
+  },
+  {
+   "data": "2026-11-05",
+   "tytul": {
     "pl": "OpenEE 0.4.0-dev",
     "en": "OpenEE 0.4.0-dev"
    },

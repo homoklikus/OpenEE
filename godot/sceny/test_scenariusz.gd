@@ -93,6 +93,7 @@ func _ready() -> void:
 		_obiekty_mapy()
 	raport["czas_obiektow_ms"] = Time.get_ticks_msec() - t3
 	_scena()
+	await _po_zbudowaniu()
 	raport["czas_ms"] = Time.get_ticks_msec() - t0
 	raport["warstwy"] = Array(Konfiguracja.aktywne_warstwy)
 	raport["zasoby_statystyka"] = Zasoby.statystyka
@@ -253,6 +254,10 @@ func _obiekty_mapy() -> void:
 			var tex := String(gr.get("Texture path", "")).to_lower().replace("\\", "/")
 			var bb := int(ob.get("Always face camera", 0)) != 0
 			var kl := "%s|%s|%s|%s" % [model, tex, kolor.to_html(), bb]
+			# etap 5: scena pochodna (np. RTS) może przejąć obiekt (jednostkę symulacji) zamiast renderu statycznego
+			if _przejmij_obiekt(u, ob, gr, kolor, g, x, z, tr, model, tex):
+				licz.pokazane += 1
+				continue
 			# etap 4: obiekt z sekwencją bezczynności (dbgraphics, > 1 klatki) → animowany MultiMesh (VAT)
 			var q_bezcz := {} if (bez_anim or bb) else _bezczynnosc(gr)
 			if not q_bezcz.is_empty():
@@ -322,6 +327,18 @@ func _obiekty_mapy() -> void:
 	for k in top.slice(0, 15): tt[k] = typy[k]
 	raport["obiekty_typy_top"] = tt
 	raport["modele_unikalne"] = siatki.size()
+
+
+## Etap 5 – punkty rozszerzeń dla scen pochodnych (domyślnie bez zmian w zachowaniu).
+## Zwraca true, jeśli obiekt został przejęty (nie jest renderowany statycznie ani animowany przez tę scenę).
+func _przejmij_obiekt(_u: Dictionary, _ob: Dictionary, _gr: Dictionary, _kolor: Color, _gracz: int, _x: float, _z: float,
+		_tr: PackedByteArray, _model: String, _tex: String) -> bool:
+	return false
+
+
+## Wywoływane po zbudowaniu terenu, obiektów i kamery (przed zrzutem/pomiarem).
+func _po_zbudowaniu() -> void:
+	pass
 
 
 var _sek_cache := {}
