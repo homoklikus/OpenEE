@@ -133,11 +133,35 @@ Importer geometrii nie wymagał zmian.
   * `kamera/rzym_przed_po.png`;
   * `kamera/galeria_przed_po.png` (jednostki VAT bez zmian).
 
+## 6a. Porównanie z oryginalną grą (komputer użytkownika, prawdziwe GPU)
+Za zgodą użytkownika uruchomiono oryginalne Empire Earth: The Art of Conquest (instalacja GOG przez Lutris/Proton,
+narzędzia riverlands-ee) na komputerze użytkownika. Kampania „The Trojan War” jest w EE 1.x, a nie w AoC, więc
+w **edytorze scenariuszy** na nowej, niezapisanej mapie postawiono obiekty „Stajnia” i „Drzewo – świerk”. W instalacji
+nie zapisano żadnego pliku; mapy nie zapisano, a grę zamknięto. Zrzut: `Testy_MCP/zrzuty/zrzut_20261105_233725.png`,
+zestawienie: `wyniki/diag051/porownanie_ee.png`.
+
+Wyniki:
+* **Stajnia w oryginale nie ma czarnej bryły ani pasów.** Widać dwuspadowy dom kryty strzechą (rama okna i belki
+  w kolorze gracza), daszek nad klepiskiem, kamienną obwódkę, snopki, płot i chorągiew w kolorze gracza z ciemną
+  sylwetką konia. OpenEE 0.5.2 pokazuje ten sam układ i te same elementy; OpenEE 0.5.1 pokazywał czarne pudło, pasy
+  i rozsypany dach. To potwierdza, że bryła pomocnicza jest w grze ukryta, a ściany dwustronne nie walczą ze sobą.
+* **Szyld:** sylwetka konia w oryginale jest ciemna, nie przezroczysta. Teksele konia mają alfę 255 (923 z 1150 tekseli
+  szyldu), więc wycinanie alfy w OpenEE też zostawia konia ciemnym. Przezroczyste są tylko pojedyncze plamki
+  (16 tekseli z alfą 0) – tak samo w oryginale (zielone kropki trawy na chorągwi).
+* **Świerk w oryginale stoi pionowo i jest stożkowy, zwrócony do kamery.** Tak samo wygląda w OpenEE 0.5.2
+  (azymut 45°). W 0.5.1 (azymut 0°) był płaskim, wygiętym pasem.
+* Orientacja budynku względem kamery w oryginale (chorągiew z lewej, szczyt domu z prawej u góry, snopki z prawej) jest
+  zgodna z OpenEE.
+* Pozostała różnica: w OpenEE krawędź płyty klepiska bywa ciemniejsza od strony kamery (oświetlenie boków płyty).
+  W oryginale tego nie widać. To kwestia oświetlenia, nie geometrii [H].
+
 ## 7. Ograniczenia weryfikacji
-* **Testy wykonano wyłącznie w środowisku wirtualnym** (Ubuntu 22.04 w maszynie wirtualnej Claude). OpenGL działał na
-  llvmpipe, a Vulkan na lavapipe (Mesa 23.2.1). Lavapipe rozpakowano do katalogu użytkownika bez instalacji w systemie
-  i bez sudo. **To nie jest weryfikacja na GPU użytkownika (Debian 13, Vulkan).** Proszę uruchomić
-  `GODOT=… narzedzia/test_wizualny_051.sh wyniki/tw` i `./uruchom_openee.sh rts` w tym samym miejscu mapy.
+* **OpenEE renderowano wyłącznie w środowisku wirtualnym** (Ubuntu 22.04 w maszynie wirtualnej Claude). OpenGL działał
+  na llvmpipe, a Vulkan na lavapipe (Mesa 23.2.1). Lavapipe rozpakowano do katalogu użytkownika bez instalacji
+  w systemie i bez sudo. Na GPU użytkownika uruchomiono tylko **oryginalną grę**, jako wzorzec (§6a); narzędzia sesji
+  nie pozwalają uruchomić Godota na komputerze użytkownika. **Render OpenEE na GPU użytkownika (Debian 13, Vulkan)
+  pozostaje niezweryfikowany.** Proszę uruchomić `GODOT=… narzedzia/test_wizualny_051.sh wyniki/tw` i
+  `./uruchom_openee.sh rts` w tym samym miejscu mapy.
 * Przesunięcie głębi (0,3%) jest kompromisem: przy bardzo płaskim kącie obiekty mogą przebijać wzgórza leżące tuż
   przed nimi. Sposób, w jaki robi to gra, jest nieznany.
 * Około 1,4% trójkątów ma nawinięcie przeciwne do reszty modelu (np. `bld_capital_02` 14%). Przy odrzucaniu ścian mogą
