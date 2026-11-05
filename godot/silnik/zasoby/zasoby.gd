@@ -218,6 +218,30 @@ func wczytaj_teksture(klucz: String) -> Image:
 	return img
 
 
+var _cache_tekstur_wielu := {}
+
+## Wszystkie obrazy pliku tekstury (SST może zawierać N obrazów: animacja wody albo – w teksturach modeli – obrazy
+## wybierane polem `tekstura_id` materiału CEM [D, naprawa grafiki]). Pusta tablica, gdy brak pliku.
+func wczytaj_tekstury(klucz: String) -> Array:
+	if _cache_tekstur_wielu.has(klucz):
+		return _cache_tekstur_wielu[klucz]
+	var baza := klucz
+	if not (klucz.ends_with(".sst") or klucz.ends_with(".tga")):
+		baza = klucz + ".sst"
+	var r := znajdz(baza)
+	if r.is_empty() and baza.ends_with(".sst"):
+		r = znajdz(baza.trim_suffix(".sst") + ".tga")
+	var out: Array = []
+	if not r.is_empty():
+		var d := ImporterTekstur.dekoduj(r.dane)
+		if d.has("blad"):
+			Dziennik.blad("zasoby", "Tekstura %s: %s" % [klucz, d.blad])
+		else:
+			out = d.obrazy
+	_cache_tekstur_wielu[klucz] = out
+	return out
+
+
 func wczytaj_model(klucz: String, kontekst: Dictionary = {}) -> Mesh:
 	var r := znajdz(klucz)
 	if r.is_empty():

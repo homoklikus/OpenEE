@@ -8,9 +8,12 @@
 | 0.3 – etap 3 | Teren wg reguł silnika EE (mieszanie tekstur w narożnikach, warianty, woda, klify), scenariusze EE 1.x (wersja 231), obrót obiektów z macierzy rekordu, grupowanie MultiMesh, pomiary wydajności | `RAPORT_ETAP_3.md`, `docs/FORMATY_ETAP3.md` |
 | 0.3.0-dev | Pierwsza publikacja na GitHubie (licencja GPLv3), testy działające bez danych komercyjnych, skrypt danych lokalnych | `RAPORT_PUBLIKACJI_GITHUB.md` |
 | **0.4.0-dev – etap 4** | Animacje CEM (klatki kluczowe, sekwencje z dbgraphics), hierarchia części z transformacjami na klatkę, odtwarzacz z niezależną fazą (VAT + MultiMesh), scena diagnostyczna, animowana woda, 3× szybsza dekompresja DCL | `RAPORT_ETAP_4.md`, `docs/FORMATY_ETAP4.md` |
+| **0.5.1-dev – naprawa grafiki** | Audyt importu modeli: indeksy materiałów względem `v_offset`, wybór obrazu SST przez `tekstura_id`, kolor gracza jako mnożenie przez szarą teksturę; testy regresji grafiki | `RAPORT_NAPRAWA_GRAFIKI.md`, `docs/FORMATY_NAPRAWA_GRAFIKI.md` |
 | **0.5.0-dev – etap 5** | Symulacja jednostek ze stałym krokiem, nawigacja z danych mapy (klasy głębokości wody, klify, przeszkody), A*, zaznaczanie i rozkazy ruchu myszą, animacje ruchu/bezczynności, izolowane środowisko Wine (porównanie zablokowane przez seccomp) | `RAPORT_ETAP_5.md`, `docs/FORMATY_ETAP5.md` |
 
 Hipotezy obalone w toku prac (dla przejrzystości): obrót obiektów z pola `angle` (etap 2 → etap 3: obrót z macierzy),
 układ wariantów tekstur bez odbicia kolumn (etap 2 → etap 3), znaczenie „klasy punktu” dla przejść (etap 3: brak wpływu),
 części potomne w układzie rodzica (etap 1–3 → etap 4: wierzchołki lokalne + macierz klatki), przód modelu −Y
-(etap 4 → etap 5: +Y – stopa podparta w chodzie, punkt attack poza klatkami śmierci).
+(etap 4 → etap 5: +Y – stopa podparta w chodzie, punkt attack poza klatkami śmierci), indeksy trójkątów bezwzględne
+(etapy 1–5 → naprawa grafiki: względne wobec `v_offset` materiału), drugi obraz SST = maska koloru gracza (etap 1 →
+naprawa: kolejna tekstura wybierana przez materiał), kolor gracza = mix(kolor, tekstura, alfa) (etap 2 → naprawa: mnożenie).

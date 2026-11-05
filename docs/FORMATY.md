@@ -48,7 +48,8 @@ TGA: nagłówek 18 B, typ 2 (truecolor, bez RLE), 24 bpp BGR lub 32 bpp BGRA, bi
 * EE: 2095/2095 plików SST z `data.ssa` dekodowanych bez błędu; 43 mają nadmiarowe bajty po ostatnim obrazie [?].
 * AoC przechowuje większość tekstur jako czyste TGA (`*.tga`, 405 wpisów; próbka 140 – bez błędów).
 * Luźne tekstury „HD” w `Empire Earth/Data/Textures` mają ten sam format (128×128, 32 bpp).
-* Znaczenie drugiego obrazu w plikach z N=2 (tekstury z przyrostkiem `t`) – [?] (hipoteza: maska koloru gracza).
+* ~~Znaczenie drugiego obrazu w plikach z N=2 – hipoteza: maska koloru gracza~~ – **OBALONE** (naprawa grafiki,
+  FORMATY_NAPRAWA_GRAFIKI §2): obrazy pliku to kolejne tekstury modelu, materiał CEM wybiera obraz polem `tekstura` [D].
 
 ## 4. Modele CEM (`SSMF`) [D] dla wersji 2.0
 
@@ -59,16 +60,18 @@ zweryfikowany na danych, kod OpenEE napisany od nowa.
 7 × u32: trójkąty, wierzchołki, punkty_tag, materiały, klatki, modele_potomne, poziomy_LOD
 napis nazwa węzła (u32 długość z NUL + bajty)          3 × f32 środek
 LOD    × { u32 k, k × 3 × u32 indeksy }
-mater. × { napis nazwa, u32 tekstura, LOD × (u32 offset, u32 liczba) trójkątów,
+mater. × { napis nazwa, u32 tekstura (nr obrazu w pliku SST), LOD × (u32 offset, u32 liczba) trójkątów,
            u32 offset_wierzch., u32 liczba_wierzch., napis nazwa_tekstury }
 tagi   × napis
 klatki × { f32 promień, wierzch. × (3 f32 poz., 3 f32 normalna, 2 f32 UV), tagi × 3 f32, macierz 4×4 f32, AABB 6 f32 }
 potomne × kolejny model SSMF (rekurencyjnie)
 ```
+* **Indeksy trójkątów są względne wobec `offset_wierzch.` materiału** [D] (naprawa grafiki, FORMATY_NAPRAWA_GRAFIKI §1;
+  etapy 1–5 traktowały je jako bezwzględne – stąd „rozsypane” budynki i żółte trójkąty).
 * EE: 719/730 modeli 2.0 sparsowanych, kontrole spójności (indeksy, zakresy materiałów) bez błędów;
   11 modeli w wersji **1.3** – nieobsługiwane [?]; 3 pliki z nadmiarowymi bajtami [?]. AoC: 136/136.
 * Układ osi: Z w górę (podstawa budynku z≈0) [D]; OpenEE mapuje na Godot jako (x, z, −y).
-* Materiał o nazwie `player color` – powierzchnie koloru gracza [K]; sposób mieszania koloru [?].
+* Materiał o nazwie `player color` – powierzchnie koloru gracza [K]; tekstura pod nim szara → kolor = tekstura × kolor gracza [D/H].
 * Animacje: 243 modele EE mają >1 klatkę (pełne klatki wierzchołków) [D]; tempo/odtwarzanie [?].
 * Skala modelu względem pola mapy [?] (modele znormalizowane ~±0,6; skala zapewne w `dbgraphics.dat`).
 * Orientacja ścian po zamianie osi – nieweryfikowana (test rysuje obustronnie).

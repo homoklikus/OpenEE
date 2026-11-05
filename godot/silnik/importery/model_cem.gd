@@ -118,15 +118,20 @@ func _czesc20(r: _Czytnik) -> Dictionary:
 	var mats: Array = []
 	for i in range(n_mat):
 		var mt := {"nazwa": r.napis()}
-		r.u32()
+		mt["tekstura_id"] = r.u32()        # indeks obrazu w pliku SST tekstury (dbgraphics) [D, naprawa grafiki]
 		var zak: Array = []
 		for l in range(n_lod): zak.append(Vector2i(r.u32(), r.u32()))
-		r.u32(); r.u32()
+		var vo := r.u32(); var vn := r.u32()
+		mt["v_offset"] = vo; mt["v_liczba"] = vn
 		mt["tekstura"] = r.napis()
 		var z: Vector2i = zak[0] if n_lod > 0 else Vector2i.ZERO
+		# indeksy trójkątów materiału są WZGLĘDNE wobec v_offset materiału [D: 544/544 materiałów z v_offset > 0 ma
+		# indeksy w [0, v_liczba), żaden nie mieści się w [v_offset, v_offset + v_liczba)] – etapy 1–5 czytały je
+		# bezwzględnie, przez co trójkąty drugiego i kolejnych materiałów (zwykle „player color”) brały wierzchołki
+		# pierwszego: rozsypana geometria, złe UV i plamy koloru gracza (RAPORT_NAPRAWA_GRAFIKI.md)
 		var ind := PackedInt32Array()
 		for t in range(z.x, z.x + z.y):
-			ind.append(lods[0][3 * t]); ind.append(lods[0][3 * t + 2]); ind.append(lods[0][3 * t + 1])
+			ind.append(vo + lods[0][3 * t]); ind.append(vo + lods[0][3 * t + 2]); ind.append(vo + lods[0][3 * t + 1])
 		mt["indeksy"] = ind
 		mats.append(mt)
 	var tagi := PackedStringArray()
@@ -297,9 +302,12 @@ func kontrola() -> Array:
 		var nv: int = (c.uv as PackedVector2Array).size()
 		for mt in c.materialy:
 			var ind: PackedInt32Array = mt.indeksy
+			var lo: int = mt.get("v_offset", 0); var hi: int = lo + int(mt.get("v_liczba", nv)) if mt.has("v_liczba") else nv
 			for x in ind:
 				if x < 0 or x >= nv:
 					bl.append("część %d: indeks wierzchołka %d poza zakresem %d" % [i, x, nv]); break
+				if x < lo or x >= hi:
+					bl.append("część %d, materiał %s: indeks %d poza zakresem wierzchołków materiału [%d, %d)" % [i, mt.nazwa, x, lo, hi]); break
 	return bl
 
 

@@ -157,8 +157,8 @@ func _jednostkowe() -> void:
 		var mo: ShaderMaterial = a2.siatka.surface_get_material(i); var mmo: ShaderMaterial = smm.surface_get_material(i)
 		okk = okk and not mo.get_shader_parameter("z_multimesh") and mmo.get_shader_parameter("z_multimesh") == true
 		okk = okk and (mo.get_shader_parameter("kolor_gracza") as Color).is_equal_approx(Color(0.2, 0.4, 0.9))
-	t._ok("E4 kolory graczy: uniform w MeshInstance, kolor instancji w MultiMesh, ta sama formuła co modele statyczne",
-		okk and "mix(v_kolor, t.rgb, t.a)" in AnimacjaVAT.SHADER and "mix(kolor_gracza.rgb, t.rgb, t.a)" in ImporterModeli.SHADER_MODELU, okk)
+	t._ok("E4 kolory graczy: uniform w MeshInstance, kolor instancji w MultiMesh, ta sama formuła (tekstura · kolor) co modele statyczne",
+		okk and "t.rgb * v_kolor" in AnimacjaVAT.SHADER and "t.rgb * kolor_gracza.rgb" in ImporterModeli.SHADER_MODELU, okk)
 	# --- statyczne: części potomne na miejscu ---
 	var mesh: ArrayMesh = ImporterModeli.new().importuj(_model_testowy(), {"klucz": "syntetyczny"})
 	var v1: PackedVector3Array = mesh.surface_get_arrays(1)[Mesh.ARRAY_VERTEX] if mesh and mesh.get_surface_count() == 3 else PackedVector3Array()

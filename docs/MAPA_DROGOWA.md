@@ -11,6 +11,9 @@ Kolejność orientacyjna; każdy etap kończy się testami, dokumentacją i wery
 * Symulacja jednostek (stały krok), nawigacja z danych mapy, A*, zaznaczanie i rozkaz ruchu, animacje ruchu.
 * Poziom wody = 0 z klas głębokości punktów.
 
+## Zrobione w 0.5.1-dev (naprawa grafiki)
+* Poprawny import modeli wielomateriałowych (indeksy względne, obraz wg `tekstura_id`), kolor gracza przez mnożenie.
+
 ## Najbliżej (0.5.x / 0.6)
 * Zaznaczanie grupowe, kolejki rozkazów, unikanie kolizji i formacje, szybsze trasy (hierarchiczne/GDExtension po pomiarach).
 * Rozróżnienie nawierzchni lądu (flagi dbobjects ↔ typy terenu), znaczenie progu wody płytkiej, tempo symulacji.

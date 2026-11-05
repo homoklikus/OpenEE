@@ -46,8 +46,9 @@ dla „Terrain gray type”) – mechanizm mieszania tekstur nieodtworzony. Open
   (pola „Player” i „Model” RGB) [D].
 * CEM 2.0: materiał o nazwie `player color`; CEM 1.3: grupa trójkątów `player color` [D].
 * Tekstury 32-bit: kanał alfa = 0 w obszarach tarczy/emblematu na teksturze koszar i w nieużywanych obszarach atlasu [D];
-  liście drzew – alfa jako przezroczystość [D]. OpenEE: w materiale `player color` kolor = mix(kolor gracza, tekstura, alfa),
-  w pozostałych alfa = wycinanie [H] – zgodne wizualnie z obserwacjami, niezweryfikowane względem gry.
+  liście drzew – alfa jako przezroczystość [D]. ~~OpenEE: w materiale `player color` kolor = mix(kolor gracza, tekstura, alfa)~~
+  – **OBALONE** w naprawie grafiki (FORMATY_NAPRAWA_GRAFIKI §3): fragmenty tekstur pod `player color` są szare z alfa 255,
+  więc kolor = tekstura.rgb × kolor gracza; w pozostałych materiałach alfa = wycinanie [H].
 
 ## 6. Obiekty scenariusza [D]
 Kawałek 5: 18/18 scenariuszy kampanii AoC (do 15 593 obiektów) – czytnik OpenEE (Python i GDScript) zgodny z czytnikiem

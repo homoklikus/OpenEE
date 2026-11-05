@@ -4,6 +4,17 @@
   {
    "data": "2026-11-05",
    "tytul": {
+    "pl": "OpenEE 0.5.1-dev",
+    "en": "OpenEE 0.5.1-dev"
+   },
+   "tekst": {
+    "pl": "Naprawa grafiki: budynki bez rozsypanej geometrii, poprawne tekstury i kolor gracza.",
+    "en": "Graphics repair: buildings without scattered geometry, correct textures and player colour."
+   }
+  },
+  {
+   "data": "2026-11-05",
+   "tytul": {
     "pl": "OpenEE 0.5.0-dev",
     "en": "OpenEE 0.5.0-dev"
    },

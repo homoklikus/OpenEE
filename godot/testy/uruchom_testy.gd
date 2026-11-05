@@ -5,6 +5,7 @@ extends SceneTree
 ## Etap 3: mieszanie tekstur terenu, warianty, woda, klify, scenariusze EE (wersja 231), orientacja obiektów.
 ## Etap 4: animacje CEM (klatki, sekwencje dbgraphics, interpolacja), hierarchia części, odtwarzanie (testy/testy_etapu4.gd).
 ## Etap 5: nawigacja, symulacja jednostek, zaznaczanie, stały krok (testy/testy_etapu5.gd).
+## Naprawa grafiki: indeksy materiałów (v_offset), obrazy SST (tekstura_id), kolor gracza, UV (testy/testy_grafiki.gd).
 ## Launcher: teksty UI PL/EN, model profili/modów/języka (w pamięci, bez zapisu), ikony, budowa sceny launchera.
 
 var wyniki: Array = []
@@ -97,6 +98,7 @@ func _initialize() -> void:
 	await _testy_etapu3(K, Z)
 	await TestyEtapu4.new(self).uruchom(K, Z)
 	await TestyEtapu5.new(self).uruchom(K, Z)
+	await TestyGrafiki.new(self).uruchom(K, Z)
 	await _testy_launchera(K, Z)
 
 	var out: String = K.katalog_openee.path_join("wyniki/testy_godot.json")

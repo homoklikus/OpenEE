@@ -21,7 +21,7 @@ shader_type spatial;
 render_mode cull_disabled;
 uniform sampler2D tekstura : source_color, filter_linear_mipmap;
 uniform vec4 kolor_gracza : source_color = vec4(1.0, 0.0, 0.0, 1.0);
-uniform bool maska_alfa = true;
+uniform bool kolor_gracza_mnoz = true;
 uniform bool wycinanie_alfa = false;
 uniform highp sampler2D vat : filter_nearest;
 uniform int vat_szer = 1;
@@ -64,7 +64,7 @@ void vertex() {
 void fragment() {
 	vec4 t = texture(tekstura, UV);
 	if (wycinanie_alfa && t.a < 0.5) { discard; }
-	ALBEDO = maska_alfa ? mix(v_kolor, t.rgb, t.a) : t.rgb;
+	ALBEDO = kolor_gracza_mnoz ? t.rgb * v_kolor : t.rgb;
 	ROUGHNESS = 0.9;
 	SPECULAR = 0.2;
 }
@@ -159,15 +159,11 @@ func _siatka(m: ModelCEM, offs: Array, kontekst: Dictionary) -> void:
 			arr[Mesh.ARRAY_TEX_UV] = c.uv; arr[Mesh.ARRAY_TEX_UV2] = uv2
 			arr[Mesh.ARRAY_INDEX] = mt.indeksy
 			siatka.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
-			var img: Image = null
-			if zasoby:
-				var kt := tex_db if tex_db != "" else "textures/%s.sst" % String(mt.tekstura).to_lower()
-				if not cache_img.has(kt):
-					var im: Image = zasoby.wczytaj_teksture(kt)
-					if im == null and tex_db != "" and String(mt.tekstura) != "":
-						im = zasoby.wczytaj_teksture("textures/%s.sst" % String(mt.tekstura).to_lower())
-					cache_img[kt] = im
-				img = cache_img[kt]
+			# obraz tekstury: plik z dbgraphics, obraz nr `tekstura_id` materiału (naprawa grafiki)
+			var kt := "%s|%d|%s" % [tex_db, int(mt.get("tekstura_id", 0)), String(mt.tekstura)]
+			if not cache_img.has(kt):
+				cache_img[kt] = ImporterModeli.obraz_materialu(zasoby, tex_db, mt, String(kontekst.get("klucz", "?")))
+			var img: Image = cache_img[kt]
 			var mat := material(img, kolor, String(mt.nazwa) == "player color")
 			siatka.surface_set_material(siatka.get_surface_count() - 1, mat)
 			siatka.surface_set_name(siatka.get_surface_count() - 1, "%s/%s" % [c.nazwa, mt.nazwa])
@@ -183,7 +179,7 @@ func material(img: Image, kolor: Color, gracz: bool) -> ShaderMaterial:
 		mat.set_shader_parameter("tekstura", ImageTexture.create_from_image(im))
 	var alfa := img != null and img.detect_alpha() != Image.ALPHA_NONE
 	mat.set_shader_parameter("kolor_gracza", kolor)
-	mat.set_shader_parameter("maska_alfa", gracz and alfa)
+	mat.set_shader_parameter("kolor_gracza_mnoz", gracz)
 	mat.set_shader_parameter("wycinanie_alfa", (not gracz) and alfa)
 	mat.set_shader_parameter("vat", tekstura_vat)
 	mat.set_shader_parameter("vat_szer", szer)

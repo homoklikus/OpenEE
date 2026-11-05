@@ -2,16 +2,19 @@ class_name ImporterModeli
 extends ImporterEE
 ## Modele CEM → ArrayMesh (LOD 0, klatka 0). Obsługa wersji 2.0 i 1.3 (docs/FORMATY*.md §CEM).
 ## Układ współrzędnych CEM: Z w górę → Godot: (x, z, -y).
-## Tekstura: z dbgraphics (kontekst "tekstura"), a gdy brak – z nazwy w materiale modelu.
-## Kanał alfa tekstur 32-bit (HIPOTEZA OpenEE, docs/FORMATY_ETAP2.md §5): w materiale "player color"
-## alfa = udział koloru tekstury (alfa 0 → kolor gracza), w pozostałych – przezroczystość (wycinanie).
+## Tekstura: plik z dbgraphics (kontekst "tekstura"), obraz w pliku = `tekstura_id` materiału [D]; gdy brak pliku
+## w dbgraphics – nazwa z materiału modelu (zwykle nazwy plików źródłowych grafika, niewystępujące w archiwach).
+## Kolor gracza (naprawa grafiki, docs/FORMATY_NAPRAWA_GRAFIKI.md): fragmenty tekstur pod materiałem „player color” są
+## szare i nieprzezroczyste [D: mediana nasycenia 0, alfa 255] ⇒ ALBEDO = tekstura · kolor gracza [H: dokładna
+## formuła/jasność]. Hipoteza etapu 2 „alfa = udział koloru tekstury” – obalona. W pozostałych materiałach alfa =
+## przezroczystość (wycinanie; drzewa, palisady).
 
 const SHADER_MODELU := """
 shader_type spatial;
 render_mode cull_disabled;
 uniform sampler2D tekstura : source_color, filter_linear_mipmap;
 uniform vec4 kolor_gracza : source_color = vec4(1.0, 0.0, 0.0, 1.0);
-uniform bool maska_alfa = true;      // materiał "player color": alfa = udział koloru tekstury
+uniform bool kolor_gracza_mnoz = true; // materiał "player color": tekstura (szara) · kolor gracza
 uniform bool wycinanie_alfa = false; // pozostałe materiały: alfa = przezroczystość (np. liście drzew)
 uniform bool billboard = false;      // dbobjects „Always face camera” – obrót wokół osi pionowej do kamery
 void vertex() {
@@ -28,7 +31,7 @@ void vertex() {
 void fragment() {
 	vec4 t = texture(tekstura, UV);
 	if (wycinanie_alfa && t.a < 0.5) { discard; }
-	ALBEDO = maska_alfa ? mix(kolor_gracza.rgb, t.rgb, t.a) : t.rgb;
+	ALBEDO = kolor_gracza_mnoz ? t.rgb * kolor_gracza.rgb : t.rgb;
 	ROUGHNESS = 0.9;
 	SPECULAR = 0.2;
 }
@@ -94,16 +97,16 @@ static func _model(r: _Czytnik) -> Dictionary:
 	var mats: Array = []
 	for i in range(n_mat):
 		var mt := {"nazwa": r.napis()}
-		r.u32()
+		mt["tekstura_id"] = r.u32()
 		var zakresy: Array = []
 		for l in range(n_lod):
 			zakresy.append(Vector2i(r.u32(), r.u32()))
-		r.u32(); r.u32()
+		var vo := r.u32(); r.u32()
 		mt["tekstura"] = r.napis()
 		var z: Vector2i = zakresy[0] if n_lod > 0 else Vector2i.ZERO
 		var ind := PackedInt32Array()
-		for t in range(z.x, z.x + z.y):
-			ind.append(lods[0][3 * t]); ind.append(lods[0][3 * t + 2]); ind.append(lods[0][3 * t + 1])
+		for t in range(z.x, z.x + z.y):      # indeksy względne wobec v_offset materiału (jak ModelCEM)
+			ind.append(vo + lods[0][3 * t]); ind.append(vo + lods[0][3 * t + 2]); ind.append(vo + lods[0][3 * t + 1])
 		mt["indeksy"] = ind
 		mats.append(mt)
 	for i in range(n_tag):
@@ -202,6 +205,26 @@ static func _model13(r: _Czytnik) -> Dictionary:
 	return m
 
 
+## Obraz tekstury dla materiału: plik z dbgraphics, obraz nr `tekstura_id` (przycięty do liczby obrazów – 1 przypadek
+## w danych: nav_fishingboat_02); gdy pliku brak – nazwa z materiału. Braki zgłaszane do dziennika.
+static func obraz_materialu(zasoby, tex_db: String, mt: Dictionary, klucz: String) -> Image:
+	if zasoby == null:
+		return null
+	var obrazy: Array = []
+	if tex_db != "":
+		obrazy = zasoby.wczytaj_tekstury(tex_db)
+	if obrazy.is_empty() and String(mt.get("tekstura", "")) != "":
+		obrazy = zasoby.wczytaj_tekstury("textures/%s.sst" % String(mt.tekstura).to_lower())
+	if obrazy.is_empty():
+		ImporterEE.zglos("uwaga", "importer_modeli", "%s: brak tekstury (%s / %s)" % [klucz, tex_db, mt.get("tekstura", "")])
+		return null
+	var nr: int = int(mt.get("tekstura_id", 0))
+	if nr >= obrazy.size():
+		ImporterEE.zglos("uwaga", "importer_modeli", "%s: tekstura_id %d ≥ liczba obrazów %d – użyty ostatni" % [klucz, nr, obrazy.size()])
+		nr = obrazy.size() - 1
+	return obrazy[maxi(nr, 0)]
+
+
 func _material(img: Image, kolor: Color, gracz: bool) -> ShaderMaterial:
 	if _shader == null:
 		_shader = Shader.new(); _shader.code = SHADER_MODELU
@@ -213,7 +236,7 @@ func _material(img: Image, kolor: Color, gracz: bool) -> ShaderMaterial:
 		mat.set_shader_parameter("tekstura", ImageTexture.create_from_image(im))
 	var alfa := img != null and img.detect_alpha() != Image.ALPHA_NONE
 	mat.set_shader_parameter("kolor_gracza", kolor)
-	mat.set_shader_parameter("maska_alfa", gracz and alfa)
+	mat.set_shader_parameter("kolor_gracza_mnoz", gracz)
 	mat.set_shader_parameter("wycinanie_alfa", (not gracz) and alfa)
 	return mat
 
@@ -248,14 +271,7 @@ func _siatka(m: Dictionary, mesh: ArrayMesh, kontekst: Dictionary) -> void:
 		arr[Mesh.ARRAY_TEX_UV] = m.uv
 		arr[Mesh.ARRAY_INDEX] = mt.indeksy
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
-		var img: Image = null
-		if zasoby:
-			if tex_db != "":
-				img = zasoby.wczytaj_teksture(tex_db)
-			if img == null and String(mt.tekstura) != "":
-				img = zasoby.wczytaj_teksture("textures/%s.sst" % String(mt.tekstura).to_lower())
-		if img == null:
-			ImporterEE.zglos("uwaga", "importer_modeli", "%s: brak tekstury (%s / %s)" % [kontekst.get("klucz", "?"), tex_db, mt.tekstura])
+		var img := obraz_materialu(zasoby, tex_db, mt, String(kontekst.get("klucz", "?")))
 		var mat := _material(img, kolor, String(mt.nazwa) == "player color")
 		mat.set_shader_parameter("billboard", bb)
 		mesh.surface_set_material(mesh.get_surface_count() - 1, mat)

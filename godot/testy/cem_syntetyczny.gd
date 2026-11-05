@@ -54,6 +54,36 @@ static func model(nazwa: String, klatki: Array, macierze: Array, trojkaty: Packe
 	return g.b
 
 
+## Model 2.0 z wieloma materiałami (1 klatka, 1 LOD): materialy = [{nazwa, tex_id, tekstura, v_offset, v_liczba,
+## trojkaty: PackedInt32Array indeksów WZGLĘDNYCH wobec v_offset (jak w danych EE)}]; pozycje/uv – wszystkie wierzchołki.
+static func model_materialy(nazwa: String, pozycje: PackedVector3Array, uv: PackedVector2Array, materialy: Array) -> PackedByteArray:
+	var g := CEMSyntetyczny.new()
+	var nv := pozycje.size()
+	var lod := PackedInt32Array(); var zakresy: Array = []
+	for mt in materialy:
+		zakresy.append(Vector2i(lod.size() / 3, (mt.trojkaty as PackedInt32Array).size() / 3))
+		lod.append_array(mt.trojkaty)
+	g.b.append_array("SSMF".to_ascii_buffer())
+	var o := g.b.size(); g.b.resize(o + 4); g.b.encode_u16(o, 2); g.b.encode_u16(o + 2, 0)
+	for v in [lod.size() / 3, nv, 0, materialy.size(), 1, 0, 1]: g._u32(v)
+	g._napis(nazwa)
+	for i in 3: g._f32(0.0)
+	g._u32(lod.size() / 3)
+	for x in lod: g._u32(x)
+	for i in materialy.size():
+		var mt: Dictionary = materialy[i]
+		g._napis(String(mt.nazwa)); g._u32(int(mt.tex_id)); g._u32(zakresy[i].x); g._u32(zakresy[i].y)
+		g._u32(int(mt.v_offset)); g._u32(int(mt.v_liczba)); g._napis(String(mt.get("tekstura", "tex")))
+	g._f32(1.0)
+	for i in nv:
+		g._f32(pozycje[i].x); g._f32(pozycje[i].y); g._f32(pozycje[i].z)
+		g._f32(0.0); g._f32(0.0); g._f32(1.0)
+		g._f32(uv[i].x); g._f32(uv[i].y)
+	for x in jednostkowa(): g._f32(x)
+	for i in 6: g._f32(0.0)
+	return g.b
+
+
 static func jednostkowa() -> PackedFloat32Array:
 	return PackedFloat32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 

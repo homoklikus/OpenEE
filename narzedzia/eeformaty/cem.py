@@ -124,6 +124,14 @@ def _model_v13(r):
     return m
 
 
+def indeksy_materialu(m, mt, lod=0):
+    """Bezwzględne indeksy wierzchołków trójkątów materiału (CEM 2.0). Indeksy w LOD są WZGLĘDNE wobec v_offset
+    materiału [D: 544/544 materiałów z v_offset > 0] – naprawa grafiki OpenEE."""
+    o, n = mt["zakresy_lod"][lod]
+    vo = mt["v_offset"]
+    return [vo + i for i in m["lod"][lod][3 * o:3 * (o + n)]]
+
+
 def czytaj_cem(buf):
     r = _R(buf)
     m = _model(r)
@@ -153,6 +161,10 @@ def kontrola(m):
     for mt in m["materialy"]:
         if mt["v_offset"] + mt["v_liczba"] > nv:
             bl.append(f"materiał {mt['nazwa']}: zakres wierzchołków poza modelem")
+        if m["lod"]:
+            ind = indeksy_materialu(m, mt)
+            if ind and (min(ind) < mt["v_offset"] or max(ind) >= mt["v_offset"] + mt["v_liczba"]):
+                bl.append(f"materiał {mt['nazwa']}: indeksy poza zakresem wierzchołków materiału")
         for (o, n), l in zip(mt["zakresy_lod"], m["lod"]):
             if o + n > len(l) // 3:
                 bl.append(f"materiał {mt['nazwa']}: zakres trójkątów poza LOD")
