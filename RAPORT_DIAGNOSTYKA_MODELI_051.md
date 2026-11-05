@@ -152,4 +152,10 @@ Instalacje gry tylko do odczytu; Riverlands i laboratorium nietknięte. Bez deko
 wyłącznie pliki tekstowe; zrzuty i wyniki pozostają w ignorowanym `wyniki/`. Licencja GPLv3.
 
 ## 9. Git / GitHub
-Uzupełniane po commicie.
+* Commit lokalny `1b8ed1c` „OpenEE 0.5.2-dev – diagnostyka modeli: alfa, odrzucanie ścian, billboardy” (34 pliki, tylko
+  tekst: kod, testy, narzędzia, dokumentacja) + commit z tym raportem; rodzic `667b677` (= `origin/main`).
+* W indeksie nie ma zasobów gry. Jedyne pliki PNG w repozytorium to własne banery launchera.
+* Test czystej kopii (`git clone` bez danych): 145 testów – 78 zaliczonych, 67 jawnie pominiętych, 0 błędów.
+  Z danymi: 150/150.
+* GitHub: sesja nie ma dostępu do konta (brak powiązania; push z maszyny wirtualnej bez poświadczeń). Publikację
+  wykonuje użytkownik: `git push origin main` (bez force, historia liniowa nad `667b677`).
