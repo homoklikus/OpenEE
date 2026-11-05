@@ -102,5 +102,12 @@ Nie zmieniono instalacji EE/AoC (tylko odczyt), Riverlands ani laboratorium; nie
 pochodzą ze statystyki plików danych. Do repozytorium trafiają wyłącznie pliki tekstowe (kod, testy, dokumentacja);
 zrzuty i dane gry pozostają w ignorowanym `wyniki/`. Licencja GPLv3 bez zmian.
 
-## 9. Git / GitHub
-Uzupełniane po commicie – patrz sekcja „Stan publikacji” poniżej.
+## 9. Git / GitHub – stan publikacji
+* Commit lokalny `4ed3c3a` „OpenEE 0.5.1-dev – naprawa grafiki: indeksy materiałów, obrazy SST, kolor gracza”
+  (20 plików, tylko tekst: kod, testy, dokumentacja) + commit z tym raportem; rodzic `1505618` (= `origin/main`).
+* Kontrola zawartości: w indeksie brak plików zasobów gry (`*.cem`, `*.sst`, `*.ssa`, `*.dat`, zrzuty); jedyne pliki PNG
+  w repozytorium to własne banery launchera z etapu launchera.
+* Test czystej kopii (`git clone` bez danych użytkownika): 132 testy, 69 zaliczonych, 63 pominiętych jawnie (wymagają
+  instalacji gry), 0 błędów. Pełna kopia robocza z danymi: 136/136.
+* GitHub: sesja nie ma dostępu do konta GitHub (brak powiązania), więc push należy wykonać ręcznie:
+  `git push origin main` (bez force – historia liniowa nad `1505618`).
