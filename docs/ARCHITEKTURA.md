@@ -134,6 +134,8 @@ własne instancji). Statyczny import (`ImporterModeli.importuj`) korzysta z tego
 Renderer scenariusza (`sceny/test_scenariusz.gd`): obiekty z sekwencją bezczynności → jeden animowany MultiMesh na model;
 pozostałe → dotychczasowe grupowanie statyczne (model + tekstura + kolor). Brak animacji lub błędny zakres → klatka 0.
 
+Diagnostyka modelu (0.5.2): `sceny/diag_modelu.tscn` (`./uruchom_openee.sh model …`) + `silnik/diagnostyka/diagnostyka_modelu.gd`
+(trójkąty, współpłaszczyznowe, duplikaty, nawinięcie, opis trójkąta); narzędzia `godot/narzedzia/*.gd` i `narzedzia/*.py`.
 Scena diagnostyczna: `sceny/diag_animacji.tscn` (`./uruchom_openee.sh animacje …`) – wybór grafiki, sekwencje,
 pauza, prędkość, interpolacja, drzewo części z osiami, film, pomiary. Testy: `testy/testy_etapu4.gd` (syntetyczne
 modele `testy/cem_syntetyczny.gd` – bez danych komercyjnych).

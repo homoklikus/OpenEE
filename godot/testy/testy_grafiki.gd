@@ -88,8 +88,9 @@ func _jednostkowe() -> void:
 	var imp := ImporterModeli.new()
 	var ia := Image.create(4, 4, false, Image.FORMAT_RGBA8); ia.fill(Color(1, 1, 1, 0.0)); ia.set_pixel(0, 0, Color(1, 1, 1, 1))
 	var mp := imp._material(ia, Color(0, 0, 1), true); var mn := imp._material(ia, Color(0, 0, 1), false)
-	t._ok("G materiały: „player color” – tekstura · kolor gracza, bez wycinania; zwykły – wycinanie alfa, bez koloru",
-		mp.get_shader_parameter("kolor_gracza_mnoz") == true and mp.get_shader_parameter("wycinanie_alfa") == false
+	# diagnostyka 0.5.1: alfa wycina także w „player color” (hipoteza „bez wycinania” z naprawy grafiki – obalona)
+	t._ok("G materiały: „player color” – tekstura · kolor gracza, z wycinaniem alfa (0.5.1); zwykły – wycinanie alfa, bez koloru",
+		mp.get_shader_parameter("kolor_gracza_mnoz") == true and mp.get_shader_parameter("wycinanie_alfa") == true
 		and mn.get_shader_parameter("kolor_gracza_mnoz") == false and mn.get_shader_parameter("wycinanie_alfa") == true
 		and "t.rgb * kolor_gracza.rgb" in ImporterModeli.SHADER_MODELU and "t.rgb * v_kolor" in AnimacjaVAT.SHADER, "")
 	# VAT – te same indeksy i materiały

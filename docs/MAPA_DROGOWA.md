@@ -14,6 +14,10 @@ Kolejność orientacyjna; każdy etap kończy się testami, dokumentacją i wery
 ## Zrobione w 0.5.1-dev (naprawa grafiki)
 * Poprawny import modeli wielomateriałowych (indeksy względne, obraz wg `tekstura_id`), kolor gracza przez mnożenie.
 
+## Zrobione w 0.5.2-dev (diagnostyka modeli)
+* Tryb diagnostyczny modelu, porównanie rendererów; poprawki alfa, odrzucania ścian, billboardów i głębi.
+* Do potwierdzenia na GPU użytkownika (test wyłącznie w środowisku wirtualnym: llvmpipe/lavapipe).
+
 ## Najbliżej (0.5.x / 0.6)
 * Zaznaczanie grupowe, kolejki rozkazów, unikanie kolizji i formacje, szybsze trasy (hierarchiczne/GDExtension po pomiarach).
 * Rozróżnienie nawierzchni lądu (flagi dbobjects ↔ typy terenu), znaczenie progu wody płytkiej, tempo symulacji.

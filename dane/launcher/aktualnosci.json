@@ -4,6 +4,17 @@
   {
    "data": "2026-11-05",
    "tytul": {
+    "pl": "OpenEE 0.5.2-dev",
+    "en": "OpenEE 0.5.2-dev"
+   },
+   "tekst": {
+    "pl": "Diagnostyka modeli: bez czarnych brył, pasów i płaskich drzew; scena diagnostyczna modelu.",
+    "en": "Model diagnostics: no black boxes, stripes or flat trees; single-model diagnostic scene."
+   }
+  },
+  {
+   "data": "2026-11-05",
+   "tytul": {
     "pl": "OpenEE 0.5.1-dev",
     "en": "OpenEE 0.5.1-dev"
    },

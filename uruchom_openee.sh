@@ -22,6 +22,7 @@ case "$1" in
   diag)  exec "$GODOT" --path godot res://sceny/diagnostyka.tscn ;;
   scenariusz) exec "$GODOT" --path godot res://sceny/test_scenariusz.tscn ;;
   testy) exec "$GODOT" --headless --path godot --script res://testy/uruchom_testy.gd ;;
+  model) shift; exec "$GODOT" --path godot res://sceny/diag_modelu.tscn -- "$@" ;;
   animacje) shift; exec "$GODOT" --path godot res://sceny/diag_animacji.tscn -- "$@" ;;
   rts) shift; exec "$GODOT" --path godot res://sceny/rts_test.tscn -- --kampania=EETheGreeks.ssa "--scenariusz=trojan war" --kamera=blisko "$@" ;;
   *)     exec "$GODOT" --path godot res://launcher/launcher.tscn ;;

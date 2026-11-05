@@ -40,6 +40,8 @@ Pole `u32 tekstura` materiału (OpenEE: `tekstura_id`) to numer obrazu w pliku S
   jasności/gammy – do porównania z grą].
 * Hipoteza etapu 2 („kolor = mix(kolor gracza, tekstura, alfa)”) – **obalona**: przy alfa 255 dawała czystą teksturę albo,
   przy alfa 0 w atlasie, jednolity kolor gracza.
+* ~~„player color” bez wycinania alfa~~ – **OBALONE w 0.5.2** (FORMATY_DIAGNOSTYKA_051 §1): alfa wycina we wszystkich
+  materiałach; nakładki koloru gracza mają kształt w alfie, ukryte bryły pomocnicze – UV na alfa 0.
 * Alfa w zwykłych materiałach pozostaje wycinaniem (drzewa: mediana 12,5% próbek przezroczystych, budynki ≈ 4%,
   jednostki ≈ 0,6%) [H co do progu 0,5].
 

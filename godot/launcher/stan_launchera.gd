@@ -6,7 +6,7 @@ class_name StanLaunchera
 
 signal zmieniono(co: String)
 
-const WERSJA := "0.5.1-dev"
+const WERSJA := "0.5.2-dev"
 const JEZYKI_GRY := ["pl", "en", "pl_en"]   # presety; "wlasny" gdy konfiguracja nie pasuje do żadnego
 
 var K: Node            # autoload Konfiguracja

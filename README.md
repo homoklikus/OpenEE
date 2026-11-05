@@ -4,7 +4,7 @@
 posiadanej instalacji Empire Earth Gold Edition / The Art of Conquest. Projekt nie jest oficjalnie powiązany z właścicielami
 marki Empire Earth.**
 
-Wersja: **0.5.1-dev** – wersja rozwojowa, niedokończony silnik. Wzorem jest OpenMW: kod silnika jest nowy, a wszystkie
+Wersja: **0.5.2-dev** – wersja rozwojowa, niedokończony silnik. Wzorem jest OpenMW: kod silnika jest nowy, a wszystkie
 grafiki, modele, dźwięki i teksty gry są wczytywane wprost z instalacji użytkownika (tylko do odczytu). Repozytorium nie
 zawiera żadnych zasobów Empire Earth – patrz [docs/ZASOBY_ORYGINALNE.md](docs/ZASOBY_ORYGINALNE.md).
 
@@ -30,9 +30,13 @@ zawiera żadnych zasobów Empire Earth – patrz [docs/ZASOBY_ORYGINALNE.md](doc
 * **Poprawne modele wieloczęściowe i wielomateriałowe** (0.5.1-dev – naprawa grafiki): indeksy materiałów względem
   `v_offset`, obraz tekstury wybierany przez `tekstura_id`, kolor gracza mnożony przez szarą teksturę –
   [docs/FORMATY_NAPRAWA_GRAFIKI.md](docs/FORMATY_NAPRAWA_GRAFIKI.md).
-* **136 testów automatycznych** (część wymaga instalacji gry – bez niej są jawnie pomijane).
+* **Diagnostyka modeli** (0.5.2-dev): scena `./uruchom_openee.sh model --model="Stable - Copper"` – części i materiały
+  osobno, kolory materiałów, UV, indeksy, normalne, alfa, klatka CEM, odrzucanie ścian, test głębokości, przezroczystość,
+  pary współpłaszczyznowe i duplikaty, opis trójkąta po kliknięciu; porównanie OpenGL/Vulkan `narzedzia/porownaj_renderery.sh`
+  – [docs/FORMATY_DIAGNOSTYKA_051.md](docs/FORMATY_DIAGNOSTYKA_051.md).
+* **150 testów automatycznych** (część wymaga instalacji gry – bez niej są jawnie pomijane).
 
-## Ograniczenia (stan 0.5.1-dev)
+## Ograniczenia (stan 0.5.2-dev)
 * **Brak rozgrywki** – brak ekonomii, walki, SI, interfejsu gry; sceny są podglądem danych.
 * Animacje odtwarzane z danych, ale tempo (czas cyklu z `dbgraphics`) i interpolacja między klatkami to hipotezy
   do potwierdzenia w grze; brak sterowania proceduralnego (celowanie wieżyczek, obrót części `orbital_*`, toczenie kół).

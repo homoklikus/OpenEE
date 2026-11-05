@@ -5,30 +5,49 @@ extends ImporterEE
 ## Tekstura: plik z dbgraphics (kontekst "tekstura"), obraz w pliku = `tekstura_id` materiału [D]; gdy brak pliku
 ## w dbgraphics – nazwa z materiału modelu (zwykle nazwy plików źródłowych grafika, niewystępujące w archiwach).
 ## Kolor gracza (naprawa grafiki, docs/FORMATY_NAPRAWA_GRAFIKI.md): fragmenty tekstur pod materiałem „player color” są
-## szare i nieprzezroczyste [D: mediana nasycenia 0, alfa 255] ⇒ ALBEDO = tekstura · kolor gracza [H: dokładna
-## formuła/jasność]. Hipoteza etapu 2 „alfa = udział koloru tekstury” – obalona. W pozostałych materiałach alfa =
-## przezroczystość (wycinanie; drzewa, palisady).
+## szare [D: mediana nasycenia 0] ⇒ ALBEDO = tekstura · kolor gracza [H: dokładna formuła/jasność].
+## Diagnostyka 0.5.1 (docs/FORMATY_DIAGNOSTYKA_051.md): kanał alfa jest przezroczystością (wycinaniem) we WSZYSTKICH
+## materiałach, także „player color” – nakładki koloru gracza (emblematy, kraty, ramy) mają kształt w alfie, a ukryte
+## bryły pomocnicze mają UV na tekselach z alfa 0 [D]. Odrzucanie tylnych ścian: nawinięcie po imporcie jest spójne
+## (98,6% trójkątów), a ściany dwustronne są w danych zbudowane z dwóch przeciwnie skierowanych trójkątów [D] –
+## rysowane bez odrzucania walczyły ze sobą w buforze głębokości (pasy). Odrzucanie robi shader (FRONT_FACING z
+## uwzględnieniem wyznacznika macierzy modelu), bo baza obiektów sceny jest lustrzana (UkladEE, wyznacznik -1), a
+## render_mode cull_back tego nie kompensował (budynki znikały – sprawdzone w OpenGL i Vulkanie). Billboard: impostory patrzą w stały kierunek
+## kamery EE (azymut -45° w układzie CEM, 91 ze 195 modeli „Always face camera”) [D] – obracamy ten kierunek do kamery.
 
 const SHADER_MODELU := """
 shader_type spatial;
-render_mode cull_disabled;
+render_mode cull_disabled;   // odrzucanie tylnych ścian ręcznie (niżej) – zgodne z lustrzaną bazą obiektów
 uniform sampler2D tekstura : source_color, filter_linear_mipmap;
 uniform vec4 kolor_gracza : source_color = vec4(1.0, 0.0, 0.0, 1.0);
 uniform bool kolor_gracza_mnoz = true; // materiał "player color": tekstura (szara) · kolor gracza
-uniform bool wycinanie_alfa = false; // pozostałe materiały: alfa = przezroczystość (np. liście drzew)
+uniform bool wycinanie_alfa = false; // alfa = przezroczystość (wszystkie materiały z teksturą 32-bit)
 uniform bool billboard = false;      // dbobjects „Always face camera” – obrót wokół osi pionowej do kamery
+uniform float billboard_azymut = 0.0; // obrót impostora: kierunek projektowy (kamera EE) → kamera
+uniform bool odrzucaj_tyl = true;     // odrzucanie tylnych ścian (diagnostyka 0.5.1)
+varying flat float v_lustro;
+uniform float przesuniecie_glebi = 0.003;
 void vertex() {
 	if (billboard) {
 		float sx = length(MODEL_MATRIX[0].xyz);
-		MODELVIEW_MATRIX = VIEW_MATRIX * mat4(
-			vec4(normalize(cross(vec3(0.0, 1.0, 0.0), INV_VIEW_MATRIX[2].xyz)) * sx, 0.0),
-			vec4(0.0, sx, 0.0, 0.0),
-			vec4(normalize(cross(INV_VIEW_MATRIX[0].xyz, vec3(0.0, 1.0, 0.0))) * sx, 0.0),
-			MODEL_MATRIX[3]);
+		vec3 bx = normalize(cross(vec3(0.0, 1.0, 0.0), INV_VIEW_MATRIX[2].xyz));
+		vec3 bz = normalize(cross(INV_VIEW_MATRIX[0].xyz, vec3(0.0, 1.0, 0.0)));
+		float c = cos(billboard_azymut); float s = sin(billboard_azymut);
+		MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4((bx * c + bz * s) * sx, 0.0), vec4(0.0, sx, 0.0, 0.0),
+			vec4((bz * c - bx * s) * sx, 0.0), MODEL_MATRIX[3]);
 		MODELVIEW_NORMAL_MATRIX = mat3(MODELVIEW_MATRIX);
 	}
+	// baza obiektów sceny ma wyznacznik -1 (konwencja osi EE → Godot, UkladEE) – odbicie odwraca nawinięcie ekranowe
+	v_lustro = determinant(mat3(MODELVIEW_MATRIX)) < 0.0 ? 1.0 : 0.0;
+	// przesunięcie głębi ku kamerze wzdłuż promienia (obraz na ekranie bez zmian): płyty podstaw budynków leżą
+	// ~0,01 nad terenem, a siatka terenu (trójkąty) odbiega od interpolacji wysokości obiektu – bez tego teren
+	// przebijał podstawy zależnie od precyzji bufora głębokości (Vulkan/OpenGL, diagnostyka 0.5.1)
+	vec4 pw = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+	pw.xyz *= 1.0 - przesuniecie_glebi;
+	POSITION = PROJECTION_MATRIX * pw;
 }
 void fragment() {
+	if (odrzucaj_tyl && (FRONT_FACING == (v_lustro > 0.5))) { discard; }
 	vec4 t = texture(tekstura, UV);
 	if (wycinanie_alfa && t.a < 0.5) { discard; }
 	ALBEDO = kolor_gracza_mnoz ? t.rgb * kolor_gracza.rgb : t.rgb;
@@ -36,6 +55,10 @@ void fragment() {
 	SPECULAR = 0.2;
 }
 """
+## Obrót billboardu wokół pionu (stopnie): impostory „Always face camera” są zwrócone w kierunku azymutu -45° układu CEM
+## (od +X ku -Y; w Godot (x, -y) = (+X, +Z) pod 45°) [D: dominanta 91/195 modeli, narzedzia/kierunek_billboardow.py] –
+## ten kierunek, nie oś +Z modelu, obracamy do kamery. 0° (stan do 0.5.1) pokazywał impostor pod kątem, jako płaski pas.
+const BILLBOARD_AZYMUT_ST := 45.0
 static var _shader: Shader = null
 
 
@@ -225,19 +248,40 @@ static func obraz_materialu(zasoby, tex_db: String, mt: Dictionary, klucz: Strin
 	return obrazy[maxi(nr, 0)]
 
 
+## Czy materiał z tym obrazem wycina piksele o alfa < 0,5 – każdy obraz z kanałem alfa, niezależnie od nazwy
+## materiału (diagnostyka 0.5.1: także „player color”).
+static func wymaga_wycinania(img: Image) -> bool:
+	return img != null and img.detect_alpha() != Image.ALPHA_NONE
+
+
+## Tekstura na GPU (modele statyczne i VAT): kolor tekseli o alfa = 0 (w EE czarny [D: 99,8% takich tekseli]) zastępowany
+## kolorem sąsiadów przed budową mipmap – inaczej filtrowanie i mipmapy wciągają czerń w brzegi wycinanych kształtów
+## (ciemne obwódki płotów, liści). Kanał alfa bez zmian.
+static func tekstura_gpu(img: Image) -> ImageTexture:
+	return ImageTexture.create_from_image(obraz_gpu(img))
+
+
+static func obraz_gpu(img: Image) -> Image:
+	var im := img.duplicate()
+	if im.is_compressed(): im.decompress()
+	if im.detect_alpha() != Image.ALPHA_NONE:
+		if im.get_format() != Image.FORMAT_RGBA8: im.convert(Image.FORMAT_RGBA8)
+		im.fix_alpha_edges()
+	im.generate_mipmaps()
+	return im
+
+
 func _material(img: Image, kolor: Color, gracz: bool) -> ShaderMaterial:
 	if _shader == null:
 		_shader = Shader.new(); _shader.code = SHADER_MODELU
 	var mat := ShaderMaterial.new()
 	mat.shader = _shader
 	if img:
-		var im := img.duplicate()
-		im.generate_mipmaps()
-		mat.set_shader_parameter("tekstura", ImageTexture.create_from_image(im))
-	var alfa := img != null and img.detect_alpha() != Image.ALPHA_NONE
+		mat.set_shader_parameter("tekstura", tekstura_gpu(img))
 	mat.set_shader_parameter("kolor_gracza", kolor)
 	mat.set_shader_parameter("kolor_gracza_mnoz", gracz)
-	mat.set_shader_parameter("wycinanie_alfa", (not gracz) and alfa)
+	mat.set_shader_parameter("wycinanie_alfa", wymaga_wycinania(img))
+	mat.set_shader_parameter("billboard_azymut", deg_to_rad(BILLBOARD_AZYMUT_ST))
 	return mat
 
 

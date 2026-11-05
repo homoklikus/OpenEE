@@ -18,7 +18,7 @@ const SZER_MAX := 2048
 
 const SHADER := """
 shader_type spatial;
-render_mode cull_disabled;
+render_mode cull_disabled;   // tylne ściany odrzucane w shaderze z uwzględnieniem lustrzanej bazy (diagnostyka 0.5.1)
 uniform sampler2D tekstura : source_color, filter_linear_mipmap;
 uniform vec4 kolor_gracza : source_color = vec4(1.0, 0.0, 0.0, 1.0);
 uniform bool kolor_gracza_mnoz = true;
@@ -31,6 +31,9 @@ uniform bool z_multimesh = false;
 global uniform float czas_animacji;
 instance uniform vec4 anim_stan = vec4(0.0, 1.0, 0.0, 0.0);
 varying vec3 v_kolor;
+varying flat float v_lustro;
+uniform float przesuniecie_glebi = 0.003;
+uniform bool odrzucaj_tyl = true;
 
 vec3 klatki(vec4 st) {
 	float n = max(abs(st.y), 1.0);
@@ -59,9 +62,17 @@ void vertex() {
 	VERTEX = mix(pa, pb, u);
 	NORMAL = normalize(mix(na, nb, u));
 	v_kolor = z_multimesh ? COLOR.rgb : kolor_gracza.rgb;
+	v_lustro = determinant(mat3(MODELVIEW_MATRIX)) < 0.0 ? 1.0 : 0.0;
+	// przesunięcie głębi ku kamerze wzdłuż promienia (obraz na ekranie bez zmian): płyty podstaw budynków leżą
+	// ~0,01 nad terenem, a siatka terenu (trójkąty) odbiega od interpolacji wysokości obiektu – bez tego teren
+	// przebijał podstawy zależnie od precyzji bufora głębokości (Vulkan/OpenGL, diagnostyka 0.5.1)
+	vec4 pw = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+	pw.xyz *= 1.0 - przesuniecie_glebi;
+	POSITION = PROJECTION_MATRIX * pw;
 }
 
 void fragment() {
+	if (odrzucaj_tyl && (FRONT_FACING == (v_lustro > 0.5))) { discard; }
 	vec4 t = texture(tekstura, UV);
 	if (wycinanie_alfa && t.a < 0.5) { discard; }
 	ALBEDO = kolor_gracza_mnoz ? t.rgb * v_kolor : t.rgb;
@@ -174,13 +185,10 @@ func material(img: Image, kolor: Color, gracz: bool) -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = shader()
 	if img:
-		var im := img.duplicate()
-		im.generate_mipmaps()
-		mat.set_shader_parameter("tekstura", ImageTexture.create_from_image(im))
-	var alfa := img != null and img.detect_alpha() != Image.ALPHA_NONE
+		mat.set_shader_parameter("tekstura", ImporterModeli.tekstura_gpu(img))
 	mat.set_shader_parameter("kolor_gracza", kolor)
 	mat.set_shader_parameter("kolor_gracza_mnoz", gracz)
-	mat.set_shader_parameter("wycinanie_alfa", (not gracz) and alfa)
+	mat.set_shader_parameter("wycinanie_alfa", ImporterModeli.wymaga_wycinania(img))   # także „player color” (0.5.1)
 	mat.set_shader_parameter("vat", tekstura_vat)
 	mat.set_shader_parameter("vat_szer", szer)
 	mat.set_shader_parameter("vat_wiersze", wiersze)
