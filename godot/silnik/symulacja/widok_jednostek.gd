@@ -43,7 +43,83 @@ func dodaj(id: int, model: String, tex: String, kolor: Color, skala: float, sek:
 	var k := "%s|%s" % [model, tex]
 	if not _modele.has(k): _modele[k] = {"model": model, "tex": tex, "lista": []}
 	_modele[k].lista.append(id)
-	_jedn[id] = {"klucz": k, "kolor": kolor, "skala": skala, "sek": sek, "mm": null, "i": -1, "kanal": -1}
+	_jedn[id] = {"klucz": k, "kolor": kolor, "skala": skala, "sek": sek, "mm": null, "i": -1, "kanal": -1,
+		"stan": "bezczynnosc", "grafika": -1}
+
+
+## Etap 8: ID grafiki (dbgraphics) jednostki – informacyjnie, do porównań wariantów epok.
+func ustaw_grafike_id(id: int, gid: int) -> void:
+	if _jedn.has(id): _jedn[id].grafika = gid
+
+
+func grafika_id(id: int) -> int:
+	return int(_jedn.get(id, {}).get("grafika", -1))
+
+
+func klucz_modelu(id: int) -> String:
+	return String(_jedn.get(id, {}).get("klucz", ""))
+
+
+## Etap 8: zmiana grafiki jednostki (wariant epoki) – jednostka przechodzi do grupy innego modelu; stan symulacji
+## i bieżący stan animacji (nazwa stanu) zostają zachowane. Wymaga przebuduj(zasoby).
+func zmien_grafike(id: int, model: String, tex: String, sek: SekwencjeAnimacji, gid: int = -1) -> void:
+	var e: Dictionary = _jedn.get(id, {})
+	if e.is_empty(): return
+	var k := "%s|%s" % [model, tex]
+	if k == e.klucz:
+		e.sek = sek; e.grafika = gid; return
+	var stary: Dictionary = _modele.get(e.klucz, {})
+	if not stary.is_empty():
+		stary.lista.erase(id); stary["brudny"] = true
+	if not _modele.has(k): _modele[k] = {"model": model, "tex": tex, "lista": []}
+	_modele[k].lista.append(id); _modele[k]["brudny"] = true
+	e.klucz = k; e.sek = sek; e.grafika = gid
+
+
+## Przebudowuje MultiMeshe grup zmienionych przez zmien_grafike (pozostałe grupy bez zmian).
+func przebuduj(zasoby) -> Dictionary:
+	var n := 0
+	for k in _modele.keys():
+		var g: Dictionary = _modele[k]
+		if not g.get("brudny", false): continue
+		g.brudny = false
+		if g.has("mmi") and is_instance_valid(g.mmi):
+			remove_child(g.mmi); g.mmi.queue_free()
+		g.erase("mmi")
+		if g.lista.is_empty():
+			continue
+		if not g.has("anim"):
+			var anim: AnimacjaVAT = zasoby.wczytaj_animacje(g.model, {"tekstura": g.tex}) if zasoby else null
+			if anim == null:
+				ImporterEE.zglos("uwaga", "widok_jednostek", "Brak modelu %s – jednostki niewidoczne, symulacja działa" % g.model)
+				for id in g.lista: _jedn[id].mm = null
+				continue
+			g["anim"] = anim
+		_utworz_mm(g)
+		n += 1
+	_aktualizuj_transformacje(true)
+	return {"przebudowane_grupy": n}
+
+
+func _utworz_mm(g: Dictionary) -> void:
+	var anim: AnimacjaVAT = g.anim
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true; mm.use_custom_data = true
+	mm.mesh = anim.siatka_multimesh(); mm.instance_count = g.lista.size()
+	for i in g.lista.size():
+		var id: int = g.lista[i]
+		var e: Dictionary = _jedn[id]
+		e.mm = mm; e.i = i
+		mm.set_instance_color(i, e.kolor)
+		if e.kanal < 0:
+			e.kanal = odtw.dodaj(mm, i)
+		else:
+			odtw.przypisz(e.kanal, mm, i)
+		_animuj(id, String(e.stan))
+	var mmi := MultiMeshInstance3D.new(); mmi.multimesh = mm; mmi.name = "jednostki_" + String(g.model).get_file()
+	add_child(mmi)
+	g["mmi"] = mmi
 
 
 ## Tworzy MultiMeshe (po jednym na model) – wymaga Zasoby (modele z instalacji).
@@ -57,19 +133,7 @@ func zbuduj(zasoby) -> Dictionary:
 			ImporterEE.zglos("uwaga", "widok_jednostek", "Brak modelu %s – jednostki niewidoczne, symulacja działa" % g.model)
 			continue
 		g["anim"] = anim
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.use_colors = true; mm.use_custom_data = true
-		mm.mesh = anim.siatka_multimesh(); mm.instance_count = g.lista.size()
-		for i in g.lista.size():
-			var id: int = g.lista[i]
-			var e: Dictionary = _jedn[id]
-			e.mm = mm; e.i = i
-			mm.set_instance_color(i, e.kolor)
-			e.kanal = odtw.dodaj(mm, i)
-			_animuj(id, "bezczynnosc")
-		var mmi := MultiMeshInstance3D.new(); mmi.multimesh = mm; mmi.name = "jednostki_" + g.model.get_file()
-		add_child(mmi)
+		_utworz_mm(g)
 		nmod += 1
 	_aktualizuj_transformacje(true)
 	return {"modele": nmod, "jednostki": _jedn.size(), "czas_ms": (Time.get_ticks_usec() - t0) / 1000.0}
@@ -86,6 +150,7 @@ func _po_takcie(zd: Array) -> void:
 func _animuj(id: int, stan: String) -> void:
 	var e: Dictionary = _jedn.get(id, {})
 	if e.is_empty() or e.kanal < 0: return
+	e.stan = stan
 	var sek: SekwencjeAnimacji = e.sek
 	var q := {}
 	if sek:

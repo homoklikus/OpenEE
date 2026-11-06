@@ -296,8 +296,40 @@ func _gracz(d: PackedByteArray, off: int, g: Array, wer: int = 250, czesciowo :=
 			jedn.append(u)
 	r.get_t("B")
 	if r.zly: return {}
-	return {"typ": typ, "kolor": kolor, "nazwa": TekstEE.cp1250(nz.slice(0, nz.size() - 1)), "jednostki": jedn,
+	var wynik := {"typ": typ, "kolor": kolor, "nazwa": TekstEE.cp1250(nz.slice(0, nz.size() - 1)), "jednostki": jedn,
 		"kotwica": [n, l20], "koniec": r.o}
+	var ee := blok_ee(d, r.o)
+	if not ee.is_empty(): wynik["ee"] = ee
+	return wynik
+
+
+## Blok EE gracza za częścią RTS (etap 8; Python: gracze.blok_ee – 31 scenariuszy, 527 graczy):
+## u32 ?, u8 1, u32 15|14, u32 1|2, u32 n, n × (u32 ID technologii dbtechtree, 3 × u8 flagi), i32 epoka, i32, i32.
+## Flaga 0 = zbadana; „epoka_tech” = ID technologii bieżącej epoki gracza. {} gdy struktura się nie zgadza.
+static func blok_ee(d: PackedByteArray, o: int) -> Dictionary:
+	if o < 0 or o + 17 > d.size() or d[o + 4] != 1: return {}
+	var n := d.decode_u32(o + 13)
+	if n > 100000 or o + 17 + 7 * n + 12 > d.size(): return {}
+	var q := o + 17
+	var zb: Array = []
+	for k in n:
+		if d[q + 7 * k + 4] == 1: zb.append(d.decode_u32(q + 7 * k))
+	q += 7 * n
+	return {"epoka_tech": d.decode_s32(q), "pola_po_epoce": [d.decode_s32(q + 4), d.decode_s32(q + 8)], "zbadane": zb,
+		"technologii": n}
+
+
+## Gracz odczytany częściowo – blok EE szukany za miejscem przerwania (sygnatura u8 1, u32 15|14, u32 1|2).
+static func _szukaj_bloku_ee(d: PackedByteArray, od: int, do_: int) -> Dictionary:
+	for wz in [PackedByteArray([1, 15, 0, 0, 0, 1, 0, 0, 0]), PackedByteArray([1, 14, 0, 0, 0, 2, 0, 0, 0])]:
+		var p := _znajdz(d, wz, od)
+		while p >= 4 and p < do_:
+			var ee := blok_ee(d, p - 4)
+			if not ee.is_empty():
+				ee["wyszukany"] = true
+				return ee
+			p = _znajdz(d, wz, p + 1)
+	return {}
 
 
 func czytaj_graczy(katalog_openee: String) -> bool:
@@ -327,9 +359,21 @@ func czytaj_graczy(katalog_openee: String) -> bool:
 			p += 1
 		if nast.is_empty():
 			blad = "kawałek 5: nie znaleziono gracza %d" % i; return false
+		if not gr.has("ee"):
+			var ee := _szukaj_bloku_ee(d, int(gr.koniec), p)
+			if not ee.is_empty(): gr["ee"] = ee
 		gr = nast
 		gracze.append(gr)
+	if not gr.has("ee"):
+		var ee2 := _szukaj_bloku_ee(d, int(gr.koniec), d.size())
+		if not ee2.is_empty(): gr["ee"] = ee2
 	return true
+
+
+## ID technologii bieżącej epoki gracza (dbtechtree) albo -1 (brak bloku EE).
+func epoka_gracza(g: int) -> int:
+	if g < 0 or g >= gracze.size(): return -1
+	return int(gracze[g].get("ee", {}).get("epoka_tech", -1))
 
 
 static func _znajdz(d: PackedByteArray, wz: PackedByteArray, od: int) -> int:

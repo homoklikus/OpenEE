@@ -26,6 +26,8 @@ func _przejmij_obiekt(u: Dictionary, ob: Dictionary, gr: Dictionary, kolor: Colo
 		tr: PackedByteArray, model: String, tex: String) -> bool:
 	if not (int(ob.get("Unit type", -1)) in TYPY_RUCHOME) or float(ob.get("Speed", 0.0)) <= 0.0:
 		return false
+	if _przebudowa_obiektow:
+		return true          # etap 8: przebudowa obiektów statycznych po zmianie epoki – jednostki zostają w symulacji
 	var skala := float(u.get("c174", 0.0))
 	if skala <= 0: skala = float(ob.get("Graphic size", 1.0))
 	if skala <= 0: skala = 1.0
@@ -67,6 +69,7 @@ func _po_zbudowaniu() -> void:
 		d.kurs = UkladEE.kat_z_R(UkladEE.R_z_rekordu(e.tr)) if (e.tr as PackedByteArray).size() == 64 else 0.0
 		var id := sym.dodaj_jednostke(d, e.ob)
 		widok.dodaj(id, e.model, e.tex, e.kolor, e.skala, SekwencjeAnimacji.z_rekordu(e.gr))
+		widok.ustaw_grafike_id(id, int(e.gr.get("ID", -1)))
 	var wb := widok.zbuduj(Zasoby)
 	var t3 := Time.get_ticks_usec()
 	sym.sciezki.skladowe(PolitykaRuchu.new())     # składowe i przechodniość typowej polityki lądowej (koszt jednorazowy)
@@ -83,6 +86,38 @@ func _po_zbudowaniu() -> void:
 		await _pomiar_rts(int(_arg("rts-pomiar", "10")))
 	elif _arg("rts-demo", "") != "":
 		await _demo(float(_arg("rts-demo", "6")))
+
+
+## Etap 8: zmiana epoki gracza – budynki (statyczne) przebudowane przez test_scenariusz, jednostki symulacji gracza
+## przełączone na nową grafikę (model, tekstura, sekwencje) bez zmiany stanu symulacji.
+func zmien_epoke(g: int, tech_epoki: int) -> int:
+	var zm := super.zmien_epoke(g, tech_epoki)
+	if sym == null or widok == null: return zm
+	var n := 0
+	for j in sym.lista():
+		if j.wlasciciel != g: continue
+		var gid := grafika_obiektu(j.typ, g)
+		if gid == widok.grafika_id(j.id): continue
+		var gr: Dictionary = _grafiki.get(gid, {})
+		if gr.is_empty() or String(gr.get("Model path", "")) == "": continue
+		var model := String(gr["Model path"]).to_lower().replace("\\", "/") + ".cem"
+		var tex := String(gr.get("Texture path", "")).to_lower().replace("\\", "/")
+		widok.zmien_grafike(j.id, model, tex, SekwencjeAnimacji.z_rekordu(gr), gid)
+		n += 1
+	if n > 0:
+		widok.przebuduj(Zasoby)
+	raport["zmiana_epoki"] = {"gracz": g, "tech": tech_epoki, "typy_budynkow": zm, "jednostki": n}
+	return zm + n
+
+
+## Etap 8: przezroczystość budynków – bieżące pozycje jednostek symulacji gracza lokalnego (tylko zmiany pola
+## i okresowe odświeżenie są przeliczane w PrzezroczystoscBudynkow).
+func _jednostki_odslaniajace_biezace() -> Array:
+	if sym == null: return _jednostki_odslaniajace
+	var out: Array = []
+	for j in sym.lista():
+		if j.wlasciciel == gracz_lokalny: out.append([j.id, j.pozycja])
+	return out
 
 
 func _interfejs() -> void:

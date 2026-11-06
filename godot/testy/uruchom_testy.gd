@@ -105,6 +105,8 @@ func _initialize() -> void:
 	await TestyDiagnostyki.new(self).uruchom(K, Z)
 	TestyKamery.new(self).uruchom()
 	TestyUkladu.new(self).uruchom()
+	await TestyWariantow.new(self).uruchom(K, Z)
+	TestyPrzezroczystosci.new(self).uruchom()
 	await _testy_launchera(K, Z)
 
 	var out: String = K.katalog_openee.path_join("wyniki/testy_godot.json")

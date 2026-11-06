@@ -47,6 +47,13 @@ func dodaj(cel: Object, i: int = 0) -> int:
 	return _cel.size() - 1
 
 
+## Przenosi kanał na inny egzemplarz (np. po przebudowie MultiMesh przy zmianie grafiki – etap 8); stan kanału
+## (sekwencja, faza, prędkość, pauza) pozostaje i jest zapisywany do nowego celu.
+func przypisz(id: int, cel: Object, i: int = 0) -> void:
+	_cel[id] = cel; _idx[id] = i
+	_zapisz(id)
+
+
 ## Odtwarza sekwencję (słownik z SekwencjeAnimacji) od fazy `faza` (w klatkach; np. losowa dla rozproszenia).
 ## petla: -1 = jak w danych, 0/1 = wymuszenie.
 func odtworz(id: int, sek: Dictionary, faza: float = 0.0, petla: int = -1) -> void:

@@ -7,6 +7,10 @@ extends Node3D
 ##                      --bez-animacji (etap 4: jednostki statyczne, klatka 0 – porównanie)
 ##                      --plik-scn=<ścieżka.scn> (pojedynczy scenariusz z dysku zamiast archiwum kampanii)
 ##                      --kamera=ee (kamera produkcyjna wierna EE) --kamera-ognisko=x,y --kamera-poziom=0..20 --kamera-fov=<poziomy °>
+##                      --epoka=<epoka 1–15>|<gracz>:<epoka>[,<gracz>:<epoka>…] (etap 8: nadpisanie epoki – porównania)
+##                      --przezroczystosc=0|1|2 (etap 8: tryb ukrywania jednostek; F5 przełącza)  --gracz-lokalny=<n>
+##                      --bez-wariantow (etap 8: grafiki bazowe dbobjects jak przed etapem 8 – porównanie)
+## Etap 8: grafika obiektu = wariant epoki gracza (WariantyGrafiki – dbtechtree/dbevents/dbeffects, epoka z bloku EE gracza).
 ## Etap 4: jednostki z sekwencją bezczynności (dbgraphics) animowane przez AnimacjaVAT w MultiMesh na model.
 ## Etap 3: teren budowany przez TerenEE (reguły mieszania tekstur, wariantów i wody silnika EE),
 ##         scenariusze Empire Earth (wersja 231) z katalogu „Empire Earth/Data/Campaigns”.
@@ -31,6 +35,13 @@ var _tereny := {}
 var _obiekty := {}
 var _grafiki := {}
 var _kamera: Camera3D
+var warianty: WariantyGrafiki
+var epoki_graczy := {}           # gracz → ID technologii epoki (dbtechtree); stan wizualny, nie mechanika gry
+var zbadane_graczy := {}         # gracz → [ID technologii zbadanych] (z bloku EE scenariusza)
+var _wezel_obiektow: Node3D
+var przezroczystosc: PrzezroczystoscBudynkow   # etap 8: tryb ukrywania jednostek (F5), jak w EE
+var gracz_lokalny := 1
+var _jednostki_odslaniajace: Array = []         # [[id, Vector2]] – jednostki gracza lokalnego (scena statyczna)
 
 
 func _arg(nazwa: String, dom: String) -> String:
@@ -83,6 +94,7 @@ func _ready() -> void:
 	for r in Zasoby.tabela("dbterrain"): _tereny[int(r.ID)] = r
 	for r in Zasoby.tabela("dbobjects"): _obiekty[int(r.ID)] = r
 	for r in Zasoby.tabela("dbgraphics"): _grafiki[int(r.ID)] = r
+	_przygotuj_warianty()
 	var o := _arg("okno", "")
 	if o == "pelne":
 		okno = Vector3i(0, 0, scn.teren.N)
@@ -254,12 +266,22 @@ func _wys_w(x: float, z: float) -> float:
 
 func _obiekty_mapy() -> void:
 	var siatki := {}
-	var licz := {"pokazane": 0, "bez_grafiki": 0, "bez_modelu": 0, "poza_oknem": 0}
+	var licz := {"pokazane": 0, "bez_grafiki": 0, "bez_modelu": 0, "poza_oknem": 0, "wariant_epoki": 0}
 	var typy := {}
 	var rodzaje := {}
 	var wezel := Node3D.new(); wezel.name = "Obiekty"; add_child(wezel)
+	_wezel_obiektow = wezel
 	var roznice_h: Array[float] = []
 	var grupy := {}            # klucz siatki → [Transform3D]
+	var grupy_przezr := {}     # klucz siatki → [[indeks w grupie, pozycja mapy, rozmiar]] – obiekty z flagą przezroczystości
+	var tryb_przezr := int(_arg("przezroczystosc", "1"))
+	if przezroczystosc != null:
+		tryb_przezr = przezroczystosc.tryb      # przebudowa po zmianie epoki zachowuje wybrany tryb
+		przezroczystosc.queue_free()
+	przezroczystosc = PrzezroczystoscBudynkow.new(); przezroczystosc.name = "PrzezroczystoscBudynkow"
+	add_child(przezroczystosc)
+	gracz_lokalny = int(_arg("gracz-lokalny", "1"))
+	_jednostki_odslaniajace = []
 	var anim_grupy := {}       # model|tekstura → {model, tex, lista: [[Transform3D, kolor, sekwencja]]}
 	var bez_anim := "--bez-animacji" in OS.get_cmdline_user_args()
 	for g in range(scn.gracze.size()):
@@ -275,7 +297,13 @@ func _obiekty_mapy() -> void:
 			if x < okno.y or x >= okno.y + okno.z or z < okno.x or z >= okno.x + okno.z:
 				licz.poza_oknem += 1; continue
 			var ob: Dictionary = _obiekty.get(int(u.type), {})
-			var gr: Dictionary = _grafiki.get(int(ob.get("Graphic ID", -1)), {})
+			# jednostki odsłaniające: ruchome, na mapie (X, Y ≥ 0 – jednostki w garnizonie mają X = Y = −10000)
+			if g == gracz_lokalny and float(ob.get("Speed", 0.0)) > 0.0 and int(u.get("X", -1)) >= 0 and int(u.get("Y", -1)) >= 0:
+				_jednostki_odslaniajace.append([_jednostki_odslaniajace.size(), pm])
+			var gid := grafika_obiektu(int(u.type), g)
+			if gid != int(ob.get("Graphic ID", -1)):
+				licz.wariant_epoki += 1
+			var gr: Dictionary = _grafiki.get(gid, {})
 			if gr.is_empty() or String(gr.get("Model path", "")) == "":
 				licz.bez_grafiki += 1; continue
 			var model := String(gr["Model path"]).to_lower().replace("\\", "/") + ".cem"
@@ -311,6 +339,9 @@ func _obiekty_mapy() -> void:
 			var h := _wys_w(x, z)
 			var xf := Transform3D(_baza_obiektu(tr) * skala, UkladEE.godot(pm, h))
 			if not grupy.has(kl): grupy[kl] = []
+			if PrzezroczystoscBudynkow.flaga(ob):
+				if not grupy_przezr.has(kl): grupy_przezr[kl] = []
+				grupy_przezr[kl].append([grupy[kl].size(), pm, float(ob.get("Size of collider", 0.5))])
 			grupy[kl].append(xf)
 			if tr.size() == 64:
 				roznice_h.append(absf(tr.decode_float(44) - h))   # t[11] (wysokość zapisana) vs teren
@@ -335,15 +366,26 @@ func _obiekty_mapy() -> void:
 			mmi.multimesh = mm
 			wezel.add_child(mmi)
 			n_mm += 1
+			if grupy_przezr.has(kl):
+				przezroczystosc.dodaj_grupe(kl, mmi)
+				for e in grupy_przezr[kl]: przezroczystosc.dodaj_obiekt(kl, e[0], lista[e[0]], e[1], e[2])
 		else:
-			for xf in lista:
+			var flagowane := {}
+			for e in grupy_przezr.get(kl, []): flagowane[int(e[0])] = e
+			for ix in lista.size():
+				var xf: Transform3D = lista[ix]
 				var mi := MeshInstance3D.new()
 				mi.mesh = siatki[kl]; mi.transform = xf
 				wezel.add_child(mi)
 				n_pojed += 1
+				if flagowane.has(ix): przezroczystosc.dodaj_wezel(mi, flagowane[ix][1], flagowane[ix][2])
 	raport["grupowanie"] = {"wlaczone": not bez_grup, "multimeshe": n_mm, "wezly_pojedyncze": n_pojed, "prog": PROG_GRUPY}
 	raport["animacje"] = _animowane(anim_grupy, wezel, bez_anim)
 	raport["obiekty"] = licz
+	przezroczystosc.ustaw_tryb(tryb_przezr)
+	przezroczystosc.aktualizuj_jednostki(_jednostki_odslaniajace)
+	raport["przezroczystosc"] = {"tryb": przezroczystosc.tryb, "obiekty_z_flaga": przezroczystosc.liczba_obiektow(),
+		"gracz_lokalny": gracz_lokalny, "jednostki_odslaniajace": _jednostki_odslaniajace.size()}
 	if not roznice_h.is_empty():
 		roznice_h.sort()
 		raport["wysokosc_t11_vs_teren"] = {"mediana": snappedf(roznice_h[roznice_h.size() / 2], 0.001),
@@ -355,6 +397,79 @@ func _obiekty_mapy() -> void:
 	for k in top.slice(0, 15): tt[k] = typy[k]
 	raport["obiekty_typy_top"] = tt
 	raport["modele_unikalne"] = siatki.size()
+
+
+## Etap 8: F5 – tryb przezroczystości budynków (jak w EE: 1 → 2 → 0 → 1); jednostki sceny statycznej odświeżają
+## znaczniki co PrzezroczystoscBudynkow.ODSWIEZANIE_S (scena RTS podaje bieżące pozycje symulacji).
+func _unhandled_key_input(e: InputEvent) -> void:
+	if e is InputEventKey and e.pressed and not e.echo and (e as InputEventKey).keycode == KEY_F5 and przezroczystosc:
+		var t := przezroczystosc.nastepny_tryb()
+		Dziennik.info("przezroczystosc", "Tryb %d: %s" % [t, PrzezroczystoscBudynkow.NAZWY[t]])
+
+
+func _physics_process(_d: float) -> void:
+	if przezroczystosc != null:
+		przezroczystosc.aktualizuj_jednostki(_jednostki_odslaniajace_biezace())
+
+
+## Jednostki odsłaniające (gracz lokalny): scena statyczna – pozycje ze scenariusza.
+func _jednostki_odslaniajace_biezace() -> Array:
+	return _jednostki_odslaniajace
+
+
+## Etap 8: warianty grafiki wg epok – dane gry + epoki graczy ze scenariusza (blok EE) lub z --epoka.
+func _przygotuj_warianty() -> void:
+	warianty = WariantyGrafiki.z_zasobow(Zasoby)
+	for g in range(scn.gracze.size()):
+		epoki_graczy[g] = scn.epoka_gracza(g)
+		zbadane_graczy[g] = scn.gracze[g].get("ee", {}).get("zbadane", [])
+	var arg := _arg("epoka", "")
+	if arg != "":
+		for cz in arg.split(","):
+			if ":" in cz:
+				epoki_graczy[int(cz.get_slice(":", 0))] = warianty.tech_epoki_nr(int(cz.get_slice(":", 1)))
+			else:
+				for g in epoki_graczy.keys():
+					if g > 0: epoki_graczy[g] = warianty.tech_epoki_nr(int(cz))
+	var opis := {}
+	for g in epoki_graczy:
+		opis[str(g)] = "%d:%s" % [epoki_graczy[g], warianty.nazwa_technologii(int(epoki_graczy[g]))]
+	raport["epoki_graczy"] = opis
+	raport["warianty"] = {"gotowe": warianty.gotowe, "epok": warianty.epoki.size(),
+		"wylaczone": "--bez-wariantow" in OS.get_cmdline_user_args()}
+
+
+## Grafika (ID dbgraphics) obiektu typu `typ` należącego do gracza `g` – wariant epoki (etap 8).
+func grafika_obiektu(typ: int, g: int) -> int:
+	var baz := int(_obiekty.get(typ, {}).get("Graphic ID", -1))
+	if warianty == null or not warianty.gotowe or "--bez-wariantow" in OS.get_cmdline_user_args():
+		return baz
+	return warianty.grafika(typ, int(epoki_graczy.get(g, -1)), zbadane_graczy.get(g, []))
+
+
+## Zmiana epoki gracza (stan wizualny): przebudowa obiektów statycznych gracza; sceny pochodne (RTS) przełączają też
+## grafiki jednostek symulacji – pozycje, stany i trasy symulacji pozostają nietknięte. Zwraca liczbę zmienionych typów.
+func zmien_epoke(g: int, tech_epoki: int) -> int:
+	var stara := mapa_grafik_gracza(g)
+	epoki_graczy[g] = tech_epoki
+	var nowa := mapa_grafik_gracza(g)
+	var zm := 0
+	for k in stara.keys() + nowa.keys():
+		if stara.get(k, -1) != nowa.get(k, -1): zm += 1
+	if zm > 0 and _wezel_obiektow != null:
+		remove_child(_wezel_obiektow); _wezel_obiektow.queue_free(); _wezel_obiektow = null
+		_przebudowa_obiektow = true
+		_obiekty_mapy()
+		_przebudowa_obiektow = false
+	return zm
+
+
+var _przebudowa_obiektow := false
+
+
+func mapa_grafik_gracza(g: int) -> Dictionary:
+	if warianty == null or not warianty.gotowe: return {}
+	return warianty.mapa_grafik(int(epoki_graczy.get(g, -1)), zbadane_graczy.get(g, []))
 
 
 ## Etap 5 – punkty rozszerzeń dla scen pochodnych (domyślnie bez zmian w zachowaniu).

@@ -153,6 +153,22 @@ def _rts(r, wersja=250, czesciowo=False):
     return kolor, nazwa[:-1].decode("cp1250"), jedn, None
 
 
+def blok_ee(d, o):
+    """Blok EE gracza bezpośrednio za częścią RTS (etap 8, własna analiza 31 scenariuszy / 527 graczy):
+    u32 ?, u8 1, u32 15|14, u32 1|2, u32 n, n × (u32 ID technologii dbtechtree, 3 × u8 flagi), i32 epoka, i32, i32 …
+    Flaga 0 = technologia zbadana. „epoka” = ID technologii bieżącej epoki (w każdym badanym pliku równa jedynej
+    zbadanej technologii epoki z listy). Znaczenie dwóch kolejnych i32 nieustalone (w próbkach ≥ epoka)."""
+    z, b1, a, c, n = struct.unpack_from("<IBIII", d, o)
+    if b1 != 1 or n > 100000:
+        raise BladFormatu("blok EE gracza")
+    o += 17
+    tech = [(struct.unpack_from("<I", d, o + 7 * k)[0], tuple(d[o + 7 * k + 4:o + 7 * k + 7])) for k in range(n)]
+    o += 7 * n
+    ep, p2, p3 = struct.unpack_from("<3i", d, o)
+    return {"epoka_tech": ep, "pola_po_epoce": [p2, p3], "technologie": tech,
+            "zbadane": [t for t, f in tech if f[0] == 1]}
+
+
 def _gracz(d, o, wersja=250, czesciowo=False):
     r = _R(d, o)
     typ, n, l20 = _prefiks(r)
@@ -161,6 +177,10 @@ def _gracz(d, o, wersja=250, czesciowo=False):
     if przerwa:
         g["niepelny"] = przerwa
         return przerwa["offset"], g
+    try:
+        g["ee"] = blok_ee(d, r.o)
+    except (BladFormatu, struct.error):
+        pass
     return r.o, g
 
 
@@ -188,9 +208,26 @@ def czytaj(dane, wersja=250):
             p = dane.find(wzor, p + 1)
         if znal is None:
             raise BladFormatu(f"nie znaleziono gracza {i}")
+        if "ee" not in g:
+            _szukaj_bloku_ee(dane, g, koniec, kand)
         koniec, g = znal
         gracze.append(g)
+    if "ee" not in g:
+        _szukaj_bloku_ee(dane, g, koniec, len(dane))
     return gracze
+
+
+def _szukaj_bloku_ee(d, g, od, do):
+    """Gracz odczytany częściowo: blok EE szukany za miejscem przerwania (sygnatura u8 1, u32 15|14, u32 1|2)."""
+    for wz in (b"\x01\x0f\x00\x00\x00\x01\x00\x00\x00", b"\x01\x0e\x00\x00\x00\x02\x00\x00\x00"):
+        p = d.find(wz, od, do)
+        while p >= 4:
+            try:
+                g["ee"] = blok_ee(d, p - 4)
+                g["ee"]["wyszukany"] = True
+                return
+            except (BladFormatu, struct.error):
+                p = d.find(wz, p + 1, do)
 
 
 def eksportuj_gramatyke(sciezka):
