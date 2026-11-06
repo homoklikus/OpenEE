@@ -81,11 +81,12 @@ Scena animacji: `./uruchom_openee.sh animacje --model=Phalanx --sekwencja=atak` 
 ## Dokumentacja
 * [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md) – struktura silnika i projektu
 * [docs/FORMATY.md](docs/FORMATY.md), [docs/FORMATY_ETAP2.md](docs/FORMATY_ETAP2.md), [docs/FORMATY_ETAP3.md](docs/FORMATY_ETAP3.md) – formaty plików EE
+* [docs/WARIANTY_GRY.md](docs/WARIANTY_GRY.md) – Empire Earth i The Art of Conquest jako dwie gry na jednym silniku; [docs/FORMATY_DB_EE_VS_AOC.md](docs/FORMATY_DB_EE_VS_AOC.md) – bazy EE 1.0 i AoC
 * [docs/LOKALIZACJA.md](docs/LOKALIZACJA.md) – lokalizacja i prawa do nagrań
 * [docs/ZASOBY_ORYGINALNE.md](docs/ZASOBY_ORYGINALNE.md) – zasady korzystania z oryginalnych zasobów
 * [docs/HISTORIA.md](docs/HISTORIA.md) – historia rozwoju, [docs/MAPA_DROGOWA.md](docs/MAPA_DROGOWA.md) – plan
 * [CONTRIBUTING.md](CONTRIBUTING.md) – zasady współpracy
-* Raporty etapów: `RAPORT_ETAP_1.md`, `RAPORT_ETAP_2.md`, `RAPORT_ETAP_3.md`, `RAPORT_LAUNCHER_UI.md`
+* Raporty etapów: `RAPORT_ETAP_1.md`, `RAPORT_ETAP_2.md`, `RAPORT_ETAP_3.md`, `RAPORT_LAUNCHER_UI.md`, `RAPORT_EE_AOC_FORMATY.md` (etap 11)
 
 ## Licencja
 OpenEE jest udostępniany na licencji **GNU General Public License v3.0** – plik [LICENSE](LICENSE). Projekt zawiera
