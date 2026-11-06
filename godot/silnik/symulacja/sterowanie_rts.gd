@@ -6,6 +6,7 @@ extends Node
 ## * przeciągnięcie LPM – ramka (zastępuje; Shift – dodaje; Ctrl – usuwa), podgląd ramki na ekranie,
 ## * PPM – rozkaz ruchu grupy (szyk EE, Symulacja.rozkaz_grupy) do punktu terenu; Shift + PPM – dopisanie punktu do
 ##   kolejki rozkazów,
+## * przewijanie krawędzią ekranu nieaktywne podczas przeciągania ramki (jak w EE),
 ## * P – podgląd tras, spacja – pauza symulacji (rozkazy wydane w pauzie czekają w kolejce na następny takt).
 ## Rozkazy inne niż ruch (PPM na budynku, wrogu, zasobie) nie są odtwarzane – PPM zawsze wskazuje punkt terenu
 ## pod kursorem [N: etap 9 obejmuje tylko ruch].
@@ -50,12 +51,14 @@ func _unhandled_input(e: InputEvent) -> void:
 		if e.button_index == MOUSE_BUTTON_LEFT:
 			if e.pressed:
 				_start_ramki = e.position
+				_ramka_kamery(true)
 			elif _start_ramki != Vector2.INF:
 				if _start_ramki.distance_to(e.position) >= PROG_RAMKI:
 					ramka(Rect2(_start_ramki, e.position - _start_ramki), modyfikator(e))
 				else:
 					klik_lewy(e.position, modyfikator(e))
 				_start_ramki = Vector2.INF
+				_ramka_kamery(false)
 				if _ramka: _ramka.visible = false
 		elif e.button_index == MOUSE_BUTTON_RIGHT and e.pressed:
 			klik_prawy(e.position, e.shift_pressed)
@@ -66,6 +69,13 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif e is InputEventKey and e.pressed and not e.echo:
 		if e.keycode == KEY_P: widok.pokaz_trasy = not widok.pokaz_trasy
 		elif e.keycode == KEY_SPACE: zegar.pauza = not zegar.pauza
+
+
+## EE: podczas przeciągania ramki zaznaczenia przewijanie krawędzią jest wyłączone [P: etap 10] – kamera dostaje
+## informację o ramce (kamera produkcyjna ma właściwość `ramka_aktywna`).
+func _ramka_kamery(aktywna: bool) -> void:
+	if kamera and "ramka_aktywna" in kamera:
+		kamera.ramka_aktywna = aktywna
 
 
 func _promien(ekran: Vector2) -> Array:

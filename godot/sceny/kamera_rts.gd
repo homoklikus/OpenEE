@@ -1,7 +1,9 @@
 extends Camera3D
-## Produkcyjna kamera RTS – wierna kamerze oryginalnego EE (ModelKameryEE, pomiary z 2026-11-06):
-## stały kierunek patrzenia i pochylenie 35° (bez obrotu), 21 poziomów zoomu kółkiem myszy (skok o poziom),
-## przesuwanie strzałkami i myszą przy krawędzi okna z prędkością zależną od zoomu, ognisko ograniczone do mapy.
+## Produkcyjna kamera RTS – wierna kamerze oryginalnego EE (ModelKameryEE; pomiary: docs/MECHANIKA_KAMERY_EE.md):
+## stały kierunek patrzenia i pochylenie 35° (bez obrotu), 21 poziomów zoomu kółkiem myszy (skok o poziom, punkt pod
+## kursorem bez znaczenia), przesuwanie strzałkami (suma kierunków), krawędzią ekranu (włączane pchaniem myszy poza
+## krawędź, 5/6 prędkości strzałek, wyłączone podczas przeciągania ramki) i środkowym przyciskiem myszy (w kierunku
+## ruchu myszy, kursor zatrzymany), ognisko ograniczone do rombu mapy, 0,4 nad terenem (woda = 0).
 ## Wolna kamera (obrót Q/E, WASD, środkowy przycisk, R, dowolny zoom) – res://sceny/kamera_diagnostyczna.gd.
 ##
 ## Zgodność z wcześniejszym interfejsem: `cel`, `odleglosc`, `ustaw(cel, odl)`, `_aktualizuj()` – odległość jest
@@ -13,7 +15,10 @@ var odleglosc := ModelKameryEE.odleglosc(ModelKameryEE.POZIOM_STARTOWY)
 var granice := Rect2()             # zakresy (x+z, x−z) ogniska; pusty = bez ograniczenia
 var wysokosc_terenu: Callable      # (Vector2) -> float; pusty = cel.y bez zmian
 var przesuwanie_krawedzia := true  # wyłączane w testach i przy zrzutach (deterministyczny kadr)
-var _mysz_w_oknie := false         # przesuwanie krawędzią dopiero po ruchu myszy w oknie (nowe okno zgłasza (0, 0))
+var ramka_aktywna := false         # ustawiane przez SterowanieRTS podczas przeciągania ramki – blokuje krawędź [P]
+var _krawedz := Vector2.ZERO       # aktywne przewijanie krawędzią (x = prawo/lewo, y = dalej/bliżej), stan jak w EE
+var _srodkowy := false             # przeciąganie środkowym przyciskiem
+var _kursor_srodkowy := Vector2.ZERO
 var _odl_ostatnia := odleglosc
 
 
@@ -49,7 +54,7 @@ func _aktualizuj() -> void:
 	var p := ModelKameryEE.ogranicz(UkladEE.mapa(cel), granice)     # ognisko w układzie mapy EE
 	var y := cel.y
 	if wysokosc_terenu.is_valid():
-		y = float(wysokosc_terenu.call(p)) + ModelKameryEE.WYSOKOSC_OGNISKA
+		y = ModelKameryEE.wysokosc_ogniska(float(wysokosc_terenu.call(p)))
 	cel = UkladEE.godot(p, y)
 	odleglosc = ModelKameryEE.odleglosc(poziom)
 	_odl_ostatnia = odleglosc
@@ -75,42 +80,96 @@ func kierunek_klawiszy() -> Vector2:
 
 
 func kierunek_krawedzi() -> Vector2:
-	if not przesuwanie_krawedzia or not _mysz_w_oknie or not get_window().has_focus():
+	if not przesuwanie_krawedzia or ramka_aktywna or _srodkowy:
 		return Vector2.ZERO
-	var vp := get_viewport()
-	var m := vp.get_mouse_position(); var r := vp.get_visible_rect().size
-	var s := float(ModelKameryEE.STREFA_KRAWEDZI_PX)
-	var v := Vector2.ZERO
-	if m.x <= s: v.x -= 1
-	elif m.x >= r.x - 1 - s: v.x += 1
-	if m.y <= s: v.y += 1
-	elif m.y >= r.y - 1 - s: v.y -= 1
-	return v
+	if DisplayServer.get_name() != "headless" and not get_window().has_focus():
+		return Vector2.ZERO
+	return _krawedz
+
+
+## Stan przewijania krawędzią z ruchu myszy (EE: włączenie pchaniem na zewnątrz, gdy kursor stoi na krawędzi;
+## wyłączenie ruchem do wnętrza albo zejściem z krawędzi). `poz` – pozycja kursora w oknie, `rel` – ruch względny.
+func aktualizuj_krawedz(poz: Vector2, rel: Vector2, rozmiar: Vector2) -> void:
+	if ramka_aktywna:
+		_krawedz = Vector2.ZERO        # ramka zaznaczenia: krawędź nieaktywna [P], stan nie przechodzi poza ramkę [H]
+		return
+	var s := ModelKameryEE.PROG_KRAWEDZI_PX
+	var na_lewej := poz.x <= s; var na_prawej := poz.x >= rozmiar.x - 1.0 - s
+	var na_gorze := poz.y <= s; var na_dole := poz.y >= rozmiar.y - 1.0 - s
+	if na_lewej and rel.x < 0.0: _krawedz.x = -1.0
+	elif na_prawej and rel.x > 0.0: _krawedz.x = 1.0
+	elif (_krawedz.x < 0.0 and (not na_lewej or rel.x > 0.0)) or (_krawedz.x > 0.0 and (not na_prawej or rel.x < 0.0)):
+		_krawedz.x = 0.0
+	if na_gorze and rel.y < 0.0: _krawedz.y = 1.0
+	elif na_dole and rel.y > 0.0: _krawedz.y = -1.0
+	elif (_krawedz.y > 0.0 and (not na_gorze or rel.y > 0.0)) or (_krawedz.y < 0.0 and (not na_dole or rel.y < 0.0)):
+		_krawedz.y = 0.0
 
 
 func _process(dt: float) -> void:
+	_zamknij_kursor_w_oknie()
 	var v := kierunek_klawiszy()
-	if v == Vector2.ZERO:
-		v = kierunek_krawedzi()
 	if v != Vector2.ZERO:
-		# kierunki składane bez normalizacji (ukos szybszy o √2) – zachowanie oryginału przy dwóch klawiszach [N]
+		# kierunki składane bez normalizacji (ukos szybszy o √2), przeciwne się znoszą – jak w EE [P]
 		przesun(v * ModelKameryEE.predkosc(poziom) * dt)
+		return
+	var k := kierunek_krawedzi()
+	if k != Vector2.ZERO:
+		przesun(k * ModelKameryEE.predkosc_krawedzi(poziom) * dt)
 
 
 func _notification(co: int) -> void:
 	if co == NOTIFICATION_WM_MOUSE_EXIT or co == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
-		_mysz_w_oknie = false
+		_krawedz = Vector2.ZERO
+		if _srodkowy: _koniec_srodkowego()
 
 
 func _input(e: InputEvent) -> void:
 	if e is InputEventMouseMotion:
-		_mysz_w_oknie = true
+		if _srodkowy:
+			przesun(ModelKameryEE.przesuniecie_srodkowym(e.relative, poziom))
+		else:
+			aktualizuj_krawedz(e.position, e.relative, get_viewport().get_visible_rect().size)
 
 
 func _unhandled_input(e: InputEvent) -> void:
-	if e is InputEventMouseButton and e.pressed:
-		if e.button_index == MOUSE_BUTTON_WHEEL_UP: ustaw_poziom(poziom - 1)
-		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN: ustaw_poziom(poziom + 1)
+	if e is InputEventMouseButton:
+		if e.pressed and e.button_index == MOUSE_BUTTON_WHEEL_UP: ustaw_poziom(poziom - 1)
+		elif e.pressed and e.button_index == MOUSE_BUTTON_WHEEL_DOWN: ustaw_poziom(poziom + 1)
+		elif e.button_index == MOUSE_BUTTON_MIDDLE:
+			if e.pressed: _poczatek_srodkowego(e.position)
+			elif _srodkowy: _koniec_srodkowego()
+
+
+## W EE (pełny ekran) kursor nie opuszcza okna – pchanie poza krawędź daje ruch względny przy kursorze na krawędzi.
+## W OpenEE kursor jest zamykany w oknie tylko na pełnym ekranie [H]; w oknie zwykłym wyjście kursora za okno
+## przerywa przewijanie krawędzią (NOTIFICATION_WM_MOUSE_EXIT).
+func _zamknij_kursor_w_oknie() -> void:
+	if not przesuwanie_krawedzia or _srodkowy or DisplayServer.get_name() == "headless":
+		return
+	var tryb := DisplayServer.window_get_mode()
+	var pelny := tryb == DisplayServer.WINDOW_MODE_FULLSCREEN or tryb == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	if pelny and get_window().has_focus() and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
+		Input.mouse_mode = Input.MOUSE_MODE_CONFINED
+	elif not pelny and Input.mouse_mode == Input.MOUSE_MODE_CONFINED:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## Środkowy przycisk: kursor zatrzymany (tryb przechwycenia myszy daje sam ruch względny), po zwolnieniu wraca
+## w miejsce wciśnięcia. W EE kursor pozostaje widoczny [H: w OpenEE ukryty na czas przeciągania].
+func _poczatek_srodkowego(poz: Vector2) -> void:
+	_srodkowy = true
+	_krawedz = Vector2.ZERO
+	_kursor_srodkowy = poz
+	if DisplayServer.get_name() != "headless":
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _koniec_srodkowego() -> void:
+	_srodkowy = false
+	if DisplayServer.get_name() != "headless":
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE      # _zamknij_kursor_w_oknie przywróci CONFINED na pełnym ekranie
+		get_viewport().warp_mouse(_kursor_srodkowy)
 
 
 func opis() -> Dictionary:

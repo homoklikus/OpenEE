@@ -95,6 +95,13 @@ static func tryb_testow() -> bool:
 	return false
 
 
+## Diagnostyka (etap 10): `--konfiguracja-domyslna` po "--" – jak w testach pomija wybory użytkownika (profil,
+## warstwy, języki z konfiguracja/uzytkownik.cfg), zostawia tylko ścieżki instalacji; powtarzalne rendery porównawcze
+## niezależnie od profilu wybranego w launcherze.
+static func konfiguracja_domyslna() -> bool:
+	return "--konfiguracja-domyslna" in OS.get_cmdline_user_args()
+
+
 func _nalozenie_uzytkownika() -> void:
 	if not FileAccess.file_exists(plik_uzytkownika):
 		return
@@ -103,7 +110,7 @@ func _nalozenie_uzytkownika() -> void:
 		Dziennik.uwaga("konfiguracja", "Nie można odczytać %s" % plik_uzytkownika)
 		return
 	for sek in u.get_sections():
-		if tryb_testow() and sek != "instalacje":
+		if (tryb_testow() or konfiguracja_domyslna()) and sek != "instalacje":
 			continue   # testy: tylko ścieżki instalacji (wskazane przez użytkownika), bez jego wyborów profilu/języka
 		for k in u.get_section_keys(sek):
 			var v: Variant = u.get_value(sek, k)

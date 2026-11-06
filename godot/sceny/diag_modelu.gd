@@ -283,7 +283,7 @@ func _kamera_z_arg() -> void:
 	var k := _arg("kamera", "").split(",", false)
 	if _arg("kamera-ee", "") != "":
 		# kamera jak w oryginale (ModelKameryEE): kierunek patrzenia mapy EE (−1, +1), pochylenie 35°, poziomy kąt
-		# widzenia 50,4°, odległość poziomu zoomu 0–20; ognisko 0,4 nad podstawą modelu
+		# widzenia ModelKameryEE.FOV_POZIOMY_ST (etap 10: 48,4°), odległość poziomu zoomu 0–20; ognisko 0,4 nad podstawą modelu
 		var pz := clampi(int(_arg("kamera-ee", "8")), 0, ModelKameryEE.POZIOMOW - 1)
 		var fh := UkladEE.kierunek(ModelKameryEE.KIERUNEK_MAPY)            # kierunek patrzenia EE w Godocie (poziomo)
 		_yaw = rad_to_deg(atan2(-fh.x, -fh.z)); _pitch = -ModelKameryEE.POCHYLENIE_ST; _dist = ModelKameryEE.odleglosc(pz)
