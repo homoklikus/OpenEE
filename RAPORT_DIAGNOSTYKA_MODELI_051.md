@@ -183,3 +183,26 @@ wyłącznie pliki tekstowe; zrzuty i wyniki pozostają w ignorowanym `wyniki/`. 
   Z danymi: 150/150.
 * GitHub: sesja nie ma dostępu do konta (brak powiązania; push z maszyny wirtualnej bez poświadczeń). Publikację
   wykonuje użytkownik: `git push origin main` (bez force, historia liniowa nad `667b677`).
+
+## 10. Dodatek (2026-11-06): koszary i meczet ze zrzutu użytkownika
+Identyfikacja z danych scenariusza „The Trojan War” (`--wokol=152,239,9`, gracz 5):
+* **Barracks - 01** (`models/bld_barracks_01`, tekstura `bld_barracks_01T.sst`, 1 obraz) – pole (148, 239), skala 1,78;
+* **x Mosque** (`models/bld_bluemosque_04`, tekstury `bld_bluemosque_04T.sst`, 2 obrazy: `bld_mosque_AT` i `bld_mosque_BT`)
+  – pole (152, 239), skala 1,78.
+
+Analiza: oba modele mają 1 część, macierz jednostkową, 0 duplikatów i 100% spójne nawinięcie. Oba mają ukryte bryły
+pomocnicze z UV na alfa 0, tak jak stajnia (koszary: 40 trójkątów; meczet: 24 trójkąty, prostopadłościany
+0,82 × 0,86 × 0,32 i 0,86 × 0,86 × 0,55), usuwane wycinaniem alfy. Pomarańczowe obramowania to kolor gracza 5
+(w oryginale gracz 1 jest niebieski).
+
+Porównanie z oryginalnym EE (edytor scenariuszy, Twój komputer, bez zapisu; `wyniki/diag052/porownanie_ee_koszary_meczet.png`):
+* **Koszary:** kształt, otwór, kości, kolce, emblemat „X” w kolorze gracza i kamienie u podstawy są zgodne z OpenEE 0.5.2.
+  Różnica: w OpenEE skóra namiotu ma ostrzejsze załamania cieniowania. To oświetlenie, nie geometria [H].
+* **Meczet:** w OpenEE (OpenGL/llvmpipe i Vulkan/lavapipe, w scenie i w trybie diagnostycznym, z bliska i z daleka)
+  wszystkie elementy są obecne i zgodne z oryginałem. Dotyczy to też arkady z ostrołukami po prawej stronie i kolumn
+  w kolorze gracza między drzwiami. **Na zrzucie użytkownika (GPU, Vulkan) brakuje arkady i kolumn między drzwiami** –
+  w środowisku wirtualnym tego nie odtworzono. Wyłączenie odrzucania ścian (`--bez-odrzucania`) w VM niczego nie zmienia.
+  Przyczyna pozostaje nieustalona; podejrzewane: różnica sprzętowa w odrzucaniu ścian (`FRONT_FACING` przy lustrzanej
+  bazie), przesunięcie głębi (`POSITION`) przy przebiegu wstępnym głębi Forward+, wybór poziomu mipmapy dla wycinania alfy.
+* Dodano przełączniki A/B do sprawdzenia na GPU (argumenty po `--` w każdej scenie):
+  `--bez-odrzucania`, `--bez-przesuniecia-glebi`, `--bez-wycinania-alfa`.

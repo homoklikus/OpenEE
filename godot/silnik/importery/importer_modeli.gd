@@ -282,7 +282,17 @@ func _material(img: Image, kolor: Color, gracz: bool) -> ShaderMaterial:
 	mat.set_shader_parameter("kolor_gracza_mnoz", gracz)
 	mat.set_shader_parameter("wycinanie_alfa", wymaga_wycinania(img))
 	mat.set_shader_parameter("billboard_azymut", deg_to_rad(BILLBOARD_AZYMUT_ST))
+	przelaczniki_diagnostyczne(mat)
 	return mat
+
+
+## Przełączniki A/B do porównań na konkretnym GPU (argumenty po "--", tylko diagnostyka; domyślnie reguły 0.5.2):
+##   --bez-odrzucania (rysuj obie strony ścian)  --bez-przesuniecia-glebi  --bez-wycinania-alfa
+static func przelaczniki_diagnostyczne(mat: ShaderMaterial) -> void:
+	var a := OS.get_cmdline_user_args()
+	if "--bez-odrzucania" in a: mat.set_shader_parameter("odrzucaj_tyl", false)
+	if "--bez-przesuniecia-glebi" in a: mat.set_shader_parameter("przesuniecie_glebi", 0.0)
+	if "--bez-wycinania-alfa" in a: mat.set_shader_parameter("wycinanie_alfa", false)
 
 
 ## Siatka statyczna z klatki `kontekst.klatka` (domyślnie 0). Etap 4: każda część (w tym potomne) jest

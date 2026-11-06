@@ -192,6 +192,7 @@ func material(img: Image, kolor: Color, gracz: bool) -> ShaderMaterial:
 	mat.set_shader_parameter("vat", tekstura_vat)
 	mat.set_shader_parameter("vat_szer", szer)
 	mat.set_shader_parameter("vat_wiersze", wiersze)
+	ImporterModeli.przelaczniki_diagnostyczne(mat)
 	return mat
 
 
