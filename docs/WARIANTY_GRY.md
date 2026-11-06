@@ -84,8 +84,10 @@ Szczegóły formatu: `docs/FORMATY_DB_EE_VS_AOC.md`. W skrócie:
   `EELearningCampaign.ssa` w katalogu AoC jest innym plikiem niż w EE i zawiera wersje 231, 248 i 249.
 * AoC wczytuje scenariusze EE w wersji 231: kampania EE „wojna trojańska”, skopiowana do `Scenarios`, uruchomiona
   w AoC, dała 5370 obiektów w pamięci gry wobec 5327 w pliku (etap 11, faza D).
-* [H] Podstawowe EE nie wczytuje scenariuszy w wersji 250 – nie sprawdzone. Narzędzia menu MCP są zbadane tylko dla AoC.
+* [P] Podstawowe EE nie wczytuje scenariuszy w wersji 250: komunikat „Plik z zapisaną grą jest nieprawidłowy” (etap 12).
   OpenEE zgłasza taki przypadek jako błąd, ale nie przerywa wczytywania.
+* [P] Scenariusz EE w wersji 231 („wojna trojańska”) daje w pamięci podstawowego EE i AoC po 7 graczy i 5368 obiektów
+  (etap 12).
 
 ### 3.4. Identyfikacja jednostek, budynków i efektów [P]
 
@@ -130,8 +132,8 @@ nie w `data.ssa`. Generator map OpenEE (poza zakresem etapu 11) musi brać katal
 | `Language.dll` | specyficzna [P] | |
 | kampanie | specyficzne [P] | menu kampanii gry – własny katalog |
 | skrypty `.rmv` | specyficzne (AoC ⊃ EE) [P] | |
-| kamera RTS (MECHANIKA_KAMERY_EE.md) | zmierzona w AoC; (obie?) [H] | EE niezmierzone – pamięć EE ma inny układ |
-| ruch grupowy (MECHANIKA_RUCHU_EE.md) | zmierzony w AoC; (obie?) [H] | pola ruchu w `dbobjects` różnią się wartościami, więc zachowanie może się różnić |
+| kamera RTS (MECHANIKA_KAMERY_EE.md) | wspólna (obie) [P] – etap 12 | zmierzona w EE i AoC na tym samym scenariuszu; narastanie przewijania krawędzią tylko w AoC [W], niezaimplementowane |
+| zaznaczanie, ruch grupowy, szyk (MECHANIKA_RUCHU_EE.md) | wspólne (obie) [P] – etap 12 | prędkość = `Speed` z bazy wybranej gry × mnożnik zależny od scenariusza, ten sam w obu grach; unikanie przy grupach naprzeciw w EE [N] |
 | przezroczystość budynków, warianty epok | zmierzone w AoC; (obie?) [H] | epoka 15 tylko w AoC |
 | renderer terenu | weryfikowany w AoC; (obie?) [H] | patrz § 3.7 |
 
@@ -184,10 +186,12 @@ Szczegóły profilu pokazują grę jako wybieraną osobno. Pozostałe elementy l
 
 ## 6. Ograniczenia
 
-* Podstawowe EE zbadano tylko na poziomie procesu: otwierane pliki i menu główne. Narzędzia MCP do pamięci, ekranów
-  menu i jednostek znają tylko układ `EE-AOC.exe`, więc liczby obiektów scenariusza EE w podstawowym EE nie zostały
-  porównane z OpenEE. Porównanie wykonano w AoC na tym samym pliku scenariusza EE.
-* Kamera, ruch grupowy, przezroczystość i renderer terenu są zmierzone w AoC i dla EE pozostają hipotezą wspólności.
+* Etap 12: narzędzia MCP znają układ pamięci obu plików wykonywalnych (osobne definicje wariantów, bez wspólnych
+  offsetów niepotwierdzonych w obu grach). Obiekty „wojny trojańskiej” w pamięci podstawowego EE zgadzają się z plikiem:
+  5325/5327 ID, typ i gracz 5325/5325 [P].
+* Kamera i ruch grupowy są zmierzone w obu grach (etap 12, `docs/POROWNANIE_MECHANIK_EE_AOC.md`). Przezroczystość
+  budynków i renderer terenu w EE nadal są tylko hipotezą wspólności (obie?) [H]; kadry EE i AoC tej samej sceny mają
+  tę samą geometrię, modele i wodę [P].
 * Kolejność odczytu archiwów w AoC (AoC przed EE) jest wnioskiem z zawartości baz w pamięci, a nie ze śledzenia odczytów.
 * Launcher w trybie headless nie robi zrzutów ekranu, a MCP nie renderuje sceny launchera. Karta gry jest sprawdzona
   testem budowy sceny i testami modelu, bez oceny wizualnej.

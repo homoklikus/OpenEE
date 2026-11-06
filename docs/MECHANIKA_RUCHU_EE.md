@@ -21,8 +21,10 @@ Nie zapisywano niczego do pamięci gry, nie modyfikowano gry ani jej plików i n
 - **[H]** hipoteza (decyzja OpenEE, nie mechanika EE);
 - **[N]** nieustalone.
 
-Wszystkie pomiary dotyczą AoC. Różnice EE 1.0 ↔ AoC w tym zakresie nie były badane [N]. Ten sam silnik i te same
-pola `dbobjects` sugerują brak różnic [H].
+§§ 2–7 to pomiary etapu 9 w **AoC**. Etap 12 powtórzył najważniejsze z nich w **podstawowym Empire Earth** i w AoC
+na tym samym scenariuszu („Wojna trojańska”) – § 10 i `docs/POROWNANIE_MECHANIK_EE_AOC.md`. Zakres ustaleń:
+**(EE)**, **(AoC)**, **(obie)**, **(obie?)**. W EE grupę zaznaczenia gracza przechowują wektory +0x9BC i +0x9C0
+(w AoC +0x9AC i +0x9B0).
 
 ## 1. Jednostki miary
 
@@ -91,7 +93,8 @@ Zmierzone prędkości (mediana w środkowej części ruchu, kilka przejść) [P]
 | Miecznik | 0,6 | 0,875 |
 | Jeździec | 0,8 | 1,17 |
 
-Stosunek wynosi 1,45–1,55, średnio 1,46. Wniosek: prędkość = `Speed` × 1,46 [P dla trzech typów].
+Stosunek wynosi 1,45–1,55, średnio 1,46. Wniosek: prędkość = `Speed` × 1,46 [P dla trzech typów, AoC, Riverlands].
+Etap 12: na „Wojnie trojańskiej” mnożnik wynosi **1,706 w EE i w AoC** [P] – zależy od scenariusza, nie od gry (§ 10).
 
 Wyjaśnienie, że `Speed` podaje pola na sekundę czasu gry, a normalna szybkość gry to ok. 1,5 × czas rzeczywisty,
 jest hipotezą [H].
@@ -157,4 +160,33 @@ Unikanie lokalne nie zostało więc zaimplementowane: oryginał go nie wykazuje.
 9. Grupa mieszana:
    - czas dojścia w EE o ~20% dłuższy niż wynika z prędkości;
    - krętość 1,09.
-10. Różnice EE 1.0 ↔ AoC.
+10. Różnice EE 1.0 ↔ AoC – zbadane w etapie 12 (§ 10); otwarte: unikanie przy grupach idących naprzeciw w EE,
+    prędkość proroka, przyczyna mnożnika prędkości zależnego od scenariusza.
+
+## 10. Etap 12 – Empire Earth i The Art of Conquest
+
+Scenariusz „Wojna trojańska” (SCN 231) wczytany w obu grach, te same jednostki i te same rozkazy. Trajektorie:
+`Testy_MCP/ee_ruch/e12_*.json` (lokalnie).
+
+| Cecha | EE | AoC | Zakres |
+|---|---|---|---|
+| LPM, Shift + LPM, Ctrl + LPM na zaznaczonej | zastępuje / dodaje (na zaznaczonej bez zmian) / usuwa | jak w § 2 | (obie) [P] |
+| Esc | nic nie zmienia | nic nie zmienia | (obie) [P] |
+| Ramka, Ctrl + ramka | zastępuje (z bohaterem i prorokiem w ramce) / usuwa | te same 6 obiektów | (obie) [P] |
+| LPM na murze | zaznacza mur | zaznacza mur | (obie) [P] |
+| LPM na pustym terenie | niezmierzone (punkt trafił w mur) | odznacza (§ 2) | (obie?) [H] |
+| Prędkość | `Speed` × 1,706: obywatel 0,853, gwardia 1,023, bohater 1,366 | gwardia 1,023, bohater 1,38 | (obie) [P] |
+| Prorok (`Speed` 0,45 w obu bazach) | 0,853 | 0,96 | [H] – jedna trasa 1,2–1,3 pola w każdej grze |
+| Start, obrót | jeden takt, obrót pomijalny | to samo | (obie) [P] |
+| Szyk, miejsca końcowe | – | – | (obie) [P]: końcowe pozycje zgodne w granicy 0,05 pola |
+| Prędkości w grupie | każda jednostka własna | to samo | (obie) [P] |
+| Nowy PPM w trakcie ruchu | zastępuje natychmiast | to samo | (obie) [P] |
+| Shift + PPM | kolejka | kolejka | (obie) [W] |
+| Grupy idące naprzeciw | częściowe skrzyżowanie 2 + 2: najmniejsza odległość 0,99, odchylenia do 1,8 pola przy murze i bramie | czysty test nieudany (kliknięcia trafiały sąsiednie jednostki) | [N]; § 6 (AoC, Riverlands) pozostaje [P] dla AoC |
+
+Wnioski:
+- Mechaniki zaimplementowane w OpenEE (§ 8) zachowują się w EE tak samo jak w AoC. Wspólny kod wystarcza, bez
+  rozgałęzień według gry.
+- `Symulacja.MNOZNIK_PREDKOSCI = 1,46` zostaje bez zmian. Wartość 1,706 dotyczy innego scenariusza, w obu grach
+  jednakowo, a przyczyna różnicy między scenariuszami jest nieustalona [N].
+- Unikania lokalnego nie dodano: w EE nie zmierzono go jednoznacznie [N].
