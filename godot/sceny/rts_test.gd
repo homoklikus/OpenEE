@@ -5,7 +5,8 @@ extends "res://sceny/test_scenariusz.gd"
 ## Argumenty (oprócz argumentów test_scenariusz): --rts-jednostka=<fragment nazwy dbobjects>  --rts-cel=x,y
 ##   --rts-demo=<sekundy>  (zaznacza jednostkę, wydaje rozkaz, czeka; zrzuty: --rts-zrzuty=<katalog>)
 ##   --rts-film=<katalog> (klatki PNG co 1/25 s czasu symulacji)  --rts-sledz (kamera z bliska za jednostką)  --rts-woda (dodatkowo rozkaz do wody głębokiej – test odrzucenia)  --rts-pomiar=<liczba jednostek z rozkazami>
-## Sterowanie: LPM – zaznacz, PPM – idź, P – trasa, spacja – pauza, WASD/kółko/Q/E – kamera, Esc – launcher.
+## Sterowanie: LPM – zaznacz, PPM – idź, P – trasa, spacja – pauza, strzałki/krawędź okna/kółko – kamera EE (stały kierunek, bez obrotu), Esc – launcher.
+## Kamera: produkcyjna res://sceny/kamera_rts.gd; --kamera-wolna – diagnostyczna (obrót Q/E, WASD, dowolny zoom).
 
 const TYPY_RUCHOME := [5, 6, 13, 16, 23, 4, 18, 21, 22]   # Unit type: lądowe, obywatele, kapłani/bohaterowie, oblężnicze, okręty
 const TYPY_BLOKUJACE := [1, 2, 24, 25, 29, 30]              # zasoby (w tym drzewa), budynki, bramy
@@ -31,6 +32,10 @@ func _przejmij_obiekt(u: Dictionary, ob: Dictionary, gr: Dictionary, kolor: Colo
 	_do_symulacji.append({"u": u, "ob": ob, "gr": gr, "kolor": kolor, "gracz": gracz, "x": x, "z": z, "tr": tr,
 		"model": model, "tex": tex, "skala": skala})
 	return true
+
+
+func _kamera_produkcyjna() -> bool:
+	return not "--kamera-wolna" in OS.get_cmdline_user_args()
 
 
 func _po_zbudowaniu() -> void:

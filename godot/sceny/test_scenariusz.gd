@@ -5,6 +5,8 @@ extends Node3D
 ##                      --zrzut=<plik.png> --kamera=blisko --bez-obiektow --teren=etap2 (stary renderer – porównanie)
 ##                      --pomiar=<klatki> (czas klatki, wywołania rysowania, pamięć → raport JSON)
 ##                      --bez-animacji (etap 4: jednostki statyczne, klatka 0 – porównanie)
+##                      --plik-scn=<ścieżka.scn> (pojedynczy scenariusz z dysku zamiast archiwum kampanii)
+##                      --kamera=ee (kamera produkcyjna wierna EE) --kamera-ognisko=x,y --kamera-poziom=0..20 --kamera-fov=<poziomy °>
 ## Etap 4: jednostki z sekwencją bezczynności (dbgraphics) animowane przez AnimacjaVAT w MultiMesh na model.
 ## Etap 3: teren budowany przez TerenEE (reguły mieszania tekstur, wariantów i wody silnika EE),
 ##         scenariusze Empire Earth (wersja 231) z katalogu „Empire Earth/Data/Campaigns”.
@@ -44,17 +46,26 @@ func _ready() -> void:
 	var szuk := _arg("scenariusz", "soldiers for rome").to_lower()
 	var gra_ee := kamp.to_lower().begins_with("ee")
 	var rel := ("Empire Earth/Data/Campaigns/" if gra_ee else "Empire Earth - The Art of Conquest/Data/Campaigns/") + kamp
-	var a := Zasoby.archiwum(Konfiguracja.zrodlo_gry, rel)
-	if a == null:
-		Dziennik.blad("test_scenariusz", "Brak archiwum kampanii %s" % rel); return
-	var klucz := ""
-	for k in a.wpisy:
-		if k.ends_with(".scn") and szuk in k:
-			klucz = k
 	scn = ScenariuszEE.new()
-	if klucz == "" or not scn.wczytaj(a.czytaj(klucz)) or not scn.czytaj_teren():
-		Dziennik.blad("test_scenariusz", "Scenariusz '%s': %s" % [szuk, scn.blad]); return
-	raport["scenariusz"] = "%s:%s:%s" % [Konfiguracja.zrodlo_gry, rel, klucz]
+	var plik_scn := _arg("plik-scn", "")
+	if plik_scn != "":
+		# diagnostyka: pojedynczy plik .scn z dysku (np. mapa Riverlands do porównania kamer) – tylko odczyt
+		var dane := FileAccess.get_file_as_bytes(plik_scn)
+		if dane.is_empty() or not scn.wczytaj(dane) or not scn.czytaj_teren():
+			Dziennik.blad("test_scenariusz", "Plik scenariusza '%s': %s" % [plik_scn, scn.blad]); return
+		rel = plik_scn
+		raport["scenariusz"] = "plik:" + plik_scn
+	else:
+		var a := Zasoby.archiwum(Konfiguracja.zrodlo_gry, rel)
+		if a == null:
+			Dziennik.blad("test_scenariusz", "Brak archiwum kampanii %s" % rel); return
+		var klucz := ""
+		for k in a.wpisy:
+			if k.ends_with(".scn") and szuk in k:
+				klucz = k
+		if klucz == "" or not scn.wczytaj(a.czytaj(klucz)) or not scn.czytaj_teren():
+			Dziennik.blad("test_scenariusz", "Scenariusz '%s': %s" % [szuk, scn.blad]); return
+		raport["scenariusz"] = "%s:%s:%s" % [Konfiguracja.zrodlo_gry, rel, klucz]
 	raport["mapa"] = [scn.teren.A, scn.teren.B]
 	raport["wersja_scn"] = scn.wersja_kawalka(5)
 	var t1 := Time.get_ticks_msec()
@@ -103,6 +114,21 @@ func _ready() -> void:
 		_zrzut(z)
 	elif _arg("pomiar", "") != "":
 		_pomiar(int(_arg("pomiar", "120")), "")
+
+
+## Kamera produkcyjna (wierna EE) czy diagnostyczna (wolna). Podgląd scenariusza: diagnostyczna, chyba że
+## --kamera=ee; rozgrywka RTS (rts_test) nadpisuje – produkcyjna, chyba że --kamera-wolna.
+func _kamera_produkcyjna() -> bool:
+	return _arg("kamera", "") == "ee"
+
+
+## Wysokość terenu w punkcie mapy (x = kolumna, y = wiersz) – interpolacja punktów siatki.
+func _wysokosc_mapy(p: Vector2) -> float:
+	var n := float(scn.teren.N)
+	p = Vector2(clampf(p.x, 0.0, n - 1.001), clampf(p.y, 0.0, n - 1.001))
+	var c := int(floor(p.x)); var r := int(floor(p.y))
+	var fx := p.x - c; var fz := p.y - r
+	return lerpf(lerpf(_w(r, c), _w(r, c + 1), fx), lerpf(_w(r + 1, c), _w(r + 1, c + 1), fx), fz)
 
 
 func _w(r: int, c: int) -> float:
@@ -423,21 +449,44 @@ func _scena() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.8, 0.8, 0.85); env.ambient_light_energy = 0.65
 	we.environment = env; add_child(we)
-	_kamera = Camera3D.new(); _kamera.set_script(load("res://sceny/kamera_rts.gd")); _kamera.fov = 40
+	var produkcyjna := _kamera_produkcyjna()
+	_kamera = Camera3D.new()
+	_kamera.set_script(load("res://sceny/kamera_rts.gd" if produkcyjna else "res://sceny/kamera_diagnostyczna.gd"))
+	_kamera.fov = 40
 	add_child(_kamera)
 	var srodek := Vector3(okno.y + n / 2.0, 0, okno.x + n / 2.0)
-	_kamera.ustaw(srodek, n * (0.75 if n > 100 else 0.95))
-	if _arg("kamera", "") == "blisko":
-		_kamera.ustaw(srodek, n * 0.3)
+	if produkcyjna:
+		_kamera.wysokosc_terenu = func(p: Vector2) -> float: return _wysokosc_mapy(p)
+		var automat := Konfiguracja.tryb_testow()
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--zrzut") or a.begins_with("--pomiar") or a.begins_with("--rts-zrzuty") or a.begins_with("--rts-film") or a.begins_with("--rts-pomiar"):
+				automat = true
+		if automat:
+			_kamera.przesuwanie_krawedzia = false     # kadr zrzutu nie może zależeć od położenia kursora
+		_kamera.ustaw_granice_z_mapy(scn.teren.rp)
+		var og := _arg("kamera-ognisko", "")
+		if og != "":
+			var cz := og.split(",")
+			srodek = Vector3(float(cz[0]), 0, float(cz[1]))
+		_kamera.ustaw(srodek, 0.0)
+		_kamera.ustaw_poziom(int(_arg("kamera-poziom", str(ModelKameryEE.POZIOM_STARTOWY))))
+		if _arg("kamera-fov", "") != "":          # diagnostyka: porównanie hipotez kąta widzenia z oryginałem
+			_kamera.fov = float(_arg("kamera-fov", ""))
+		raport["kamera"] = _kamera.opis()
+	else:
+		_kamera.ustaw(srodek, n * (0.75 if n > 100 else 0.95))
+		if _arg("kamera", "") == "blisko":
+			_kamera.ustaw(srodek, n * 0.3)
 	_kamera.current = true
 	var cl := CanvasLayer.new(); var lab := Label.new()
 	lab.position = Vector2(12, 8)
 	lab.add_theme_color_override("font_color", Color.WHITE)
 	lab.add_theme_color_override("font_outline_color", Color.BLACK)
 	lab.add_theme_constant_override("outline_size", 4)
-	lab.text = "OpenEE – etap 4: %s\nOkno %d×%d pól (r0=%d c0=%d), obiekty: %s\nŹródło: %s; warstwy: %s\nSterowanie: WASD/strzałki, kółko, Q/E, R" % [
+	lab.text = "OpenEE – etap 4: %s\nOkno %d×%d pól (r0=%d c0=%d), obiekty: %s\nŹródło: %s; warstwy: %s\nSterowanie: %s" % [
 		raport.get("scenariusz", "?").get_file(), n, n, okno.x, okno.y, raport.get("obiekty", {}).get("pokazane", 0),
-		Konfiguracja.zrodlo_gry, ", ".join(Konfiguracja.aktywne_warstwy)]
+		Konfiguracja.zrodlo_gry, ", ".join(Konfiguracja.aktywne_warstwy),
+		"strzałki / krawędź okna – przesuwanie, kółko – zoom (kamera EE)" if produkcyjna else "WASD/strzałki, kółko, Q/E, R (kamera diagnostyczna)"]
 	cl.add_child(lab); add_child(cl)
 
 

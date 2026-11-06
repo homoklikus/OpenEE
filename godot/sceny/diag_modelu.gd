@@ -10,7 +10,7 @@ extends Node3D
 ##   --cull=tyl|nie|przod   --glebia=tak|nie   --alfa=wycinanie|brak|mieszanie   --prog-alfa=0.5
 ##   --mipmapy=tak|nie   --alfa-mip0=tak|nie (test alfa z poziomu 0)   --krawedzie-alfa=tak|nie (kolor pod alfa=0)
 ##   --billboard=auto|tak|nie   --azymut=<stopnie obrotu billboardu>   --produkcja (siatka i materiały dokładnie jak w scenach – ImporterModeli)
-##   --kamera=yaw,pitch,odl[,x,y,z]   --podloze=nie|<wysokość>   --kolor-gracza=#rrggbb
+##   --kamera=yaw,pitch,odl[,x,y,z]   --kamera-ee=<poziom 0–20> (kamera oryginału: ModelKameryEE)   --podloze=nie|<wysokość>   --kolor-gracza=#rrggbb
 ##   --lustro (model w bazie o wyznaczniku -1, jak obiekty scenariusza – test odrzucania ścian)
 ##   --zbadaj=<id trójkątów, np. 12,40>   --zrzut=<plik.png>   --bez-ui
 ## Raport: wyniki/diag_modelu/<model>.json (części, materiały, obrazy SST, transformacje, nawinięcie, pary
@@ -277,6 +277,14 @@ func _kamera_z_arg() -> void:
 			else: bb = bb.expand(p)
 	_cel = bb.get_center(); _dist = maxf(1.0, bb.size.length() * 1.6)
 	var k := _arg("kamera", "").split(",", false)
+	if _arg("kamera-ee", "") != "":
+		# kamera jak w oryginale (ModelKameryEE): kierunek patrzenia mapy EE (−1, +1), pochylenie 35°, poziomy kąt
+		# widzenia 50,4°, odległość poziomu zoomu 0–20; ognisko 0,4 nad podstawą modelu
+		var pz := clampi(int(_arg("kamera-ee", "8")), 0, ModelKameryEE.POZIOMOW - 1)
+		_yaw = 135.0; _pitch = -ModelKameryEE.POCHYLENIE_ST; _dist = ModelKameryEE.odleglosc(pz)
+		_cel = Vector3(bb.get_center().x, ModelKameryEE.WYSOKOSC_OGNISKA, bb.get_center().z)
+		if _ma("lustro"): _cel.z = -_cel.z
+		_kam.keep_aspect = Camera3D.KEEP_WIDTH; _kam.fov = ModelKameryEE.FOV_POZIOMY_ST; _kam.near = 0.05
 	if k.size() >= 3:
 		_yaw = float(k[0]); _pitch = float(k[1]); _dist = float(k[2])
 	if k.size() >= 6:
