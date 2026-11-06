@@ -159,3 +159,18 @@ zaznaczonych (`zaznaczone` jest listą), polityki dla innych typów ruchu, zapis
 Scena: `sceny/rts_test.gd` (dziedziczy `test_scenariusz.gd` przez punkty rozszerzeń `_przejmij_obiekt`
 i `_po_zbudowaniu`), uruchamianie: `./uruchom_openee.sh rts`.
 
+## Etap 11 – dwie gry na jednym silniku
+OpenEE uruchamia **Empire Earth** (`ee`) i **Empire Earth: The Art of Conquest** (`aoc`) jako dwie gry na wspólnym silniku
+(szczegóły i dowody: `docs/WARIANTY_GRY.md`; formaty baz: `docs/FORMATY_DB_EE_VS_AOC.md`).
+
+| Element | Plik | Rola |
+|---|---|---|
+| definicje gier | `dane/gry.json`, `silnik/rdzen/gry_ee.gd` (`GryEE`) | katalogi danych (kolejność), kampanie, `Language.dll`, format bazy, wersje SCN, warstwy bazowe |
+| wybór gry | `Konfiguracja.gra` (`[gra] wariant`, `--gra=`) | niezależny od profilu (instalacja + mody) i języków; `Konfiguracja.profil` – alias zgodności |
+| warianty formatu bazy | `dane/uklad_db_warianty.json`, `BazaDB`, `EpokiDB` | rozpoznanie ze struktury, kontrola zakresów, błąd zamiast „pomiń” |
+| źródła i pamięć podręczna | `Zasoby` (`klucz_zrodel`, `przebuduj_zrodla`, `kampanie`, `teksty`) | tylko katalogi wybranej gry; pamięć podręczna kluczowana grą i źródłem |
+| launcher | `StanLaunchera.wybierz_gre`, karta „Gra” | migracja `vanilla_aoc`/`vanilla_ee` → `vanilla` + gra |
+
+Zasada: kod silnika jest wspólny, a różnice gier są danymi. Mechanika zmierzona tylko w AoC jest dla EE hipotezą, dopóki
+nie zostanie zweryfikowana na oryginalnym EE.
+
