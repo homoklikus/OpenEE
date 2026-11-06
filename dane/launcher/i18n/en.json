@@ -1,4 +1,5 @@
 {
+ "gra_wybor_tytul": "Game", "gra_niedostepna": "This game is missing from the profile's install", "gra_kampanie": "Campaigns: %d", "gra_osobno": "chosen on the main screen, independent of the profile",
  "_nazwa": "English",
  "podtytul": "Open-source Empire Earth engine",
  "nav_start": "Home", "nav_gra": "Game", "nav_mody": "Mods", "nav_profile": "Profiles",
@@ -55,7 +56,7 @@
  "mody_plan_tytul": "Mod manager – plan",
  "mody_plan": "Planned: mods in OpenEE/mody/<name>/ with a mod.json manifest, dependencies and load order. For now the list is based on local layer data (dane/warstwy.json).",
  "profile_lista": "Profiles", "profil_szczegoly": "Profile details", "nazwa": "Name", "zrodlo_danych": "Data source",
- "zawartosc_gry": "Game content", "mody_w_profilu": "Mods", "warstwy_silnika": "Engine layers", "brak": "none",
+ "zawartosc_gry": "Game", "mody_w_profilu": "Mods", "warstwy_silnika": "Engine layers", "brak": "none",
  "profil_wbudowany_uwaga": "Built-in profile – use “Clone” to change it.",
  "ust_launcher": "Launcher", "jezyk_ui": "Interface language", "jezyk_ui_podpowiedz": "Launcher interface language", "skala_ui": "Interface scale",
  "ust_jezyk_danych": "Game data language",

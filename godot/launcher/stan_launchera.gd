@@ -1,5 +1,10 @@
 class_name StanLaunchera
-## Model launchera (bez UI): profile gry, język gry, mody (nakładki), ustawienia launchera.
+## Model launchera (bez UI): wybór GRY (Empire Earth / The Art of Conquest – etap 11), profile (instalacja + mody),
+## język gry, ustawienia launchera. Gra i profil są niezależne: ten sam profil (np. instalacja społecznościowa z PL
+## i nakładką HD) działa z obiema grami.
+## Migracja (etap 11): profile wbudowane "vanilla_aoc"/"vanilla_ee" zawierały grę – są aliasami profilu "vanilla"
+## z grą aoc/ee; [gra] wariant dopisywany na podstawie starego [zrodlo] profil. Kopia uzytkownik.cfg przed migracją:
+## konfiguracja/uzytkownik.cfg.przed_etapem11. Pole "gra" w profilach użytkownika jest ignorowane (pozostaje w pliku).
 ## Trwałość: konfiguracja/uzytkownik.cfg (przez Konfiguracja.zapisz_uzytkownika) oraz
 ## konfiguracja/profile_uzytkownika.json (profile utworzone przez użytkownika). openee.cfg nie jest zmieniany.
 ## `tylko_pamiec = true` (testy) – nic nie jest zapisywane, konfiguracja silnika nie jest zmieniana.
@@ -12,9 +17,13 @@ const JEZYKI_GRY := ["pl", "en", "pl_en"]   # presety; "wlasny" gdy konfiguracja
 var K: Node            # autoload Konfiguracja
 var Z: Node            # autoload Zasoby
 var tylko_pamiec := false
+var stosuj_w_pamieci := false    # z tylko_pamiec: zmiany gry/profilu trafiają do silnika w pamięci (testy przełączania)
 var katalog := ""
-var profile: Array = []          # [{id, nazwa, opis, zrodlo, gra, mody[], wbudowany}]
-var profil_id := "vanilla_aoc"
+var profile: Array = []          # [{id, nazwa, opis, zrodlo, mody[], wbudowany}]
+var profil_id := "vanilla"
+var gra_id := GryEE.DOMYSLNA      # "ee" | "aoc"
+var migracja: Dictionary = {}     # opis wykonanej migracji (pusty – brak)
+const ALIASY_PROFILI := {"vanilla_aoc": ["vanilla", "aoc"], "vanilla_ee": ["vanilla", "ee"]}
 var jezyk_ui := "pl"
 var uzyj_openee := true
 var skala_ui := 1.0
@@ -32,9 +41,39 @@ func _init(konfiguracja: Node, zasoby: Node, pamiec := false) -> void:
 	jezyk_ui = String(_ust("jezyk_ui", "pl" if sys == "pl" else "en"))
 	uzyj_openee = bool(_ust("uzyj_openee", true))
 	skala_ui = clampf(float(_ust("skala_ui", 1.0)), 0.7, 1.4)
+	gra_id = String(K.gra) if GryEE.poprawna(String(K.gra)) else GryEE.DOMYSLNA
 	profil_id = String(_ust("profil", _profil_z_konfiguracji()))
+	_migruj()
 	if profil(profil_id).is_empty():
-		profil_id = "vanilla_aoc"
+		profil_id = "vanilla"
+
+
+## Migracja konfiguracji sprzed etapu 11 (bez utraty ustawień; nic nie jest usuwane).
+func _migruj() -> void:
+	var zmiany := {}
+	if ALIASY_PROFILI.has(profil_id):
+		var a: Array = ALIASY_PROFILI[profil_id]
+		migracja["profil"] = "%s → %s + gra %s" % [profil_id, a[0], a[1]]
+		if K.wartosc_uzytkownika("gra", "wariant", null) == null:
+			gra_id = a[1]
+		profil_id = a[0]
+		zmiany["launcher/profil"] = profil_id
+	if not tylko_pamiec and K.wartosc_uzytkownika("gra", "wariant", null) == null \
+			and FileAccess.file_exists(K.plik_uzytkownika):
+		migracja["gra"] = "[gra] wariant = %s (z %s)" % [gra_id, K.zrodlo_wyboru_gry]
+		zmiany["gra/wariant"] = gra_id
+		zmiany["warstwy/aktywne"] = _warstwy_profilu(profil(profil_id)) if not profil(profil_id).is_empty() else K.aktywne_warstwy
+	if zmiany.is_empty() or tylko_pamiec or K.tryb_testow():
+		return      # testy: żadnych operacji na plikach użytkownika (ani zapisu, ani kopii zapasowej)
+	var kopia: String = String(K.plik_uzytkownika) + ".przed_etapem11"
+	if not FileAccess.file_exists(kopia):
+		DirAccess.copy_absolute(K.plik_uzytkownika, kopia)
+	_zapisz(zmiany)
+	var dz: Node = Engine.get_main_loop().root.get_node_or_null("Dziennik") if Engine.get_main_loop() is SceneTree else null
+	if dz:
+		dz.info("launcher", "Migracja konfiguracji (etap 11): %s; kopia: %s" % [str(migracja), kopia])
+	if Z and Z.has_method("przebuduj_zrodla"):
+		Z.przebuduj_zrodla()
 
 
 func _ust(klucz: String, dom: Variant) -> Variant:
@@ -61,9 +100,9 @@ func _wczytaj_profile() -> void:
 		q["wbudowany"] = true
 		profile.append(q)
 	if profile.is_empty():
-		profile.append({"id": "vanilla_aoc", "nazwa": {"pl": "Vanilla (EE + AoC)", "en": "Vanilla (EE + AoC)"},
+		profile.append({"id": "vanilla", "nazwa": {"pl": "Vanilla", "en": "Vanilla"},
 			"opis": {"pl": "Oryginalna gra bez modyfikacji.", "en": "Original game without modifications."},
-			"zrodlo": "referencyjna", "gra": "aoc", "mody": [], "wbudowany": true})
+			"zrodlo": "referencyjna", "mody": [], "wbudowany": true})
 	if not tylko_pamiec:
 		var u: Variant = _json("konfiguracja/profile_uzytkownika.json")
 		for p in (u.get("profile", []) if u is Dictionary else []):
@@ -87,6 +126,8 @@ func _zapisz_profile_uzytkownika() -> void:
 
 
 func profil(id: String) -> Dictionary:
+	if ALIASY_PROFILI.has(id):
+		id = ALIASY_PROFILI[id][0]
 	for p in profile:
 		if p.id == id:
 			return p
@@ -106,13 +147,14 @@ static func tekst(v: Variant, jez: String) -> String:
 func _profil_z_konfiguracji() -> String:
 	var w: PackedStringArray = K.aktywne_warstwy
 	for p in profile:
-		if p.zrodlo == K.zrodlo_gry and p.gra == K.profil and _warstwy_profilu(p) == Array(w):
+		if p.zrodlo == K.zrodlo_gry and _warstwy_profilu(p) == Array(w):
 			return p.id
-	return "vanilla_aoc"
+	return "vanilla"
 
 
+## Warstwy silnika: warstwy bazowe WYBRANEJ GRY (dane/gry.json) + nakładki modów profilu.
 func _warstwy_profilu(p: Dictionary) -> Array:
-	var w: Array = ["vanilla", "aoc"] if p.get("gra", "aoc") == "aoc" else ["vanilla"]
+	var w: Array = GryEE.warstwy_bazowe(gra_id, katalog).duplicate()
 	for m in p.get("mody", []):
 		if m in p.get("wylaczone", []):
 			continue
@@ -126,26 +168,65 @@ func wybierz_profil(id: String) -> bool:
 	var p := profil(id)
 	if p.is_empty():
 		return false
-	profil_id = id
+	profil_id = p.id
 	_zastosuj()
 	zmieniono.emit("profil")
 	return true
 
 
-## Zapisuje profil do konfiguracji silnika (źródło, gra, warstwy) i przebudowuje źródła zasobów.
+## Zapisuje profil i grę do konfiguracji silnika i przebudowuje źródła zasobów (czyści pamięć podręczną poprzedniej gry).
+## [zrodlo] profil jest zapisywany równolegle z [gra] wariant – zgodność ze starszymi wersjami OpenEE.
 func _zastosuj() -> void:
 	var p := aktualny()
-	_zapisz({"launcher/profil": profil_id, "zrodlo/gra": p.get("zrodlo", "referencyjna"),
-		"zrodlo/profil": p.get("gra", "aoc"), "warstwy/aktywne": _warstwy_profilu(p)})
-	if not tylko_pamiec and Z and Z.has_method("przebuduj_zrodla"):
+	if tylko_pamiec:
+		if stosuj_w_pamieci:       # testy przełączania gry: silnik zmieniany w pamięci, nic nie jest zapisywane
+			K.gra = gra_id
+			K.zrodlo_gry = String(p.get("zrodlo", K.zrodlo_gry))
+			K.instalacja_ee = K.instalacje.get(K.zrodlo_gry, "")
+			K.aktywne_warstwy = PackedStringArray(_warstwy_profilu(p))
+			if Z and Z.has_method("przebuduj_zrodla"):
+				Z.przebuduj_zrodla()
+		return
+	_zapisz({"launcher/profil": profil_id, "zrodlo/gra": p.get("zrodlo", "referencyjna"), "gra/wariant": gra_id,
+		"zrodlo/profil": gra_id, "warstwy/aktywne": _warstwy_profilu(p)})
+	if Z and Z.has_method("przebuduj_zrodla"):
 		Z.przebuduj_zrodla()
+
+
+# ---------------------------------------------------------------- gra (Empire Earth / The Art of Conquest)
+
+func gry() -> Array:
+	return GryEE.WSZYSTKIE
+
+
+func nazwa_gry(id: String) -> String:
+	return GryEE.nazwa(id, katalog)
+
+
+## Czy gra jest w instalacji bazowej bieżącego profilu.
+func gra_dostepna(id: String) -> bool:
+	return GryEE.dostepna(id, K.instalacje.get(String(aktualny().get("zrodlo", K.zrodlo_gry)), ""), katalog)
+
+
+func wybierz_gre(id: String) -> bool:
+	if not GryEE.poprawna(id):
+		return false
+	gra_id = id
+	_zastosuj()
+	zmieniono.emit("gra")
+	return true
+
+
+## Kampanie wybranej gry (z jej katalogu Data/Campaigns).
+func kampanie() -> Array:
+	return GryEE.kampanie(gra_id, K.instalacje.get(String(aktualny().get("zrodlo", K.zrodlo_gry)), ""), katalog)
 
 
 func nowy_profil(nazwa: String) -> String:
 	var id := "uzytkownik_%d" % Time.get_unix_time_from_system()
 	while not profil(id).is_empty():
 		id += "_"
-	profile.append({"id": id, "nazwa": nazwa, "opis": "", "zrodlo": "referencyjna", "gra": "aoc", "mody": [], "wbudowany": false})
+	profile.append({"id": id, "nazwa": nazwa, "opis": "", "zrodlo": "referencyjna", "mody": [], "wbudowany": false})
 	_zapisz_profile_uzytkownika()
 	wybierz_profil(id)
 	return id
@@ -170,7 +251,7 @@ func usun_profil(id: String) -> bool:
 	profile.erase(p)
 	_zapisz_profile_uzytkownika()
 	if profil_id == id:
-		wybierz_profil("vanilla_aoc")
+		wybierz_profil("vanilla")
 	zmieniono.emit("profile")
 	return true
 

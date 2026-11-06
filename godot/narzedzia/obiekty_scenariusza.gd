@@ -15,7 +15,10 @@ func _initialize() -> void:
 	await process_frame
 	var K = root.get_node("Konfiguracja"); var Z = root.get_node("Zasoby")
 	var kamp := _arg("kampania", "EETheGreeks.ssa")
-	var rel := ("Empire Earth/Data/Campaigns/" if kamp.to_lower().begins_with("ee") else "Empire Earth - The Art of Conquest/Data/Campaigns/") + kamp
+	var ak: Dictionary = GryEE.archiwum_kampanii(K.gra, kamp, K.instalacja_ee, K.katalog_openee)   # etap 11: kampania wybranej gry
+	var rel: String = ak.get("rel", "")
+	if ak.has("blad") and _arg("plik-scn", "") == "":
+		printerr(ak.blad); quit(1); return
 	var plik_scn := _arg("plik-scn", "")
 	var a = null if plik_scn != "" else Z.archiwum(K.zrodlo_gry, rel)
 	var szuk := _arg("scenariusz", "trojan war").to_lower()

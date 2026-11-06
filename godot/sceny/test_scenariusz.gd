@@ -6,6 +6,7 @@ extends Node3D
 ##                      --pomiar=<klatki> (czas klatki, wywołania rysowania, pamięć → raport JSON)
 ##                      --bez-animacji (etap 4: jednostki statyczne, klatka 0 – porównanie)
 ##                      --plik-scn=<ścieżka.scn> (pojedynczy scenariusz z dysku zamiast archiwum kampanii)
+##                      --raport=<plik.json> (etap 11: pełny raport do pliku i wyjście; --gra=ee|aoc – wybór gry)
 ##                      --kamera=ee (kamera produkcyjna wierna EE) --kamera-ognisko=x,y --kamera-poziom=0..20 --kamera-fov=<poziomy °>
 ##                      --epoka=<epoka 1–15>|<gracz>:<epoka>[,<gracz>:<epoka>…] (etap 8: nadpisanie epoki – porównania)
 ##                      --przezroczystosc=0|1|2 (etap 8: tryb ukrywania jednostek; F5 przełącza)  --gracz-lokalny=<n>
@@ -55,8 +56,9 @@ func _ready() -> void:
 	var t0 := Time.get_ticks_msec()
 	var kamp := _arg("kampania", "AOCRoman.ssa")
 	var szuk := _arg("scenariusz", "soldiers for rome").to_lower()
-	var gra_ee := kamp.to_lower().begins_with("ee")
-	var rel := ("Empire Earth/Data/Campaigns/" if gra_ee else "Empire Earth - The Art of Conquest/Data/Campaigns/") + kamp
+	# etap 11: archiwum kampanii z katalogu WYBRANEJ gry (dane/gry.json); w AoC kampanie EE – jawne współdzielenie
+	var rel := ""
+	raport["gra"] = Konfiguracja.gra
 	scn = ScenariuszEE.new()
 	UkladEE.ustaw_konwencje_modelu(_arg("uklad-modelu", "I"))   # diagnostyka etapu 7 (porównanie konwencji osi)
 	var plik_scn := _arg("plik-scn", "")
@@ -64,22 +66,34 @@ func _ready() -> void:
 		# diagnostyka: pojedynczy plik .scn z dysku (np. mapa Riverlands do porównania kamer) – tylko odczyt
 		var dane := FileAccess.get_file_as_bytes(plik_scn)
 		if dane.is_empty() or not scn.wczytaj(dane) or not scn.czytaj_teren():
-			Dziennik.blad("test_scenariusz", "Plik scenariusza '%s': %s" % [plik_scn, scn.blad]); return
+			Dziennik.blad("test_scenariusz", "Plik scenariusza '%s': %s" % [plik_scn, scn.blad]); _blad_raportu(); return
 		rel = plik_scn
 		raport["scenariusz"] = "plik:" + plik_scn
 	else:
+		var ak := GryEE.archiwum_kampanii(Konfiguracja.gra, kamp, Konfiguracja.instalacja_ee, Konfiguracja.katalog_openee)
+		if ak.has("blad"):
+			Dziennik.blad("test_scenariusz", ak.blad); _blad_raportu(); return
+		rel = ak.rel
+		raport["kampania_wlasna"] = ak.wlasna
+		if not ak.wlasna:
+			ImporterEE.zglos("uwaga", "test_scenariusz", "Kampania %s spoza katalogu gry %s – jawne współdzielenie (%s)" % [kamp, Konfiguracja.gra, rel])
 		var a := Zasoby.archiwum(Konfiguracja.zrodlo_gry, rel)
 		if a == null:
-			Dziennik.blad("test_scenariusz", "Brak archiwum kampanii %s" % rel); return
+			Dziennik.blad("test_scenariusz", "Brak archiwum kampanii %s" % rel); _blad_raportu(); return
 		var klucz := ""
 		for k in a.wpisy:
 			if k.ends_with(".scn") and szuk in k:
 				klucz = k
 		if klucz == "" or not scn.wczytaj(a.czytaj(klucz)) or not scn.czytaj_teren():
-			Dziennik.blad("test_scenariusz", "Scenariusz '%s': %s" % [szuk, scn.blad]); return
+			Dziennik.blad("test_scenariusz", "Scenariusz '%s': %s" % [szuk, scn.blad]); _blad_raportu(); return
 		raport["scenariusz"] = "%s:%s:%s" % [Konfiguracja.zrodlo_gry, rel, klucz]
 	raport["mapa"] = [scn.teren.A, scn.teren.B]
 	raport["wersja_scn"] = scn.wersja_kawalka(5)
+	var wersje_gry := GryEE.wersje_scn(Konfiguracja.gra, Konfiguracja.katalog_openee)
+	raport["wersja_scn_zgodna_z_gra"] = int(raport["wersja_scn"]) in wersje_gry
+	if not raport["wersja_scn_zgodna_z_gra"]:
+		ImporterEE.zglos("blad", "test_scenariusz", "Scenariusz w wersji %d nie należy do formatów gry %s (%s)" % [
+			int(raport["wersja_scn"]), Konfiguracja.gra, ", ".join(wersje_gry.map(func(x): return str(x)))])
 	var t1 := Time.get_ticks_msec()
 	var obiekty_ok := scn.czytaj_graczy(Konfiguracja.katalog_openee)
 	raport["czas_parsowania_ms"] = {"teren": t1 - t0, "gracze": Time.get_ticks_msec() - t1}
@@ -122,6 +136,9 @@ func _ready() -> void:
 	raport["warstwy"] = Array(Konfiguracja.aktywne_warstwy)
 	raport["zasoby_statystyka"] = Zasoby.statystyka
 	Dziennik.info("test_scenariusz", "Gotowe: %s" % JSON.stringify(raport).left(600))
+	if _arg("raport", "") != "":
+		_zapisz_raport_i_wyjdz(0)
+		return
 	var z := _arg("zrzut", "")
 	if z != "":
 		_zrzut(z)
@@ -266,7 +283,8 @@ func _wys_w(x: float, z: float) -> float:
 
 func _obiekty_mapy() -> void:
 	var siatki := {}
-	var licz := {"pokazane": 0, "bez_grafiki": 0, "bez_modelu": 0, "poza_oknem": 0, "wariant_epoki": 0}
+	var licz := {"pokazane": 0, "bez_grafiki": 0, "bez_modelu": 0, "poza_oknem": 0, "wariant_epoki": 0, "spoza_bazy": 0}
+	var spoza := {}
 	var typy := {}
 	var rodzaje := {}
 	var wezel := Node3D.new(); wezel.name = "Obiekty"; add_child(wezel)
@@ -297,6 +315,10 @@ func _obiekty_mapy() -> void:
 			if x < okno.y or x >= okno.y + okno.z or z < okno.x or z >= okno.x + okno.z:
 				licz.poza_oknem += 1; continue
 			var ob: Dictionary = _obiekty.get(int(u.type), {})
+			if ob.is_empty():
+				# etap 11: typ nieobecny w dbobjects profilu (np. obiekt dodatku AoC w profilu vanilla_ee) – liczony
+				# i zgłaszany, nie zastępowany
+				licz.spoza_bazy += 1; spoza[int(u.type)] = int(spoza.get(int(u.type), 0)) + 1; continue
 			# jednostki odsłaniające: ruchome, na mapie (X, Y ≥ 0 – jednostki w garnizonie mają X = Y = −10000)
 			if g == gracz_lokalny and float(ob.get("Speed", 0.0)) > 0.0 and int(u.get("X", -1)) >= 0 and int(u.get("Y", -1)) >= 0:
 				_jednostki_odslaniajace.append([_jednostki_odslaniajace.size(), pm])
@@ -382,6 +404,10 @@ func _obiekty_mapy() -> void:
 	raport["grupowanie"] = {"wlaczone": not bez_grup, "multimeshe": n_mm, "wezly_pojedyncze": n_pojed, "prog": PROG_GRUPY}
 	raport["animacje"] = _animowane(anim_grupy, wezel, bez_anim)
 	raport["obiekty"] = licz
+	if not spoza.is_empty():
+		raport["typy_spoza_bazy"] = spoza
+		ImporterEE.zglos("uwaga", "test_scenariusz", "Obiekty typów nieobecnych w dbobjects gry '%s' (wariant %s): %d obiektów, typy %s – scenariusz innej wersji gry?" % [
+			Konfiguracja.profil, Zasoby.warianty_tabel.get("dbobjects", "?"), licz.spoza_bazy, spoza.keys()])
 	przezroczystosc.ustaw_tryb(tryb_przezr)
 	przezroczystosc.aktualizuj_jednostki(_jednostki_odslaniajace)
 	raport["przezroczystosc"] = {"tryb": przezroczystosc.tryb, "obiekty_z_flaga": przezroczystosc.liczba_obiektow(),
@@ -645,3 +671,18 @@ func _zrzut(sciezka: String) -> void:
 	if f: f.store_string(JSON.stringify(raport, "  "))
 	Dziennik.info("test_scenariusz", "Zrzut %s (kod %d)" % [sciezka, e])
 	get_tree().quit(0 if e == OK else 1)
+
+
+## --raport=<plik.json> (etap 11): pełny raport do pliku i wyjście – testy headless bez zrzutu ekranu.
+func _zapisz_raport_i_wyjdz(kod: int) -> void:
+	var f := FileAccess.open(_arg("raport", ""), FileAccess.WRITE)
+	if f: f.store_string(JSON.stringify(raport, "  "))
+	get_tree().quit(kod)
+
+
+func _blad_raportu() -> void:
+	raport["blad"] = Dziennik._bufor.back() if not Dziennik._bufor.is_empty() else "błąd wczytania"
+	if _arg("raport", "") != "":
+		_zapisz_raport_i_wyjdz(1)
+	elif _arg("zrzut", "") != "":     # render wsadowy: błąd kończy proces zamiast zostawiać puste okno do limitu czasu
+		get_tree().quit.call_deferred(1)

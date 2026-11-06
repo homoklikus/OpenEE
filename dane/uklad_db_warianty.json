@@ -1,0 +1,72 @@
+{
+ "_opis": "Etap 11 (docs/FORMATY_DB_EE_VS_AOC.md): układ bazowy w dane/uklad_db.json = The Art of Conquest (nadzbiór). Dla wariantu 'ee' (Empire Earth 1.0) lista pól nieobecnych w rekordzie; pozostałe pola w tej samej kolejności. Tabele bez wpisu mają w obu wersjach ten sam układ [P: zużycie co do bajta / rozmiar rekordu].",
+ "ee": {
+  "dbobjects": {
+   "pomin": [
+    "Never used#22",
+    "Never used#23",
+    "Unknown#55"
+   ],
+   "rekord": 1948
+  },
+  "dbcivilization": {
+   "pomin": [
+    "Never used",
+    "Never used#2",
+    "Never used#3",
+    "Never used#4",
+    "Never used#5",
+    "Never used#6",
+    "Never used#7",
+    "Never used#8",
+    "Never used#9",
+    "Never used#10",
+    "Never used#11",
+    "Never used#12",
+    "Never used#13",
+    "Never used#14",
+    "Never used#15",
+    "Never used#16",
+    "Never used#17",
+    "Never used#18",
+    "Never used#19",
+    "Never used#20",
+    "Never used#21",
+    "Never used#22",
+    "Never used#23",
+    "Never used#24",
+    "Never used#25",
+    "Never used#26",
+    "Never used#27",
+    "Never used#28",
+    "Never used#29",
+    "Never used#30",
+    "Never used#31",
+    "Never used#32",
+    "Never used#33",
+    "Never used#34",
+    "Never used#35",
+    "Never used#36",
+    "Never used#37",
+    "Never used#38",
+    "Never used#39",
+    "Never used#40",
+    "Never used#41",
+    "Never used#42",
+    "Never used#43",
+    "Never used#44",
+    "Never used#45",
+    "Never used#46"
+   ],
+   "rekord": 416
+  }
+ },
+ "aoc": {
+  "dbobjects": {
+   "rekord": 1960
+  },
+  "dbcivilization": {
+   "rekord": 600
+  }
+ }
+}

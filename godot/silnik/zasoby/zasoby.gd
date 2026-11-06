@@ -5,7 +5,11 @@ extends Node
 ##   1. nakładka localization/<język> – tylko klucze wymienione w dane/lokalizacja/<język>/manifest.json
 ##      (głosy: jezyk_glosow, grafika z tekstem: jezyk_tekstow); dane czytane z instalacji `zrodlo_pl`,
 ##   2. nakładka hd_nieustalone – luźne pliki instalacji społecznościowej z dowodem D-OVR (jeśli warstwa aktywna),
-##   3. instalacja bazowa: luźne AoC → data.ssa AoC → luźne EE → data.ssa EE (profil "aoc"; "ee" bez AoC).
+##   3. instalacja bazowa – katalogi danych WYBRANEJ GRY (dane/gry.json, GryEE): Empire Earth – tylko „Empire Earth”;
+##      The Art of Conquest – „Empire Earth - The Art of Conquest”, potem „Empire Earth” (jawne współdzielenie zmierzone
+##      na oryginale: EE-AOC.exe otwiera oba archiwa data.ssa, docs/WARIANTY_GRY.md). Tryb EE nigdy nie czyta plików AoC.
+## Pamięć podręczna (tabele db, obrazy) jest kluczowana grą, instalacją, warstwami i językami (`klucz_zrodel`) –
+## zmiana gry lub profilu czyści ją w całości.
 ## Warstwa każdego pliku bazowego pochodzi z manifestu tej instalacji (manifest_referencyjny.json dla GOG,
 ## manifest_zasobow.json dla społecznościowej). Nakładki nie wymagają włączania NeoEE ani dreXmoda.
 ## Ograniczenie: gdy bazą jest instalacja społecznościowa, polskie głosy są wbudowane w jej data.ssa – wybór
@@ -25,6 +29,7 @@ var _archiwa := {}                # (instalacja|rel) -> ArchiwumSSA
 var _importery := {}
 var _cache_obrazow := {}
 var _tabele := {}
+var klucz_zrodel := ""           # gra|instalacja|warstwy|języki, dla których zbudowano źródła i pamięć podręczną
 var gotowe := false
 var statystyka := {"localization": 0, "hd_nieustalone": 0, "baza": 0, "brak": 0}
 
@@ -76,7 +81,10 @@ func warstwa_aktywna(w: String) -> bool:
 
 
 func przebuduj_zrodla() -> void:
-	_zrodla.clear(); _cache_obrazow.clear(); _warstwa_bazy.clear(); _hd.clear(); _lok.clear(); _lok_kampanie.clear(); _spolszczone.clear()
+	# etap 11: tabele db zależą od profilu (EE 1.0 / AoC) – po zmianie źródeł czytane od nowa
+	_tabele.clear(); warianty_tabel.clear()
+	klucz_zrodel = _klucz()
+	_zrodla.clear(); _cache_obrazow.clear(); _cache_tekstur_wielu.clear(); _cache_cem.clear(); _warstwa_bazy.clear(); _hd.clear(); _lok.clear(); _lok_kampanie.clear(); _spolszczone.clear()
 	var baza := Konfiguracja.zrodlo_gry
 	if Konfiguracja.instalacja_ee == "":
 		gotowe = false
@@ -90,7 +98,9 @@ func przebuduj_zrodla() -> void:
 		# brak manifestu (np. świeża kopia z GitHuba): archiwa data.ssa = warstwy bazowe gry (EE → vanilla, AoC → aoc),
 		# luźne pliki w Data/ – „nieustalone” (nieaktywne), bo mogą to być nadpisania modów/HD.
 		Dziennik.uwaga("zasoby", "Brak manifestu instalacji '%s' – archiwa data.ssa = vanilla/aoc, luźne pliki pominięte" % baza)
-	var gry := [AOC, EE] if Konfiguracja.profil == "aoc" else [EE]
+	var gry := GryEE.katalogi_danych(Konfiguracja.gra, Konfiguracja.katalog_openee)
+	if gry.is_empty():
+		Dziennik.blad("zasoby", "Brak definicji gry '%s' (dane/gry.json)" % Konfiguracja.gra)
 	for g in gry:
 		_zrodla.append({"typ": "luzne", "instalacja": baza, "katalog": g + "/Data"})
 		var rel: String = g + "/Data/data.ssa"
@@ -290,8 +300,15 @@ func wczytaj_dzwiek(klucz: String) -> Dictionary:
 
 
 ## Archiwum kampanii w języku kampanii (PL: z instalacji zrodlo_pl), z odwołaniem do EN dla braków.
+## Kampania musi należeć do wybranej gry (GryEE.archiwum_kampanii); w AoC kampanie EE są dostępne jawnie (uwaga w dzienniku).
 func plik_kampanii(kampania: String, klucz: String) -> Dictionary:
-	var rel_g := (AOC if kampania.begins_with("AOC") else EE) + "/Data/Campaigns/" + kampania
+	var ak := GryEE.archiwum_kampanii(Konfiguracja.gra, kampania, Konfiguracja.instalacja_ee, Konfiguracja.katalog_openee)
+	if ak.has("blad"):
+		Dziennik.blad("zasoby", ak.blad)
+		return {}
+	if not ak.wlasna:
+		Dziennik.uwaga("zasoby", "Kampania %s spoza katalogu gry %s – jawne współdzielenie (%s)" % [kampania, Konfiguracja.gra, ak.rel])
+	var rel_g: String = ak.rel
 	var k := klucz.to_lower()
 	if Konfiguracja.jezyk_kampanii != "en" and Konfiguracja.instalacje.has(Konfiguracja.zrodlo_pl):
 		var a := archiwum(Konfiguracja.zrodlo_pl, rel_g)
@@ -308,23 +325,41 @@ func plik_kampanii(kampania: String, klucz: String) -> Dictionary:
 
 
 ## Napisy Language.dll w języku tekstów (id → tekst).
-func teksty(gra: String = AOC) -> Dictionary:
+## Domyślnie Language.dll WYBRANEJ gry (każda gra ma własną: EE 3398 napisów, AoC 3707 – audyt etapu 11).
+func teksty(gra: String = "") -> Dictionary:
+	if gra == "":
+		gra = GryEE.katalog_language_dll(Konfiguracja.gra, Konfiguracja.katalog_openee)
 	var inst := Konfiguracja.zrodlo_pl if Konfiguracja.jezyk_tekstow != "en" else ("referencyjna" if Konfiguracja.instalacje.has("referencyjna") else Konfiguracja.zrodlo_gry)
 	var p: String = Konfiguracja.instalacje.get(inst, "")
 	return TekstyDLL.wczytaj(p.path_join(gra).path_join("Language.dll")) if p != "" else {}
 
 
+## Wariant formatu wczytanych tabel (etap 11): nazwa → "aoc" | "ee" | "wspolny" | "blad".
+var warianty_tabel := {}
+
+
 ## Tabela db (z archiwum bazowego profilu), np. "dbobjects" → Array[Dictionary].
 func tabela(nazwa: String) -> Array:
+	if klucz_zrodel != _klucz():
+		# konfiguracja zmieniona bez przebuduj_zrodla() – nie wolno oddać tabel poprzedniej gry/instalacji
+		Dziennik.uwaga("zasoby", "Zmiana źródeł (%s → %s) – przebudowa" % [klucz_zrodel, _klucz()])
+		przebuduj_zrodla()
 	if _tabele.has(nazwa):
 		return _tabele[nazwa]
 	var r := znajdz("db/%s.dat" % nazwa)
 	var w: Dictionary = BazaDB.dekoduj(r.dane, nazwa, Konfiguracja.katalog_openee) if not r.is_empty() else {"blad": "brak"}
 	if w.has("blad"):
-		Dziennik.blad("zasoby", "Tabela %s: %s" % [nazwa, w.blad])
+		Dziennik.blad("zasoby", "Tabela %s (%s): %s" % [nazwa, r.get("zrodlo", "?"), w.blad])
 		_tabele[nazwa] = []
+		warianty_tabel[nazwa] = "blad"
 	else:
 		_tabele[nazwa] = w.rekordy
+		warianty_tabel[nazwa] = w.wariant
+		# etap 11: wariant formatu zgodny z profilem (aoc – archiwum AoC ma pierwszeństwo, ee – tylko archiwum EE)
+		var oczek := GryEE.format_db(Konfiguracja.gra, Konfiguracja.katalog_openee)
+		if w.wariant != "wspolny" and w.wariant != oczek:
+			Dziennik.blad("zasoby", "Tabela %s: format '%s' niezgodny z grą '%s' (%s)" % [
+				nazwa, w.wariant, Konfiguracja.gra, r.get("zrodlo", "?")])
 	return _tabele[nazwa]
 
 
@@ -341,3 +376,13 @@ func opis_zrodel() -> Array[String]:
 		Konfiguracja.jezyk_glosow, Konfiguracja.jezyk_tekstow, Konfiguracja.jezyk_kampanii])
 	out.append("nakładka hd_nieustalone: %d plików" % _hd.size())
 	return out
+
+
+func _klucz() -> String:
+	return "%s|%s|%s|%s|%s" % [Konfiguracja.gra, Konfiguracja.zrodlo_gry, ",".join(Konfiguracja.aktywne_warstwy),
+		Konfiguracja.jezyk_tekstow, Konfiguracja.jezyk_glosow]
+
+
+## Kampanie wybranej gry (archiwa z jej katalogu Data/Campaigns) – lista menu kampanii.
+func kampanie() -> Array:
+	return GryEE.kampanie(Konfiguracja.gra, Konfiguracja.instalacja_ee, Konfiguracja.katalog_openee)

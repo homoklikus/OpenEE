@@ -1,4 +1,5 @@
 {
+ "gra_wybor_tytul": "Gra", "gra_niedostepna": "Brak tej gry w instalacji wybranego profilu", "gra_kampanie": "Kampanie: %d", "gra_osobno": "wybierana na ekranie głównym, niezależnie od profilu",
  "_nazwa": "Polski",
  "podtytul": "Otwarty silnik Empire Earth",
  "nav_start": "Start", "nav_gra": "Gra", "nav_mody": "Mody", "nav_profile": "Profile",
@@ -55,7 +56,7 @@
  "mody_plan_tytul": "Menedżer modów – plan",
  "mody_plan": "Docelowo: mody w katalogu OpenEE/mody/<nazwa>/ z manifestem mod.json, zależności i kolejność ładowania. Na tym etapie lista opiera się na lokalnych danych warstw (dane/warstwy.json).",
  "profile_lista": "Profile", "profil_szczegoly": "Szczegóły profilu", "nazwa": "Nazwa", "zrodlo_danych": "Źródło danych",
- "zawartosc_gry": "Zawartość gry", "mody_w_profilu": "Mody", "warstwy_silnika": "Warstwy silnika", "brak": "brak",
+ "zawartosc_gry": "Gra", "mody_w_profilu": "Mody", "warstwy_silnika": "Warstwy silnika", "brak": "brak",
  "profil_wbudowany_uwaga": "Profil wbudowany – aby go zmienić, użyj „Klonuj”.",
  "ust_launcher": "Launcher", "jezyk_ui": "Język interfejsu", "jezyk_ui_podpowiedz": "Język interfejsu launchera", "skala_ui": "Skala interfejsu",
  "ust_jezyk_danych": "Język danych gry",

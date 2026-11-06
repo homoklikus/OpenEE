@@ -16,12 +16,18 @@ Formaty (własna analiza plików, schemat pól: dane/schemat_db_eedbeditor, GPLv
   Rekord = 272 B (NAME 100 + 36 × i32 + 4 × u8 + 6 × i32) + 4 B × „Num of tech builders” (ostatnie pole).
 * dbevents: bez licznika; rekord = NAME 100 B, i32 numer sekwencji, i32 n, n × i32 ID efektu.
 * dbeffects: bez licznika; rekord = 22 pola po 4 B (88 B) w kolejności schematu.
+
+Etap 11 (docs/FORMATY_DB_EE_VS_AOC.md): Empire Earth 1.0 – dbtechtree 268 B („Epoch number” +248, liczba budowniczych
++264), dbeffects 68 B (17 pól). Wariant rozpoznawany ze struktury; dane muszą pasować do dokładnie jednego wariantu.
 """
 import struct
 
 KOD_ZMIANY_GRAFIKI = 6
-REKORD_TECH = 272
-REKORD_EFEKTU = 88
+REKORD_TECH = 272          # AoC
+REKORD_EFEKTU = 88         # AoC
+TECH = {"aoc": {"rekord": 272, "epoka": 252, "budowniczowie": 268},
+        "ee": {"rekord": 268, "epoka": 248, "budowniczowie": 264}}
+EFEKT = {"aoc": 88, "ee": 68}
 
 
 def _napis(b):
@@ -30,32 +36,54 @@ def _napis(b):
     return b.split(b"\0")[0].decode("cp1250", "replace")
 
 
+def _struktura_techtree(d, f):
+    o, liczba = 0, 0
+    while o < len(d):
+        if o + 4 > len(d):
+            return f"ucięty licznik przy {o}"
+        n = struct.unpack_from("<i", d, o)[0]
+        o += 4
+        if n < 0 or n > 100000:
+            return f"licznik grupy {n} przy {o - 4}"
+        for _ in range(n + 1):
+            if o + f["rekord"] > len(d):
+                return f"ucięty rekord przy {o}"
+            nb = struct.unpack_from("<i", d, o + f["budowniczowie"])[0]
+            if nb < 0 or nb > 1000 or o + f["rekord"] + 4 * nb > len(d):
+                return f"budowniczowie {nb} przy {o}"
+            o += f["rekord"] + 4 * nb
+            liczba += 1
+    return liczba
+
+
+def wariant_techtree(d):
+    """'aoc' | 'ee' – jedyny format rekordu, przy którym struktura grup zużywa plik co do bajta; inaczej ValueError."""
+    wyn = {w: _struktura_techtree(d, f) for w, f in TECH.items()}
+    pasuja = [w for w, x in wyn.items() if isinstance(x, int)]
+    if len(pasuja) != 1:
+        raise ValueError(f"dbtechtree: {'niejednoznaczny' if pasuja else 'nieobsługiwany'} wariant ({len(d)} B; {wyn})")
+    return pasuja[0]
+
+
 def techtree(d):
     """Lista rekordów dbtechtree: {nazwa, seq, id, start, koniec, event, obiekt, typ, epoka, budowniczowie, grupa}."""
+    f = TECH[wariant_techtree(d)]
     o = 0
     wynik = []
     grupa = 0
     while o < len(d):
         n = struct.unpack_from("<i", d, o)[0]
         o += 4
-        if n < 0 or n > 100000:
-            raise ValueError(f"dbtechtree: licznik grupy {n} przy {o - 4}")
         for i in range(n + 1):
-            if o + REKORD_TECH > len(d):
-                raise ValueError("dbtechtree: ucięty rekord")
-            f = struct.unpack_from("<36i", d, o + 100)
-            g = struct.unpack_from("<6i", d, o + 248)
-            nb = g[5]
-            if nb < 0 or nb > 1000:
-                raise ValueError(f"dbtechtree: budowniczowie {nb} przy {o}")
-            wynik.append({"nazwa": _napis(d[o:o + 100]), "seq": f[0], "id": f[1], "start": f[2], "koniec": f[3],
-                          "event": f[4], "obiekt": f[18], "typ": f[22], "epoka": g[1], "grupa": grupa,
+            v = struct.unpack_from("<36i", d, o + 100)
+            nb = struct.unpack_from("<i", d, o + f["budowniczowie"])[0]
+            wynik.append({"nazwa": _napis(d[o:o + 100]), "seq": v[0], "id": v[1], "start": v[2], "koniec": v[3],
+                          "event": v[4], "obiekt": v[18], "typ": v[22],
+                          "epoka": struct.unpack_from("<i", d, o + f["epoka"])[0], "grupa": grupa,
                           "glowa_grupy": i == 0,
-                          "budowniczowie": list(struct.unpack_from("<%di" % nb, d, o + REKORD_TECH))})
-            o += REKORD_TECH + 4 * nb
+                          "budowniczowie": list(struct.unpack_from("<%di" % nb, d, o + f["rekord"]))})
+            o += f["rekord"] + 4 * nb
         grupa += 1
-    if o != len(d):
-        raise ValueError("dbtechtree: nadmiarowe bajty")
     return wynik
 
 
@@ -81,13 +109,21 @@ POLA_EFEKTU = ["Sequence number", "ID", "Set base attribute", "Alter base attrib
 POLA_FLOAT = {"Set base attribute", "Alter base attribute", "Alter attribute multiplier"}
 
 
+def wariant_efektow(d):
+    pasuja = [w for w, r in EFEKT.items() if len(d) and len(d) % r == 0]
+    if len(pasuja) != 1:
+        raise ValueError(f"dbeffects: {'niejednoznaczny' if pasuja else 'nieobsługiwany'} wariant – {len(d)} B "
+                         "(rekord AoC 88 B, EE 68 B)")
+    return pasuja[0]
+
+
 def efekty(d):
-    if len(d) % REKORD_EFEKTU:
-        raise ValueError("dbeffects: długość nie jest wielokrotnością 88 B")
+    R = EFEKT[wariant_efektow(d)]
+    pola = POLA_EFEKTU[:R // 4]          # EE: pola 0–16 (bez pięciu końcowych pól AoC)
     wynik = []
-    for o in range(0, len(d), REKORD_EFEKTU):
+    for o in range(0, len(d), R):
         r = {}
-        for i, p in enumerate(POLA_EFEKTU):
+        for i, p in enumerate(pola):
             r[p] = struct.unpack_from("<f" if p in POLA_FLOAT else "<i", d, o + 4 * i)[0]
         wynik.append(r)
     return wynik

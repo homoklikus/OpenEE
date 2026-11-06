@@ -494,6 +494,7 @@ func _strona_start() -> Control:
 	lewa.add_child(r1)
 	var r2 := _hbox(14)
 	r2.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	r2.add_child(_karta_gry())
 	r2.add_child(_karta_profilu())
 	r2.add_child(_karta_jezyka())
 	lewa.add_child(r2)
@@ -610,6 +611,25 @@ func _karta_aktualnosci() -> Control:
 	wiecej.focus_mode = Control.FOCUS_NONE
 	wiecej.pressed.connect(_pokaz_strone.bind("informacje"))
 	k[1].add_child(wiecej)
+	return k[0]
+
+
+## Etap 11: wybór GRY – Empire Earth albo The Art of Conquest (dwie gry na jednym silniku), niezależny od profilu.
+func _karta_gry() -> Control:
+	var k := _karta("gra", tx.t("gra_wybor_tytul"), 1.0)
+	for g in stan.gry():
+		var b := _przycisk(stan.nazwa_gry(g), "", func(): stan.wybierz_gre(g); _pokaz_strone(strona), not stan.gra_dostepna(g))
+		b.toggle_mode = true
+		b.button_pressed = g == stan.gra_id
+		b.add_theme_font_size_override("font_size", 15)
+		b.clip_text = true
+		b.tooltip_text = stan.nazwa_gry(g) if stan.gra_dostepna(g) else tx.t("gra_niedostepna")
+		k[1].add_child(b)
+	var lk := _l(tx.t("gra_kampanie") % stan.kampanie().size(), 13, M.TEKST_SLABY)
+	lk.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	lk.tooltip_text = ", ".join(stan.kampanie())
+	lk.mouse_filter = Control.MOUSE_FILTER_PASS
+	k[1].add_child(lk)
 	return k[0]
 
 
@@ -999,14 +1019,10 @@ func _strona_profile() -> Control:
 	oz.item_selected.connect(func(i): stan.ustaw_pole_profilu("zrodlo", nazwy[i]); _pokaz_strone(strona))
 	g.add_child(oz)
 	g.add_child(_l(tx.t("zawartosc_gry"), 15, M.TEKST_PRZYGASZONY))
-	var og := OptionButton.new()
-	og.focus_mode = Control.FOCUS_NONE
-	og.add_item("Empire Earth + The Art of Conquest", 0)
-	og.add_item("Empire Earth", 1)
-	og.select(0 if p.get("gra", "aoc") == "aoc" else 1)
-	og.disabled = wb
-	og.item_selected.connect(func(i): stan.ustaw_pole_profilu("gra", "aoc" if i == 0 else "ee"); _pokaz_strone(strona))
-	g.add_child(og)
+	var lg := _l(stan.nazwa_gry(stan.gra_id) + " — " + tx.t("gra_osobno"), 15)
+	lg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	g.add_child(lg)
 	g.add_child(_l(tx.t("mody_w_profilu"), 15, M.TEKST_PRZYGASZONY))
 	var mods: Array = []
 	for m in stan.aktywne_mody():
