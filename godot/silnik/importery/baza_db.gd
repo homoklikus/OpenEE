@@ -31,7 +31,7 @@ static func dekoduj(dane: PackedByteArray, tabela: String, katalog_openee: Strin
 			if typ == "STRING" or typ == "DYNAMIC_STRING":
 				var sz: int = int(vals[int(f[3])]) if typ == "DYNAMIC_STRING" else int(f[1])
 				if sz > 0 and dane[p] != 0xCC and dane[p] != 0xFF:
-					v = dane.slice(p, p + sz).get_string_from_ascii()
+					v = TekstEE.cp1250(dane.slice(p, p + sz))      # Windows-1250 (polska wersja)
 				else:
 					v = ""
 				p += sz

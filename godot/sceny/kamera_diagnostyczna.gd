@@ -6,7 +6,7 @@ extends Camera3D
 
 var cel := Vector3.ZERO
 var odleglosc := 30.0
-var kat_obrotu := -45.0
+var kat_obrotu := 45.0      # domyślnie od strony kamery EE (etap 7: świat bez odbicia, UkladEE)
 var pochylenie := 50.0
 var _start := {}
 

@@ -189,9 +189,9 @@ func wysokosc(r: int, c: int) -> float:
 
 ## Normalna punktu z różnic centralnych wysokości (odpowiednik ComputeVertexNormal – wygładzone normalne wierzchołków).
 func normalna(r: int, c: int) -> Vector3:
-	var hx := (wysokosc(r, c + 1) - wysokosc(r, c - 1)) * 0.5
-	var hz := (wysokosc(r + 1, c) - wysokosc(r - 1, c)) * 0.5
-	return Vector3(-hx, 1.0, -hz).normalized()
+	var hx := (wysokosc(r, c + 1) - wysokosc(r, c - 1)) * 0.5     # ∂h/∂kolumna
+	var hy := (wysokosc(r + 1, c) - wysokosc(r - 1, c)) * 0.5     # ∂h/∂wiersz
+	return UkladEE.wektor(Vector3(-hx, -hy, 1.0)).normalized()     # normalna w świecie EE → Godot
 
 
 ## Buduje teren i wodę dla okna pól [r0, r0+n) × [c0, c0+n). Zwraca węzeł Node3D z dziećmi „Teren” i „Woda”.
@@ -237,7 +237,7 @@ func zbuduj(r0: int, c0: int, n: int, zasoby: Node) -> Node3D:
 			for k in 4:
 				var pp: Vector2i = NAROZNIK_PUNKT[k]
 				var pr := r + pp.x; var pc := c + pp.y
-				v.append(Vector3(pc, wysokosc(pr, pc), pr))
+				v.append(UkladEE.godot(Vector2(pc, pr), wysokosc(pr, pc)))
 				nor.append(normalna(pr, pc))
 				uv.append(NAROZNIK_UV[k])
 				cu0.append_array(PackedFloat32Array(li))
@@ -251,7 +251,7 @@ func zbuduj(r0: int, c0: int, n: int, zasoby: Node) -> Node3D:
 				var wb := wv.size()
 				for k in 4:
 					var pp2: Vector2i = NAROZNIK_PUNKT[k]
-					wv.append(Vector3(c + pp2.y, 0.0, r + pp2.x))
+					wv.append(UkladEE.godot(Vector2(c + pp2.y, r + pp2.x), 0.0))
 					wuv.append(NAROZNIK_UV[k])
 					wcol.append(Color(1, 1, 1, 0.0 if fl & BITY_LADU[k] else ALFA_WODY))
 				widx.append_array(PackedInt32Array([wb + 2, wb + 1, wb + 0, wb + 2, wb + 0, wb + 3]))

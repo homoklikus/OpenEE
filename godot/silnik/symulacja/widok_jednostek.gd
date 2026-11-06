@@ -112,7 +112,7 @@ func transformacja(j: JednostkaSym, alfa: float) -> Transform3D:
 	var k := j.kurs_poprz + UkladEE.roznica_katow(j.kurs, j.kurs_poprz) * alfa
 	var e: Dictionary = _jedn.get(j.id, {})
 	var s: float = e.get("skala", 1.0)
-	return Transform3D(UkladEE.baza(UkladEE.R_z_kata(k)) * s, Vector3(p.x, sym.mapa.wysokosc(p), p.y))
+	return Transform3D(UkladEE.baza(UkladEE.R_z_kata(k)) * s, UkladEE.godot(p, sym.mapa.wysokosc(p)))
 
 
 func _aktualizuj_transformacje(wszystkie: bool) -> void:
@@ -144,12 +144,12 @@ func _rysuj_zaznaczenie() -> void:
 			t.inner_radius = j.promien * 0.85; t.outer_radius = j.promien * 1.05
 			r.mesh = t; r.material_override = _mat_pierscienia; add_child(r); _pierscienie[id] = r
 		var p := j.pozycja_poprz.lerp(j.pozycja, alfa)
-		_pierscienie[id].position = Vector3(p.x, sym.mapa.wysokosc(p) + 0.03, p.y)
+		_pierscienie[id].position = UkladEE.godot(p, sym.mapa.wysokosc(p) + 0.03)
 		if pokaz_trasy and j.w_ruchu() and j.indeks_punktu < j.sciezka.size():
 			im.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
 			im.surface_set_color(Color(1, 0.9, 0.2))
-			im.surface_add_vertex(Vector3(p.x, sym.mapa.wysokosc(p) + 0.1, p.y))
+			im.surface_add_vertex(UkladEE.godot(p, sym.mapa.wysokosc(p) + 0.1))
 			for i in range(j.indeks_punktu, j.sciezka.size()):
 				var q: Vector2 = j.sciezka[i]
-				im.surface_set_color(Color(1, 0.9, 0.2)); im.surface_add_vertex(Vector3(q.x, sym.mapa.wysokosc(q) + 0.1, q.y))
+				im.surface_set_color(Color(1, 0.9, 0.2)); im.surface_add_vertex(UkladEE.godot(q, sym.mapa.wysokosc(q) + 0.1))
 			im.surface_end()

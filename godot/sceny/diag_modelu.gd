@@ -11,7 +11,8 @@ extends Node3D
 ##   --mipmapy=tak|nie   --alfa-mip0=tak|nie (test alfa z poziomu 0)   --krawedzie-alfa=tak|nie (kolor pod alfa=0)
 ##   --billboard=auto|tak|nie   --azymut=<stopnie obrotu billboardu>   --produkcja (siatka i materiały dokładnie jak w scenach – ImporterModeli)
 ##   --kamera=yaw,pitch,odl[,x,y,z]   --kamera-ee=<poziom 0–20> (kamera oryginału: ModelKameryEE)   --podloze=nie|<wysokość>   --kolor-gracza=#rrggbb
-##   --lustro (model w bazie o wyznaczniku -1, jak obiekty scenariusza – test odrzucania ścian)
+##   --lustro (model w bazie o wyznaczniku -1 – test odrzucania ścian; do etapu 6 tak wyglądały obiekty scenariusza)
+##   --uklad-modelu=I|D|F (diagnostyka etapu 7: konwencja osi modelu względem świata EE, UkladEE)
 ##   --zbadaj=<id trójkątów, np. 12,40>   --zrzut=<plik.png>   --bez-ui
 ## Raport: wyniki/diag_modelu/<model>.json (części, materiały, obrazy SST, transformacje, nawinięcie, pary
 ## współpłaszczyznowe i duplikaty z pełnym opisem, renderer). Kliknięcie LPM na trójkąt – jego pełny opis.
@@ -78,8 +79,11 @@ func _ready() -> void:
 		_tekst("Nie znaleziono modelu '%s'" % _arg("model", "")); return
 	_analiza()
 	_zbuduj()
+	# baza jak obiekt sceny o macierzy R = I (UkladEE.baza; etap 7: obrót bez odbicia, --uklad-modelu – diagnostyka)
+	UkladEE.ustaw_konwencje_modelu(_arg("uklad-modelu", "I"))
+	_korzen.basis = UkladEE.baza(UkladEE.R_z_kata(0.0))
+	if _ma("lustro"): _korzen.basis = _korzen.basis * Basis.from_scale(Vector3(1, 1, -1))   # test odrzucania ścian w bazie odbitej
 	_kamera_z_arg()
-	if _ma("lustro"): _korzen.scale = Vector3(1, 1, -1)   # baza z wyznacznikiem -1 jak obiekty sceny (UkladEE)
 	_zapisz_raport()
 	if not _ma("bez-ui"): _interfejs()
 	if _arg("zrzut", "") != "":
@@ -281,9 +285,10 @@ func _kamera_z_arg() -> void:
 		# kamera jak w oryginale (ModelKameryEE): kierunek patrzenia mapy EE (−1, +1), pochylenie 35°, poziomy kąt
 		# widzenia 50,4°, odległość poziomu zoomu 0–20; ognisko 0,4 nad podstawą modelu
 		var pz := clampi(int(_arg("kamera-ee", "8")), 0, ModelKameryEE.POZIOMOW - 1)
-		_yaw = 135.0; _pitch = -ModelKameryEE.POCHYLENIE_ST; _dist = ModelKameryEE.odleglosc(pz)
-		_cel = Vector3(bb.get_center().x, ModelKameryEE.WYSOKOSC_OGNISKA, bb.get_center().z)
-		if _ma("lustro"): _cel.z = -_cel.z
+		var fh := UkladEE.kierunek(ModelKameryEE.KIERUNEK_MAPY)            # kierunek patrzenia EE w Godocie (poziomo)
+		_yaw = rad_to_deg(atan2(-fh.x, -fh.z)); _pitch = -ModelKameryEE.POCHYLENIE_ST; _dist = ModelKameryEE.odleglosc(pz)
+		var sr := _korzen.basis * bb.get_center()
+		_cel = Vector3(sr.x, ModelKameryEE.WYSOKOSC_OGNISKA, sr.z)
 		_kam.keep_aspect = Camera3D.KEEP_WIDTH; _kam.fov = ModelKameryEE.FOV_POZIOMY_ST; _kam.near = 0.05
 	if k.size() >= 3:
 		_yaw = float(k[0]); _pitch = float(k[1]); _dist = float(k[2])

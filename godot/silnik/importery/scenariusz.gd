@@ -291,12 +291,12 @@ func _gracz(d: PackedByteArray, off: int, g: Array, wer: int = 250, czesciowo :=
 			if r.zly:
 				if not czesciowo:
 					return {}
-				return {"typ": typ, "kolor": kolor, "nazwa": nz.slice(0, nz.size() - 1).get_string_from_ascii(),
+				return {"typ": typ, "kolor": kolor, "nazwa": TekstEE.cp1250(nz.slice(0, nz.size() - 1)),
 					"jednostki": jedn, "kotwica": [n, l20], "koniec": start, "niepelny": start}
 			jedn.append(u)
 	r.get_t("B")
 	if r.zly: return {}
-	return {"typ": typ, "kolor": kolor, "nazwa": nz.slice(0, nz.size() - 1).get_string_from_ascii(), "jednostki": jedn,
+	return {"typ": typ, "kolor": kolor, "nazwa": TekstEE.cp1250(nz.slice(0, nz.size() - 1)), "jednostki": jedn,
 		"kotwica": [n, l20], "koniec": r.o}
 
 

@@ -214,11 +214,12 @@ func _jednostkowe() -> void:
 	var mz := _mapa(["..........", "..........", "..........", "..........", "..........", "..........", "..........", ".........."], PackedFloat32Array())
 	var sz := Symulacja.new(mz)
 	var u1 := _jednostka(sz, Vector2(3.0, 3.0)); var u2 := _jednostka(sz, Vector2(6.0, 3.0))
-	var oko := Vector3(3.0, 20.0, 3.0 + 10.0)
-	var kl1 := Zaznaczanie.klik(sz, oko, Vector3(3.0, 0.5, 3.0) - oko)
-	var kl2 := Zaznaczanie.klik(sz, oko, Vector3(5.0, 0.0, 6.0) - oko)
-	var oko2 := Vector3(-10.0, 0.6, 3.0)                          # promień poziomy: najpierw u1, za nią u2
-	var kl3 := Zaznaczanie.klik(sz, oko2, Vector3(1, 0, 0))
+	# promienie budowane z punktów mapy EE przez UkladEE (etap 7) – test nie zależy od konwencji osi Godota
+	var oko := UkladEE.godot(Vector2(3.0, 3.0 + 10.0), 20.0)
+	var kl1 := Zaznaczanie.klik(sz, oko, UkladEE.godot(Vector2(3.0, 3.0), 0.5) - oko)
+	var kl2 := Zaznaczanie.klik(sz, oko, UkladEE.godot(Vector2(5.0, 6.0), 0.0) - oko)
+	var oko2 := UkladEE.godot(Vector2(-10.0, 3.0), 0.6)               # promień poziomy: najpierw u1, za nią u2
+	var kl3 := Zaznaczanie.klik(sz, oko2, UkladEE.kierunek(Vector2(1, 0)))
 	t._ok("E5 zaznaczanie: trafienie jednostki, puste miejsce → teren, bliższa jednostka przesłania dalszą",
 		kl1.jednostka == u1 and kl2.jednostka == -1 and kl2.teren != null and (kl2.teren as Vector2).distance_to(Vector2(5.0, 6.0)) < 0.05
 		and kl3.jednostka == u1, [kl1, kl2, kl3])
@@ -228,7 +229,7 @@ func _jednostkowe() -> void:
 	var mz2 := _mapa(["..........", "..........", "..........", "..........", "..........", "..........", "..........", ".........."], wysz)
 	var sz2 := Symulacja.new(mz2)
 	var u3 := _jednostka(sz2, Vector2(7.0, 3.0))
-	var kl4 := Zaznaczanie.klik(sz2, Vector3(0.0, 1.0, 3.0), Vector3(1, 0, 0))
+	var kl4 := Zaznaczanie.klik(sz2, UkladEE.godot(Vector2(0.0, 3.0), 1.0), UkladEE.kierunek(Vector2(1, 0)))
 	t._ok("E5 zaznaczanie: teren zasłaniający jednostkę – trafia teren, nie jednostkę za nim",
 		kl4.jednostka == -1 and kl4.teren != null and (kl4.teren as Vector2).x < 4.1, kl4)
 	# --- niezależność od renderera: symulacja bez węzłów i bez drzewa sceny ---
@@ -316,7 +317,7 @@ func _integracyjne(Kf, Z) -> void:
 				if tg.is_empty(): continue
 				var v: Vector3 = b * (tg[1] as Vector3)
 				proby += 1
-				if Vector2(v.x, v.z).normalized().dot(kier) > 0.3: zgodne += 1
+				if UkladEE.mapa(v).normalized().dot(kier) > 0.3: zgodne += 1
 	t._ok("E5 dane: przód modelu (punkt attack) zgodny z kierunkiem ruchu", proby > 0 and zgodne >= int(proby * 0.8),
 		"%d/%d próbek (falanga, klatki ruchu 0–15, 4 kierunki)" % [zgodne, proby])
 	# sekwencje ruchu i bezczynności jednostek Troi

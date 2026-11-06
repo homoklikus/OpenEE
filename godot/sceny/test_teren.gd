@@ -87,7 +87,7 @@ func _zbuduj_teren(d: Dictionary) -> void:
 		for c in range(n + 1):
 			var hl: float = wys[r][max(c - 1, 0)]; var hr: float = wys[r][min(c + 1, n)]
 			var hu: float = wys[max(r - 1, 0)][c]; var hd: float = wys[min(r + 1, n)][c]
-			wiersz.append(Vector3((hl - hr) * sk, 2.0, (hu - hd) * sk).normalized())
+			wiersz.append(UkladEE.wektor(Vector3((hl - hr) * sk, (hu - hd) * sk, 2.0)).normalized())   # normalna w świecie EE
 		nor.append(wiersz)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -102,12 +102,12 @@ func _zbuduj_teren(d: Dictionary) -> void:
 				brak += 1
 				li = 0
 			var rogi := [[r, c, Vector2(0, 0)], [r, c + 1, Vector2(1, 0)], [r + 1, c + 1, Vector2(1, 1)], [r + 1, c, Vector2(0, 1)]]
-			for i in [0, 1, 2, 0, 2, 3]:
+			for i in [0, 2, 1, 0, 3, 2]:      # etap 7: kolejność dla świata bez odbicia (UkladEE, cull_back)
 				var q: Array = rogi[i]
 				st.set_uv(q[2])
 				st.set_uv2(Vector2(li, 0))
 				st.set_normal(nor[q[0]][q[1]])
-				st.add_vertex(Vector3(q[1], float(wys[q[0]][q[1]]) * sk, q[0]))
+				st.add_vertex(UkladEE.godot(Vector2(q[1], q[0]), float(wys[q[0]][q[1]]) * sk))
 	raport["pola_bez_tekstury"] = brak
 	var mesh := st.commit()
 	var mat := ShaderMaterial.new()
@@ -136,7 +136,7 @@ func _dodaj_wode(d: Dictionary) -> void:
 	var mi := MeshInstance3D.new()
 	mi.mesh = pm
 	mi.material_override = mat
-	mi.position = Vector3(n / 2.0, -0.03, n / 2.0)   # poziom wody = 0 (RAPORT_EEMAP); −0,03 tylko przeciw migotaniu na brzegu
+	mi.position = UkladEE.godot(Vector2(n / 2.0, n / 2.0), -0.03)   # poziom wody = 0 (RAPORT_EEMAP); −0,03 tylko przeciw migotaniu na brzegu
 	mi.name = "Woda"
 	add_child(mi)
 
@@ -167,7 +167,7 @@ func _dodaj_model(d: Dictionary) -> void:
 	mi.mesh = mesh
 	mi.name = "Model_bld_barracks_05"
 	mi.scale = Vector3.ONE * 3.0   # HIPOTEZA skali: model znormalizowany ~1 j., budynek ~3 pola
-	mi.position = Vector3(najl.y + 0.5, float(wys[najl.x][najl.y]) * Konfiguracja.skala_wysokosci, najl.x + 0.5)
+	mi.position = UkladEE.godot(Vector2(najl.y + 0.5, najl.x + 0.5), float(wys[najl.x][najl.y]) * Konfiguracja.skala_wysokosci)
 	add_child(mi)
 	raport["model"] = {"pozycja_pola": [najl.x, najl.y], "powierzchnie": mesh.get_surface_count()}
 	_pozycja_modelu = mi.position
@@ -176,7 +176,7 @@ func _dodaj_model(d: Dictionary) -> void:
 func _scena(d: Dictionary) -> void:
 	var n: int = d.okno.n
 	var sw := DirectionalLight3D.new()
-	sw.rotation_degrees = Vector3(-50, -35, 0)
+	sw.basis = Basis.looking_at(UkladEE.wektor(Vector3(0.3687, -0.5265, -0.766)), Vector3.UP)   # kierunek w świecie EE
 	sw.light_energy = 1.1
 	add_child(sw)
 	var we := WorldEnvironment.new()
@@ -190,12 +190,12 @@ func _scena(d: Dictionary) -> void:
 	add_child(we)
 	var kam := Camera3D.new()
 	kam.fov = 45
-	var srodek := Vector3(n / 2.0, 0, n / 2.0)
-	kam.position = srodek + Vector3(-n * 0.55, n * 0.75, n * 0.55)
+	var srodek := UkladEE.godot(Vector2(n / 2.0, n / 2.0), 0.0)
+	kam.position = srodek + UkladEE.wektor(Vector3(-n * 0.55, n * 0.55, n * 0.75))
 	add_child(kam)
 	kam.look_at(srodek, Vector3.UP)
 	if "--kamera=model" in OS.get_cmdline_user_args() and _pozycja_modelu != Vector3.ZERO:
-		kam.position = _pozycja_modelu + Vector3(-3.2, 3.0, 3.2)
+		kam.position = _pozycja_modelu + UkladEE.wektor(Vector3(-3.2, 3.2, 3.0))
 		kam.look_at(_pozycja_modelu + Vector3(0, 0.6, 0), Vector3.UP)
 	kam.current = true
 	var cl := CanvasLayer.new()

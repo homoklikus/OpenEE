@@ -47,6 +47,7 @@ func _ready() -> void:
 	var gra_ee := kamp.to_lower().begins_with("ee")
 	var rel := ("Empire Earth/Data/Campaigns/" if gra_ee else "Empire Earth - The Art of Conquest/Data/Campaigns/") + kamp
 	scn = ScenariuszEE.new()
+	UkladEE.ustaw_konwencje_modelu(_arg("uklad-modelu", "I"))   # diagnostyka etapu 7 (porównanie konwencji osi)
 	var plik_scn := _arg("plik-scn", "")
 	if plik_scn != "":
 		# diagnostyka: pojedynczy plik .scn z dysku (np. mapa Riverlands do porównania kamer) – tylko odczyt
@@ -203,7 +204,8 @@ func _teren() -> void:
 			if li < 0:
 				brak += 1; li = 0
 			var hs := [_w(r, c), _w(r, c + 1), _w(r + 1, c + 1), _w(r + 1, c)]
-			var pts := [Vector3(c, hs[0], r), Vector3(c + 1, hs[1], r), Vector3(c + 1, hs[2], r + 1), Vector3(c, hs[3], r + 1)]
+			var pts := [UkladEE.godot(Vector2(c, r), hs[0]), UkladEE.godot(Vector2(c + 1, r), hs[1]),
+				UkladEE.godot(Vector2(c + 1, r + 1), hs[2]), UkladEE.godot(Vector2(c, r + 1), hs[3])]
 			var uvs := [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
 			# klify: UV planarne jak dla pozostałych pól – rzut pionowy (próba) dawał rozciągnięcia, odrzucony (RAPORT_ZGODNOSCI)
 			var p0: Vector3 = pts[0]; var p1: Vector3 = pts[1]; var p2: Vector3 = pts[2]; var p3: Vector3 = pts[3]
@@ -239,7 +241,7 @@ func _woda() -> void:
 		mat.uv1_scale = Vector3(n, n, 1)   # dbterrain: woda 16×1 = 16 klatek animacji, jedna klatka na pole
 	var mi := MeshInstance3D.new()
 	mi.mesh = pm; mi.material_override = mat; mi.name = "Woda"
-	mi.position = Vector3(okno.y + n / 2.0, -0.02, okno.x + n / 2.0)
+	mi.position = UkladEE.godot(Vector2(okno.y + n / 2.0, okno.x + n / 2.0), -0.02)
 	add_child(mi)
 	raport["woda"] = {"tekstura": img != null}
 
@@ -266,10 +268,10 @@ func _obiekty_mapy() -> void:
 		for u in gracz.jednostki:
 			if int(u.get("valid", 0)) == 0:
 				continue
-			var x := float(u.get("X", 0)) + 0.5; var z := float(u.get("Y", 0)) + 0.5
+			# x, z – punkt mapy EE (kolumna, wiersz); pozycja ciągła t[3], t[7] (RAPORT_EEPPLAYER) – UkladEE
 			var tr: PackedByteArray = u.get("transform", PackedByteArray())
-			if tr.size() == 64:
-				x = tr.decode_float(12); z = tr.decode_float(28)   # t[3], t[7] – pozycja ciągła (RAPORT_EEPPLAYER)
+			var pm := UkladEE.pozycja_z_rekordu(tr, int(u.get("X", 0)), int(u.get("Y", 0)))
+			var x := pm.x; var z := pm.y
 			if x < okno.y or x >= okno.y + okno.z or z < okno.x or z >= okno.x + okno.z:
 				licz.poza_oknem += 1; continue
 			var ob: Dictionary = _obiekty.get(int(u.type), {})
@@ -292,7 +294,7 @@ func _obiekty_mapy() -> void:
 				if skala_a <= 0: skala_a = 1.0
 				var ka := "%s|%s" % [model, tex]
 				if not anim_grupy.has(ka): anim_grupy[ka] = {"model": model, "tex": tex, "lista": []}
-				anim_grupy[ka].lista.append([Transform3D(_baza_obiektu(tr) * skala_a, Vector3(x, _wys_w(x, z), z)), kolor, q_bezcz])
+				anim_grupy[ka].lista.append([Transform3D(_baza_obiektu(tr) * skala_a, UkladEE.godot(pm, _wys_w(x, z))), kolor, q_bezcz])
 				licz.pokazane += 1
 				typy[String(ob.get("Name", "?"))] = typy.get(String(ob.get("Name", "?")), 0) + 1
 				var ut_a := int(ob.get("Unit type", -1))
@@ -307,7 +309,7 @@ func _obiekty_mapy() -> void:
 			if skala <= 0: skala = float(ob.get("Graphic size", 1.0))
 			if skala <= 0: skala = 1.0
 			var h := _wys_w(x, z)
-			var xf := Transform3D(_baza_obiektu(tr) * skala, Vector3(x, h, z))
+			var xf := Transform3D(_baza_obiektu(tr) * skala, UkladEE.godot(pm, h))
 			if not grupy.has(kl): grupy[kl] = []
 			grupy[kl].append(xf)
 			if tr.size() == 64:
@@ -417,18 +419,11 @@ func _animowane(anim_grupy: Dictionary, wezel: Node3D, wylaczone: bool) -> Dicti
 
 ## Baza (obrót) obiektu z macierzy GETransformation rekordu (t[0..11], wiersze) – etap 3 [D]: oś modelu muru po
 ## obrocie tą macierzą pokrywa się z kierunkiem muru (wyniki/test_orientacji_modeli.json); pole `angle` nie jest obrotem.
-## Godot = C·R·M⁻¹: C – świat EE (X=kolumna, Y=wiersz, Z=góra) → Godot (X, Z, Y), jak teren; M – układ siatki modelu
-## z importera (x, z, −y). Wyznacznik −1 (odbicie) wynika z konwencji osi świata OpenEE [H: układ lewoskrętny EE/D3D].
+## Konwersja do Godota – wyłącznie UkladEE.baza (etap 7: W·R·L·P⁻¹, bez odbicia świata).
 static func _baza_obiektu(tr: PackedByteArray) -> Basis:
 	if tr.size() != 64:
 		return Basis()
-	var R := [[tr.decode_float(0), tr.decode_float(4), tr.decode_float(8)],
-		[tr.decode_float(16), tr.decode_float(20), tr.decode_float(24)],
-		[tr.decode_float(32), tr.decode_float(36), tr.decode_float(40)]]
-	var C := [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]]
-	var MT := [[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]]
-	var B := _mnoz(C, _mnoz(R, MT))
-	return Basis(Vector3(B[0][0], B[1][0], B[2][0]), Vector3(B[0][1], B[1][1], B[2][1]), Vector3(B[0][2], B[1][2], B[2][2]))
+	return UkladEE.baza(UkladEE.R_z_rekordu(tr))
 
 
 static func _mnoz(a: Array, b: Array) -> Array:
@@ -442,7 +437,9 @@ static func _mnoz(a: Array, b: Array) -> Array:
 func _scena() -> void:
 	var n := okno.z
 	var sw := DirectionalLight3D.new()
-	sw.rotation_degrees = Vector3(-55, -30, 0); sw.light_energy = 1.0
+	# kierunek światła ustalony względem świata EE (do etapu 6: Euler (−55°, −30°) w odbitym świecie) – UkladEE
+	var kier_sw := UkladEE.wektor(Vector3(0.2868, -0.4967, -0.8192))
+	sw.basis = Basis.looking_at(kier_sw, Vector3.UP); sw.light_energy = 1.0
 	add_child(sw)
 	var we := WorldEnvironment.new(); var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR; env.background_color = Color(0.55, 0.68, 0.82)
@@ -454,7 +451,7 @@ func _scena() -> void:
 	_kamera.set_script(load("res://sceny/kamera_rts.gd" if produkcyjna else "res://sceny/kamera_diagnostyczna.gd"))
 	_kamera.fov = 40
 	add_child(_kamera)
-	var srodek := Vector3(okno.y + n / 2.0, 0, okno.x + n / 2.0)
+	var srodek := UkladEE.godot(Vector2(okno.y + n / 2.0, okno.x + n / 2.0), 0.0)
 	if produkcyjna:
 		_kamera.wysokosc_terenu = func(p: Vector2) -> float: return _wysokosc_mapy(p)
 		var automat := Konfiguracja.tryb_testow()
@@ -467,7 +464,7 @@ func _scena() -> void:
 		var og := _arg("kamera-ognisko", "")
 		if og != "":
 			var cz := og.split(",")
-			srodek = Vector3(float(cz[0]), 0, float(cz[1]))
+			srodek = UkladEE.godot(Vector2(float(cz[0]), float(cz[1])), 0.0)
 		_kamera.ustaw(srodek, 0.0)
 		_kamera.ustaw_poziom(int(_arg("kamera-poziom", str(ModelKameryEE.POZIOM_STARTOWY))))
 		if _arg("kamera-fov", "") != "":          # diagnostyka: porównanie hipotez kąta widzenia z oryginałem

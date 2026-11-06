@@ -7,7 +7,7 @@ extends Camera3D
 ## Zgodność z wcześniejszym interfejsem: `cel`, `odleglosc`, `ustaw(cel, odl)`, `_aktualizuj()` – odległość jest
 ## dociągana do najbliższego poziomu zoomu EE.
 
-var cel := Vector3.ZERO            # ognisko (Godot), wysokość = teren + 0,4
+var cel := Vector3.ZERO            # ognisko (Godot; punkt mapy EE = UkladEE.mapa(cel)), wysokość = teren + 0,4
 var poziom := ModelKameryEE.POZIOM_STARTOWY
 var odleglosc := ModelKameryEE.odleglosc(ModelKameryEE.POZIOM_STARTOWY)
 var granice := Rect2()             # zakresy (x+z, x−z) ogniska; pusty = bez ograniczenia
@@ -46,11 +46,11 @@ func _aktualizuj() -> void:
 	# zgodność: ktoś mógł ustawić `odleglosc` bezpośrednio (np. kamera podążająca w rts_test)
 	if not is_equal_approx(odleglosc, _odl_ostatnia):
 		poziom = ModelKameryEE.poziom_dla_odleglosci(odleglosc)
-	var p := ModelKameryEE.ogranicz(Vector2(cel.x, cel.z), granice)
+	var p := ModelKameryEE.ogranicz(UkladEE.mapa(cel), granice)     # ognisko w układzie mapy EE
 	var y := cel.y
 	if wysokosc_terenu.is_valid():
 		y = float(wysokosc_terenu.call(p)) + ModelKameryEE.WYSOKOSC_OGNISKA
-	cel = Vector3(p.x, y, p.y)
+	cel = UkladEE.godot(p, y)
 	odleglosc = ModelKameryEE.odleglosc(poziom)
 	_odl_ostatnia = odleglosc
 	var oko := ModelKameryEE.oko(cel, poziom)
@@ -60,8 +60,8 @@ func _aktualizuj() -> void:
 
 ## Przesunięcie ogniska o wektor ekranowy (x = prawo, y = dalej) w polach.
 func przesun(ekran: Vector2) -> void:
-	var d := ModelKameryEE.os_prawo_godot() * ekran.x + ModelKameryEE.os_dalej_godot() * ekran.y
-	cel += Vector3(d.x, 0.0, d.y)
+	var d := ModelKameryEE.os_prawo_mapy() * ekran.x + ModelKameryEE.os_dalej_mapy() * ekran.y
+	cel = UkladEE.godot(UkladEE.mapa(cel) + d, cel.y)
 	_aktualizuj()
 
 

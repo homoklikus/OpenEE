@@ -6,18 +6,9 @@ var sciezka: String = ""
 var wpisy := {}            # klucz (małe litery, '/') -> [poczatek, rozmiar, nazwa_oryginalna]
 var _f: FileAccess = null
 
-# cp1250 → Unicode dla bajtów 0x80–0xFF używanych w polskich nazwach (pozostałe: Latin-1)
-const CP1250 := {0x8C: "Ś", 0x8F: "Ź", 0x9C: "ś", 0x9F: "ź", 0xA3: "Ł", 0xA5: "Ą", 0xAF: "Ż", 0xB3: "ł",
-	0xB9: "ą", 0xBF: "ż", 0xC6: "Ć", 0xCA: "Ę", 0xD1: "Ń", 0xD3: "Ó", 0xE6: "ć", 0xEA: "ę", 0xF1: "ń", 0xF3: "ó"}
-
 
 static func _napis_cp1250(b: PackedByteArray) -> String:
-	var s := ""
-	for x in b:
-		if x == 0:
-			break
-		s += CP1250.get(x, char(x))
-	return s
+	return TekstEE.cp1250(b)      # pełna tablica Windows-1250 (TekstEE)
 
 
 func otworz(p: String) -> Error:

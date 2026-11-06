@@ -8,7 +8,7 @@ extends RefCounted
 const WYS_JEDNOSTKI := 1.2
 
 
-## Przecięcie promienia (Godot: origin, dir) z terenem mapy; zwraca punkt mapy (Vector2) i odległość albo {}.
+## Przecięcie promienia (Godot: origin, dir) z terenem mapy; zwraca punkt mapy EE (Vector2, UkladEE.mapa) i odległość albo {}.
 static func teren(mapa: MapaNawigacji, origin: Vector3, dir: Vector3, maks: float = 2000.0) -> Dictionary:
 	var d := dir.normalized()
 	var krok := 0.25
@@ -17,17 +17,17 @@ static func teren(mapa: MapaNawigacji, origin: Vector3, dir: Vector3, maks: floa
 	var poprz_nad := true
 	while t < maks:
 		var p := origin + d * t
-		var h := mapa.wysokosc(Vector2(p.x, p.z))
+		var h := mapa.wysokosc(UkladEE.mapa(p))
 		var nad := p.y >= h
 		if not nad and poprz_nad and t > 0.0:
 			var a := poprz_t; var b := t
 			for i in 24:
 				var m := (a + b) * 0.5
 				var q := origin + d * m
-				if q.y >= mapa.wysokosc(Vector2(q.x, q.z)): a = m
+				if q.y >= mapa.wysokosc(UkladEE.mapa(q)): a = m
 				else: b = m
 			var r := origin + d * b
-			return {"punkt": Vector2(r.x, r.z), "odleglosc": b, "pozycja": r}
+			return {"punkt": UkladEE.mapa(r), "odleglosc": b, "pozycja": r}
 		poprz_nad = nad; poprz_t = t
 		t += krok
 		if t > 50.0: krok = 0.5
@@ -40,7 +40,7 @@ static func jednostka(sym: Symulacja, origin: Vector3, dir: Vector3) -> Array:
 	var najl := -1; var odl := INF
 	for j in sym.lista():
 		var h := sym.wysokosc(j)
-		var t := _walec(origin, d, Vector3(j.pozycja.x, h, j.pozycja.y), j.promien, WYS_JEDNOSTKI)
+		var t := _walec(origin, d, UkladEE.godot(j.pozycja, h), j.promien, WYS_JEDNOSTKI)
 		if t >= 0.0 and t < odl:
 			odl = t; najl = j.id
 	return [najl, odl]

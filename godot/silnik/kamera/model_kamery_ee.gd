@@ -5,10 +5,8 @@ extends RefCounted
 ## Oznaczenia: [Z] zmierzone, [W] wnioskowane z pomiarów, [N] nieznane – przyjęta wartość robocza.
 ## Szczegóły i dane: RAPORT_KAMERA_EE_OPENEE.md.
 ##
-## Układ EE: x = kolumna, y = wiersz, z = góra. OpenEE (UkladEE): Godot (X, Y, Z) = (x, z, y). To odbicie
-## (wyznacznik −1), więc świat OpenEE jest lustrzanym obrazem świata EE: kamera o tym samym kierunku patrzenia
-## pokazuje kadr EE odbity lewo–prawo (dalej = dalej, prawo = lewo). Model trzyma się kierunku patrzenia
-## (widać te same ściany budynków), a skrętność obrazu opisuje raport (§ „Odbicie”).
+## Wielkości kamery są wyrażone w układzie świata EE (x = kolumna, y = wiersz, z = góra); do Godota przechodzą
+## wyłącznie przez UkladEE (etap 7: obrót bez odbicia – kadr OpenEE pokrywa się z kadrem EE, nie jest odbity).
 
 ## Kierunek patrzenia w płaszczyźnie mapy EE: (−1, +1)/√2 (azymut 135° od osi x) – stały, gra nie obraca kamery [Z].
 const KIERUNEK_MAPY := Vector2(-0.70710678, 0.70710678)
@@ -55,20 +53,25 @@ static func predkosc(poziom: int) -> float:
 	return lerpf(PREDKOSC_MIN, PREDKOSC_MAKS, float(clampi(poziom, 0, POZIOMOW - 1)) / float(POZIOMOW - 1))
 
 
-## Kierunek patrzenia w Godocie (jednostkowy): poziomo KIERUNEK_MAPY (x → X, y → Z), w dół o POCHYLENIE_ST.
-static func kierunek_godot() -> Vector3:
+## Kierunek patrzenia w świecie EE (x, y, z): poziomo KIERUNEK_MAPY, w dół o POCHYLENIE_ST.
+static func kierunek_ee() -> Vector3:
 	var p := deg_to_rad(POCHYLENIE_ST)
-	return Vector3(KIERUNEK_MAPY.x * cos(p), -sin(p), KIERUNEK_MAPY.y * cos(p)).normalized()
+	return Vector3(KIERUNEK_MAPY.x * cos(p), KIERUNEK_MAPY.y * cos(p), -sin(p)).normalized()
 
 
-## Osie przesuwania na ekranie w płaszczyźnie mapy (Godot X, Z): „prawo” i „dalej” (strzałka w górę).
-static func os_prawo_godot() -> Vector2:
-	var f := kierunek_godot()
-	var r := f.cross(Vector3.UP).normalized()
-	return Vector2(r.x, r.z)
+## Kierunek patrzenia w Godocie (jednostkowy) – przez UkladEE (jedyna konwersja osi).
+static func kierunek_godot() -> Vector3:
+	return UkladEE.wektor(kierunek_ee())
 
 
-static func os_dalej_godot() -> Vector2:
+## Osie przesuwania na ekranie w płaszczyźnie mapy EE: „prawo” = (+1, +1)/√2 i „dalej” (strzałka w górę) =
+## kierunek patrzenia (−1, +1)/√2 [Z: pomiar klawiszy w EE]. Prawo = przód × góra w świecie EE.
+static func os_prawo_mapy() -> Vector2:
+	var r := kierunek_ee().cross(Vector3(0, 0, 1)).normalized()
+	return Vector2(r.x, r.y)
+
+
+static func os_dalej_mapy() -> Vector2:
 	return KIERUNEK_MAPY
 
 
@@ -79,7 +82,7 @@ static func oko(ognisko: Vector3, poziom: int) -> Vector3:
 
 ## Granice ogniska: w EE ognisko nie wychodzi poza obszar mapy (romb poprawnych pól) – zmierzone ograniczenie
 ## (x + y) ∈ [100, 300], (x − y) ∈ [−100, 100] dla mapy 100×100 [Z]. Granice tu: zakresy u = x + y, v = x − y
-## (Godot: x = X, y = Z) wyliczone z pól mapy. Prostokąt w osiach (u, v) = osie ekranu (prawo/dalej).
+## w układzie mapy EE, wyliczone z pól mapy. Prostokąt w osiach (u, v) = osie ekranu (prawo/dalej).
 static func granice_z_pol(wiersze_zakresy: Array) -> Rect2:
 	var umin := INF; var umax := -INF; var vmin := INF; var vmax := -INF
 	for r in wiersze_zakresy.size():

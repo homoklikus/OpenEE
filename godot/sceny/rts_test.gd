@@ -52,8 +52,7 @@ func _po_zbudowaniu() -> void:
 			var ob: Dictionary = _obiekty.get(int(u.type), {})
 			if not (int(ob.get("Unit type", -1)) in TYPY_BLOKUJACE): continue
 			var tr: PackedByteArray = u.get("transform", PackedByteArray())
-			var p := Vector2(float(u.get("X", 0)) + 0.5, float(u.get("Y", 0)) + 0.5)
-			if tr.size() == 64: p = Vector2(tr.decode_float(12), tr.decode_float(28))
+			var p := UkladEE.pozycja_z_rekordu(tr, int(u.get("X", 0)), int(u.get("Y", 0)))
 			var drzewo := "tree" in String(ob.get("Name", "")).to_lower()
 			przeszkody.komorki += mapa.dodaj_przeszkode(p, float(ob.get("Size of collider", 0.5)), drzewo)
 			if drzewo: przeszkody.drzewa += 1
@@ -103,7 +102,7 @@ func _process(_d: float) -> void:
 	if _sledz >= 0 and sym.jednostki.has(_sledz):
 		var js: JednostkaSym = sym.jednostki[_sledz]
 		var pp := js.pozycja_poprz.lerp(js.pozycja, zegar.alfa)
-		_kamera.cel = Vector3(pp.x, mapa.wysokosc(pp) + 0.4, pp.y); _kamera.odleglosc = 3.2; _kamera._aktualizuj()
+		_kamera.cel = UkladEE.godot(pp, mapa.wysokosc(pp) + 0.4); _kamera.odleglosc = 3.2; _kamera._aktualizuj()
 	var t := "RTS (etap 5) – takt %d, jednostek %d%s\nLPM: zaznacz · PPM: idź · P: trasa · spacja: pauza · Esc: launcher\n" % [
 		sym.takt, sym.jednostki.size(), "  [PAUZA]" if zegar.pauza else ""]
 	if not widok.zaznaczone.is_empty():
@@ -155,7 +154,7 @@ func _demo(sekundy: float) -> void:
 	widok.zaznaczone.clear(); widok.zaznaczone.append(j.id)
 	var cel := _cel_demo(j)
 	var start := j.pozycja
-	_kamera.ustaw(Vector3(start.x, mapa.wysokosc(start), start.y).lerp(Vector3(cel.x, mapa.wysokosc(cel), cel.y), 0.5),
+	_kamera.ustaw(UkladEE.godot(start, mapa.wysokosc(start)).lerp(UkladEE.godot(cel, mapa.wysokosc(cel)), 0.5),
 		maxf(9.0, start.distance_to(cel) * 1.3))
 	var demo := {"jednostka": j.opis(), "start": start, "cel": cel, "klatki": []}
 	if "--rts-sledz" in OS.get_cmdline_user_args(): _sledz = j.id

@@ -45,9 +45,13 @@ func uruchom() -> void:
 		is_equal_approx(M.predkosc(0), 15.0) and is_equal_approx(M.predkosc(10), 30.0) and is_equal_approx(M.predkosc(20), 45.0), "")
 	var f := M.kierunek_godot()
 	var poch := rad_to_deg(asin(-f.y))
-	var poz := Vector2(f.x, f.z).normalized()
-	t._ok("K model: pochylenie 35° i stały kierunek patrzenia (mapa EE (−1, +1) → Godot (−X, +Z))",
+	var poz := UkladEE.mapa(f).normalized()
+	t._ok("K model: pochylenie 35° i stały kierunek patrzenia (mapa EE (−1, +1); w Godocie przez UkladEE)",
 		absf(poch - 35.0) < 1e-3 and poz.distance_to(Vector2(-1, 1).normalized()) < 1e-5, [snappedf(poch, 0.001), poz])
+	var prawo_g := f.cross(Vector3.UP).normalized()
+	t._ok("K model: prawo ekranu Godota = (+1, +1) mapy EE – kadr nie jest odbity (etap 7)",
+		UkladEE.mapa(prawo_g).normalized().distance_to(Vector2(1, 1).normalized()) < 1e-5
+		and M.os_prawo_mapy().distance_to(Vector2(1, 1).normalized()) < 1e-5, [UkladEE.mapa(prawo_g), M.os_prawo_mapy()])
 	t._ok("K model: poziom dla odległości (dociąganie – zgodność z dawnym ustaw(cel, odl))",
 		M.poziom_dla_odleglosci(100.0) == 20 and M.poziom_dla_odleglosci(0.0) == 0 and M.poziom_dla_odleglosci(15.0) == 10, "")
 	var g := M.granice_z_pol(_romb(200))
@@ -60,7 +64,7 @@ func uruchom() -> void:
 	var kam: Camera3D = Camera3D.new(); kam.set_script(load("res://sceny/kamera_rts.gd"))
 	kam.przesuwanie_krawedzia = false
 	t.root.add_child(kam)
-	kam.ustaw(Vector3(100, 0.4, 100), 999.0)
+	kam.ustaw(UkladEE.godot(Vector2(100, 100), 0.4), 999.0)
 	t._ok("K produkcyjna: start przy największym oddaleniu, poziomy kąt widzenia 50,4° (KEEP_WIDTH)",
 		kam.poziom == 20 and is_equal_approx(kam.fov, M.FOV_POZIOMY_ST) and kam.keep_aspect == Camera3D.KEEP_WIDTH, kam.opis())
 	var baza0: Basis = kam.global_transform.basis
@@ -73,7 +77,7 @@ func uruchom() -> void:
 	var e2 := InputEventMouseMotion.new(); e2.button_mask = MOUSE_BUTTON_MASK_MIDDLE; e2.relative = Vector2(300, 0)
 	kam._unhandled_input(e2)
 	t._ok("K produkcyjna: stały azymut – Q/E i przeciąganie środkowym przyciskiem nie obracają kamery",
-		kam.global_transform.basis.is_equal_approx(baza0) and kam.cel.is_equal_approx(Vector3(100, 0.4, 100)), kam.opis())
+		kam.global_transform.basis.is_equal_approx(baza0) and kam.cel.is_equal_approx(UkladEE.godot(Vector2(100, 100), 0.4)), kam.opis())
 	t._ok("K produkcyjna: oś widoku = model EE (pochylenie 35°)", (-kam.global_transform.basis.z).distance_to(f) < 1e-4,
 		-kam.global_transform.basis.z)
 	_kolko(kam, true, 30)
@@ -88,21 +92,22 @@ func uruchom() -> void:
 	_kolko(kam, false, 1)
 	var c0: Vector3 = kam.cel
 	_klawisz(KEY_RIGHT, true); kam._process(1.0); _klawisz(KEY_RIGHT, false)
-	var dp := Vector2(kam.cel.x - c0.x, kam.cel.z - c0.z)
+	var dp := UkladEE.mapa(kam.cel) - UkladEE.mapa(c0)
 	t._ok("K produkcyjna: strzałka w prawo – 45 pól/s przy pełnym oddaleniu, wzdłuż osi prawej ekranu",
-		absf(dp.length() - 45.0) < 1e-3 and dp.normalized().distance_to(M.os_prawo_godot()) < 1e-4, dp)
+		absf(dp.length() - 45.0) < 1e-3 and dp.normalized().distance_to(M.os_prawo_mapy()) < 1e-4, dp)
 	kam.ustaw_poziom(0); c0 = kam.cel
 	_klawisz(KEY_UP, true); kam._process(0.5); _klawisz(KEY_UP, false)
-	dp = Vector2(kam.cel.x - c0.x, kam.cel.z - c0.z)
+	dp = UkladEE.mapa(kam.cel) - UkladEE.mapa(c0)
 	t._ok("K produkcyjna: strzałka w górę – 15 pól/s przy największym zbliżeniu, „dalej” = kierunek patrzenia",
-		absf(dp.length() - 7.5) < 1e-3 and dp.normalized().distance_to(M.os_dalej_godot()) < 1e-4, dp)
+		absf(dp.length() - 7.5) < 1e-3 and dp.normalized().distance_to(M.os_dalej_mapy()) < 1e-4, dp)
 	_klawisz(KEY_W, true); kam._process(1.0); _klawisz(KEY_W, false)
-	t._ok("K produkcyjna: WASD nie przesuwa kamery (w EE przesuwanie strzałkami)", kam.cel.is_equal_approx(c0 + Vector3(dp.x, 0, dp.y)), "")
+	t._ok("K produkcyjna: WASD nie przesuwa kamery (w EE przesuwanie strzałkami)", UkladEE.mapa(kam.cel).is_equal_approx(UkladEE.mapa(c0) + dp), "")
 	kam.ustaw_granice_z_mapy(_romb(200))
 	kam.ustaw_poziom(20)
 	for i in 20:
 		_klawisz(KEY_LEFT, true); kam._process(1.0); _klawisz(KEY_LEFT, false)
-	var uv := Vector2(kam.cel.x + kam.cel.z, kam.cel.x - kam.cel.z)
+	var pm := UkladEE.mapa(kam.cel)
+	var uv := Vector2(pm.x + pm.y, pm.x - pm.y)
 	t._ok("K produkcyjna: przesuwanie zatrzymuje się na brzegu mapy (ognisko w rombie)",
 		uv.x >= kam.granice.position.x - 1e-3 and uv.x <= kam.granice.end.x + 1e-3 and uv.y >= kam.granice.position.y - 1e-3
 		and uv.y <= kam.granice.end.y + 1e-3 and (absf(uv.x - kam.granice.position.x) < 1e-3 or absf(uv.x - kam.granice.end.x) < 1e-3

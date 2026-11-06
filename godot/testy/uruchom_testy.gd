@@ -7,6 +7,7 @@ extends SceneTree
 ## Etap 5: nawigacja, symulacja jednostek, zaznaczanie, stały krok (testy/testy_etapu5.gd).
 ## Naprawa grafiki: indeksy materiałów (v_offset), obrazy SST (tekstura_id), kolor gracza, UV (testy/testy_grafiki.gd).
 ## Diagnostyka 0.5.1: współpłaszczyznowe/duplikaty, nawinięcie, wycinanie alfa, odrzucanie ścian, billboard (testy/testy_diagnostyki.gd).
+## Układ współrzędnych (etap 7): UkladEE, skrętność, punkty kontrolne EE, wskazywanie, Windows-1250 (testy/testy_ukladu.gd).
 ## Kamera RTS: model kamery EE, kamera produkcyjna bez obrotu, kamera diagnostyczna (testy/testy_kamery.gd).
 ## Launcher: teksty UI PL/EN, model profili/modów/języka (w pamięci, bez zapisu), ikony, budowa sceny launchera.
 
@@ -103,6 +104,7 @@ func _initialize() -> void:
 	await TestyGrafiki.new(self).uruchom(K, Z)
 	await TestyDiagnostyki.new(self).uruchom(K, Z)
 	TestyKamery.new(self).uruchom()
+	TestyUkladu.new(self).uruchom()
 	await _testy_launchera(K, Z)
 
 	var out: String = K.katalog_openee.path_join("wyniki/testy_godot.json")
@@ -477,6 +479,9 @@ func _test_bazy_obiektu() -> void:
 	var id := PackedByteArray(); id.resize(64)
 	for i in 16: id.encode_float(4 * i, 1.0 if i in [0, 5, 10, 15] else 0.0)
 	var b0: Basis = skr._baza_obiektu(id)
-	_ok("E3 obiekty: obrót 90° (oś X modelu → oś Y świata EE = +z Godota), wyznacznik −1",
-		(b90 * Vector3(1, 0, 0)).is_equal_approx(Vector3(0, 0, 1)) and absf(b90.determinant() + 1.0) < 1e-4 and (b0 * Vector3(0, 0, -1)).is_equal_approx(Vector3(0, 0, 1)),
+	# etap 7: oś X modelu (w siatce importera (1, 0, 0)) po obrocie 90° → oś y świata EE = UkladEE.wektor(0, 1, 0)
+	# = (0, 0, −1) Godota; oś y modelu (siatka (0, 0, −1)) przy R = I → oś y świata EE; wyznacznik +1 (bez odbicia)
+	_ok("E3 obiekty: obrót 90° (oś X modelu → oś y świata EE), wyznacznik +1 (UkladEE, etap 7)",
+		(b90 * Vector3(1, 0, 0)).is_equal_approx(UkladEE.wektor(Vector3(0, 1, 0))) and absf(b90.determinant() - 1.0) < 1e-4
+		and (b0 * Vector3(0, 0, -1)).is_equal_approx(UkladEE.wektor(Vector3(0, 1, 0))),
 		[b90 * Vector3(1, 0, 0), b90.determinant(), b0 * Vector3(0, 0, -1)])
