@@ -127,7 +127,8 @@ Ognisko jest ograniczone do rombu pól: u = x + y ∈ [N, 3N] oraz v = x − y �
 | Cecha | Wynik | Pewność |
 |---|---|---|
 | Rzut | Perspektywiczny. Wielkość obiektów maleje odwrotnie proporcjonalnie do odległości. | [P] (pierwsze badanie) |
-| Kąt widzenia | Poziomy ≈ 50,4° przy 3440×1440 (ogniskowa ~3650 px). | [W] |
+| Kąt widzenia | Poziomy ≈ **48,4°** przy 3440×1440 (ogniskowa ~3830 px). Pierwsze badanie podało 50,4° (szerokość jednego budynku). Etap 10 porównał kadry EE i OpenEE przy tym samym ognisku i poziomie (8 punktów: flagi centrum miasta i 5 jednostek, poziomy 20 i 10). Przy 50,4° obraz OpenEE był mniejszy o 4,1–5,3%. Przy 48,4° odchyłki poziome wynoszą 1–8 px. | [W] |
+| Środek rzutu | W pionie obraz EE jest o ~21 px niżej niż w OpenEE (stałe przesunięcie w pikselach przy poziomach 20 i 10). Najpewniej środek rzutu leży poniżej środka obszaru mapy 3440×1302. Pochylenie 35° w macierzy jest dokładne. | [W] |
 | Kąt przy innych proporcjach okna | Zmiana rozdzielczości wymagałaby zmiany ustawień gry użytkownika. | [N] |
 | Kierunek patrzenia względem siatki | Wzdłuż przekątnej pól (azymut 135°), więc wiersze i kolumny biegną ukośnie na ekranie. | [P] |
 | Wielkość obiektów a wysokość terenu | Wynika z perspektywy i nadążania ogniska (§ 3.5): obiekt na wzgórzu jest bliżej oka, gdy ognisko leży niżej. Osobnego skalowania nie znaleziono. | [W] |
@@ -146,7 +147,8 @@ Ognisko jest ograniczone do rombu pól: u = x + y ∈ [N, 3N] oraz v = x − y �
 | Przelicznik piksela Godota (ruch względny) na jednostkę myszy EE | 1 : 1 | [H] |
 | Granice | Romb pól | [P] |
 | Wysokość ogniska | max(0, h) + 0,4 | [P]; h z interpolacji dwuliniowej OpenEE – [W] (EE wyżej o ≤ 0,23) |
-| Kąt widzenia | 50,4° w poziomie przy stałej szerokości | [W]; inne proporcje [N] |
+| Kąt widzenia | 48,4° w poziomie przy stałej szerokości | [W]; inne proporcje [N] |
+| Środek rzutu | Przesunięcie pionowe ~21 px przy 3440×1440 – w OpenEE nieodtworzone | [W]/[N] |
 | Przerywniki filmowe | Poza zakresem | – |
 
 ## 6. Ograniczenia MCP i pomiarów
