@@ -1,0 +1,30 @@
+{
+ "opis": "Pomiary podstawowych mechanik w oryginalnym Empire Earth (ee) i The Art of Conquest (aoc), etap 12 (docs/POROWNANIE_MECHANIK_EE_AOC.md). Wartości osobno dla każdej gry, z tego samego scenariusza i tego samego wejścia. Pewność: [P] potwierdzone, [W] wniosek, [H] hipoteza, [N] nieustalone. Zakres: obie – zmierzone w obu grach z tym samym wynikiem. Pole openee – parametr wspólnego kodu OpenEE, z którym porównano pomiar (testy_etapu12.gd).",
+ "scenariusz": "Wojna trojańska (kampania EE, SCN 231), mapa 140×140, okno 3440×1440",
+ "kompilacje": {
+  "ee": "Empire Earth.exe, SHA-256 e352d7ae…a2b5 (instalacja społecznościowa GOG + NeoEE)",
+  "aoc": "EE-AOC.exe, SHA-256 db8fc5ce…7f52 (ta sama instalacja)"
+ },
+ "mechaniki": {
+  "azymut_st": {"ee": 135.0, "aoc": 135.0, "openee": "KIERUNEK_MAPY", "tolerancja": 0.01, "zakres": "obie", "pewnosc": "P"},
+  "pochylenie_st": {"ee": 35.0, "aoc": 35.0, "openee": "POCHYLENIE_ST", "tolerancja": 0.01, "zakres": "obie", "pewnosc": "P"},
+  "poziomy_zoomu": {"ee": 21, "aoc": 21, "openee": "POZIOMOW", "tolerancja": 0, "zakres": "obie", "pewnosc": "P"},
+  "odleglosc_maks": {"ee": 29.7, "aoc": 29.7, "openee": "ODL_MAKS", "tolerancja": 0.01, "zakres": "obie", "pewnosc": "P"},
+  "odleglosc_krok": {"ee": 1.49, "aoc": 1.49, "openee": "KROK_ODL", "tolerancja": 0.01, "zakres": "obie", "pewnosc": "P"},
+  "odleglosc_min": {"ee": 0.1, "aoc": 0.1, "openee": "ODL_MIN", "tolerancja": 0.01, "zakres": "obie", "pewnosc": "P"},
+  "strzalki_poziom_20": {"ee": 43.2, "aoc": 43.45, "openee": "predkosc(20)", "tolerancja_wzgledna": 0.06, "zakres": "obie", "pewnosc": "P", "uwaga": "próbkowanie w trakcie trzymania klawisza zaniża wynik o ~2–4%"},
+  "strzalki_poziom_0": {"ee": 14.16, "aoc": 14.48, "openee": "predkosc(0)", "tolerancja_wzgledna": 0.06, "zakres": "obie", "pewnosc": "P"},
+  "dwie_strzalki_poziom_20": {"ee": 60.63, "aoc": 61.34, "openee": "predkosc(20)·√2", "tolerancja_wzgledna": 0.06, "zakres": "obie", "pewnosc": "P"},
+  "krawedz_docelowa_poziom_20": {"ee": 38.1, "aoc": 38.4, "openee": "predkosc_krawedzi(20)", "tolerancja_wzgledna": 0.06, "zakres": "obie", "pewnosc": "P", "uwaga": "AoC: prędkość narasta przez ~1 s od ~3 pól/s [W]; EE: stała od początku. Przyczyna różnicy nieustalona (możliwa czułość myszy w rejestrze: EE 31, AoC 7) [H] – OpenEE bez zmian."},
+  "krawedz_docelowa_poziom_0": {"ee": 12.4, "aoc": 12.3, "openee": "predkosc_krawedzi(0)", "tolerancja_wzgledna": 0.06, "zakres": "obie", "pewnosc": "P"},
+  "srodkowy_200_jednostek": {"ee": 35.9, "aoc": 36.7, "openee": null, "tolerancja_wzgledna": 0.05, "zakres": "obie", "pewnosc": "P", "uwaga": "zgodność EE ↔ AoC dla tego samego wejścia; wartość bezwzględna różna od etapu 10 – [N] (przyspieszenie wskaźnika X11?)"},
+  "granica_ogniska_narozniki": {"ee": [[69.918, 70.082], [209.918, 210.082]], "aoc": [[69.87, 70.13], [209.87, 210.13]], "openee": "ogranicz() dla rombu u ∈ [N, 3N], v ∈ [−N, N], N = 140", "tolerancja": 0.2, "zakres": "obie", "pewnosc": "P"},
+  "wysokosc_ogniska_nad_morzem": {"ee": 0.4, "aoc": 0.4, "openee": "wysokosc_ogniska(h < 0)", "tolerancja": 0.01, "zakres": "obie", "pewnosc": "P"},
+  "mnoznik_predkosci_scenariusz": {"ee": 1.706, "aoc": 1.706, "openee": null, "tolerancja_wzgledna": 0.01, "zakres": "obie", "pewnosc": "P", "uwaga": "Speed × mnożnik; na Riverlands (etap 9, AoC) 1,46 – mnożnik zależy od scenariusza, nie od gry; przyczyna [N]. OpenEE zostaje przy Symulacja.MNOZNIK_PREDKOSCI = 1,46."}
+ },
+ "openee": {"mnoznik_predkosci": 1.46},
+ "roznice": [
+  {"mechanika": "narastanie prędkości przewijania krawędzią", "ee": "brak", "aoc": "~1 s", "pewnosc": "W", "implementacja": "brak – przyczyna nieustalona"},
+  {"mechanika": "prędkość proroka (Speed 0,45)", "ee": 0.853, "aoc": 0.96, "pewnosc": "H", "implementacja": "brak – jedna krótka trasa"}
+ ]
+}

@@ -17,6 +17,9 @@ const TOLERANCJA_CELU := 0.05      # pola
 ## Prędkość w polach na sekundę = dbobjects „Speed” × MNOZNIK_PREDKOSCI. Pomiar w oryginale (etap 9, normalna szybkość
 ## gry): obywatel 0,5 → 0,73, miecznik 0,6 → 0,875, jeździec 0,8 → 1,17 pola/s (stosunek 1,45–1,55, średnio 1,46) [P];
 ## zgodne z hipotezą „Speed w polach na sekundę czasu gry, normalna szybkość = ok. 1,5 × czas rzeczywisty” [H].
+## Etap 12 (docs/POROWNANIE_MECHANIK_EE_AOC.md): pomiar etapu 9 pochodzi z AoC na Riverlands. Na „Wojnie trojańskiej”
+## mnożnik wynosi 1,706 w EE i w AoC jednakowo [P] – zależy od scenariusza, nie od gry; przyczyna [N]. Stała zostaje
+## wspólna dla obu gier i bez zmian, dopóki przyczyna nie jest ustalona.
 const MNOZNIK_PREDKOSCI := 1.46
 
 var mapa: MapaNawigacji

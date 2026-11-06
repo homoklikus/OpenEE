@@ -146,7 +146,7 @@ func _process(_d: float) -> void:
 		var j: JednostkaSym = sym.jednostki.get(widok.zaznaczone[0])
 		if j:
 			var o := j.opis()
-			t += "Jednostka %d: %s (typ %d, gracz %d)\npozycja (%.2f, %.2f), wys. %.2f, kurs %.0f°\nstan: %s, animacja: %s, cel (%.1f, %.1f), punktów trasy: %d\nprędkość %.2f pola/s (Speed × 1,46 – pomiar EE)%s" % [
+			t += "Jednostka %d: %s (typ %d, gracz %d)\npozycja (%.2f, %.2f), wys. %.2f, kurs %.0f°\nstan: %s, animacja: %s, cel (%.1f, %.1f), punktów trasy: %d\nprędkość %.2f pola/s (Speed × 1,46 – pomiar AoC, etap 9)%s" % [
 				j.id, j.nazwa, j.typ, j.wlasciciel, j.pozycja.x, j.pozycja.y, sym.wysokosc(j), o.kurs_st, o.stan, o.animacja,
 				j.cel.x, j.cel.y, o.punkty_trasy, j.predkosc, ("\nostatni rozkaz odrzucony: " + j.ostatni_powod) if j.ostatni_powod != "" else ""]
 	t += "\n" + sterowanie.komunikat

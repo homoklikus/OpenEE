@@ -10,6 +10,7 @@ extends SceneTree
 ## Układ współrzędnych (etap 7): UkladEE, skrętność, punkty kontrolne EE, wskazywanie, Windows-1250 (testy/testy_ukladu.gd).
 ## Ruch grupowy EE (etap 9): zaznaczanie, szyk, trasy oktylowe, kolejka, przesmyk, kolizje (testy/testy_ruchu.gd).
 ## Kamera RTS: model kamery EE, kamera produkcyjna bez obrotu, kamera diagnostyczna (testy/testy_kamery.gd).
+## Etap 12: pomiary mechanik EE i AoC a wspólny kod kamery i ruchu (testy/testy_etapu12.gd).
 ## Launcher: teksty UI PL/EN, model profili/modów/języka (w pamięci, bez zapisu), ikony, budowa sceny launchera.
 
 var wyniki: Array = []
@@ -108,6 +109,7 @@ func _initialize() -> void:
 	TestyUkladu.new(self).uruchom()
 	await TestyWariantow.new(self).uruchom(K, Z)
 	TestyGierEeAoc.new(self).uruchom(K, Z)
+	TestyEtapu12.new(self).uruchom(K)
 	TestyRuchuEE.new(self).uruchom()
 	TestyPrzezroczystosci.new(self).uruchom()
 	await _testy_launchera(K, Z)
