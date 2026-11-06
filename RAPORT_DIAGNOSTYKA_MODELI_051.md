@@ -206,3 +206,15 @@ Porównanie z oryginalnym EE (edytor scenariuszy, Twój komputer, bez zapisu; `w
   bazie), przesunięcie głębi (`POSITION`) przy przebiegu wstępnym głębi Forward+, wybór poziomu mipmapy dla wycinania alfy.
 * Dodano przełączniki A/B do sprawdzenia na GPU (argumenty po `--` w każdej scenie):
   `--bez-odrzucania`, `--bez-przesuniecia-glebi`, `--bez-wycinania-alfa`.
+
+## 11. Weryfikacja na GPU użytkownika (2026-11-06, narzędzie MCP `oe_render`)
+Nowe narzędzie Empire Earth MCP uruchamia sceny OpenEE na komputerze użytkownika: **NVIDIA GeForce RTX 5090**,
+Vulkan 1.4.357 Forward+ oraz OpenGL 3.3 (sterownik 620.70.06). Wyniki z bieżącego kodu (`c3d717d`):
+* stajnia (pole 157×230) i świerk – poprawne, bez czarnej bryły, pasów i płaskiej roślinności;
+* meczet z Troi – arkada z ostrołukami i kolumny w kolorze gracza **są widoczne** w Vulkanie i OpenGL; przełączniki
+  `--bez-odrzucania`/`--bez-przesuniecia-glebi` nie zmieniają obrazu (SSIM 0,99–1,0), `--bez-wycinania-alfa` pokazuje
+  czarne wypełnienia (oczekiwane);
+* Vulkan ↔ OpenGL na tym samym GPU: SSIM 0,995, 1,1% pikseli różnych o > 16/255.
+
+Wniosek: render OpenEE 0.5.2 jest zweryfikowany na GPU użytkownika. Brak arkady na wcześniejszym zrzucie użytkownika
+nie odtwarza się z bieżącym kodem – najpewniej pochodzi z innej kopii lub wcześniejszego stanu (do potwierdzenia).
