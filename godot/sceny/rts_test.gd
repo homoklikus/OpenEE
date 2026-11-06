@@ -45,7 +45,8 @@ func _po_zbudowaniu() -> void:
 	var klify: Array = []
 	for r in Zasoby.tabela("dbcliffterrain"):
 		klify.append(int(r["Terrain ID"])); klify.append(int(r["Terrain ID#2"]))
-	mapa = MapaNawigacji.z_scenariusza(scn, klify, Konfiguracja.skala_wysokosci, 2)
+	# siatka 1 komórka = 1 pole (etap 9): trasy EE przechodzą przez środki pól (x,5) [P: bród, odcinki osiowe]
+	mapa = MapaNawigacji.z_scenariusza(scn, klify, Konfiguracja.skala_wysokosci, 1)
 	var t1 := Time.get_ticks_usec()
 	var przeszkody := {"budynki_i_zasoby": 0, "drzewa": 0, "komorki": 0}
 	for g in scn.gracze:
@@ -56,7 +57,8 @@ func _po_zbudowaniu() -> void:
 			var tr: PackedByteArray = u.get("transform", PackedByteArray())
 			var p := UkladEE.pozycja_z_rekordu(tr, int(u.get("X", 0)), int(u.get("Y", 0)))
 			var drzewo := "tree" in String(ob.get("Name", "")).to_lower()
-			przeszkody.komorki += mapa.dodaj_przeszkode(p, float(ob.get("Size of collider", 0.5)), drzewo)
+			# „Size of collider” = średnica (etap 9: obrys Capitolu w EE ≈ 2 × 2 pola przy wartości 2) [W]
+			przeszkody.komorki += mapa.dodaj_przeszkode(p, 0.5 * float(ob.get("Size of collider", 0.5)), drzewo)
 			if drzewo: przeszkody.drzewa += 1
 			else: przeszkody.budynki_i_zasoby += 1
 	var t2 := Time.get_ticks_usec()
@@ -138,13 +140,13 @@ func _process(_d: float) -> void:
 		var js: JednostkaSym = sym.jednostki[_sledz]
 		var pp := js.pozycja_poprz.lerp(js.pozycja, zegar.alfa)
 		_kamera.cel = UkladEE.godot(pp, mapa.wysokosc(pp) + 0.4); _kamera.odleglosc = 3.2; _kamera._aktualizuj()
-	var t := "RTS (etap 5) – takt %d, jednostek %d%s\nLPM: zaznacz · PPM: idź · P: trasa · spacja: pauza · Esc: launcher\n" % [
+	var t := "RTS (etap 9) – takt %d, jednostek %d%s\nLPM / ramka: zaznacz (Shift dodaj, Ctrl usuń) · PPM: idź (Shift: kolejka) · P: trasa · spacja: pauza · Esc: launcher\n" % [
 		sym.takt, sym.jednostki.size(), "  [PAUZA]" if zegar.pauza else ""]
 	if not widok.zaznaczone.is_empty():
 		var j: JednostkaSym = sym.jednostki.get(widok.zaznaczone[0])
 		if j:
 			var o := j.opis()
-			t += "Jednostka %d: %s (typ %d, gracz %d)\npozycja (%.2f, %.2f), wys. %.2f, kurs %.0f°\nstan: %s, animacja: %s, cel (%.1f, %.1f), punktów trasy: %d\nprędkość %.2f pola/s [H]%s" % [
+			t += "Jednostka %d: %s (typ %d, gracz %d)\npozycja (%.2f, %.2f), wys. %.2f, kurs %.0f°\nstan: %s, animacja: %s, cel (%.1f, %.1f), punktów trasy: %d\nprędkość %.2f pola/s (Speed × 1,46 – pomiar EE)%s" % [
 				j.id, j.nazwa, j.typ, j.wlasciciel, j.pozycja.x, j.pozycja.y, sym.wysokosc(j), o.kurs_st, o.stan, o.animacja,
 				j.cel.x, j.cel.y, o.punkty_trasy, j.predkosc, ("\nostatni rozkaz odrzucony: " + j.ostatni_powod) if j.ostatni_powod != "" else ""]
 	t += "\n" + sterowanie.komunikat

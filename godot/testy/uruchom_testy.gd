@@ -8,6 +8,7 @@ extends SceneTree
 ## Naprawa grafiki: indeksy materiałów (v_offset), obrazy SST (tekstura_id), kolor gracza, UV (testy/testy_grafiki.gd).
 ## Diagnostyka 0.5.1: współpłaszczyznowe/duplikaty, nawinięcie, wycinanie alfa, odrzucanie ścian, billboard (testy/testy_diagnostyki.gd).
 ## Układ współrzędnych (etap 7): UkladEE, skrętność, punkty kontrolne EE, wskazywanie, Windows-1250 (testy/testy_ukladu.gd).
+## Ruch grupowy EE (etap 9): zaznaczanie, szyk, trasy oktylowe, kolejka, przesmyk, kolizje (testy/testy_ruchu.gd).
 ## Kamera RTS: model kamery EE, kamera produkcyjna bez obrotu, kamera diagnostyczna (testy/testy_kamery.gd).
 ## Launcher: teksty UI PL/EN, model profili/modów/języka (w pamięci, bez zapisu), ikony, budowa sceny launchera.
 
@@ -106,6 +107,7 @@ func _initialize() -> void:
 	TestyKamery.new(self).uruchom()
 	TestyUkladu.new(self).uruchom()
 	await TestyWariantow.new(self).uruchom(K, Z)
+	TestyRuchuEE.new(self).uruchom()
 	TestyPrzezroczystosci.new(self).uruchom()
 	await _testy_launchera(K, Z)
 

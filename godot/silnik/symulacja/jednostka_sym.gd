@@ -16,10 +16,13 @@ var ruch: int = Ruch.STOI
 var cel := Vector2.ZERO
 var sciezka := PackedVector2Array()
 var indeks_punktu: int = 0         # bieżący punkt ścieżki
-var predkosc: float = 0.5          # pola/s – dbobjects „Speed” [H: jednostka pole/s]
+var predkosc: float = 0.73         # pola/s – dbobjects „Speed” × Symulacja.MNOZNIK_PREDKOSCI (etap 9, pomiar EE)
 var obrot_w_miejscu: float = 6.0   # rad/s – dbobjects „Idle turning speed” [H: rad/s]
 var obrot_w_ruchu: float = 6.0     # rad/s – dbobjects „Moving turning speed” [H: rad/s]
 var promien: float = 0.25          # dbobjects „Circle selection size” (zaznaczanie)
+var rozmiar_szyku: float = 0.625   # dbobjects „Size in formation” – odstęp w szyku EE (etap 9)
+var miejsce_w_szyku := Vector2.INF # ostatnie miejsce przydzielone rozkazem grupy (diagnostyka)
+var kolejka_celow := PackedVector2Array()  # Shift + PPM: kolejne punkty po dojściu do bieżącego celu (etap 9) [P]
 var polityka: PolitykaRuchu
 var stan_animacji: String = "bezczynnosc"
 var ostatni_powod: String = ""     # diagnostyka ostatniego rozkazu

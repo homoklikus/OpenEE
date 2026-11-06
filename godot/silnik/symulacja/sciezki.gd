@@ -6,6 +6,10 @@ extends RefCounted
 ## * heurystyka oktylowa (dopuszczalna),
 ## * składowe spójności liczone raz na politykę (cel w innej składowej → „nieosiągalny” bez przeszukiwania mapy),
 ## * wygładzanie: skrót przyjmowany, gdy jest widoczny po przechodnich komórkach i nie droższy (z wysokością),
+## * tryb `oktylowe` (etap 9, docs/MECHANIKA_RUCHU_EE.md § 5 – domyślny w Symulacja): trasa jak w oryginale EE – przez
+##   środki komórek, tylko odcinki w 8 kierunkach (najpierw przekątna, potem prosto), bez skrótów pod dowolnym kątem;
+##   ostatni odcinek do dokładnego punktu celu [P: trajektorie w EE – odcinki po przekątnej i wzdłuż osi pól,
+##   przejście przez bród w jednej kolumnie pól x,5],
 ## * implementacja na tablicach upakowanych: przechodniość i wysokości komórek w pamięci podręcznej, znaczniki
 ##   pokolenia zamiast czyszczenia tablic, kopiec binarny na PackedFloat32Array/PackedInt32Array.
 ## Wynik: {ok, sciezka: PackedVector2Array (punkty mapy, bez startu, z celem), powod, odwiedzone, czas_us}.
@@ -22,6 +26,7 @@ var _g := PackedFloat32Array()
 var _skad := PackedInt32Array()
 var _stan := PackedInt32Array()   # pokolenie·2 (+1 = zamknięta)
 var _pokolenie := 0
+var oktylowe := false
 var statystyka := {"zapytania": 0, "czas_us": 0, "odwiedzone": 0}
 
 
@@ -149,7 +154,7 @@ func znajdz(start: Vector2, cel: Vector2, pol: PolitykaRuchu) -> Dictionary:
 	while j != si:
 		komorki.append(Vector2i(j % W, j / W)); j = _skad[j]
 	komorki.reverse()
-	var pkt := _wygladz(start, komorki, cel, pol, pr)
+	var pkt := _wygladz_oktylowo(ks, komorki, cel, pr) if oktylowe else _wygladz(start, komorki, cel, pol, pr)
 	return _wynik(true, pkt, "", odw, t0)
 
 
@@ -203,6 +208,75 @@ func _wygladz(start: Vector2, komorki: Array[Vector2i], cel: Vector2, pol: Polit
 			j += 1
 		out.append(pkt[j]); i = j
 	return out
+
+
+## Najbliższy punkt (środek komórki) osiągalny ze `start`, gdy `cel` leży w terenie nieprzechodnim lub w innym
+## obszarze – rozkaz w wodę/przeszkodę w EE prowadzi jednostki na najbliższe osiągalne pola przy celu [W: etap 9,
+## rozkaz w koryto rzeki – jednostki stanęły na środkach pól przy punkcie]. Vector2.INF – brak w promieniu `r_maks`.
+func najblizszy_osiagalny(start: Vector2, cel: Vector2, pol: PolitykaRuchu, r_maks: int = 12) -> Vector2:
+	var ks := mapa.komorka(start); var kc := mapa.komorka(cel)
+	if ks.x < 0: return Vector2.INF
+	if kc.x < 0:
+		kc = mapa.komorka(Vector2(clampf(cel.x, 0.0, mapa.kolumny - 0.001), clampf(cel.y, 0.0, mapa.wiersze - 0.001)))
+	var pr := przechodniosc(pol); var sk := skladowe(pol)
+	if pr[mapa.indeks(ks)] == 0:
+		ks = _najblizsza_przechodnia(ks, pr)
+		if ks.x < 0: return Vector2.INF
+	var cel_sk := sk[mapa.indeks(ks)]
+	var W := mapa.szer_komorek(); var H := mapa.wys_komorek()
+	for r in range(0, r_maks * mapa.podzial + 1):
+		var najl := Vector2.INF; var dn := INF
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r: continue
+				var n := kc + Vector2i(dx, dy)
+				if n.x < 0 or n.y < 0 or n.x >= W or n.y >= H: continue
+				var i := n.y * W + n.x
+				if pr[i] == 0 or sk[i] != cel_sk: continue
+				var p := mapa.srodek(n)
+				if p.distance_to(cel) < dn: dn = p.distance_to(cel); najl = p
+		if najl != Vector2.INF: return najl
+	return Vector2.INF
+
+
+## Upraszczanie trasy komórkowej do odcinków oktylowych: od bieżącej komórki najdalsza komórka trasy osiągalna
+## kanonicznym ruchem „przekątna, potem prosto” po komórkach przechodnich (bez ścinania narożników). Długość trasy
+## się nie zmienia (A* z heurystyką oktylową daje trasę o długości oktylowej).
+func _wygladz_oktylowo(ks: Vector2i, komorki: Array[Vector2i], cel: Vector2, pr: PackedByteArray) -> PackedVector2Array:
+	var c: Array[Vector2i] = [ks]
+	c.append_array(komorki)
+	var out := PackedVector2Array()
+	var i := 0
+	while i < c.size() - 1:
+		var j := i + 1
+		while j + 1 < c.size() and _kanoniczna_wolna(c[i], c[j + 1], pr):
+			j += 1
+		var d := c[j] - c[i]
+		var m := mini(absi(d.x), absi(d.y))
+		var rog := c[i] + Vector2i(signi(d.x) * m, signi(d.y) * m)
+		if rog != c[i] and rog != c[j]:
+			out.append(mapa.srodek(rog))
+		out.append(mapa.srodek(c[j]))
+		i = j
+	out[out.size() - 1] = cel
+	return out
+
+
+func _kanoniczna_wolna(a: Vector2i, b: Vector2i, pr: PackedByteArray) -> bool:
+	var W := mapa.szer_komorek()
+	var d := b - a
+	var sx := signi(d.x); var sy := signi(d.y)
+	var m := mini(absi(d.x), absi(d.y))
+	var k := a
+	for s in m:
+		if pr[k.y * W + k.x + sx] == 0 or pr[(k.y + sy) * W + k.x] == 0: return false
+		k += Vector2i(sx, sy)
+		if pr[k.y * W + k.x] == 0: return false
+	var st := Vector2i(sx, 0) if absi(d.x) > absi(d.y) else Vector2i(0, sy)
+	while k != b:
+		k += st
+		if pr[k.y * W + k.x] == 0: return false
+	return true
 
 
 ## Koszt odcinka: długość + koszt_wysokosci · suma |Δh| (próbkowanie co 1/4 komórki).

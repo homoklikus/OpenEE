@@ -146,11 +146,11 @@ func _jednostkowe() -> void:
 		st1 == JednostkaSym.Ruch.OBROT and poz1.is_equal_approx(Vector2(2.5, 2.5)), [st1, poz1])
 	t._ok("E5 ruch: dotarcie do celu, zatrzymanie, animacje bezczynność → ruch → bezczynność (bez teleportu)",
 		j.pozycja.distance_to(Vector2(9.5, 2.5)) < 0.06 and not j.w_ruchu() and zd == ["ruch", "bezczynnosc"]
-		and absf(UkladEE.roznica_katow(j.kurs, UkladEE.kat_kierunku(Vector2(1, 0)))) < 0.01 and n > int(7.0 / (1.0 * Symulacja.KROK)) - 5,
+		and absf(UkladEE.roznica_katow(j.kurs, UkladEE.kat_kierunku(Vector2(1, 0)))) < 0.01 and n > int(7.0 / (j.predkosc * Symulacja.KROK)) - 5,
 		[j.pozycja, zd, n, rad_to_deg(j.kurs)])
-	# prędkość: 7 pól przy 1 pole/s ≈ 7 s (+ obrót)
+	# prędkość: 7 pól przy Speed 1,0 × MNOZNIK_PREDKOSCI (etap 9) ≈ 4,8 s (+ obrót)
 	t._ok("E5 ruch: prędkość z danych (pola/s) – czas przejścia zgodny z odległością / prędkością",
-		absf(n * Symulacja.KROK - (7.0 + PI / 6.0)) < 0.3, "%.2f s" % (n * Symulacja.KROK))
+		absf(j.predkosc - 1.0 * Symulacja.MNOZNIK_PREDKOSCI) < 1e-6 and absf(n * Symulacja.KROK - (7.0 / j.predkosc + PI / 6.0)) < 0.3, "%.2f s" % (n * Symulacja.KROK))
 	# --- zastąpienie rozkazu ---
 	sym.rozkaz_ruchu(id, Vector2(2.5, 6.5))
 	for i in 10: sym.krok()
