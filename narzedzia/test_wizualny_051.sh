@@ -9,7 +9,7 @@ set -u
 cd "$(dirname "$0")/.." || exit 1
 OUT="$1"; mkdir -p "$OUT"; OUT="$(cd "$OUT" && pwd)"
 G="${GODOT:?ustaw GODOT}"
-A=(--kampania=EETheGreeks.ssa "--scenariusz=trojan war" --okno=218,145,24 --kamera=blisko)
+A=(--kampania=EETheGreeks.ssa --scenariusz-nr=3 --okno=218,145,24 --kamera=blisko)
 render() {  # $1 katalog projektu, $2 nazwa, reszta – sterownik
   local P="$1" n="$2"; shift 2
   local X=(); [ -z "${DISPLAY:-}" ] && X=(xvfb-run -a -s "-screen 0 1400x1000x24")

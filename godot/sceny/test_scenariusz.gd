@@ -1,7 +1,8 @@
 extends Node3D
 ## Test graficzny etapu 2: fragment rzeczywistego scenariusza wczytany BEZPOŚREDNIO z instalacji EE
 ## (archiwum kampanii → SCN → teren + gracze/obiekty), tekstury i modele z data.ssa przez warstwy OpenEE.
-## Argumenty (po "--"): --kampania=AOCRoman.ssa | EETheGreeks.ssa  --scenariusz="soldiers for rome" --okno=r0,c0,n
+## Argumenty (po "--"): --kampania=AOCRoman.ssa | EETheGreeks.ssa  --scenariusz-nr=<n> (pozycja na liście kampanii,
+##                      domyślnie 1; niezależna od języka) albo --scenariusz=<fragment nazwy wpisu .scn> --okno=r0,c0,n
 ##                      --zrzut=<plik.png> --kamera=blisko --bez-obiektow --teren=etap2 (stary renderer – porównanie)
 ##                      --pomiar=<klatki> (czas klatki, wywołania rysowania, pamięć → raport JSON)
 ##                      --bez-animacji (etap 4: jednostki statyczne, klatka 0 – porównanie)
@@ -54,8 +55,13 @@ func _arg(nazwa: String, dom: String) -> String:
 
 func _ready() -> void:
 	var t0 := Time.get_ticks_msec()
-	var kamp := _arg("kampania", "AOCRoman.ssa")
-	var szuk := _arg("scenariusz", "soldiers for rome").to_lower()
+	# etap 13: domyślna kampania i numer scenariusza z definicji gry (dane/gry.json „kampania_testowa”)
+	var kt: Dictionary = GryEE.definicja(Konfiguracja.gra, Konfiguracja.katalog_openee).get("kampania_testowa", {})
+	var kamp := _arg("kampania", String(kt.get("plik", "AOCRoman.ssa")))
+	# etap 13: scenariusz kampanii wybierany NUMEREM z listy kampanii (stały między językami); tekst --scenariusz
+	# (fragment nazwy wpisu w archiwum, w języku instalacji) zostaje jako opcja diagnostyczna
+	var szuk := _arg("scenariusz", "").to_lower()
+	var nr_scen := int(_arg("scenariusz-nr", str(int(kt.get("nr", 1))) if _arg("kampania", "") == "" else "1"))
 	# etap 11: archiwum kampanii z katalogu WYBRANEJ gry (dane/gry.json); w AoC kampanie EE – jawne współdzielenie
 	var rel := ""
 	raport["gra"] = Konfiguracja.gra
@@ -81,11 +87,23 @@ func _ready() -> void:
 		if a == null:
 			Dziennik.blad("test_scenariusz", "Brak archiwum kampanii %s" % rel); _blad_raportu(); return
 		var klucz := ""
-		for k in a.wpisy:
-			if k.ends_with(".scn") and szuk in k:
-				klucz = k
-		if klucz == "" or not scn.wczytaj(a.czytaj(klucz)) or not scn.czytaj_teren():
-			Dziennik.blad("test_scenariusz", "Scenariusz '%s': %s" % [szuk, scn.blad]); _blad_raportu(); return
+		var opis := ""
+		if szuk != "":
+			for k in a.wpisy:
+				if k.ends_with(".scn") and szuk in k:
+					klucz = k
+			opis = "'%s'" % szuk
+		else:
+			var lista := GryEE.scenariusze_kampanii(a)
+			opis = "nr %d z listy kampanii %s (%d scenariuszy)" % [nr_scen, kamp, lista.size()]
+			if nr_scen >= 1 and nr_scen <= lista.size():
+				klucz = lista[nr_scen - 1].klucz
+				raport["scenariusz_nr"] = nr_scen
+				raport["scenariusz_tytul"] = lista[nr_scen - 1].nazwa
+		if klucz == "":
+			Dziennik.blad("test_scenariusz", "Scenariusz %s: brak w archiwum" % opis); _blad_raportu(); return
+		if not scn.wczytaj(a.czytaj(klucz)) or not scn.czytaj_teren():
+			Dziennik.blad("test_scenariusz", "Scenariusz %s: %s" % [opis, scn.blad]); _blad_raportu(); return
 		raport["scenariusz"] = "%s:%s:%s" % [Konfiguracja.zrodlo_gry, rel, klucz]
 	raport["mapa"] = [scn.teren.A, scn.teren.B]
 	raport["wersja_scn"] = scn.wersja_kawalka(5)

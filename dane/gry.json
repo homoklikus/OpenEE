@@ -9,7 +9,7 @@
    "katalogi_kampanii": ["Empire Earth"],
    "language_dll": "Empire Earth",
    "format_db": "ee",
-   "wersje_scn": [231],
+   "kampania_testowa": {"plik": "EETheGreeks.ssa", "nr": 3, "opis": "domyślny scenariusz scen testowych (bez argumentów): pozycja 3 listy kampanii greckiej – Wojna trojańska (scenariusz pomiarów etapu 12); numer zamiast tytułu, bo tytuły i nazwy wpisów są tłumaczone (etap 13)"}, "wersje_scn": [231],
    "warstwy_bazowe": ["vanilla"],
    "epoki": [0, 14],
    "dowod": "[P] Empire Earth.exe (pomiar /proc/<pid>/fd i /proc/<pid>/maps, zadanie MCP 165) otwiera wyłącznie Empire Earth/Data/data.ssa, Empire Earth/Language.dll i biblioteki z katalogu Empire Earth – żadnego pliku AoC."
@@ -22,7 +22,7 @@
    "katalogi_kampanii": ["Empire Earth - The Art of Conquest", "Empire Earth"],
    "language_dll": "Empire Earth - The Art of Conquest",
    "format_db": "aoc",
-   "wersje_scn": [231, 248, 249, 250],
+   "kampania_testowa": {"plik": "AOCRoman.ssa", "nr": 1, "opis": "domyślny scenariusz scen testowych: pozycja 1 listy kampanii rzymskiej – Żołnierze dla Rzymu / Soldiers for Rome (etap 13: numer zamiast tytułu)"}, "wersje_scn": [231, 248, 249, 250],
    "warstwy_bazowe": ["vanilla", "aoc"],
    "epoki": [0, 15],
    "dowod": "[P] EE-AOC.exe (zadanie MCP 164) trzyma otwarte OBA archiwa: Empire Earth - The Art of Conquest/Data/data.ssa i Empire Earth/Data/data.ssa; Language.dll i Low-Level Engine.dll – tylko z katalogu AoC. [P] data.ssa AoC (826 wpisów) nie zawiera 3614 kluczy EE (725 modeli, 2095 tekstur, 757 dźwięków) – bez archiwum EE gra nie ma tych zasobów. [W] Pierwszeństwo AoC przed EE: tabele db w pamięci gry mają układ AoC (848 obiektów, typy 724–847 obecne w scenariuszach AoC). Kampanie EE w trybie AoC: [P] AoC wczytuje scenariusze EE (wersja 231, np. „wojna trojańska” skopiowana do Scenarios), [H] menu kampanii AoC pokazuje tylko kampanie z własnego katalogu – OpenEE udostępnia kampanie EE w AoC wyłącznie jawnie (zgłoszenie w dzienniku)."

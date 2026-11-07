@@ -92,3 +92,38 @@ static func archiwum_kampanii(gra: String, kampania: String, instalacja: String,
 			return {"rel": rel, "wlasna": i == 0}
 	return {"blad": "Kampania %s nie należy do gry %s (szukano w: %s)" % [kampania, nazwa(gra, katalog_openee),
 		", ".join(kat.map(func(x): return String(x) + "/Data/Campaigns"))]}
+
+
+## Etap 13: lista scenariuszy kampanii z `campaigns/*_scenariolist.txt` w archiwum kampanii (kolejność kampanii).
+## Format: kolejne napisy [u32 długość z NUL][Windows-1250]. Wynik: [{"nr": 1.., "nazwa": tytuł z listy (w języku
+## instalacji – tylko do wyświetlania), "klucz": wpis .scn w archiwum albo ""}]. Numer jest identyfikatorem stałym
+## między wersjami językowymi (tytuły i nazwy plików w archiwum są tłumaczone).
+static func scenariusze_kampanii(archiwum) -> Array:
+	var out: Array = []
+	var lista := ""
+	for k in archiwum.wpisy:
+		if String(k).begins_with("campaigns/") and String(k).ends_with("_scenariolist.txt"):
+			lista = k
+	if lista == "":
+		return out
+	var d: PackedByteArray = archiwum.czytaj(lista)
+	var p := 0
+	var prefiks := String(lista).get_file().trim_suffix("scenariolist.txt")   # np. "een1ve1s_"
+	while p + 4 <= d.size():
+		var n := d.decode_u32(p)
+		p += 4
+		if n == 0 or p + n > d.size():
+			break
+		var b := d.slice(p, p + n)
+		if b.size() > 0 and b[b.size() - 1] == 0:
+			b = b.slice(0, b.size() - 1)
+		p += n
+		var nazwa := TekstEE.cp1250(b)
+		var klucz := "scenarios/" + prefiks + nazwa.to_lower()
+		if not archiwum.wpisy.has(klucz):
+			klucz = ""
+			for k in archiwum.wpisy:
+				if String(k).ends_with(".scn") and String(k).get_file().trim_prefix(prefiks) == nazwa.to_lower():
+					klucz = k
+		out.append({"nr": out.size() + 1, "nazwa": nazwa, "klucz": klucz})
+	return out
