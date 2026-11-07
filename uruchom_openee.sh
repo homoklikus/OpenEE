@@ -2,10 +2,11 @@
 # OpenEE – uruchomienie projektu Godot.
 #   ./uruchom_openee.sh            launcher OpenEE (ekran główny)
 #   ./uruchom_openee.sh diag       ekran diagnostyki (etap 1)
-#   ./uruchom_openee.sh scenariusz scenariusz testowy etapu 2 (Soldiers for Rome)
+#   ./uruchom_openee.sh scenariusz [opcje]  podgląd scenariusza (domyślnie kampania testowa wybranej gry z dane/gry.json:
+#                                  EE – Wojna trojańska, AoC – Żołnierze dla Rzymu; --gra=ee|aoc, --scenariusz-nr=N)
 #   ./uruchom_openee.sh test       test graficzny etapu 1 (teren + model)
 #   ./uruchom_openee.sh testy      testy automatyczne bez okna (bez instalacji EE część testów jest pomijana)
-#   ./uruchom_openee.sh rts [opcje]       scena RTS (etap 5): Troja, zaznaczanie LPM, ruch PPM
+#   ./uruchom_openee.sh rts [opcje]       scena RTS (etap 5): kampania testowa wybranej gry, zaznaczanie LPM, ruch PPM
 #   ./uruchom_openee.sh animacje [opcje]  scena diagnostyczna animacji CEM (etap 4), np. --model=Phalanx --sekwencja=atak
 # Godot 4.7: zmienna GODOT, polecenie godot4/godot w PATH albo plik Godot_v4*_linux.x86_64 obok projektu.
 cd "$(dirname "$(readlink -f "$0")")"
@@ -20,10 +21,11 @@ fi
 case "$1" in
   test)  exec "$GODOT" --path godot res://sceny/test_teren.tscn ;;
   diag)  exec "$GODOT" --path godot res://sceny/diagnostyka.tscn ;;
-  scenariusz) exec "$GODOT" --path godot res://sceny/test_scenariusz.tscn ;;
+  scenariusz) shift; exec "$GODOT" --path godot res://sceny/test_scenariusz.tscn -- "$@" ;;
   testy) exec "$GODOT" --headless --path godot --script res://testy/uruchom_testy.gd ;;
   model) shift; exec "$GODOT" --path godot res://sceny/diag_modelu.tscn -- "$@" ;;
   animacje) shift; exec "$GODOT" --path godot res://sceny/diag_animacji.tscn -- "$@" ;;
-  rts) shift; exec "$GODOT" --path godot res://sceny/rts_test.tscn -- --kampania=EETheGreeks.ssa "--scenariusz=trojan war" --kamera=blisko "$@" ;;
+  # etap 13.5: bez tytułu scenariusza („trojan war” nie pasował do polskiej instalacji) – numer z definicji gry
+  rts) shift; exec "$GODOT" --path godot res://sceny/rts_test.tscn -- --kamera=blisko "$@" ;;
   *)     exec "$GODOT" --path godot res://launcher/launcher.tscn ;;
 esac
