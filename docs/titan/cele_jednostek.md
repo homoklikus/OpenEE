@@ -153,7 +153,8 @@ Dla każdej pozycji k (w kolejności szyku), z przypisaną jednostką J:
 2. Nowy `EEUGLocation`:
    - punkt = pozycja k, kąt = θ;
    - +0x1C = cel grupy +0x1C, +0x30 = +0x30, +0x31 = +0x31;
-   - ostatni argument konstruktora +0x34 = 1, w pamięci później 3 albo 4 [N].
+   - ostatni argument konstruktora +0x34 = 1, w pamięci później 3 albo 4 [N]. [Etap 22: 2 – prośba o trasę jednostki,
+     3 / 4 – zastosowanie trasy grupowej, 4 = bez punktów pośrednich – `nawigacja_wejscie.md`]
 3. Bez Shift: +0x1D celu = 1.
 4. Zwykła jednostka lądowa (nie lotnisko 0x42, nie typ ruchu +0x4CC = 15):
    - wyczyszczenie kolejki (0x5EAE25, 0x5E9664 z poziomem 0); [Etap 21: 0x5EAE25 zdejmuje cel bieżący i aktywuje

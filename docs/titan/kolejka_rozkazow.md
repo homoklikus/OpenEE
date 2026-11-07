@@ -5,7 +5,8 @@ ruchu do punktu: zwykły PPM, Shift + PPM i zwykły PPM w trakcie kolejki. Zakre
 Trasy A*, omijanie przeszkód i ruch w taktach są poza zakresem.
 
 Poprzednie wpisy: `rozkazy_gracza.md` (droga rozkazu), `grupy_ruchu.md` (grupy, flaga Shift +0xB5),
-`cele_jednostek.md` (stan 8000, cele `EEUGLocation`).
+`cele_jednostek.md` (stan 8000, cele `EEUGLocation`). Dalej: `nawigacja_wejscie.md` (etap 22 – skąd biorą się punkty
+trasy +0x32 i prośby o trasę).
 
 **Oznaczenia:**
 - **[P]** potwierdzone kodem i pomiarem;
@@ -93,7 +94,7 @@ Element i: indeks globalny = pierwszy + i, blok = (indeks >> 10) mod liczba blok
 | +0x1D | 1 dla celu zwykłego rozkazu i celu, który został bieżący | A: 1; B, C po dopisaniu: 0; B po aktywacji: 1 | [P] wartości; mechanizm zmiany [N] |
 | +0x31 | z `EEMPathTo`+0x1D: obrót do kąta celu po dojściu | 1 | [W] |
 | +0x32 | punkt pośredni trasy (wstawiany na początek kolejki) | punkty trasy: 1, rozkazy: 0 | [P] |
-| +0x34 | po dopisaniu z Shift = 0; cel zwykłego rozkazu później 4 | A: 4; B, C: 0 | [P] wartości; znaczenie [N] |
+| +0x34 | po dopisaniu z Shift = 0; cel zwykłego rozkazu później 4 | A: 4; B, C: 0 | [P] wartości; znaczenie [N] [Etap 22: 1 świeży rozkaz → 2 prośba jednostki → 3 / 4 trasa grupowa (4 = bez punktów pośrednich) – `nawigacja_wejscie.md`] |
 
 ## Przebieg
 
@@ -139,6 +140,8 @@ wejście w Idle (EEUnitClass vt+0x74, 0x61B17E):
                                    stan 9006 (gdy +0x31) albo 5000 – od razu następne wejście w Idle
                                w przeciwnym razie: stan 8000 (PrepareToMove)
     jeśli J.+0x1F0 = 0: zgłoszenie jednostki bezczynnej (0x4A35AA)               ; 0x61B186–0x61B1A5
+    [Etap 22 – zastąpione: 0x4A35AA na obiekcie 0x917D00 to anulowanie próśb o trasę tej jednostki
+     w `EEPathManager` – `nawigacja_wejscie.md`]
 ```
 
 Zapytanie „UnitFacingNotRequired” (9014) do celu: obrót do kąta celu nie jest potrzebny, gdy +0x31 = 0 albo gdy
@@ -198,11 +201,12 @@ Stany z pamięci (EE 436): obiekt stanu w ruchu ma numer 10003 („Advance”), 
 
 1. Moment i warunek przejścia stanów ruchu do „Idle” (tolerancja dojścia; w pomiarze jednostka stawała do ok. 1 pola
    od punktu) – podsystem ruchu, poza zakresem [N].
-2. Zmiana +0x1D celu przy aktywacji i znaczenie +0x34 (0 / 4) [N].
+2. Zmiana +0x1D celu przy aktywacji i znaczenie +0x34 (0 / 4) [N]. [Etap 22: znaczenie +0x34 – `nawigacja_wejscie.md`.]
 3. Wyjątek dla obywateli przy wejściu w „Idle” (`Unit type` 6 i 22, +0x1D8, 0x5F3473) [N].
 4. Zachowanie grupy, gdy przy Shift wszystkie jednostki mają cel: grupa nie zmienia stanu [W]; dalszy los grupy [N].
 5. Poziomy 1–3 (lotniska, 0x42) – poza zakresem.
-6. Wstawianie punktów trasy (+0x32 = 1) przez podsystem trasy – poza zakresem.
+6. Wstawianie punktów trasy (+0x32 = 1) przez podsystem trasy – poza zakresem. [Etap 22 – rozpoznane: trasa grupowa
+   `EEPathManager` → `EEGroup` vtable +0x38 → 0x5EDF6B – **`nawigacja_wejscie.md`**.]
 
 ## Konsekwencje dla OpenEE (bez zmian w kodzie)
 

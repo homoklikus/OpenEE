@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_21.md`](../RAPORT_ETAP_21.md) – etap 21: kolejka celów jednostki i rozkazy ruchu z Shift w silniku Titan (EE i AoC).
+[`RAPORT_ETAP_22.md`](../RAPORT_ETAP_22.md) – etap 22: wejście do systemu nawigacji Titan – prośby o trasę i punkty pośrednie (EE i AoC).
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -51,3 +51,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_18.md`](archiwum/RAPORT_ETAP_18.md) | etap 18 | cele jednostek: szyk `EEFShortLine`, przydział daleki sortowaniem według klucza poprzecznego, `EEUGLocation` na jednostkę, BO-2 |
 | [`RAPORT_ETAP_19.md`](archiwum/RAPORT_ETAP_19.md) | etap 19 | przydział bliski: jednostki po kolei biorą najbliższą wolną pozycję (prędkość, „Size of collider”, numer w grupie), BO-3 |
 | [`RAPORT_ETAP_20.md`](archiwum/RAPORT_ETAP_20.md) | etap 20 | gałąź specjalna przydziału: ruch w szyku po przeciągnięciu PPM, kolejność grupy zamiast przydziału bliskiego/dalekiego |
+| [`RAPORT_ETAP_21.md`](archiwum/RAPORT_ETAP_21.md) | etap 21 | kolejka celów jednostki: dopisywanie z Shift, zastępowanie zwykłym rozkazem, przejście do następnego celu w stanie „Idle”, BO-4 |

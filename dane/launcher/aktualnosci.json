@@ -6,6 +6,18 @@
   {
    "data": "2026-11-07",
    "tytul": {
+    "pl": "Etap 22: wejście do nawigacji",
+    "en": "Stage 22: entering navigation"
+   },
+   "tekst": {
+    "pl": "Odtworzone, kiedy oryginał prosi o wyznaczenie trasy i jak punkty obejścia przeszkód trafiają do rozkazów jednostki.",
+    "en": "Reconstructed when the original asks for a route and how detour points around obstacles end up in a unit's orders."
+   },
+   "raport": "RAPORT_ETAP_22.md"
+  },
+  {
+   "data": "2026-11-07",
+   "tytul": {
     "pl": "Etap 21: kolejka rozkazów (Shift)",
     "en": "Stage 21: order queue (Shift)"
    },
@@ -13,7 +25,7 @@
     "pl": "Odtworzone, jak oryginał zapamiętuje kolejne punkty wydane z Shift, kiedy jednostka rusza do następnego i jak zwykły rozkaz kasuje kolejkę.",
     "en": "Reconstructed how the original remembers waypoints given with Shift, when a unit moves on to the next one and how a normal order clears the queue."
    },
-   "raport": "RAPORT_ETAP_21.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_21.md"
   },
   {
    "data": "2026-11-07",

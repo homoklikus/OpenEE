@@ -123,7 +123,9 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
 - **Skutki.**
   - Dodatkowe przejścia stanu i powiadomienia typu jednostki w tym samym poleceniu [W].
   - Gdy następny cel leży dokładnie w miejscu jednostki, wejście w „Idle” może zdjąć kolejne cele i zgłosić jednostkę
-    jako bezczynną (0x4A35AA), zanim dostanie nowy rozkaz [H].
+    jako bezczynną (0x4A35AA), zanim dostanie nowy rozkaz [H]. [Etap 22 – poprawka opisu: 0x4A35AA anuluje prośby
+    o trasę jednostki w `EEPathManager`, nie zgłasza bezczynności; hipoteza skutku dotyczy więc anulowania tras –
+    `nawigacja_wejscie.md`.]
   - W pomiarach (zadania 435, 441) wynik końcowy był poprawny: w kolejce tylko nowy cel, stan ruchu.
 - **Pewność:** kolejność wywołań [P: kod EE i AoC]; skutki uboczne [H], niemierzone.
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. OpenEE ma wykonywać te same trzy kroki
