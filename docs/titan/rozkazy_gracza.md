@@ -66,7 +66,7 @@ eksportów DLL), porównanie EE ↔ AoC instrukcja po instrukcji po normalizacji
 | +0x1C | u8 | 1, gdy w flagach kliknięcia bit 1 = 0. Prawdopodobnie „zastąp rozkaz” (bez Shift); przekazywane do celu ruchu | [W] [Etap 17 – zastąpione: przy Shift+PPM pole pozostaje 1, więc to nie flaga Shift; znaczenie [N] – `grupy_ruchu.md`] |
 | +0x1D | u8 | argument kliknięcia, przekazywany do celu ruchu | [N] znaczenie |
 | +0x1E | u8 | bajt flag kliknięcia (w minimapie: bit 0 flag), przekazywany do ustawienia celu grupy | [N] znaczenie [Etap 17: **Shift** – grupa +0xB5 = 1 przy Shift+PPM, pomiar AoC; [P]] |
-| +0x1F | u8 | przepisywany do obiektu celu ruchu (+0x33) | [N] znaczenie |
+| +0x1F | u8 | przepisywany do obiektu celu ruchu (+0x33) | [N] znaczenie [Etap 20: 1 przy rozkazie PPM wydanym przeciągnięciem (`EEUICCommandUnits`+0xB9) – [P]; `przydzial_specjalny.md`] |
 
 Serializacja (`ExportMessage` / `ImportMessage`):
 - nagłówek `NEMessage`;

@@ -6,6 +6,18 @@
   {
    "data": "2026-11-07",
    "tytul": {
+    "pl": "Etap 20: ruch w szyku",
+    "en": "Stage 20: formation march"
+   },
+   "tekst": {
+    "pl": "Odtworzone, co się dzieje, gdy rozkaz ruchu wydaje się przeciągnięciem prawego przycisku: małe i szybkie oddziały zachowują kolejność miejsc w szyku.",
+    "en": "Reconstructed what happens when a move order is given by dragging the right mouse button: small, fast groups keep their order of places in the formation."
+   },
+   "raport": "RAPORT_ETAP_20.md"
+  },
+  {
+   "data": "2026-11-07",
+   "tytul": {
     "pl": "Etap 19: szyk na krótki dystans",
     "en": "Stage 19: short-distance formation"
    },
@@ -13,7 +25,7 @@
     "pl": "Odtworzone, jak oryginał rozdziela miejsca w szyku, gdy cel jest tuż przy oddziale: najwolniejsze jednostki wybierają pierwsze.",
     "en": "Reconstructed how the original hands out formation spots when the target is right next to the group: the slowest units choose first."
    },
-   "raport": "RAPORT_ETAP_19.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_19.md"
   },
   {
    "data": "2026-11-07",

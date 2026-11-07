@@ -106,6 +106,7 @@ Kroki:
 | FLT_MAX | wartość początkowa najlepszego kosztu | [P: kod] |
 
 Pole +0x474 występuje też w gałęzi specjalnej przed ścieżkami (etap 18, warunek < 1,0). Tej gałęzi nie analizowano.
+[Etap 20: przy rozkazie przeciągnięciem PPM i spełnionym warunku przydział bliski jest pomijany – `przydzial_specjalny.md`.]
 
 ## Różnice względem przydziału dalekiego
 
@@ -185,7 +186,8 @@ kolejności grupy bez sortowania żaden z rozkazów 402, 405 i 412 nie wychodzi.
 1. Flaga przy jednostce dokładnie w punkcie G – zachowanie `GEVector::Normalize` dla wektora zerowego [N].
 2. Wariant sortowania dla ponad 16 jednostek (EE 0x5E0130) – nie czytano szczegółowo. Wynik nie zależy od niego, bo
    klucz jest pełny [W].
-3. Gałąź specjalna przed obiema ścieżkami (+0xB6 grupy, +0x474 typu) – poza zakresem.
+3. Gałąź specjalna przed obiema ścieżkami (+0xB6 grupy, +0x474 typu) – poza zakresem. [Etap 20 – rozpoznane:
+   `przydzial_specjalny.md`.]
 
 ## Konsekwencje dla OpenEE (bez zmian w kodzie)
 

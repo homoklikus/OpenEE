@@ -137,6 +137,7 @@ Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
 | Grupy ruchu (kod) | `EEMPathTo::Execute` dzieli zaznaczenie na grupy `EEActiveGroup` według środowiska (powietrze, ląd + budynki, nawodne, podwodne; AoC: + kosmos) z flag typu liczonych z `Unit type`; jednostki nieruchome usuwane (poza lotniskiem); wspólny cel `EEUGLocation`; Shift = flaga grupy +0xB5; kod stanu 8000 → przydział celów jednostek (0x5DB641) | [P] | `docs/titan/grupy_ruchu.md` |
 | Cele jednostek (kod) | stan 8000: szyk `EEFShortLine` – kolumny [0, −1, +1, −2, +2] × największe „Size in formation”, rzędy za celem, obrót o kąt rozkazu; przydział w ścieżce dalekiej przez sortowanie pozycji i jednostek według klucza poprzecznego (BO-2), cel `EEUGLocation` na jednostkę | [P] | `docs/titan/cele_jednostek.md` |
 | Przydział bliski (kod) | cel przy grupie: jednostki po kolei (prędkość ↑, „Size of collider” ↓, numer w grupie ↑/↓ według flagi z osi +y mapy – BO-3) biorą najbliższą wolną pozycję szyku (kwadrat odległości); EE = AoC | [P] | `docs/titan/przydzial_bliski.md` |
+| Gałąź specjalna przydziału (kod) | rozkaz PPM z przeciągnięciem → grupa +0xB6 („ruch w szyku”); gdy maks. „Size of collider” < 1,0 i średnia prędkość grupy +0x70 > 0,5, przydział bliski/daleki pominięty – jednostka k → pozycja k; EE = AoC | [P] | `docs/titan/przydzial_specjalny.md` |
 | Szyk grupy | siatka 5 kolumn, pierwszy rząd w punkcie rozkazu, odstęp `Size in formation`, każda jednostka z własną prędkością i trasą | [P] (przydział miejsc poza pierwszym rozkazem – [W]) | `docs/MECHANIKA_RUCHU_EE.md` § 3 |
 | Trasy | najpierw przekątna, potem prosto (oktylowo) | [P] | `docs/MECHANIKA_RUCHU_EE.md` § 5 |
 | Prędkość | `Speed` = pola na sekundę czasu gry; czas gry = 1,461 × rzeczywisty | [P] | `docs/MECHANIKA_PREDKOSCI_EE.md` |
@@ -200,7 +201,7 @@ Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
 | Formaty plików | `docs/FORMATY.md`, `docs/FORMATY_ETAP2–5.md`, `docs/FORMATY_NAPRAWA_GRAFIKI.md`, `docs/FORMATY_DIAGNOSTYKA_051.md` |
 | Mechaniki | `docs/MECHANIKA_KAMERY_EE.md`, `docs/MECHANIKA_RUCHU_EE.md`, `docs/MECHANIKA_PREDKOSCI_EE.md`, `docs/KOLIZJE_JEDNOSTEK_EE.md`, `docs/WARIANTY_EPOK.md`, `docs/POROWNANIE_MECHANIK_EE_AOC.md` |
 | Lokalizacja, zasoby | `docs/LOKALIZACJA.md`, `docs/ZASOBY_ORYGINALNE.md` |
-| Atlas funkcji silnika Titan (zasady dokumentowania, wpisy) | `docs/titan/README.md`, `docs/titan/zegar_symulacji.md`, `docs/titan/przydzial_taktow.md`, `docs/titan/rozkazy_gracza.md`, `docs/titan/grupy_ruchu.md`, `docs/titan/cele_jednostek.md`, `docs/titan/przydzial_bliski.md` |
+| Atlas funkcji silnika Titan (zasady dokumentowania, wpisy) | `docs/titan/README.md`, `docs/titan/zegar_symulacji.md`, `docs/titan/przydzial_taktow.md`, `docs/titan/rozkazy_gracza.md`, `docs/titan/grupy_ruchu.md`, `docs/titan/cele_jednostek.md`, `docs/titan/przydzial_bliski.md`, `docs/titan/przydzial_specjalny.md` |
 | Rejestr błędów oryginału (odtwarzanych wiernie) | `docs/titan/BLEDY_ORYGINALU.md` |
 | Narzędzia | `narzedzia/README.md` |
-| Raporty etapów | aktualny: `RAPORT_ETAP_19.md` (katalog główny); archiwum z opisami i zasadą archiwizacji: `raporty/README.md` |
+| Raporty etapów | aktualny: `RAPORT_ETAP_20.md` (katalog główny); archiwum z opisami i zasadą archiwizacji: `raporty/README.md` |

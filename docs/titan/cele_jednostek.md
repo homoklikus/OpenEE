@@ -100,7 +100,7 @@ Dla 5 kolumn: [0, −1, 1, −2, 2] [P].
 | jednostka +0x298 / +0x29C | numer pozycji w szyku | [P] – pomiar: 0, 1, 2 (3 jednostki), 0–5 (6 jednostek) |
 | jednostka +0x2DC / +0x2E0 | obcięcie(4 · numer / liczba pozycji) | [P] – pomiar: 6 jednostek → 0, 0, 1, 2, 2, 3 |
 | typ +0x470 / +0x174 | „Size in formation” – odstęp szyku (największy w grupie) | [P] – kod i pomiar: gwardia 0,625, Aleksander 0,77, prorok 0,625 |
-| typ +0x474 / +0x178 | druga wielkość typu (maksimum w grupie, warunek ścieżki specjalnej) | [N] znaczenie. [Etap 19: wartości zgodne z „Size of collider”; kryterium sortowania w ścieżce bliskiej – `przydzial_bliski.md`] |
+| typ +0x474 / +0x178 | druga wielkość typu (maksimum w grupie, warunek ścieżki specjalnej) | [N] znaczenie. [Etap 19: wartości zgodne z „Size of collider”; kryterium sortowania w ścieżce bliskiej – `przydzial_bliski.md`] [Etap 20: maksimum < 1,0 to warunek gałęzi specjalnej – `przydzial_specjalny.md`] |
 | typ +0x430 / +0x134 | prędkość typu (wartości zgodne z „Speed”) – kryterium sortowania w ścieżce bliskiej | [Etap 19] odczyt [P], nazwa [W] |
 
 ## Algorytm (ścieżka podstawowa)
@@ -130,7 +130,8 @@ Dokładny punkt odniesienia w obsłudze kliknięcia nie jest ustalony [W].
 - **Ścieżka daleka**, gdy cel leży poza prostokątem i E² < D, gdzie D to kwadrat odległości celu od punktu prostokąta
   wyznaczonego przez 0x5DFAFC (najbliższy punkt – W) [P: kod].
 - W przeciwnym razie ścieżka bliska (0x5DC364) [N]. [Etap 19 – zastąpione: algorytm opisany w § „Przydział bliski — etap 19”
-  i w `przydzial_bliski.md`.] Jest też gałąź zależna od +0xB6 grupy i parametrów typu (+0x474)
+  i w `przydzial_bliski.md`.] Jest też gałąź zależna od +0xB6 grupy i parametrów typu (+0x474) [Etap 20 – rozpoznane: przy rozkazie
+  przeciągnięciem PPM pomija oba przydziały – `przydzial_specjalny.md`]
   [N, poza ścieżką podstawową].
 
 ### 3. Ścieżka daleka – przydział
@@ -196,9 +197,11 @@ jednostek. Nowego narzędzia nie budowano.
 
 1. Ścieżka bliska (0x5DC364…0x5DC6B5) – przydział, gdy cel jest blisko grupy [N]. [Etap 19 – rozpoznane:
    `przydzial_bliski.md`.]
-2. Gałąź specjalna (+0xB6 grupy i największe pole typu +0x474 < 1,0 oraz parametr grupy +0x70 > 0,5) [N].
+2. Gałąź specjalna (+0xB6 grupy i największe pole typu +0x474 < 1,0 oraz parametr grupy +0x70 > 0,5) [N]. [Etap 20 –
+   rozpoznane: `przydzial_specjalny.md`.]
 3. Znaczenie J+0x2DC, ostatecznych wartości +0x34 celu jednostki, jednostek z typem ruchu +0x4CC = 15 i lotniska [N].
-4. Pochodzenie kąta θ w obsłudze kliknięcia [W].
+4. Pochodzenie kąta θ w obsłudze kliknięcia [W]. [Etap 20: `EEUICCommandUnits` 0x64138B – θ = atan2(−Δx, Δy) od środka
+   zaznaczenia do punktu kliknięcia, a przy przeciągnięciu z wektora przeciągnięcia – [W]; `przydzial_specjalny.md`.]
 5. Szyki inne niż `EEFShortLine` (koło, klin, odmiany linii) – konstruktory i układy znane z adresów, nieanalizowane.
 6. Różnice AoC przy nadawaniu celu (flaga typu +0x326, ID 0x41, `Unit type` 34) – zakres [P], znaczenie [N].
 
@@ -231,3 +234,15 @@ Szczegóły, adresy, weryfikacja i poziomy pewności: **`przydzial_bliski.md`**.
 - **Pomiar:** 7 rozkazów, w tym 2 z etapu 18 (EE i AoC, 3 i 6 jednostek, obie wartości flagi) zgodnych z przewidywaniem co do numeru
   pozycji każdej jednostki [P].
 - **Błąd oryginału:** BO-3 (podejrzenie) – flaga kierunku liczona względem stałej osi +y mapy, nie kierunku ruchu.
+
+## Gałąź specjalna — etap 20
+
+Szczegóły: **`przydzial_specjalny.md`**. Przed wyborem ścieżki bliskiej albo dalekiej obsługa stanu 8000 sprawdza
+kolejno:
+- grupa +0xB6 ≠ 0 – „ruch w szyku”, ustawiane przy rozkazie PPM wydanym przeciągnięciem;
+- największe „Size of collider” < 1,0;
+- grupa +0x70 (średnia prędkość, ograniczona do 2 · minimum) > 0,5.
+
+Gdy wszystkie są spełnione, skacze wprost do wspólnego nadawania celów. Jednostka k grupy dostaje wtedy pozycję k,
+zapisaną już przez układ szyku, bez przydziału bliskiego i dalekiego [P: kod i pomiar EE 419, AoC 423; kontrola
+EE 420 z +0x70 = 0,5]. Geometria szyku i nadawanie celów się nie zmieniają. EE i AoC działają tak samo.
