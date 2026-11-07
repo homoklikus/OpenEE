@@ -2,8 +2,8 @@
 
 ## Aktualny raport
 
-[`RAPORT_PORZADKI_ETAP_13_5.md`](../RAPORT_PORZADKI_ETAP_13_5.md) – etap 13.5: porządkowanie projektu przed dalszą
-rekonstrukcją silnika Titan. Leży w katalogu głównym repozytorium.
+[`RAPORT_ETAP_14.md`](../RAPORT_ETAP_14.md) – etap 14: rekonstrukcja zegara symulacji Titan w EE i AoC. Leży
+w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
 
@@ -15,6 +15,8 @@ W katalogu głównym OpenEE leży **tylko jeden raport – najnowszy**. Przy ko�
 2. Przenieś dotychczasowy aktualny raport do `raporty/archiwum/` (`git mv`, żeby Git widział przeniesienie).
 3. Popraw odwołania do przeniesionego raportu (README, `docs/`, ten indeks, komentarze w kodzie i narzędziach).
 4. Dopisz przeniesiony raport do listy poniżej i zaktualizuj sekcję „Aktualny raport”.
+5. Zaktualizuj aktualności launchera `dane/launcher/aktualnosci.json`: nowy wpis na początku (raport w katalogu
+   głównym), ścieżkę poprzedniego raportu zmień na `raporty/archiwum/…`.
 
 Raportów nie tworzy się bezpośrednio w archiwum, chyba że chodzi o odzyskanie dokumentacji historycznej. Treści
 zarchiwizowanych raportów nie zmienia się, poza poprawkami odnośników potrzebnymi do nawigacji; obalone wnioski
@@ -41,3 +43,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_EE_AOC_FORMATY.md`](archiwum/RAPORT_EE_AOC_FORMATY.md) | etap 11 | Empire Earth i The Art of Conquest na jednym silniku, formaty baz EE 1.0/AoC |
 | [`RAPORT_ETAP_12_EE_AOC.md`](archiwum/RAPORT_ETAP_12_EE_AOC.md) | etap 12 | mechaniki podstawowego EE a AoC (kamera, zaznaczanie, ruch, grafika) |
 | [`RAPORT_ETAP_13.md`](archiwum/RAPORT_ETAP_13.md) | etap 13 | start oryginałów bez intra, zegar gry, prędkość jednostek, kolizje grup |
+| [`RAPORT_PORZADKI_ETAP_13_5.md`](archiwum/RAPORT_PORZADKI_ETAP_13_5.md) | etap 13.5 | porządki: audyt, martwy kod, dokument architektury, zasady atlasu Titan, kolejka zadań MCP |

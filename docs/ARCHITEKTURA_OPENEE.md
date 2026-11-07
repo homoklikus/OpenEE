@@ -137,7 +137,7 @@ Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
 | Szyk grupy | siatka 5 kolumn, pierwszy rząd w punkcie rozkazu, odstęp `Size in formation`, każda jednostka z własną prędkością i trasą | [P] (przydział miejsc poza pierwszym rozkazem – [W]) | `docs/MECHANIKA_RUCHU_EE.md` § 3 |
 | Trasy | najpierw przekątna, potem prosto (oktylowo) | [P] | `docs/MECHANIKA_RUCHU_EE.md` § 5 |
 | Prędkość | `Speed` = pola na sekundę czasu gry; czas gry = 1,461 × rzeczywisty | [P] | `docs/MECHANIKA_PREDKOSCI_EE.md` |
-| Zegar gry | ms czasu gry w `A_GRA+0xD0`, 43,32 taktów/s, pauza F3 | [P] | `docs/MECHANIKA_PREDKOSCI_EE.md` § 2 |
+| Zegar gry | obiekt `EEPhysics` (`A_GRA`): ms czasu gry `+0xD0` = suma kroków 1000·G/n (n = 44 takty/s, szybkość gry G = 1,5 → 34,09 ms); takty przydzielane komunikatami, wykonywane z timera 22 ms (~42,7–42,9/s); pauza F3 wstrzymuje przydział taktów; algorytm identyczny w EE i AoC | [P] (nadawca komunikatów taktów – [N]) | `docs/titan/zegar_symulacji.md`, `docs/MECHANIKA_PREDKOSCI_EE.md` § 2 |
 | Kolizje | jednostki w ruchu przenikają się; pole jednostki stojącej jest omijane | [P] | `docs/KOLIZJE_JEDNOSTEK_EE.md` |
 | Rozkazy | nowy PPM zastępuje rozkaz [P]; Shift+PPM dopisuje do kolejki [W] | [P]/[W] | `docs/MECHANIKA_RUCHU_EE.md` § 7 |
 | Grafika epok | wariant modelu zależny od epoki gracza (łańcuch `dbtechtree` → `dbevents`) | [P] | `docs/WARIANTY_EPOK.md` |
@@ -164,6 +164,8 @@ Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
   scenariuszy, mgła wojny i pole widzenia, SI, morale, kalamity proroków, transport.
 - Scenariusze: polimorficzna lista celów jednostki (3 scenariusze EE czytane częściowo), zapis cywilizacji gracza
   w scenariuszu.
+- Zegar: nadawca komunikatów przydzielających takty (źródło n = 44, liczby taktów, warunku pauzy) i przyczyna
+  wykonywania ~97% nominalnej liczby taktów.
 - EE ↔ AoC: przezroczystość budynków i renderer terenu w EE (hipoteza wspólności).
 
 ## 8. Znane problemy architektoniczne (na przyszłość)
@@ -195,6 +197,6 @@ Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
 | Formaty plików | `docs/FORMATY.md`, `docs/FORMATY_ETAP2–5.md`, `docs/FORMATY_NAPRAWA_GRAFIKI.md`, `docs/FORMATY_DIAGNOSTYKA_051.md` |
 | Mechaniki | `docs/MECHANIKA_KAMERY_EE.md`, `docs/MECHANIKA_RUCHU_EE.md`, `docs/MECHANIKA_PREDKOSCI_EE.md`, `docs/KOLIZJE_JEDNOSTEK_EE.md`, `docs/WARIANTY_EPOK.md`, `docs/POROWNANIE_MECHANIK_EE_AOC.md` |
 | Lokalizacja, zasoby | `docs/LOKALIZACJA.md`, `docs/ZASOBY_ORYGINALNE.md` |
-| Atlas funkcji silnika Titan (zasady dokumentowania) | `docs/titan/README.md` |
+| Atlas funkcji silnika Titan (zasady dokumentowania, wpisy) | `docs/titan/README.md`, `docs/titan/zegar_symulacji.md` |
 | Narzędzia | `narzedzia/README.md` |
-| Raporty etapów | aktualny: `RAPORT_PORZADKI_ETAP_13_5.md` (katalog główny); archiwum z opisami i zasadą archiwizacji: `raporty/README.md` |
+| Raporty etapów | aktualny: `RAPORT_ETAP_14.md` (katalog główny); archiwum z opisami i zasadą archiwizacji: `raporty/README.md` |

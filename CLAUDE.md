@@ -17,6 +17,12 @@ W katalogu głównym OpenEE leży **tylko jeden raport – najnowszy**. Przy ko�
 3. Popraw odwołania do przeniesionego raportu (README, `docs/`, `raporty/README.md`, komentarze w kodzie i narzędziach,
    lista dokumentów w `godot/launcher/launcher.gd`).
 4. Dopisz go do listy w `raporty/README.md` i ustaw tam nowy raport jako aktualny. Pełna historia zostaje w archiwum.
+5. Zaktualizuj aktualności launchera `dane/launcher/aktualnosci.json`:
+   - dopisz nowy wpis na początku listy `wpisy` (data, `tytul`/`tekst` PL i EN zrozumiałe dla gracza,
+     `raport` = ścieżka nowego raportu w katalogu głównym);
+   - zmień `raport` poprzedniego wpisu na `raporty/archiwum/…`;
+   - sprawdź, że trzy najnowsze wpisy prowadzą do istniejących plików, czyli do poprawnych linków GitHub
+     (`repozytorium_url` + `raport`). Pilnują tego testy Godota „L aktualności”.
 
 Nie twórz raportów bezpośrednio w `raporty/archiwum/`, chyba że chodzi o odzyskanie dokumentacji historycznej.
 Treści zarchiwizowanych raportów nie zmieniaj, poza odnośnikami potrzebnymi do nawigacji. Obalony wniosek oznacz

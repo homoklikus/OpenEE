@@ -6,6 +6,18 @@
   {
    "data": "2026-11-07",
    "tytul": {
+    "pl": "Etap 14: zegar symulacji",
+    "en": "Stage 14: simulation clock"
+   },
+   "tekst": {
+    "pl": "Odtworzony sposób, w jaki oryginał odmierza czas gry, szybkość gry i pauzę – w EE i AoC działa identycznie.",
+    "en": "Reconstructed how the original measures game time, game speed and pause – identical in EE and AoC."
+   },
+   "raport": "RAPORT_ETAP_14.md"
+  },
+  {
+   "data": "2026-11-07",
+   "tytul": {
     "pl": "Porządki przed rekonstrukcją silnika",
     "en": "Clean-up before engine reconstruction"
    },
@@ -13,7 +25,7 @@
     "pl": "Uporządkowany projekt i dokumentacja; scena RTS uruchamia się poprawnie także z polską wersją gry.",
     "en": "Project and documentation tidied up; the RTS scene now also starts correctly with the Polish game version."
    },
-   "raport": "RAPORT_PORZADKI_ETAP_13_5.md"
+   "raport": "raporty/archiwum/RAPORT_PORZADKI_ETAP_13_5.md"
   },
   {
    "data": "2026-11-07",
