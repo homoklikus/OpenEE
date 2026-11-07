@@ -78,7 +78,7 @@ W pomiarze obu gier G = 1,5 [P].
 
 | Funkcja | EE | AoC | Zgodność EE ↔ AoC |
 |---|---|---|---|
-| Wątek symulacji klasy bazowej (start wątku) | 0x5532FB | 0x56140C | identyczne po normalizacji adresów (168 instr.) |
+| Wątek symulacji klasy bazowej `RTSPhysics::Main` (nazwa: etap 15) | 0x5532FB | 0x56140C | identyczne po normalizacji adresów (168 instr.) |
 | Takt `EEPhysics` (vtable +0x20) | 0x546C63 | 0x553082 | instrukcje zegara identyczne; AoC ma dodatkowy blok niezwiązany z zegarem (flaga +0xE8) i inną alokację rejestrów |
 | Takt alternatywny (vtable +0x1C) | 0x546C3B | 0x55305A | identyczne |
 | Obsługa komunikatu taktów | 0x5470B0 | 0x55355C | identyczne (215 instr.) |
@@ -115,6 +115,10 @@ Ustawienie częstotliwości, wykonywane tylko przy zmianie wartości:
 ```
 
 Pomiar w EE i AoC: n = 44, G = 1,5, czyli +0x98 = 34,0909 ms, +0x54 = 22 ms [P].
+
+[Etap 15 – doprecyzowane] n to parametr kroku i timera fizyki, a nie liczba taktów wykonywanych na sekundę.
+Takty przychodzą porcjami po 15 co 350 ms, czyli 42,857/s. Wartość 44 jest przepełnieniem bajtu (300 − 256)
+w `NESynchronousServer::TuneForSlowCPU`: `docs/titan/przydzial_taktow.md`.
 
 ### 2. Takt
 
@@ -159,7 +163,7 @@ Sam warunek pauzy leży w kodzie, który wysyła komunikaty taktów [N] (§ 6).
 | +0xC8 – „takty” | liczba taktów w oknie statystyki; zerowana, gdy suma czasu wykonania taktów przekroczy 1000 ms | [P] – rośnie z tą samą częstotliwością co +0xB4, ale nie jest licznikiem całkowitym |
 | +0x5C – 45,5/s | wywołania funkcji taktu przez wątek (1000/22 = 45,45/s) | [P] |
 | Pauza F3 | brak nowych komunikatów taktów | [P] |
-| Czas gry = 1,461 × rzeczywisty | nominalnie G = 1,5 (n = 44 takty/s × 34,09 ms); rzeczywiście 42,68–42,86 taktu/s, czyli 97–97,4% nominału | [P] dla wzoru i wartości; przyczyna niedoboru taktów [N] |
+| Czas gry = 1,461 × rzeczywisty | nominalnie G = 1,5 (n = 44 takty/s × 34,09 ms); rzeczywiście 42,68–42,86 taktu/s, czyli 97–97,4% nominału | [P] dla wzoru i wartości; przyczyna niedoboru taktów [N] [Etap 15 – ustalone: 15 taktów co 350 ms = 42,857/s, obcięcie 44 · 0,35 = 15,4 → 15; `przydzial_taktow.md`] |
 
 ## 5. Szybkość gry G
 
@@ -174,7 +178,8 @@ Powiązania nie ustalono [N]:
 
 ## 6. Zależności poza zakresem (zakończony wątek)
 
-1. **Nadawca komunikatów taktów** (typ 0x28, kolejka EEPhysics+4). Nie ustalono:
+1. **Nadawca komunikatów taktów** (typ 0x28, kolejka EEPhysics+4). [Etap 15 – ustalone: serwer lockstep
+   `NESynchronousServer` / `EEServer`, opis w `docs/titan/przydzial_taktow.md`.] Stan wiedzy z etapu 14 – nie ustalono:
    - kto i jak często je wysyła;
    - skąd bierze liczbę taktów i n = 44;
    - gdzie sprawdza pauzę.
@@ -182,7 +187,7 @@ Powiązania nie ustalono [N]:
    To prawdopodobnie warstwa komunikacji (komunikaty są przetwarzane w trybie lockstep także w grze jednoosobowej)
    [H]. Od niej zależy, dlaczego wykonuje się 42,7–42,9 zamiast 44 taktów/s. Kontynuacja wymaga analizy
    warstwy sieci/komend, więc jest osobnym wątkiem.
-2. **Wywołujący wątek / budżet +0x60** – warunek budżetu 100 000 albo z innego obiektu: [W].
+2. **Wywołujący wątek / budżet +0x60** (klasa bazowa: `RTSPhysics`, etap 15) – warunek budżetu 100 000 albo z innego obiektu: [W].
 3. **Aktualizacja świata w takcie** (wywołania po kroku 3) – osobne podsystemy.
 4. **Akcja okresowa przy +0xCC** i blok AoC przy +0xE8 – nie dotyczą zegara.
 
@@ -209,6 +214,10 @@ Powiązania nie ustalono [N]:
 
    Zalecenie: algorytm (1,5), z adnotacją o różnicy względem pomiaru. Po ustaleniu przyczyny niedoboru (§ 6.1)
    można wrócić do tej decyzji.
+
+   [Etap 15 – zastąpione] Niedobór taktów wynika z algorytmu przydziału (15 taktów co 350 ms zamiast 44/s). Wierne
+   odtworzenie algorytmu daje więc 1,461, a nie 1,5. Nowa propozycja: `docs/titan/przydzial_taktow.md`,
+   „Konsekwencje dla OpenEE”.
 5. Pauza: zatrzymanie przydziału nowych taktów, a nie natychmiastowe przerwanie (różnica do 11 taktów ≈ 0,25 s).
 
 ## 8. Weryfikacja i dane

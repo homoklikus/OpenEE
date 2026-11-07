@@ -6,6 +6,18 @@
   {
    "data": "2026-11-07",
    "tytul": {
+    "pl": "Etap 15: przydział taktów",
+    "en": "Stage 15: tick allocation"
+   },
+   "tekst": {
+    "pl": "Wyjaśnione, skąd tempo czasu gry w oryginale: gra odmierza takty porcjami co 0,35 s także w trybie jednoosobowym.",
+    "en": "Explained the original's game-time pace: the game hands out ticks in batches every 0.35 s, even in single player."
+   },
+   "raport": "RAPORT_ETAP_15.md"
+  },
+  {
+   "data": "2026-11-07",
+   "tytul": {
     "pl": "Etap 14: zegar symulacji",
     "en": "Stage 14: simulation clock"
    },
@@ -13,7 +25,7 @@
     "pl": "Odtworzony sposób, w jaki oryginał odmierza czas gry, szybkość gry i pauzę – w EE i AoC działa identycznie.",
     "en": "Reconstructed how the original measures game time, game speed and pause – identical in EE and AoC."
    },
-   "raport": "RAPORT_ETAP_14.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_14.md"
   },
   {
    "data": "2026-11-07",

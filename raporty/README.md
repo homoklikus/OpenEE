@@ -2,8 +2,8 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_14.md`](../RAPORT_ETAP_14.md) – etap 14: rekonstrukcja zegara symulacji Titan w EE i AoC. Leży
-w katalogu głównym repozytorium.
+[`RAPORT_ETAP_15.md`](../RAPORT_ETAP_15.md) – etap 15: przydział taktów symulacji Titan (serwer lockstep, tempo
+1,461) w EE i AoC. Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
 
@@ -44,3 +44,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_12_EE_AOC.md`](archiwum/RAPORT_ETAP_12_EE_AOC.md) | etap 12 | mechaniki podstawowego EE a AoC (kamera, zaznaczanie, ruch, grafika) |
 | [`RAPORT_ETAP_13.md`](archiwum/RAPORT_ETAP_13.md) | etap 13 | start oryginałów bez intra, zegar gry, prędkość jednostek, kolizje grup |
 | [`RAPORT_PORZADKI_ETAP_13_5.md`](archiwum/RAPORT_PORZADKI_ETAP_13_5.md) | etap 13.5 | porządki: audyt, martwy kod, dokument architektury, zasady atlasu Titan, kolejka zadań MCP |
+| [`RAPORT_ETAP_14.md`](archiwum/RAPORT_ETAP_14.md) | etap 14 | zegar symulacji Titan: `EEPhysics`, krok 1000·G/n, pauza; EE ↔ AoC |

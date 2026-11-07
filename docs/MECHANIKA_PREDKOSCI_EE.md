@@ -28,14 +28,15 @@ bez filmów startowych (`Riverlands_MCP`, `ee_start.py`), tylko odczytem pamięc
 
 Licznik czasu gry znaleziono w obiekcie gry (`A_GRA`, ten sam układ w EE i AoC). Narzędzie: `ee_czas.zegar_gry_znajdz`.
 Algorytm zegara (obiekt `EEPhysics`, czas gry = takty × 1000·G/n przy n = 44 i szybkości gry G = 1,5) odtworzono
-w etapie 14: `docs/titan/zegar_symulacji.md`.
+w etapie 14: `docs/titan/zegar_symulacji.md`. Tempo 1,461 wynika z algorytmu przydziału taktów: 15 taktów co 350 ms
+= 42,857/s × 34,09 ms (etap 15, `docs/titan/przydzial_taktow.md`).
 
 | Pole | Tempo (na sekundę rzeczywistą, zegar monotoniczny) | Znaczenie | Pewność |
 |---|---|---|---|
 | `A_GRA+0xD0` (u32) | 1460,7–1461,5 | milisekundy czasu gry; typowy krok 68 ms co 2 takty; stoi w pauzie (F3) i w przerywniku scenariusza | [P] |
 | `A_GRA+0xB4`, `+0xC8` | 43,32 | takty symulacji (≈33,75 ms czasu gry na takt); stoją w pauzie | [P] [Etap 14 – doprecyzowane: 42,68–42,86 taktu/s, krok 34,09 ms; `+0xC8` to licznik okna statystyki, zerowany – `docs/titan/zegar_symulacji.md` § 4] |
 | `A_GRA+0x5C` | 45,5 | klatki obrazu (biegną w pauzie) | [W] [Etap 14 – zastąpione: wywołania funkcji taktu przez wątek symulacji, timer 22 ms] |
-| `A_GRA+0x80` | 49,98 | nieustalone | [N] [Etap 14: suma taktów przydzielonych komunikatami] |
+| `A_GRA+0x80` | 49,98 | nieustalone | [N] [Etap 14: suma taktów przydzielonych komunikatami] [Etap 15: średnio 42,86/s w skokach po 15 co 350 ms; 49,98 to wynik krótkiego okna] |
 
 Pomiary tempa ms czasu gry, po 5–10 s każdy:
 

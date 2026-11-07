@@ -55,7 +55,7 @@ Jeden plik na podsystem, np. `docs/titan/ruch_jednostek.md`. W pliku jedna sekcj
 
 ## Już ustalone miejsca w kodzie
 
-Wpisy atlasu: `zegar_symulacji.md` (etap 14). Pozostałe miejsca są opisane w innych dokumentach i przy następnej
+Wpisy atlasu: `zegar_symulacji.md` (etap 14), `przydzial_taktow.md` (etap 15). Pozostałe miejsca są opisane w innych dokumentach i przy następnej
 analizie zostaną przeniesione do atlasu:
 
 | Funkcja | EE | AoC | Dokument |
@@ -64,6 +64,7 @@ analizie zostaną przeniesione do atlasu:
 | Parsowanie wiersza poleceń (`hostgame`, `joinbyip`) | – | 0x52D9E5 | jw. |
 | Tryb przezroczystości budynków (F5) | – | opis w raporcie | `raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md` |
 | Zegar symulacji: wątek, takt `EEPhysics`, komunikat taktów, ustawienie n, krok, reset | 0x5532FB, 0x546C63, 0x5470B0, 0x553663, 0x5476C1, 0x54650E | 0x56140C, 0x553082, 0x55355C, 0x561774, 0x553BD8, 0x552909 | `docs/titan/zegar_symulacji.md` |
+| Przydział taktów: serwer lockstep (DLL `Send`, `SendCommunicationsTick`, `TuneForSlowCPU`), komunikat 0x26 → 0x28 w EXE | DLL 0x10055D2E, 0x10054AB8, 0x10055099; EXE 0x4C3839 | DLL 0x10049D13, 0x10048A9D, 0x1004907E; EXE 0x4CBC77 | `docs/titan/przydzial_taktow.md` |
 | Struktury pamięci (kamera, gra, gracze, jednostki, ekrany) | `ee_warianty.KOMPILACJE` | `ee_warianty.KOMPILACJE` | `Riverlands_MCP/riverlands_mcp/ee_warianty.py` |
 
 ## Narzędzia
