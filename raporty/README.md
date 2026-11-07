@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_22.md`](../RAPORT_ETAP_22.md) – etap 22: wejście do systemu nawigacji Titan – prośby o trasę i punkty pośrednie (EE i AoC).
+[`RAPORT_ETAP_23.md`](../RAPORT_ETAP_23.md) – etap 23: architektura wyszukiwania tras w silniku Titan – sektory, podsektory, maszyny A*, budżety i odraczanie (EE i AoC).
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -52,3 +52,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_19.md`](archiwum/RAPORT_ETAP_19.md) | etap 19 | przydział bliski: jednostki po kolei biorą najbliższą wolną pozycję (prędkość, „Size of collider”, numer w grupie), BO-3 |
 | [`RAPORT_ETAP_20.md`](archiwum/RAPORT_ETAP_20.md) | etap 20 | gałąź specjalna przydziału: ruch w szyku po przeciągnięciu PPM, kolejność grupy zamiast przydziału bliskiego/dalekiego |
 | [`RAPORT_ETAP_21.md`](archiwum/RAPORT_ETAP_21.md) | etap 21 | kolejka celów jednostki: dopisywanie z Shift, zastępowanie zwykłym rozkazem, przejście do następnego celu w stanie „Idle”, BO-4 |
+| [`RAPORT_ETAP_22.md`](archiwum/RAPORT_ETAP_22.md) | etap 22 | wejście do nawigacji: prośby o trasę grupy i jednostki, `EEPathManager`, punkty pośrednie +0x32, znaczniki celu +0x34 |

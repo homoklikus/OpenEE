@@ -5,6 +5,9 @@ podsystemu tras i jak jego wynik staje się celami `EEUGLocation` z flagą +0x32
 (`kolejka_rozkazow.md`). Algorytmu wyszukiwania (A*), kosztów terenu i ruchu w taktach tu nie rekonstruujemy, a jedynie
 wyznaczamy ich granice.
 
+Architekturę podsystemu tras (maszyny A*, sektory, podsektory, budżety, odraczanie) opisuje
+**`architektura_nawigacji.md`** (etap 23).
+
 **Oznaczenia:**
 - **[P]** potwierdzone kodem i pomiarem;
 - **[W]** wniosek z kodu;
@@ -23,6 +26,8 @@ wyznaczamy ich granice.
    - **Trasa jednostki** powstaje przy wejściu jednostki w stan 8000 („PrepareToMove”, EE 0x6222A8). Jednostka prosi
      menedżera o trasę z własnego pola (+0x1C, +0x20) do pola celu (0x4A1AFF). Ta trasa **nie trafia** do kolejki celów
      [W].
+     *[Etap 23 – uściślone]* Dotyczy to wyszukiwania po polach. Prośba jednostki może mieć też etap grafu (0x4A164F →
+     0x4A26E3), który tak samo wstawia cele +0x32 na początek kolejki (`architektura_nawigacji.md` § 5) [W].
 2. **Natychmiast albo w kolejnych taktach.** Menedżer wykonuje wyszukiwanie od razu w wywołaniu prośby.
    - Gdy maszyna wyszukiwania skończy (+0x24 = 0), wynik jest gotowy: +0x4C = 1 i grupa stosuje go od razu.
    - Gdy nie skończy, prośba trafia do kolejki menedżera (+0x70). Grupa zapamiętuje ją w swojej mapie oczekujących
@@ -36,6 +41,9 @@ wyznaczamy ich granice.
 4. **Punkty pośrednie pojawiły się** w EE i AoC tylko przy przejściu do następnego celu z kolejki Shift. W chwili
    zdjęcia celu A przed celem B pojawiły się **dwa** cele +0x32 naraz, na środkach pól: (179,5; 118,5) i (178,5; 123,5)
    [P: EE 448, 451, AoC 454, wcześniej EE 431]. Kto w tym momencie zleca trasę grupową – [N].
+   *[Etap 23 – zastąpione]* To najpewniej nie trasa grupowa, tylko etap grafu prośby jednostki. „PrepareToMove” dla
+   celu B (cel położenia, +0x1D = 0) woła 0x4A164F, a 0x4A26E3 wstawia punkty i ustawia celowi +0x1D = 1, nie ruszając
+   +0x34. Pomiar etapu 22 (B: +0x34 = 0, +0x1D = 1) zgadza się z tą ścieżką [W].
 5. **Kolejność i zastąpienie.**
    - Punkty wstawiane są od ostatniego do pierwszego, każdy na początek, więc w kolejce stoją we właściwej kolejności
      przed celem gracza [W: kod; P: pomiar].
@@ -52,8 +60,8 @@ wyznaczamy ich granice.
 | `EEActiveGroup` vtable +0x40 – podział na podgrupy (0x5F70A3, argument 10), prośba dla każdej | 0x5DB4B8 | 0x5EBDFC | [W] |
 | Prośba grupy: identyfikatory jednostek, `EEPathManager` 0x4A15E7, `EEGroupPathRequest`, zastosowanie od razu albo zapamiętanie | 0x5F670A | 0x606581 | [P] kod (identyczne) |
 | `EEPathManager` – prośba o trasę (tworzy `EEAutoPathRequest`, 0x50 B) | 0x4A15E7 | 0x4A6948 | [P] kod (identyczne) |
-| `EEPathManager` – uruchomienie maszyny, kolejka +0x70 albo zakończenie | 0x4A1681 | – | [W] |
-| Zakończenie prośby: lista pól, długość +0x48, gotowość +0x4C = 1 | 0x4A26E3 | – | [W] |
+| `EEPathManager` – uruchomienie maszyny, kolejka +0x70 albo zakończenie | 0x4A1681 | 0x4A69E2 *[Etap 23]* | [W]; EE = AoC [P] |
+| Zakończenie prośby: lista pól, długość +0x48, gotowość +0x4C = 1 | 0x4A26E3 | 0x4A7B03 *[Etap 23]* | [W]; EE = AoC [P] |
 | `EEGroupPathRequest` – konstruktor (0x34 B) | 0x5F60E9 | 0x605F60 | [P] kod |
 | `EEActiveGroup` vtable +0x34 – aktualizacja: usunięcie martwych, sprawdzenie oczekujących, rozwiązanie pustej grupy | 0x5DF36C | 0x5EFCD7 | [W] |
 | `EEActiveGroup` vtable +0x3C – sprawdzenie oczekujących próśb (+0x4C) i zastosowanie | 0x5F7699 | 0x60754E | [W] |
@@ -62,7 +70,7 @@ wyznaczamy ich granice.
 | `EEUnitClass` – wejście w „PrepareToMove” (stan 8000) | 0x6222A8 (vtable +0xD0) | 0x63674B (vtable +0xD4) | [P] kod |
 | `EEPathManager` – prośba o trasę jednostki | 0x4A1AFF | 0x4A6E88 | [P] kod; AoC jeden argument więcej |
 | `EEPathManager` – anulowanie próśb jednostki | 0x4A35AA | 0x4A896B | [W] |
-| Maszyny wyszukiwania (RTTI): `EEAIAStarMachine<…PathSector…>`, `<…PathArea…>`, `<…Bounded…>`, `<…Storage, PathfindingGoal…>`, `EEAIAStarGraphMachine` | – | – | nazwy klas [P]; działanie poza zakresem |
+| Maszyny wyszukiwania (RTTI): `EEAIAStarMachine<…PathSector…>`, `<…PathArea…>`, `<…Bounded…>`, `<…Storage, PathfindingGoal…>`, `EEAIAStarGraphMachine` | – | – | nazwy klas [P]; działanie poza zakresem. *[Etap 23]* role i adresy: `architektura_nawigacji.md` § 3.5 |
 
 ## Dane wejściowe i wyjściowe
 
@@ -74,14 +82,14 @@ wyznaczamy ich granice.
 | pole celu (2 × int) | cel grupy (+0x68, vtable +0x28), obcięte do pola | [P] kod |
 | jednostki | identyfikatory (+0x24) podgrupy → `EEGroupPathRequest`+0x04 | [P] kod |
 | dane gracza / typów | gracz +0x45C, 17 B z listy jednostek (+0x10 …) → prośba +0x1C | [N] znaczenie |
-| parametry stałe | 1, −1, 0, 0 | [N] znaczenie |
+| parametry stałe | 1, −1, 0, 0 | [N] znaczenie. *[Etap 23 – uściślone]* klucz maszyny grafu 1, budżet −1 (wyliczany z odległości, 0x4A0CE8), brak modyfikatora celu, bajt 0 (limit na wywołanie 0xF) [W] |
 
 ### `EEAutoPathRequest` (0x50 B)
 
 | Pole | Znaczenie | Pewność |
 |---|---|---|
 | +0x04 | licznik odwołań | [W] |
-| +0x08 (+0x0C…+0x10) | wynik: wektor węzłów po 8 B (x, y – pole mapy) | [W] kod (0x5F69C4, 0x4A26E3) |
+| +0x08 (+0x0C…+0x10) | wynik: wektor węzłów po 8 B (x, y – pole mapy) | [W] kod (0x5F69C4, 0x4A26E3). *[Etap 23 – uściślone]* węzły to punkty reprezentatywne podsektorów (+0x3C, +0x40) z trasy po grafie, nie kolejne pola [W] |
 | +0x30 / +0x34, +0x38 / +0x3C | pole startowe, pole celu | [P] kod |
 | +0x44 | identyfikator prośby (licznik menedżera +0xD0) | [P] kod |
 | +0x48 | długość trasy (suma |Δx| + |Δy| między węzłami) | [W] |
@@ -113,6 +121,8 @@ wyznaczamy ich granice.
 - Licznik prób: cel +0x18 rośnie przy każdej prośbie. Przy wejściu w stan 8000 jednostka przechodzi do „Idle”, gdy
   +0x18 > vtable +0x2C celu. To limit ponowień [W].
 - Gdy cel +0x34 = 1 (świeży zwykły rozkaz), +0x34 := 2 i parametr 0xF, w przeciwnym razie −1 [P: kod; znaczenie N].
+  *[Etap 23 – uściślone]* To limit całkowity iteracji A* po polach: 0xF albo wyliczony z odległości. Etap grafu włącza
+  się dla celu położenia bez +0x32 i z +0x1D = 0 (`architektura_nawigacji.md` § 6) [W].
 - Z pola jednostki (+0x1C, +0x20) do pola celu. Wynik zostaje w danych ruchu jednostki, nie w kolejce celów. Stany
   „GetNextMoveWaypoint”, „RepathAroundObstacle”, zdarzenia „CannotPathToTarget”, „RepathCompleted” – poza zakresem
   [W: nazwy z tablic EXE].
@@ -169,7 +179,10 @@ nie błąd w kodzie. Mechanizm należy do podsystemu ruchu [N]. BO-1–BO-4 bez 
    zachował +0x34 = 0, więc 0x5EDF6B działał, gdy +0x1F0 nie był celem B [N].
 2. Podział na podgrupy 0x5F70A3 (argument 10) i wybór pola startowego podgrupy [N].
 3. Maszyny wyszukiwania (sektory, obszary, graf) i znaczenie budżetu (−1, 0xF) – kolejny etap.
+   *[Etap 23 – rozpoznane]* `architektura_nawigacji.md`.
 4. Gdzie trasa jednostki przechowuje punkty ruchu i kiedy zdejmowane są punkty +0x32 z przodu kolejki [N].
+   *[Etap 23]* Trasa po polach trafia do jednostki przez 0x5EE4E6 jako wektor punktów po 12 B. Miejsce przechowywania
+   nadal [N].
 5. Warunek „CannotPathToTarget” i limit prób (cel vtable +0x2C) [N].
 
 ## Konsekwencje dla OpenEE (bez zmian w kodzie)

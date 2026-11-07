@@ -6,6 +6,18 @@
   {
    "data": "2026-11-07",
    "tytul": {
+    "pl": "Etap 23: jak oryginał szuka tras",
+    "en": "Stage 23: how the original finds routes"
+   },
+   "tekst": {
+    "pl": "Odtworzona budowa systemu wyszukiwania tras: podział mapy na sektory, graf połączeń, kolejne etapy szukania drogi i rozkładanie obliczeń na kolejne chwile gry.",
+    "en": "Reconstructed how the route finder is built: map sectors, the connection graph, the successive search stages and how the work is spread over game ticks."
+   },
+   "raport": "RAPORT_ETAP_23.md"
+  },
+  {
+   "data": "2026-11-07",
+   "tytul": {
     "pl": "Etap 22: wejście do nawigacji",
     "en": "Stage 22: entering navigation"
    },
@@ -13,7 +25,7 @@
     "pl": "Odtworzone, kiedy oryginał prosi o wyznaczenie trasy i jak punkty obejścia przeszkód trafiają do rozkazów jednostki.",
     "en": "Reconstructed when the original asks for a route and how detour points around obstacles end up in a unit's orders."
    },
-   "raport": "RAPORT_ETAP_22.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_22.md"
   },
   {
    "data": "2026-11-07",
