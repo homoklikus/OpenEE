@@ -6,6 +6,18 @@
   {
    "data": "2026-11-07",
    "tytul": {
+    "pl": "Etap 24: algorytm szukania drogi",
+    "en": "Stage 24: the path-finding algorithm"
+   },
+   "tekst": {
+    "pl": "Odtworzony krok po kroku algorytm, którym oryginał wyznacza drogę jednostki po polach mapy – koszty, omijanie przeszkód, remisy i gotowa trasa – sprawdzony na trasach z gry.",
+    "en": "Reconstructed step by step the algorithm the original uses to route a unit across map tiles – costs, obstacle avoidance, ties and the final path – checked against routes from the game."
+   },
+   "raport": "RAPORT_ETAP_24.md"
+  },
+  {
+   "data": "2026-11-07",
+   "tytul": {
     "pl": "Etap 23: jak oryginał szuka tras",
     "en": "Stage 23: how the original finds routes"
    },
@@ -13,7 +25,7 @@
     "pl": "Odtworzona budowa systemu wyszukiwania tras: podział mapy na sektory, graf połączeń, kolejne etapy szukania drogi i rozkładanie obliczeń na kolejne chwile gry.",
     "en": "Reconstructed how the route finder is built: map sectors, the connection graph, the successive search stages and how the work is spread over game ticks."
    },
-   "raport": "RAPORT_ETAP_23.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_23.md"
   },
   {
    "data": "2026-11-07",

@@ -2,7 +2,8 @@
 
 Wpis atlasu Titan, etap 23. Opisuje budowę podsystemu tras: obiekty i ich relacje, wybór maszyny wyszukiwania,
 przepływ jednej prośby, budżety i odraczanie obliczeń na kolejne takty. Wejście do podsystemu (kto i kiedy prosi o
-trasę, punkty +0x32) opisuje `nawigacja_wejscie.md`.
+trasę, punkty +0x32) opisuje `nawigacja_wejscie.md`. Wnętrze A* po polach, `Bounded` i przekazanie trasy jednostce:
+**`astar_pola.md`**, **`astar_wyniki.md`** (etap 24).
 
 Poza zakresem pozostają: pętla A* (poza miejscem, w którym liczy budżet), heurystyka, koszty pól, wygładzanie trasy,
 przeszkody dynamiczne, kolizje, ruch fizyczny, nawigacja morska, powietrzna i kosmiczna oraz budowa sektorów.
@@ -236,11 +237,19 @@ Przypadek: zwykły PPM, jednostka lądowa, cel położenia.
    - Maszyna z puli dostaje: limit na wywołanie (vtable +0x30) – 0xF, bo bajt 14 = 0; limit całkowity (vtable +0x24)
      – budżet 18 albo wyliczony w 0x4A0E2F; start (vtable +0x38), cel (vtable +0x2C), jednostkę (cel 0x41D67E) i ruch
      po przekątnej (+0x1C = 1).
+     *[Etap 24 – uściślone]* +0x1C to reguła narożników: przekątna wymaga wolnego pola prostego. Przy 0 przekątne
+     byłyby bez warunku. Po porażce `Bounded` pełne A* startuje z punktu końcowego `Bounded`. Limit `Bounded` to m
+     iteracji w kwadracie start ± (m + 1) (`astar_wyniki.md` § 6).
    - Uruchomienie vtable +0x20.
    - Zawieszona (+0x1D = 1) → kolejka +0x5C.
    - Skończona → 0x4A327E:
      - sukces → trasa jako wektor punktów (3 × float, 12 B) przekazana jednostce (0x5EE4E6);
      - porażka → 0x4A2B29, m.in. dziennik +0x48 [W].
+
+     *[Etap 24 – zastąpione]* Dla maszyny pól flaga +0x96 (cel +0x2A) jest zawsze 0, więc wynik zawsze idzie przez
+     0x4A2B29. To wspólne przekazanie z łączeniem z obecną trasą jednostki, a nie obsługa porażki. 0x4A32C0 dotyczy
+     tylko `Bounded`, gdy próba nie doszła do celu. Trasa trafia do kolejki jednostki +0x7C (elementy 20 B)
+     (`astar_wyniki.md` § 5).
 
 **Gdzie leży stan niedokończonego wyszukiwania.** W samej maszynie: lista otwarta i zamknięta w storage, liczniki
 +0x10 / +0x14 / +0x18, flaga +0x1D (pola) albo +0x24 (graf). Węzeł kolejki wskazuje maszynę. Wznowienie to ponowne
@@ -268,7 +277,8 @@ Po każdym rozwinięciu węzła pętla sprawdza limity:
 
 Zakończenie rozpoznaje test celu (pola 0x41CCA8, graf 0x41E3C0) albo pusta lista otwarta. Flaga = 0, a cel
 dostaje wywołanie „koniec” (vtable +8 albo +0x18). Pole +0x94 maszyny decyduje o zwróceniu wyniku częściowego (0x4A5D16)
-[W; znaczenie N]. [W: kod; P: liczniki zachowane w maszynach z puli]
+[W; znaczenie N]. *[Etap 24 – rozpoznane]* +0x94 = cel +0x28, czyli „koniec = najbliższy dostępny węzeł”. Ustawiana
+przy pustej otwartej, przy niedostępnym celu i po osiągnięciu limitu (`astar_wyniki.md` § 2–3). [W: kod; P: liczniki zachowane w maszynach z puli]
 
 ### 6.2 Wartości
 
@@ -361,8 +371,12 @@ Gwardia 0x100018B, scenariusz „Wojna trojańska”, mapa 280 × 280, tylko odc
 1. Sposób wydzielania podsektorów, znaczenie rodzaju +0x54 i tablicy maszyny grafu +0xC0 [N] – granica: budowa
    sektorów.
 2. Wynik częściowy przy wyczerpaniu limitu (+0x94, 0x4A5D16) i dalsze losy pierwszej próby z limitem 15 [N].
+   *[Etap 24]* Wynik częściowy rozpoznany (`astar_wyniki.md`); pierwsza próba z limitem 15 nadal niezmierzona.
 3. Obsługa porażki 0x4A2B29 (dziennik +0x48, „CannotPathToTarget”) [N].
+   *[Etap 24 – zastąpione]* 0x4A2B29 to zwykłe przekazanie trasy z łączeniem. Dziennik i „CannotPathToTarget”
+   nadal [N].
 4. Przechowywanie trasy po polach w jednostce (0x5EE4E6) i jej zużywanie przez ruch [N].
+   *[Etap 24]* Kolejka +0x7C jednostki, elementy 20 B [P]; zużywanie przez ruch – poza zakresem.
 5. Funkcja 0x4A3E19 (co 30 s, pole +0x44) i porządki 0x4A3A54 [N].
 6. Rola kontynentów, wzniesień i przewężeń poza budową danych (AI) [N].
 7. Dane morskie i kosmiczne: istnienie potwierdzone (modyfikatory, klucze), szczegółów nie badano.

@@ -131,3 +131,32 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. OpenEE ma wykonywać te same trzy kroki
   w tej samej kolejności.
 - **Źródło:** etap 21, `docs/titan/kolejka_rozkazow.md`.
+
+### BO-5 (obserwacja): limit „−1” w teście końca A* działa jak „limit osiągnięty”
+
+- **Zachowanie.** Koniec wyszukiwania (cel vtable +8) ustawia flagę „szukaj najbliższego węzła” (+0x28), gdy
+  iteracje ≥ limit całkowity. Porównanie jest ze znakiem, więc przy limicie −1 („bez limitu”) flaga jest ustawiana
+  zawsze, także po dojściu do celu.
+- **Lokalizacja.** `Empire Earth.exe` 0x41CC8E–0x41CCA0; `EE-AOC.exe` 0x40EA7B (funkcja identyczna).
+- **Przyczyna.** Brak osobnego warunku dla −1, które pętla (0x4A5428) traktuje jako „bez limitu” [W: kod].
+- **Skutki.** Trasa kończy się wtedy na najbliższym dostępnym węźle zamiast na węźle testu celu. Zwykle to ten sam
+  węzeł. Prośby jednostek zawsze mają dodatni limit, więc w badanych ścieżkach skutku brak [W].
+- **Pewność:** kod [W]; skutek w grze niezmierzony.
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona.
+- **Źródło:** etap 24, `docs/titan/astar_wyniki.md` § 2.
+
+### BO-6 (podejrzenie): trasa do celu nieosiągalnego przez pola niedostępne dla typu jednostki
+
+- **Zachowanie.** Jednostka lądowa dostała rozkaz na wodę (156,143). Trasa w jej kolejce prowadziła prosto po x = 147
+  przez pola z terenem 10, który tablica typu (`EEUCLand` +0x5D6) oznacza jako niedostępny, do punktu pośredniego grafu
+  (147,154) za jeziorem. Jednostka zatrzymała się przed tymi polami (149,137) i straciła cel oraz trasę.
+- **Lokalizacja.** Nieustalona: prośba jednostki 0x4A1AFF i etap grafu, możliwe też przekazanie trasy 0x4A2B29.
+- **Przyczyna.** [N]. Hipotezy:
+  - inne znaczenie komórki +4 dla terenu 10;
+  - trasa spoza A*;
+  - pozostałości pamięci podręcznej dostępności.
+- **Skutki.** Jednostka przerywa ruch przy brzegu zamiast dojść do najbliższego dostępnego miejsca [P: pomiar EE
+  481–483].
+- **Pewność:** pomiar zachowania [P]; mechanizm i to, czy jest to błąd – [H].
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona; wymaga dalszych pomiarów.
+- **Źródło:** etap 24, `docs/titan/astar_wyniki.md` § 7.

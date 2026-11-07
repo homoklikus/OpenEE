@@ -107,7 +107,7 @@ to na RTX 5090, narzędziem `oe_render` z Riverlands_MCP, zawsze przy zamknięte
 * [docs/ZASOBY_ORYGINALNE.md](docs/ZASOBY_ORYGINALNE.md) – zasady korzystania z oryginalnych zasobów
 * [docs/HISTORIA.md](docs/HISTORIA.md) – historia rozwoju, [docs/MAPA_DROGOWA.md](docs/MAPA_DROGOWA.md) – plan
 * [CONTRIBUTING.md](CONTRIBUTING.md) – zasady współpracy
-* Raporty: aktualny `RAPORT_ETAP_23.md` (katalog główny); wcześniejsze w `raporty/archiwum/` – indeks z opisami: [raporty/README.md](raporty/README.md)
+* Raporty: aktualny `RAPORT_ETAP_24.md` (katalog główny); wcześniejsze w `raporty/archiwum/` – indeks z opisami: [raporty/README.md](raporty/README.md)
 
 ## Licencja
 OpenEE jest udostępniany na licencji **GNU General Public License v3.0** – plik [LICENSE](LICENSE). Projekt zawiera

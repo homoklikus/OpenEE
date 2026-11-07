@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_23.md`](../RAPORT_ETAP_23.md) – etap 23: architektura wyszukiwania tras w silniku Titan – sektory, podsektory, maszyny A*, budżety i odraczanie (EE i AoC).
+[`RAPORT_ETAP_24.md`](../RAPORT_ETAP_24.md) – etap 24: pełna rekonstrukcja A* po polach mapy i przetwarzania wyników w Titan (EE i AoC).
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -53,3 +53,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_20.md`](archiwum/RAPORT_ETAP_20.md) | etap 20 | gałąź specjalna przydziału: ruch w szyku po przeciągnięciu PPM, kolejność grupy zamiast przydziału bliskiego/dalekiego |
 | [`RAPORT_ETAP_21.md`](archiwum/RAPORT_ETAP_21.md) | etap 21 | kolejka celów jednostki: dopisywanie z Shift, zastępowanie zwykłym rozkazem, przejście do następnego celu w stanie „Idle”, BO-4 |
 | [`RAPORT_ETAP_22.md`](archiwum/RAPORT_ETAP_22.md) | etap 22 | wejście do nawigacji: prośby o trasę grupy i jednostki, `EEPathManager`, punkty pośrednie +0x32, znaczniki celu +0x34 |
+| [`RAPORT_ETAP_23.md`](archiwum/RAPORT_ETAP_23.md) | etap 23 | architektura tras: `EEPathManager`, `EEAIContinentManager`, sektory, podsektory, obszary, maszyny A*, budżety, kolejki odroczeń |
