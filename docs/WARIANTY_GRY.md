@@ -8,7 +8,7 @@ Oznaczenia pewności: **[P]** potwierdzone pomiarem lub danymi, **[W]** wniosek 
 Zakres ustalenia: **(EE)** tylko Empire Earth, **(AoC)** tylko The Art of Conquest, **(obie)** obie gry,
 **(obie?)** wspólność jest jedynie hipotezą.
 
-Narzędzie audytu: `narzedzia/audyt_ee_aoc.py <instalacja> <wynik.json>` (tylko odczyt; wynik – liczby, nazwy i skróty,
+Narzędzie audytu: `narzedzia/eksperymenty/audyt_ee_aoc.py <instalacja> <wynik.json>` (tylko odczyt; wynik – liczby, nazwy i skróty,
 bez treści zasobów, w `cache/`, poza repozytorium). Pomiar plików otwieranych przez oryginał: kroki MCP
 `uruchom_ee_podstawowe`, `pliki_otwarte`, `zamknij_ee_podstawowe` (Riverlands_MCP, `ee_wariant.py`).
 

@@ -80,7 +80,7 @@ Obywatelka (480) i dziecko (222) mają własne łańcuchy (tabela w docs).
 ### 1.3 Tabela `epoka → obiekt → wariant → model → tekstura → animacja`
 
 Pełna tabela (156 wierszy, 15 epok, wszystkie obiekty ze zmianami grafiki) jest wygenerowana z danych gry:
-**`docs/WARIANTY_EPOK.md`** (`narzedzia/warianty_epok.py`). Kolumna „Gniazda” podaje liczbę sekwencji animacji wiersza
+**`docs/WARIANTY_EPOK.md`** (`narzedzia/eksperymenty/warianty_epok.py`). Kolumna „Gniazda” podaje liczbę sekwencji animacji wiersza
 `dbgraphics`; animacje zmieniają się razem z grafiką. Wybrane wiersze:
 
 | Epoka | Obiekt | Wariant | Model | Tekstura | Źródło |
@@ -142,7 +142,7 @@ Rzym (AoC) i Troja (EE):
   * `epoka_gracza(g)`.
 
   Python: `gracze.blok_ee`.
-* `narzedzia/warianty_epok.py` – generator tabeli `docs/WARIANTY_EPOK.md` i raportu wariantów dla scenariuszy.
+* `narzedzia/eksperymenty/warianty_epok.py` – generator tabeli `docs/WARIANTY_EPOK.md` i raportu wariantów dla scenariuszy.
 
 ### 3.2 Logika wizualna
 

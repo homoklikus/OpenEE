@@ -2,13 +2,14 @@
 """Tabela wariantów grafiki wg epok z danych EE/AoC (etap 8) i przewidywane grafiki obiektów scenariusza.
 
 Użycie:
-  python3 narzedzia/warianty_epok.py --gra "<katalog Empire Earth Gold>" [--md docs/WARIANTY_EPOK.md]
+  python3 narzedzia/eksperymenty/warianty_epok.py --gra "<katalog Empire Earth Gold>" [--md docs/WARIANTY_EPOK.md]
          [--scn plik.scn ...] [--json wynik.json]
 Wynik zawiera wyłącznie nazwy i identyfikatory z tabel gry (bez zasobów graficznych).
 """
 import argparse, json, os, sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # narzedzia/ – eeformaty
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # narzedzia/eksperymenty/
 from eeformaty import ssa, db, epoki, scn, dcl, gracze  # noqa: E402
 
 
@@ -108,7 +109,7 @@ def main():
         json.dump(wynik, open(a.json, "w"), ensure_ascii=False, indent=1)
     if a.md:
         L = ["# Warianty grafiki wg epok – tabela z danych EE/AoC (etap 8)", "",
-             "Wygenerowano: `narzedzia/warianty_epok.py` z `dbtechtree`, `dbevents`, `dbeffects` (kod 6 – zmiana grafiki),",
+             "Wygenerowano: `narzedzia/eksperymenty/warianty_epok.py` z `dbtechtree`, `dbevents`, `dbeffects` (kod 6 – zmiana grafiki),",
              "`dbobjects` i `dbgraphics` instalacji AoC. Wiersz = epoka, od której obiekt ma daną grafikę (stan po nałożeniu",
              "zmian wszystkich epok ≤ E). „Gniazda” = liczba wypełnionych ścieżek modelu w wierszu dbgraphics (sekwencje",
              "animacji należą do grafiki – zmiana grafiki zmienia model, teksturę i animacje razem).", "",

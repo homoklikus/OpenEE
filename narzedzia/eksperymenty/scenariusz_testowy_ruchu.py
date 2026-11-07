@@ -6,7 +6,7 @@ Generator Riverlands jest używany WYŁĄCZNIE jako biblioteka (import, bez zmia
 „świeżego” obywatela edytora, zapis kawałka 5. Plik wynikowy jest kopią testową w Testy_MCP (nie w instalacji gry –
 do gry trafia przez MCP gra_do_gry jako 000_EETEST_*).
 
-Użycie:  python3 narzedzia/scenariusz_testowy_ruchu.py <wejście.scn> <wyjście.scn> [--riverlands=<plik .py>]
+Użycie:  python3 narzedzia/eksperymenty/scenariusz_testowy_ruchu.py <wejście.scn> <wyjście.scn> [--riverlands=<plik .py>]
 Układ grup: GRUPY (pasy S/D – opis przy liście; kolumny × wiersze, odstęp 1 pole); obywatele startowi → ZAPAS.
 """
 import importlib.util
@@ -50,7 +50,7 @@ def main():
     a = [x for x in sys.argv[1:] if not x.startswith("--")]
     opcje = dict(x[2:].split("=", 1) for x in sys.argv[1:] if x.startswith("--") and "=" in x)
     wej, wyj = Path(a[0]), Path(a[1])
-    rl = _riverlands(opcje.get("riverlands", str(Path(__file__).resolve().parents[2] / "Riverlands" / "Riverlands_0_8_1.py")))
+    rl = _riverlands(opcje.get("riverlands", str(Path(__file__).resolve().parents[3] / "Riverlands" / "Riverlands_0_8_1.py")))
     blob = wej.read_bytes()
     raw5 = rl.raw_section(blob, rl.SECTION_PLAYERS)
     model = rl.S5Model.parse(raw5)

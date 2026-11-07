@@ -2,7 +2,8 @@
 """Test czytników formatów na prawdziwych archiwach (tylko odczyt).
 Użycie: test_formatow.py <katalog_instalacji> <wynik.json> [limit_na_typ]"""
 import json, os, sys, time, traceback, collections
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # narzedzia/ – eeformaty
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # narzedzia/eksperymenty/
 from eeformaty import ssa, dcl, sst, cem
 
 ARCH = ["Empire Earth/Data/data.ssa", "Empire Earth - The Art of Conquest/Data/data.ssa"]

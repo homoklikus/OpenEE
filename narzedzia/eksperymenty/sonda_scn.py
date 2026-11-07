@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Sonda: wyodrębnia scenariusze z archiwów kampanii do cache i sprawdza czytnik terenu."""
 import sys, os, json, collections
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # narzedzia/ – eeformaty
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # narzedzia/eksperymenty/
 from eeformaty import ssa, scn
 root = sys.argv[1]; out = sys.argv[2]
 os.makedirs(out, exist_ok=True)

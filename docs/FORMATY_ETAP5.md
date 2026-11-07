@@ -84,7 +84,7 @@ Gdy sekwencji brak, jednostka porusza się dalej, a brak zostaje zapisany w diag
 ma sekwencję ruchu; `gun_stonethrower_03` nie ma sekwencji bezczynności.
 
 ## 6. Porównanie z oryginalnym EE – przeszkoda techniczna
-Przygotowano izolowane środowisko (`narzedzia/izolowane_ee.sh`, `izolowane_ee_sesja.py`):
+Przygotowano izolowane środowisko (`narzedzia/eksperymenty/izolowane_ee.sh`, `izolowane_ee_sesja.py`):
 * przenośne Wine (Kron4ek 10.0 WoW64; 11.20 kończyło się błędem segmentacji już przy starcie);
 * osobny prefiks;
 * osobny Xvfb;

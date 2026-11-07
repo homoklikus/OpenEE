@@ -1,6 +1,6 @@
 # Warianty grafiki wg epok – tabela z danych EE/AoC (etap 8)
 
-Wygenerowano: `narzedzia/warianty_epok.py` z `dbtechtree`, `dbevents`, `dbeffects` (kod 6 – zmiana grafiki),
+Wygenerowano: `narzedzia/eksperymenty/warianty_epok.py` z `dbtechtree`, `dbevents`, `dbeffects` (kod 6 – zmiana grafiki),
 `dbobjects` i `dbgraphics` instalacji AoC. Wiersz = epoka, od której obiekt ma daną grafikę (stan po nałożeniu
 zmian wszystkich epok ≤ E). „Gniazda” = liczba wypełnionych ścieżek modelu w wierszu dbgraphics (sekwencje
 animacji należą do grafiki – zmiana grafiki zmienia model, teksturę i animacje razem).

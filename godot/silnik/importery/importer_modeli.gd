@@ -56,7 +56,7 @@ void fragment() {
 }
 """
 ## Obrót billboardu wokół pionu (stopnie): impostory „Always face camera” są zwrócone w kierunku azymutu -45° układu CEM
-## (od +X ku -Y; w Godot (x, -y) = (+X, +Z) pod 45°) [D: dominanta 91/195 modeli, narzedzia/kierunek_billboardow.py] –
+## (od +X ku -Y; w Godot (x, -y) = (+X, +Z) pod 45°) [D: dominanta 91/195 modeli, narzedzia/eksperymenty/kierunek_billboardow.py] –
 ## ten kierunek, nie oś +Z modelu, obracamy do kamery. 0° (stan do 0.5.1) pokazywał impostor pod kątem, jako płaski pas.
 const BILLBOARD_AZYMUT_ST := 45.0
 static var _shader: Shader = null

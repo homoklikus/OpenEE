@@ -3,7 +3,7 @@
 Etap 9 OpenEE. Opis zachowania **oryginalnej gry** ustalony pomiarami, potem odtworzony w Godocie
 (`godot/silnik/symulacja/`). Pomiary prowadzono w EE: The Art of Conquest (Wine, normalna szybkość gry) na
 scenariuszu testowym `Testy_MCP/mapy/etap9/etap9_pasy.scn`. To mapa Riverlands z rzeką i dwoma brodami oraz 12 grupami
-jednostek gracza 1 (generator: `narzedzia/scenariusz_testowy_ruchu.py`).
+jednostek gracza 1 (generator: `narzedzia/eksperymenty/scenariusz_testowy_ruchu.py`).
 
 **Metoda.** Jednostki zaznaczano i dowodzono zwykłym wejściem: mysz i klawiatura przez xdotool. Wynik odczytywano
 z pamięci procesu, tylko odczyt (MCP `ee_ruch`):
@@ -11,7 +11,7 @@ z pamięci procesu, tylko odczyt (MCP `ee_ruch`):
 - zawartość grupy zaznaczenia gracza – wektory w obiektach +0x9AC i +0x9B0 gracza.
 
 Trajektorie zapisywano z częstotliwością 4–10 Hz do `Testy_MCP/ee_ruch/*.json`. Analizowano je skryptem
-`narzedzia/analiza_ruchu_ee.py`, a porównanie z OpenEE robi `godot/narzedzia/porownanie_ruchu_ee.gd`.
+`narzedzia/eksperymenty/analiza_ruchu_ee.py`, a porównanie z OpenEE robi `godot/narzedzia/porownanie_ruchu_ee.gd`.
 
 Nie zapisywano niczego do pamięci gry, nie modyfikowano gry ani jej plików i nie kopiowano kodu.
 

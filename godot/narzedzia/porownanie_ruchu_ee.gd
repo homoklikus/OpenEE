@@ -2,7 +2,7 @@ extends SceneTree
 ## Porównanie liczbowe ruchu OpenEE z trajektoriami zmierzonymi w oryginalnym EE (etap 9) + pomiar wydajności.
 ## Ta sama mapa (scenariusz testowy etap9_pasy.scn – teren, budynki, drzewa), te same pozycje startowe jednostek co
 ## w pomiarze EE (pierwsza próbka trajektorii), punkt rozkazu odtworzony z końcowego układu EE (pierwszy rząd szyku),
-## symulacja w stałym kroku. Metryki jak narzedzia/analiza_ruchu_ee.py: czas dojścia, droga, krętość, minimalna
+## symulacja w stałym kroku. Metryki jak narzedzia/eksperymenty/analiza_ruchu_ee.py: czas dojścia, droga, krętość, minimalna
 ## odległość par, rozstaw końcowy, odchyłka pozycji końcowych jednostek.
 ##   godot --headless --path godot --script res://narzedzia/porownanie_ruchu_ee.gd -- \
 ##     --scn=<etap9_pasy.scn> --uklad=<etap9_pasy.uklad.json> --ee=<katalog Testy_MCP/ee_ruch> [--wyj=wyniki/porownanie_ruchu_ee.json]

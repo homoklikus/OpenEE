@@ -3,7 +3,8 @@
 pod przezroczystością, osobno kanał alfa. Wynik lokalny (zawiera grafikę gry – nie publikować).
 Użycie: uv_modelu.py <katalog_gry> models/x textures/xT.sst wyjscie.png [część]"""
 import sys, os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # narzedzia/ – eeformaty
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # narzedzia/eksperymenty/
 from eeformaty import cem, sst
 from analiza_modelu import wczytaj, czesci
 from PIL import Image, ImageDraw

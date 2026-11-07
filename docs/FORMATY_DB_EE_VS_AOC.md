@@ -186,4 +186,4 @@ klucza (`get(...)` z wartością domyślną), a nie fałszywe zero.
 
 Rozszerzony audyt obu instalacji (archiwa, scenariusze, `Language.dll`, `.rmv`, biblioteki PE, pliki otwierane przez
 `Empire Earth.exe` i `EE-AOC.exe`) oraz architektura dwóch gier na wspólnym silniku: **`docs/WARIANTY_GRY.md`**.
-Narzędzie: `narzedzia/audyt_ee_aoc.py`.
+Narzędzie: `narzedzia/eksperymenty/audyt_ee_aoc.py`.

@@ -107,7 +107,7 @@ tylko różnica przewijania krawędzią z etapu 12.
 | D1: scena testowa wybiera scenariusz **numerem z listy kampanii** (`campaigns/*_scenariolist.txt`), a nie przetłumaczonym tytułem; domyślne kampanie z definicji gry (EE: `EETheGreeks.ssa` nr 3, AoC: `AOCRoman.ssa` nr 1); `--scenariusz-nr=<n>`; `--scenariusz=` zostaje jako filtr diagnostyczny | `silnik/rdzen/gry_ee.gd`, `sceny/test_scenariusz.gd`, `dane/gry.json`, `narzedzia/test_wizualny_051.sh` |
 | `MNOZNIK_PREDKOSCI` = 1,461 (tempo czasu gry) z nowym opisem; wpis 1,706 wycofany, dodano `zegar_gry_na_sekunde` i `modyfikator_predkosci_blitzkrieg` ([N], bez implementacji) | `silnik/symulacja/symulacja.gd`, `jednostka_sym.gd`, `sceny/rts_test.gd`, `dane/mechaniki_ee_aoc.json` |
 | Omijanie pól jednostek **stojących** przy wyznaczaniu trasy (`OMIJANIE_STOJACYCH`, `zajete_komorki`, `Sciezki.znajdz(..., zajete)`); jednostki z rozkazem w tym samym takcie nie blokują się; jednostki w ruchu przenikają się dalej, bez fizyki i odpychania | `silnik/symulacja/symulacja.gd`, `sciezki.gd` |
-| Narzędzie scenariuszy testowych kolizji | `narzedzia/scenariusz_testowy_kolizji.py` |
+| Narzędzie scenariuszy testowych kolizji | `narzedzia/eksperymenty/scenariusz_testowy_kolizji.py` |
 | Testy etapu 13; test E12 o mnożniku zmieniony na tempo zegara gry | `godot/testy/testy_etapu13.gd`, `testy_etapu12.gd`, `uruchom_testy.gd` |
 | Dokumentacja (D2 – podział testów bez okna i na GPU w README) | `docs/MECHANIKA_PREDKOSCI_EE.md`, `docs/KOLIZJE_JEDNOSTEK_EE.md`, `docs/MECHANIKA_RUCHU_EE.md`, `docs/POROWNANIE_MECHANIK_EE_AOC.md`, `README.md` |
 

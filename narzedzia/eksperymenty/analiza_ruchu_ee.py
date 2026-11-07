@@ -4,7 +4,7 @@
 Wynik na grupę: czas startu i dojścia, prędkości (średnia, maks., wspólna/indywidualna), odchylenie od prostej,
 minimalne odległości między jednostkami (kolizje), układ końcowy względem celu (przesunięcia, rozstaw, obrót
 względem układu początkowego), liczba zatrzymań. Wejście: pliki JSON; wyjście: JSON na stdout (lub --md).
-Użycie: python3 narzedzia/analiza_ruchu_ee.py <plik.json> [...] [--cel=x,y] [--md]
+Użycie: python3 narzedzia/eksperymenty/analiza_ruchu_ee.py <plik.json> [...] [--cel=x,y] [--md]
 """
 import json
 import math

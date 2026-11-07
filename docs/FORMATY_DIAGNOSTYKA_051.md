@@ -1,7 +1,7 @@
 # OpenEE – modele CEM: ustalenia diagnostyki 0.5.1 → 0.5.2-dev
 
 Oznaczenia: [D] potwierdzone na danych, [H] hipoteza OpenEE. Ustalenia pochodzą ze statystyki plików gry
-(narzędzia `godot/narzedzia/statystyka_geometrii.gd`, `narzedzia/kierunek_billboardow.py`, `narzedzia/statystyka_alfa.py`),
+(narzędzia `godot/narzedzia/statystyka_geometrii.gd`, `narzedzia/eksperymenty/kierunek_billboardow.py`, `narzedzia/eksperymenty/statystyka_alfa.py`),
 bez dekompilacji. Próbka geometrii: 150 pierwszych par model/tekstura z `dbgraphics` (37 019 trójkątów).
 
 ## 1. Kanał alfa wycina we wszystkich materiałach, także „player color” [D]

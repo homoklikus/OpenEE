@@ -6,11 +6,11 @@ Do gracza 1 dopisywane są kopie rekordu wskazanej jednostki (np. obywatela) w z
 i pustego obszaru. Rekord jednostki jest kopiowany bajt w bajt; zmieniane są wyłącznie: identyfikator (instancja),
 pole (X, Y), pozycja (x, y) i translacja macierzy. Liczniki gracza (liczba jednostek, następna instancja,
 licznik kubełka instancja mod 128) są aktualizowane. Kawałek 5 jest pakowany DCL implode (biblioteka generatora
-Riverlands – import bez zmian w jego plikach; jak narzedzia/scenariusz_testowy_ruchu.py).
+Riverlands – import bez zmian w jego plikach; jak narzedzia/eksperymenty/scenariusz_testowy_ruchu.py).
 
 Użycie:
-  python3 narzedzia/scenariusz_testowy_kolizji.py zbadaj <wejście.scn>
-  python3 narzedzia/scenariusz_testowy_kolizji.py zbuduj <wejście.scn> <wyjście.scn> <uklad.json> [--riverlands=<.py>]
+  python3 narzedzia/eksperymenty/scenariusz_testowy_kolizji.py zbadaj <wejście.scn>
+  python3 narzedzia/eksperymenty/scenariusz_testowy_kolizji.py zbuduj <wejście.scn> <wyjście.scn> <uklad.json> [--riverlands=<.py>]
 uklad.json: {"grupy": {"A": {"wzor": "0x100011a", "zrodlo": <opcjonalnie inny plik .scn tej wersji>,
              "z": <opcjonalna wysokość>, "pozycje": [[x, y], ...]}, ...}} – pozycje mapy (x = kolumna, y = wiersz).
 Wynik: plik .scn i <wyjście>.uklad.json z identyfikatorami jednostek każdej grupy. Pliki wynikowe zostają lokalnie
@@ -22,7 +22,7 @@ import struct
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # narzedzia/ – eeformaty
 from eeformaty import gracze as G          # noqa: E402
 from eeformaty import scn as S             # noqa: E402
 from eeformaty.dcl import maybe_unpack     # noqa: E402
@@ -217,7 +217,7 @@ def main():
     if a[0] == "zbadaj":
         zbadaj(a[1])
     elif a[0] == "zbuduj":
-        zbuduj(a[1], a[2], a[3], opcje.get("riverlands", str(Path(__file__).resolve().parents[2] / "Riverlands" / "Riverlands_0_8_1.py")))
+        zbuduj(a[1], a[2], a[3], opcje.get("riverlands", str(Path(__file__).resolve().parents[3] / "Riverlands" / "Riverlands_0_8_1.py")))
     else:
         raise SystemExit(__doc__)
 

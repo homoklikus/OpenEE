@@ -122,6 +122,6 @@ Bez osobnego mnożnika dla proroka, bez dodatku „Blitzkriegu” (przyczyna nie
   - `zegar_gry_znajdz`, `zegar_pomiar`;
   - `ruch_czas` – trajektorie `[t_monotoniczny, ms_gry, x, y]` w `Testy_MCP/ee_ruch/*.json`, lokalnie;
   - `typ_pamiec` – pola obiektu jednostki i klasy.
-- Scenariusze testowe: `narzedzia/scenariusz_testowy_kolizji.py`. Buduje je z kopii „Blitzkriegu”: klonuje rekordy
+- Scenariusze testowe: `narzedzia/eksperymenty/scenariusz_testowy_kolizji.py`. Buduje je z kopii „Blitzkriegu”: klonuje rekordy
   jednostek gracza 1 na płaski obszar. Oryginalne pliki scenariuszy pozostają niezmienione.
 - Wyniki zadań: `Testy_MCP/ee_zadania/292–345_*.wynik.json`, lokalnie, poza repozytorium.

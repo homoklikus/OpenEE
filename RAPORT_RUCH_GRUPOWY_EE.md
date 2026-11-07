@@ -132,8 +132,8 @@ Szczegóły: § 5–6 dokumentu.
 8. Przenikanie jednostek: świadomie bez kodu kolizji.
 9. Animacja ruchu i bezczynności spójna ze stanem symulacji (VAT/CEM bez zmian).
 10. Narzędzia:
-    - `narzedzia/scenariusz_testowy_ruchu.py` – scenariusz testowy;
-    - `narzedzia/analiza_ruchu_ee.py` – analiza trajektorii;
+    - `narzedzia/eksperymenty/scenariusz_testowy_ruchu.py` – scenariusz testowy;
+    - `narzedzia/eksperymenty/analiza_ruchu_ee.py` – analiza trajektorii;
     - `godot/narzedzia/porownanie_ruchu_ee.gd` – porównanie i wydajność.
 
 Kamery, epok ani przezroczystości nie zmieniałem.

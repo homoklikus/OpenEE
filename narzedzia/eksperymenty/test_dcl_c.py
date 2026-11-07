@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Porównanie dekompresji DCL: C (dcl_szybki.c) vs czysty Python, na próbce wpisów archiwum."""
 import os, sys, time, hashlib
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # narzedzia/ – eeformaty
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # narzedzia/eksperymenty/
 from eeformaty import ssa, dcl
 A = ssa.ArchiwumSSA(sys.argv[1]); krok = int(sys.argv[2]) if len(sys.argv) > 2 else 25
 assert dcl._lib() is not None, "brak biblioteki C"

@@ -4,7 +4,8 @@
 tekstury w środku UV. Tylko odczyt instalacji.
 Użycie: wspolplaszczyznowe.py <katalog_gry> models/x textures/xT.sst [tol_odl=0.002] [tol_kat_stopnie=1]"""
 import sys, os, json, math, collections
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # narzedzia/ – eeformaty
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # narzedzia/eksperymenty/
 from eeformaty import cem, sst
 from analiza_modelu import wczytaj, czesci, przeksztalc
 

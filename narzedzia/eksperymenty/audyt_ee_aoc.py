@@ -16,7 +16,8 @@ Użycie: audyt_ee_aoc.py <katalog_instalacji> <wynik.json>
 """
 import hashlib, json, os, struct, sys, collections
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # narzedzia/ – eeformaty
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # narzedzia/eksperymenty/
 from eeformaty.ssa import ArchiwumSSA            # noqa: E402
 from eeformaty import db, epoki, scn             # noqa: E402
 

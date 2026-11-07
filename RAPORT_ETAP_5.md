@@ -78,7 +78,7 @@ transformację osi co obiekty scenariusza (etap 3). Test: punkt `attack` falangi
 ruchu w 24/24 próbkach.
 
 ## 5. Porównanie z oryginalnym EE
-Środowisko przygotowano zgodnie z wymaganiami (`narzedzia/izolowane_ee.sh`, `izolowane_ee_sesja.py`):
+Środowisko przygotowano zgodnie z wymaganiami (`narzedzia/eksperymenty/izolowane_ee.sh`, `izolowane_ee_sesja.py`):
 * przenośne Wine 10.0 WoW64 (11.20 kończyło się błędem segmentacji przy starcie) w katalogu tymczasowym maszyny wirtualnej;
 * osobny prefiks;
 * osobny Xvfb `:77`, bez dostępu do KDE, myszy i klawiatury; wejście wyłącznie przez XTEST do Xvfb;

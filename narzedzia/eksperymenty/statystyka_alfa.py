@@ -4,7 +4,8 @@ z teksturą – udział trójkątów „player color” i zwykłych, których ś
 tekseli o alfa = 0 (co „przecieka” przy filtrowaniu/mipmapach). Tylko odczyt instalacji.
 Użycie: statystyka_alfa.py <katalog_gry> [limit]"""
 import sys, os, json, collections
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # narzedzia/ – eeformaty
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # narzedzia/eksperymenty/
 from eeformaty import cem, sst, db
 from analiza_modelu import wczytaj, czesci
 

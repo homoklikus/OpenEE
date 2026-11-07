@@ -41,7 +41,7 @@ diagnostycznych.
   Kliknięcie trójkąta albo `--zbadaj=id` daje: indeksy, wierzchołki, UV, materiał, `tekstura_id`, użyty obraz SST,
   alfę w środku, transformację części i rodzica. Raport JSON: `wyniki/diag_modelu/<model>.json`.
 * `silnik/diagnostyka/diagnostyka_modelu.gd` – analizy używane przez scenę i testy.
-* `godot/narzedzia/statystyka_geometrii.gd`, `narzedzia/kierunek_billboardow.py`, `statystyka_alfa.py`,
+* `godot/narzedzia/statystyka_geometrii.gd`, `narzedzia/eksperymenty/kierunek_billboardow.py`, `statystyka_alfa.py`,
   `wspolplaszczyznowe.py`, `analiza_modelu.py`, `uv_modelu.py` – statystyki na danych gry (tylko odczyt).
 * `narzedzia/test_wizualny_051.sh` + `metryki_zrzutu.py` – test wizualny przed/po z tej samej kamery.
 

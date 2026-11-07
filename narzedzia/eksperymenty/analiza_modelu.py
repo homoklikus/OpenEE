@@ -3,7 +3,8 @@
 trójkąty współpłaszczyznowe i zduplikowane. Czyta wyłącznie z instalacji (tylko odczyt), wypisuje statystyki.
 Użycie: analiza_modelu.py <katalog_gry_bazowej> models/bld_stable_03 [textures/bld_stable_03T.sst] [--json plik]"""
 import sys, os, json, math, collections, struct
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # narzedzia/ – eeformaty
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # narzedzia/eksperymenty/
 from eeformaty import ssa, cem, sst
 
 ARCH = ["Empire Earth - The Art of Conquest/Data/data.ssa", "Empire Earth/Data/data.ssa"]

@@ -4,7 +4,8 @@ ważona polem normalna trójkątów (układ CEM, Z w górę), rzut poziomy i ką
 patrzą w ten sam kierunek, jest to kierunek stałej kamery EE, do którego obraca je billboard.
 Użycie: kierunek_billboardow.py <katalog_gry>"""
 import sys, os, json, math, collections
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # narzedzia/ – eeformaty
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # narzedzia/eksperymenty/
 from eeformaty import cem, db
 from analiza_modelu import wczytaj, czesci, przeksztalc
 

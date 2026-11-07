@@ -21,7 +21,7 @@ Kolejność orientacyjna; każdy etap kończy się testami, dokumentacją i wery
 ## Najbliżej (0.5.x / 0.6)
 * Zaznaczanie grupowe, kolejki rozkazów, unikanie kolizji i formacje, szybsze trasy (hierarchiczne/GDExtension po pomiarach).
 * Rozróżnienie nawierzchni lądu (flagi dbobjects ↔ typy terenu), znaczenie progu wody płytkiej, tempo symulacji.
-* Porównanie wizualne z oryginalnym EE – skrypt izolowanego środowiska gotowy (`narzedzia/izolowane_ee.sh`); w piaskownicy
+* Porównanie wizualne z oryginalnym EE – skrypt izolowanego środowiska gotowy (`narzedzia/eksperymenty/izolowane_ee.sh`); w piaskownicy
   sesji Claude zablokowane przez seccomp – do uruchomienia w środowisku bez filtra (po zgodzie); rozstrzygnięcie tempa
   animacji, interpolacji i skrętności obrazu.
 * Sterowanie proceduralne części (orbital_*, wieżyczki, koła), znaczenie gniazda 3 i parametru sekwencji.

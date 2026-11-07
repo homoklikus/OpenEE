@@ -12,7 +12,7 @@ przypadki wykonano w **EE i w AoC** z tym samym plikiem scenariusza i tymi samym
 
 ## 1. Scenariusz testowy
 
-`narzedzia/scenariusz_testowy_kolizji.py` buduje scenariusz z **kopii** kampanii EE „Blitzkrieg” (SCN 231). Wybór ten
+`narzedzia/eksperymenty/scenariusz_testowy_kolizji.py` buduje scenariusz z **kopii** kampanii EE „Blitzkrieg” (SCN 231). Wybór ten
 wynika z tego, że wersję 231 wczytują obie gry, a mapa ma duży płaski obszar: x ≈ 151–195, y ≈ 164–182,
 wysokość 0,82, bez murów i drzew. Narzędzie klonuje rekordy obywateli gracza 1 i ustawia im dokładne położenia,
 nowe identyfikatory od 0x100033b oraz liczniki obiektów. Oryginalnych plików scenariuszy nie zmieniano. Kopia trafia

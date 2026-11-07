@@ -6,12 +6,12 @@
 # procesach Wine użytkownika, brak sudo i pakietów systemowych, całość usuwalna jednym poleceniem.
 #
 # Użycie:
-#   IZ=<katalog roboczy> WINE_DIR=<przenośne Wine> narzedzia/izolowane_ee.sh przygotuj <instalacja_EE>
-#   IZ=… narzedzia/izolowane_ee.sh uruchom --zgoda [ee|aoc]     # pierwsze uruchomienie gry wymaga zgody użytkownika
-#   IZ=… narzedzia/izolowane_ee.sh zrzut <plik.png>
-#   IZ=… narzedzia/izolowane_ee.sh klik <x> <y> | klawisz <nazwa>   # wejście wyłącznie do Xvfb (python-xlib, XTEST)
-#   IZ=… narzedzia/izolowane_ee.sh sesja <ee|aoc> <plik_kroków> <katalog_zrzutów> --zgoda   # jeden przebieg (zalecane)
-#   IZ=… narzedzia/izolowane_ee.sh zatrzymaj | usun
+#   IZ=<katalog roboczy> WINE_DIR=<przenośne Wine> narzedzia/eksperymenty/izolowane_ee.sh przygotuj <instalacja_EE>
+#   IZ=… narzedzia/eksperymenty/izolowane_ee.sh uruchom --zgoda [ee|aoc]     # pierwsze uruchomienie gry wymaga zgody użytkownika
+#   IZ=… narzedzia/eksperymenty/izolowane_ee.sh zrzut <plik.png>
+#   IZ=… narzedzia/eksperymenty/izolowane_ee.sh klik <x> <y> | klawisz <nazwa>   # wejście wyłącznie do Xvfb (python-xlib, XTEST)
+#   IZ=… narzedzia/eksperymenty/izolowane_ee.sh sesja <ee|aoc> <plik_kroków> <katalog_zrzutów> --zgoda   # jeden przebieg (zalecane)
+#   IZ=… narzedzia/eksperymenty/izolowane_ee.sh zatrzymaj | usun
 # Zmienne: EKRAN (domyślnie :77), ROZDZ (domyślnie 1024x768x24).
 set -e
 IZ="${IZ:?ustaw IZ – katalog roboczy}"
