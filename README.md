@@ -34,14 +34,20 @@ zawiera żadnych zasobów Empire Earth – patrz [docs/ZASOBY_ORYGINALNE.md](doc
   osobno, kolory materiałów, UV, indeksy, normalne, alfa, klatka CEM, odrzucanie ścian, test głębokości, przezroczystość,
   pary współpłaszczyznowe i duplikaty, opis trójkąta po kliknięciu; porównanie OpenGL/Vulkan `narzedzia/porownaj_renderery.sh`
   – [docs/FORMATY_DIAGNOSTYKA_051.md](docs/FORMATY_DIAGNOSTYKA_051.md).
-* **150 testów automatycznych** (część wymaga instalacji gry – bez niej są jawnie pomijane).
+* **Dwie gry na jednym silniku** – Empire Earth i The Art of Conquest: osobne definicje gier, formaty baz EE 1.0/AoC,
+  izolacja danych (`--gra=ee|aoc`, karta „Gra” w launcherze) – [docs/WARIANTY_GRY.md](docs/WARIANTY_GRY.md).
+* **Mechaniki zmierzone w oryginale** (etapy 6–13, odczyt pamięci gry – Riverlands_MCP): kamera EE (stały kąt,
+  21 poziomów zoomu, przewijanie), zaznaczanie, szyk grupy, trasy oktylowe, prędkość z tempa czasu gry, przenikanie
+  jednostek i objazd stojących, grafika zależna od epoki, przezroczystość budynków –
+  [docs/ARCHITEKTURA_OPENEE.md](docs/ARCHITEKTURA_OPENEE.md) § 7.
+* **321 testów automatycznych** bez okna (część wymaga instalacji gry – bez niej są jawnie pomijane).
 
 ## Ograniczenia (stan 0.5.2-dev)
 * **Brak rozgrywki** – brak ekonomii, walki, SI, interfejsu gry; sceny są podglądem danych.
 * Animacje odtwarzane z danych, ale tempo (czas cyklu z `dbgraphics`) i interpolacja między klatkami to hipotezy
   do potwierdzenia w grze; brak sterowania proceduralnego (celowanie wieżyczek, obrót części `orbital_*`, toczenie kół).
-* Ruch jednostek bez unikania kolizji i formacji; jedna jednostka zaznaczana naraz; brak walki, ekonomii i SI.
-  Reguły przechodniości i prędkość częściowo przybliżone (FORMATY_ETAP5 §2–3).
+* Ruch jednostek: szyk, zaznaczanie grupowe, kolejka rozkazów i kolizje według pomiarów oryginału; brak formacji
+  z przycisków i rozpędzania. Reguły przechodniości częściowo przybliżone (FORMATY_ETAP5 §2–3).
 * Niepełny odczyt trzech scenariuszy kampanii EE (polimorficzna lista celów jednostki – jeden gracz częściowo).
 * **Brak potwierdzonego porównania wizualnego z oryginalnym Empire Earth** – zgodność wynika z analizy formatów i testów
   na danych, nie z porównania zrzutów z gry.
@@ -62,7 +68,7 @@ zawiera żadnych zasobów Empire Earth – patrz [docs/ZASOBY_ORYGINALNE.md](doc
 3. Uruchom:
    ```
    ./uruchom_openee.sh            # launcher (Godot szukany w PATH, zmiennej GODOT lub obok projektu)
-   ./uruchom_openee.sh scenariusz # podgląd scenariusza AoC „Soldiers for Rome”
+   ./uruchom_openee.sh scenariusz # podgląd kampanii testowej wybranej gry (EE: Wojna trojańska, AoC: Żołnierze dla Rzymu)
    ./uruchom_openee.sh testy      # testy bez okna → wyniki/testy_godot.json
    ```
    albo otwórz katalog `godot/` w edytorze Godota.
@@ -91,7 +97,8 @@ Testy z `--headless` nie sprawdzają obrazu. Renderer weryfikuje się zrzutami n
 to na RTX 5090, narzędziem `oe_render` z Riverlands_MCP, zawsze przy zamkniętej grze oryginalnej.
 
 ## Dokumentacja
-* [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md) – struktura silnika i projektu
+* [docs/ARCHITEKTURA_OPENEE.md](docs/ARCHITEKTURA_OPENEE.md) – **od tego zacznij**: moduły, punkty wejścia, przepływ danych EE/AoC, stan wiedzy o mechanikach
+* [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md) – zasady i opisy z etapów 1–11; [docs/titan/README.md](docs/titan/README.md) – zasady atlasu funkcji silnika Titan; [narzedzia/README.md](narzedzia/README.md) – narzędzia
 * [docs/FORMATY.md](docs/FORMATY.md), [docs/FORMATY_ETAP2.md](docs/FORMATY_ETAP2.md), [docs/FORMATY_ETAP3.md](docs/FORMATY_ETAP3.md) – formaty plików EE
 * [docs/WARIANTY_GRY.md](docs/WARIANTY_GRY.md) – Empire Earth i The Art of Conquest jako dwie gry na jednym silniku; [docs/FORMATY_DB_EE_VS_AOC.md](docs/FORMATY_DB_EE_VS_AOC.md) – bazy EE 1.0 i AoC
 * [docs/POROWNANIE_MECHANIK_EE_AOC.md](docs/POROWNANIE_MECHANIK_EE_AOC.md) – pomiary mechanik Empire Earth i The Art of Conquest
@@ -100,7 +107,7 @@ to na RTX 5090, narzędziem `oe_render` z Riverlands_MCP, zawsze przy zamknięte
 * [docs/ZASOBY_ORYGINALNE.md](docs/ZASOBY_ORYGINALNE.md) – zasady korzystania z oryginalnych zasobów
 * [docs/HISTORIA.md](docs/HISTORIA.md) – historia rozwoju, [docs/MAPA_DROGOWA.md](docs/MAPA_DROGOWA.md) – plan
 * [CONTRIBUTING.md](CONTRIBUTING.md) – zasady współpracy
-* Raporty etapów: `RAPORT_ETAP_1.md`, `RAPORT_ETAP_2.md`, `RAPORT_ETAP_3.md`, `RAPORT_LAUNCHER_UI.md`, `RAPORT_EE_AOC_FORMATY.md` (etap 11), `RAPORT_ETAP_12_EE_AOC.md` (etap 12), `RAPORT_ETAP_13.md` (etap 13)
+* Raporty etapów: `RAPORT_ETAP_1.md`, `RAPORT_ETAP_2.md`, `RAPORT_ETAP_3.md`, `RAPORT_LAUNCHER_UI.md`, `RAPORT_EE_AOC_FORMATY.md` (etap 11), `RAPORT_ETAP_12_EE_AOC.md` (etap 12), `RAPORT_ETAP_13.md` (etap 13), `RAPORT_PORZADKI_ETAP_13_5.md` (porządki)
 
 ## Licencja
 OpenEE jest udostępniany na licencji **GNU General Public License v3.0** – plik [LICENSE](LICENSE). Projekt zawiera

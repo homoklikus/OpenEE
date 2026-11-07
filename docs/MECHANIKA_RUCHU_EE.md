@@ -193,8 +193,8 @@ Scenariusz „Wojna trojańska” (SCN 231) wczytany w obu grach, te same jednos
 | Ramka, Ctrl + ramka | zastępuje (z bohaterem i prorokiem w ramce) / usuwa | te same 6 obiektów | (obie) [P] |
 | LPM na murze | zaznacza mur | zaznacza mur | (obie) [P] |
 | LPM na pustym terenie | niezmierzone (punkt trafił w mur) | odznacza (§ 2) | (obie?) [H] |
-| Prędkość | `Speed` × 1,706: obywatel 0,853, gwardia 1,023, bohater 1,366 | gwardia 1,023, bohater 1,38 | (obie) [P] |
-| Prorok (`Speed` 0,45 w obu bazach) | 0,853 | 0,96 | [H] – jedna trasa 1,2–1,3 pola w każdej grze |
+| Prędkość | `Speed` × 1,706: obywatel 0,853, gwardia 1,023, bohater 1,366 – **[Etap 13.5 – zastąpione]** artefakt metody, właściwie `Speed` × 1,461 (etap 13) | gwardia 1,023, bohater 1,38 (jw.) | (obie) [P] |
+| Prorok (`Speed` 0,45 w obu bazach) | 0,853 – **[Etap 13.5 – zastąpione]** etap 13: `Speed`, 0,600/0,461 pola/s gry | 0,96 (jw.) | [H] – jedna trasa 1,2–1,3 pola w każdej grze |
 | Start, obrót | jeden takt, obrót pomijalny | to samo | (obie) [P] |
 | Szyk, miejsca końcowe | – | – | (obie) [P]: końcowe pozycje zgodne w granicy 0,05 pola |
 | Prędkości w grupie | każda jednostka własna | to samo | (obie) [P] |

@@ -125,6 +125,8 @@ renderera, więc renderer OpenEE nie został zmieniony.
 - `Symulacja.MNOZNIK_PREDKOSCI = 1,46` zostaje (pomiar AoC na Riverlands). Opis stałej mówi teraz, że mnożnik
   zależy od scenariusza i jest taki sam w obu grach. Pomiar 1,706 na „Wojnie trojańskiej” nie uzasadnia zmiany
   stałej bez ustalenia przyczyny.
+  **[Etap 13.5 – zastąpione]** Etap 13: mnożnik nie zależy od scenariusza – 1,706 był artefaktem metody; stała = tempo czasu gry 1,461
+  (§ 6, `docs/MECHANIKA_PREDKOSCI_EE.md`).
 - Parametry wspólne obu gier zapisano w `dane/mechaniki_ee_aoc.json` (wartości, zakres, pewność, dowód). Testy
   etapu 12 sprawdzają zgodność `ModelKameryEE` z tymi danymi dla obu gier.
 - Renderer – bez zmian (§ 4).

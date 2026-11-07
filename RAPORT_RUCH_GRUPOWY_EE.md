@@ -38,6 +38,7 @@ z pamięci po każdym kliknięciu.
   - Każda jednostka idzie do własnego miejsca w szyku, z własną prędkością.
   - Wszystkie ruszają razem; nie ma lidera ani wyrównywania prędkości.
 - **Prędkość [P].** Prędkość = `Speed` × 1,46 pola/s (obywatel 0,73, miecznik 0,875, jeździec 1,17).
+  Etap 13: 1,46 to tempo czasu gry (1,461 ms gry na 1 ms rzeczywisty), a `Speed` podaje pola na sekundę czasu gry [P].
 - **Trasy [P].**
   - Trasa biegnie przez środki pól, tylko w 8 kierunkach: najpierw przekątna, potem prosto.
   - Nie ma skrótów pod dowolnym kątem.
@@ -45,6 +46,8 @@ z pamięci po każdym kliknięciu.
 - **Kolizje [P].**
   - Jednostki przenikają się (min. odległość 0,035–0,077), także grupy idące naprzeciw siebie i w brodzie.
   - Nie ma zatrzymań ani unikania lokalnego.
+    **[Etap 13.5 – zastąpione]** Etap 13: potwierdzone także w EE; dodatkowo jednostka w ruchu omija pole jednostki **stojącej**
+    (`docs/KOLIZJE_JEDNOSTEK_EE.md`).
 - **Rozkazy.**
   - Nowy PPM zastępuje poprzedni w trakcie ruchu [P].
   - Shift + PPM dopisuje punkt do kolejki [W].

@@ -8,8 +8,15 @@
 | 0.3 – etap 3 | Teren wg reguł silnika EE (mieszanie tekstur w narożnikach, warianty, woda, klify), scenariusze EE 1.x (wersja 231), obrót obiektów z macierzy rekordu, grupowanie MultiMesh, pomiary wydajności | `RAPORT_ETAP_3.md`, `docs/FORMATY_ETAP3.md` |
 | 0.3.0-dev | Pierwsza publikacja na GitHubie (licencja GPLv3), testy działające bez danych komercyjnych, skrypt danych lokalnych | `RAPORT_PUBLIKACJI_GITHUB.md` |
 | **0.4.0-dev – etap 4** | Animacje CEM (klatki kluczowe, sekwencje z dbgraphics), hierarchia części z transformacjami na klatkę, odtwarzacz z niezależną fazą (VAT + MultiMesh), scena diagnostyczna, animowana woda, 3× szybsza dekompresja DCL | `RAPORT_ETAP_4.md`, `docs/FORMATY_ETAP4.md` |
+| **etap 13.5 – porządki** | Audyt projektu i MCP, narzędzia jednorazowe w `narzedzia/eksperymenty/`, usunięty martwy kod, dokument orientacyjny `docs/ARCHITEKTURA_OPENEE.md`, zasady atlasu Titan, adnotacje przy obalonych wnioskach; MCP: zadania w kolejności numerów, sprzątanie kopii scenariuszy | `RAPORT_PORZADKI_ETAP_13_5.md` |
+| **etap 13 – prędkość i kolizje** | Start oryginałów bez filmów (łatka kopii testowej exe), zegar czasu gry w pamięci, prędkość = `Speed` × tempo czasu gry (1,461), kolizje grup w EE i AoC (przenikanie, objazd stojących), scenariusz testowy wybierany numerem z listy kampanii | `RAPORT_ETAP_13.md`, `docs/MECHANIKA_PREDKOSCI_EE.md`, `docs/KOLIZJE_JEDNOSTEK_EE.md` |
 | **etap 12 – mechaniki EE i AoC** | Narzędzia MCP dla podstawowego `Empire Earth.exe` (osobne definicje pamięci obu gier), pomiary kamery, zaznaczania, ruchu i grafiki w EE i AoC na tym samym scenariuszu; wspólny kod OpenEE zgodny z obiema grami, testy na danych pomiarów | `RAPORT_ETAP_12_EE_AOC.md`, `docs/POROWNANIE_MECHANIK_EE_AOC.md` |
 | **etap 11 – Empire Earth i The Art of Conquest** | Dwie gry na jednym silniku: warianty formatu baz EE 1.0/AoC rozpoznawane ze struktury (naprawa `vanilla_ee`), definicje gier (`dane/gry.json`), wybór gry w launcherze niezależny od profilu, izolacja danych i pamięci podręcznej, migracja konfiguracji; audyt obu instalacji i pomiar plików otwieranych przez oryginał | `RAPORT_EE_AOC_FORMATY.md`, `docs/FORMATY_DB_EE_VS_AOC.md`, `docs/WARIANTY_GRY.md` |
+| **etap 10 – kamera wierna EE** | Pomiary kamery AoC (poziomy zoomu, przewijanie krawędzią, granice mapy, teren) i kamera produkcyjna OpenEE | `RAPORT_KAMERA_OPENEE.md`, `docs/MECHANIKA_KAMERY_EE.md` |
+| **etap 9 – ruch grupowy** | Zaznaczanie, szyk grupy, trasy oktylowe, prędkość, kolejka rozkazów według pomiarów AoC; porównanie trajektorii | `RAPORT_RUCH_GRUPOWY_EE.md`, `docs/MECHANIKA_RUCHU_EE.md` |
+| **etap 8 – epoki i przezroczystość** | Grafika zależna od epoki (warianty modeli z łańcucha technologii), przezroczystość budynków (F5) | `RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md`, `docs/WARIANTY_EPOK.md` |
+| **etap 7 – układ współrzędnych** | Przyczyna odbicia lustrzanego świata i jej usunięcie (`UkladEE`) | `RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md` |
+| **etap 6 – kamera EE** | Pierwsze pomiary kamery oryginału (Riverlands_MCP) i zbliżenie kamery OpenEE | `RAPORT_KAMERA_EE_OPENEE.md` |
 | **0.5.2-dev – diagnostyka modeli** | Tryb diagnostyczny pojedynczego modelu, porównanie rendererów; wycinanie alfa także w „player color”, odrzucanie tylnych ścian (z lustrzaną bazą obiektów), obrót impostorów do kierunku kamery EE, przesunięcie głębi modeli, kolor pod alfa = 0 przed mipmapami | `RAPORT_DIAGNOSTYKA_MODELI_051.md`, `docs/FORMATY_DIAGNOSTYKA_051.md` |
 | **0.5.1-dev – naprawa grafiki** | Audyt importu modeli: indeksy materiałów względem `v_offset`, wybór obrazu SST przez `tekstura_id`, kolor gracza jako mnożenie przez szarą teksturę; testy regresji grafiki | `RAPORT_NAPRAWA_GRAFIKI.md`, `docs/FORMATY_NAPRAWA_GRAFIKI.md` |
 | **0.5.0-dev – etap 5** | Symulacja jednostek ze stałym krokiem, nawigacja z danych mapy (klasy głębokości wody, klify, przeszkody), A*, zaznaczanie i rozkazy ruchu myszą, animacje ruchu/bezczynności, izolowane środowisko Wine (porównanie zablokowane przez seccomp) | `RAPORT_ETAP_5.md`, `docs/FORMATY_ETAP5.md` |
@@ -22,3 +29,10 @@ części potomne w układzie rodzica (etap 1–3 → etap 4: wierzchołki lokaln
 naprawa: kolejna tekstura wybierana przez materiał), kolor gracza = mix(kolor, tekstura, alfa) (etap 2 → naprawa: mnożenie), „player color” bez wycinania alfa (naprawa →
 0.5.2: alfa wycina we wszystkich materiałach), rysowanie modeli obustronnie (etapy 1–5 → 0.5.2: odrzucanie tylnych ścian),
 billboard zwracający oś +Z modelu do kamery (etap 3 → 0.5.2: kierunek projektowy -45°).
+
+Obalone lub zastąpione w etapach 6–13: mnożnik prędkości zależny od scenariusza (etap 12: 1,706 → etap 13: artefakt
+metody, jeden mnożnik 1,461 = tempo czasu gry), prędkość proroka 0,853/0,96 pola/s (etap 12, trasa 1,2 pola → etap 13:
+`Speed`, bez osobnego mnożnika), niejasne unikanie przy grupach idących naprzeciw w EE (etap 12 → etap 13: przenikanie
+jak w AoC; nowa reguła – objazd jednostek stojących), brak unikania kolizji jako uproszczenie OpenEE (etap 5 →
+etapy 9 i 13: zgodne z oryginałem), świat OpenEE odbity lustrzanie (etapy 1–6 → etap 7), narzędzia MCP tylko dla
+`EE-AOC.exe` (etap 11 → etap 12: osobne definicje pamięci obu gier).

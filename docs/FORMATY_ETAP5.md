@@ -49,6 +49,8 @@ Także: „Can walk through trees” (0 dla piechoty i kawalerii), „Size of co
 ## 3. Ruch [H, poza zaznaczonymi]
 * `Speed` = pola/s. Kontrola: przesuw stopy podpartej w chodzie / czas cyklu z dbgraphics daje 0,38–1,1 pola/s przy
   Speed 0,5–0,6 – zgodny rząd wielkości, nie rozstrzyga.
+  **[Etap 13.5 – zastąpione]** Etap 9 / 13: `Speed` = pola na sekundę **czasu gry**; czas gry płynie 1,461 × szybciej
+  niż rzeczywisty, więc w polach/s rzeczywistych prędkość = `Speed` × 1,461 (`docs/MECHANIKA_PREDKOSCI_EE.md`).
 * `Idle/Moving turning speed` = rad/s. Obrót w miejscu, gdy różnica kursu > 45°, potem ruch z dalszym obrotem.
 * Stały krok symulacji 0,05 s (20 taktów/s) – częstotliwość symulacji EE nieustalona.
 * **Przód modelu = +Y modelu [D].** Dowody:

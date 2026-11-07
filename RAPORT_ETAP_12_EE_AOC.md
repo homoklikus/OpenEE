@@ -18,6 +18,9 @@ Zakres: **EE**, **AoC**, **obie**, **obie?**.
   Obu nie zaimplementowano.
 - Mnożnik prędkości jednostek (1,46 z etapu 9) zależy od scenariusza, a nie od gry. Na „Wojnie trojańskiej” wynosi
   1,706 w obu grach [P].
+  **[Etap 13.5 – zastąpione]** Etap 13: 1,706 to artefakt metody (maksimum próbek 10 Hz przy położeniach zmienianych co takt).
+  Mnożnik jest jeden dla obu gier i wszystkich scenariuszy: tempo czasu gry 1,461 (`docs/MECHANIKA_PREDKOSCI_EE.md`).
+  Prędkość proroka = `Speed` (0,600 pola/s gry na trasie 27–28,6 pola).
 - Zmiany w OpenEE:
   - dane pomiarów obu gier;
   - testy zgodności wspólnego kodu z pomiarami EE i AoC;
@@ -80,7 +83,7 @@ Pełna tabela: `docs/POROWNANIE_MECHANIK_EE_AOC.md`. Najważniejsze liczby:
 | środkowy przycisk, 200 jednostek | 35,9 pola | 36,7 pola |
 | granica ogniska | romb x + y ∈ [140, 420] | to samo |
 | wysokość ogniska | śledzi teren, 0,4 nad morzem | to samo |
-| prędkość jednostki | `Speed` × 1,706 | `Speed` × 1,706 |
+| prędkość jednostki | `Speed` × 1,706 (etap 13: artefakt, właściwie × 1,461) | `Speed` × 1,706 (jw.) |
 | szyk, końcowe pozycje | zgodne z AoC ≤ 0,05 pola | – |
 
 Fazy C–E w szczegółach:
@@ -96,6 +99,8 @@ Fazy C–E w szczegółach:
   - Test grup idących naprzeciw nie dał czystego wyniku. W EE jest tylko częściowe skrzyżowanie: najmniejsza
     odległość 0,99, odchylenia do 1,8 pola przy murze. W AoC kliknięcia zaznaczały sąsiednie jednostki. Wynik [N],
     dlatego unikania lokalnego nie dodano.
+    **[Etap 13.5 – zastąpione]** Etap 13 (`docs/KOLIZJE_JEDNOSTEK_EE.md`): w EE i AoC jednostki w ruchu przenikają się [P],
+    a pole jednostki stojącej jest omijane [P].
 - **Faza E (grafika).**
   - 5 par porównywalnych kadrów: ta sama geometria, modele, skala i woda [P].
   - EE jest ~10 jednostek jasności ciemniejsze [H]: stan sceny, nie zasoby ani renderer.
@@ -147,9 +152,9 @@ Odporność MCP:
 
 1. Przyczyna narastania przewijania krawędzią w AoC: czułość myszy czy kod gry. Pomiar wymagałby zmiany ustawień
    użytkownika, więc nie był wykonywany.
-2. Grupy idące naprzeciw w EE – jednostki odsunięte od siebie, zaznaczane ramką przy większym zoomie.
-3. Przyczyna mnożnika prędkości zależnego od scenariusza (1,46 / 1,706).
-4. Prędkość proroka na dłuższej trasie.
+2. Grupy idące naprzeciw w EE – jednostki odsunięte od siebie, zaznaczane ramką przy większym zoomie. *(Wyjaśnione w etapie 13.)*
+3. Przyczyna mnożnika prędkości zależnego od scenariusza (1,46 / 1,706). *(Wyjaśnione w etapie 13: artefakt metody.)*
+4. Prędkość proroka na dłuższej trasie. *(Zmierzone w etapie 13: `Speed`, bez osobnego mnożnika.)*
 5. LPM na pustym terenie i limit zaznaczenia w EE.
 6. Przezroczystość budynków (F5) w EE – adres trybu nieznaleziony.
 7. Bezwzględna wartość przesunięcia środkowym przyciskiem względem etapu 10.

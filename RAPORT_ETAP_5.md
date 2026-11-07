@@ -153,6 +153,8 @@ rasteryzacji CPU, więc liczą się koszty symulacji mierzone osobno.
 ## 8. Znane ograniczenia
 * Brak unikania kolizji i formacji – jednostki mogą na siebie nachodzić. Zaznaczana jedna jednostka naraz (struktura
   przewiduje listę).
+  **[Etap 13.5 – zastąpione]** Etap 9: szyk grupy i zaznaczanie wielu jednostek (`docs/MECHANIKA_RUCHU_EE.md`); etap 13: przenikanie
+  jednostek w ruchu potwierdzone w oryginale, pole jednostki stojącej jest omijane (`docs/KOLIZJE_JEDNOSTEK_EE.md`).
 * Reguły przybliżone z §3: próg wody płytkiej, nawierzchnie lądu, promień przeszkód, jednostki prędkości, częstotliwość taktu.
 * Budynki blokują jako koła, nie dokładne obrysy; bramy blokują zawsze.
 * Ruch okrętów obsłużony przez politykę, ale niesprawdzony wizualnie w scenie (Troja – piechota).

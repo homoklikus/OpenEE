@@ -1,5 +1,10 @@
 # OpenEE – architektura
 
+> **Etap 13.5:** aktualny opis modułów, przepływu danych i stanu wiedzy zawiera `docs/ARCHITEKTURA_OPENEE.md`.
+> Ten dokument zachowuje zasady i opisy dopisywane w etapach 1–11; struktura katalogów niżej odpowiada etapom 1–5
+> (od tamtej pory doszły m.in. `silnik/kamera/`, `silnik/render/przezroczystosc_budynkow.gd`, `silnik/diagnostyka/`,
+> `narzedzia/eksperymenty/`), a renderer scen podglądu to GL Compatibility z możliwością uruchomienia na Vulkanie.
+
 ## Struktura repozytorium
 ```
 godot/                 projekt Godot 4.7 (otwórz ten katalog w edytorze)
