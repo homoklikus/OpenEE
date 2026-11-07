@@ -105,3 +105,27 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. OpenEE ma liczyć flagę względem osi +y mapy,
   z progiem π/2 i progiem obcięcie(n/2).
 - **Źródło:** etap 19, `docs/titan/przydzial_bliski.md`.
+
+### BO-4 (podejrzenie): zwykły rozkaz aktywuje następny cel z kolejki przed jej wyczyszczeniem
+
+- **Zachowanie.** Przy zwykłym rozkazie ruchu (bez Shift) obsługa stanu grupy 8000 wywołuje dla jednostki kolejno:
+  - 0x5EAE25(0) – zdejmuje cel bieżący i, jeśli w kolejce jest następny „aktualny” cel (vtable +0x70; dla
+    `EEUGLocation` zawsze tak), **aktywuje go** (vtable +0x54): ustawia stan 8000, a przy celu dokładnie w miejscu
+    jednostki stan 5000 albo 9006, i powiadamia typ jednostki;
+  - 0x5E9664(0) – czyści całą kolejkę, także właśnie aktywowany cel;
+  - 0x5F05BD – wstawia nowy cel i ustawia stan 8000.
+
+  Aktywacja celu, który za chwilę zostaje usunięty, wygląda na niezamierzoną. Prawdopodobnie miało to być samo
+  wyczyszczenie [H].
+- **Lokalizacja.** `Empire Earth.exe` 0x5DCCEF–0x5DCD03 (funkcje 0x5EAE25, 0x5E9664, 0x5F05BD); `EE-AOC.exe`
+  0x5ED3DA–0x5ED3F1 (0x5F88FE, 0x5F6FBC, 0x5FE863). Kod identyczny.
+- **Przyczyna.** Użycie funkcji „zdejmij bieżący i przejdź do następnego” przed czyszczeniem kolejki [W: kod].
+- **Skutki.**
+  - Dodatkowe przejścia stanu i powiadomienia typu jednostki w tym samym poleceniu [W].
+  - Gdy następny cel leży dokładnie w miejscu jednostki, wejście w „Idle” może zdjąć kolejne cele i zgłosić jednostkę
+    jako bezczynną (0x4A35AA), zanim dostanie nowy rozkaz [H].
+  - W pomiarach (zadania 435, 441) wynik końcowy był poprawny: w kolejce tylko nowy cel, stan ruchu.
+- **Pewność:** kolejność wywołań [P: kod EE i AoC]; skutki uboczne [H], niemierzone.
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. OpenEE ma wykonywać te same trzy kroki
+  w tej samej kolejności.
+- **Źródło:** etap 21, `docs/titan/kolejka_rozkazow.md`.

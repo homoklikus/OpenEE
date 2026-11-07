@@ -116,7 +116,7 @@ Obok tego bajtu kod ustawia pole +0x61E (EE) = 1 dla obiektów 0x2F i 0x1CD–0x
 | +0x6C | **kod stanu / polecenia**: 5000 po utworzeniu i przy wypełnianiu, 8000 po `EEMPathTo` | [P] |
 | +0x70…+0xAC | parametry szyku grupy, f32, w pomiarze 0,5 / 0,5 / 0,5 / 1,2 …; używane tylko przy +0xB6 = 1, inaczej pobierane z gracza (+0x34 → +0xA8…+0xD0) | [P] – kod; znaczenie [W] [Etap 20 – zastąpione: wartości pobierane z **jednostki** +0x34; +0x70 = min(średnia, k · minimum) prędkości – `przydzial_specjalny.md`] |
 | +0xB4 | flaga ustawiana przez kod 7001 (rejestracja) | [N] |
-| +0xB5 | **Shift** – z `EEMPathTo`+0x1E | [P] – pomiar: 0 bez Shift, 1 z Shift (AoC) |
+| +0xB5 | **Shift** – z `EEMPathTo`+0x1E | [P] – pomiar: 0 bez Shift, 1 z Shift (AoC) [Etap 21: w stanie 8000 jednostka z celem dostaje nowy cel na koniec kolejki, bez celu – jak bez Shift; pomiar EE i AoC – `kolejka_rozkazow.md`] |
 | +0xB6 | „parametry szyku z celu”: 1, gdy cel ma rodzaj 1 i +0x33 ≠ 0 | [P] – kod [Etap 20: „ruch w szyku” – rozkaz PPM z przeciągnięciem; pomiar 1/0 – `przydzial_specjalny.md`] |
 | +0xB7 | tylko AoC, zerowane w konstruktorze | [N] |
 

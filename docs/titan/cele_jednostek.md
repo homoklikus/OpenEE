@@ -156,7 +156,9 @@ Dla każdej pozycji k (w kolejności szyku), z przypisaną jednostką J:
    - ostatni argument konstruktora +0x34 = 1, w pamięci później 3 albo 4 [N].
 3. Bez Shift: +0x1D celu = 1.
 4. Zwykła jednostka lądowa (nie lotnisko 0x42, nie typ ruchu +0x4CC = 15):
-   - wyczyszczenie kolejki (0x5EAE25, 0x5E9664 z poziomem 0);
+   - wyczyszczenie kolejki (0x5EAE25, 0x5E9664 z poziomem 0); [Etap 21: 0x5EAE25 zdejmuje cel bieżący i aktywuje
+     następny, 0x5E9664 czyści cały poziom 0; przy Shift i jednostce z celem zamiast tego dopisanie na koniec
+     (0x4412D4) – `kolejka_rozkazow.md`]
    - ustawienie celu (0x5F05BD) – w pomiarze to cel +0x1F0;
    - stan jednostki 8000 (0x5EFCF0);
    - powiadomienie typu (vtable +0x74).

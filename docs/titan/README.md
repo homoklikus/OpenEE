@@ -55,7 +55,7 @@ Jeden plik na podsystem, np. `docs/titan/ruch_jednostek.md`. W pliku jedna sekcj
 
 ## Już ustalone miejsca w kodzie
 
-Wpisy atlasu: `zegar_symulacji.md` (etap 14), `przydzial_taktow.md` (etap 15), `rozkazy_gracza.md` (etap 16), `grupy_ruchu.md` (etap 17), `cele_jednostek.md` (etap 18), `przydzial_bliski.md` (etap 19), `przydzial_specjalny.md` (etap 20).
+Wpisy atlasu: `zegar_symulacji.md` (etap 14), `przydzial_taktow.md` (etap 15), `rozkazy_gracza.md` (etap 16), `grupy_ruchu.md` (etap 17), `cele_jednostek.md` (etap 18), `przydzial_bliski.md` (etap 19), `przydzial_specjalny.md` (etap 20), `kolejka_rozkazow.md` (etap 21).
 Rejestr błędów oryginału (odtwarzanych wiernie, zasada w `CLAUDE.md`): `BLEDY_ORYGINALU.md`. Pozostałe miejsca są opisane w innych dokumentach i przy następnej
 analizie zostaną przeniesione do atlasu:
 
@@ -71,6 +71,7 @@ analizie zostaną przeniesione do atlasu:
 | Cele jednostek: obsługa stanu 8000, układ szyku liniowego, `EEFormation` vtable +4 | 0x5DB641, 0x4D79D9, 0x4D7E0B | 0x5EBF85, 0x4DD9A3, 0x4DDDD5 | `docs/titan/cele_jednostek.md` |
 | Przydział bliski: ścieżka bliska stanu 8000, kąt względem osi +y, sortowanie i porównanie jednostek | 0x5DC364, 0x62D460, 0x5DFBB9, 0x5E0641 | 0x5ECCA1, 0x642345, 0x5F0627, 0x5F109A | `docs/titan/przydzial_bliski.md` |
 | Gałąź specjalna przydziału: warunek +0xB6 / kolizja / +0x70, parametry ruchu grupy, `EEUICCommandUnits` (naciśnięcie, ruch, zwolnienie PPM) | 0x5DBE35, 0x5DCE49, 0x641C7F, 0x64198C, 0x641B53 | 0x5EC790, 0x5ED692, 0x65829C, 0x657FA9, 0x658170 | `docs/titan/przydzial_specjalny.md` |
+| Kolejka celów jednostki: dopisanie (Shift), zdjęcie z aktywacją następnego, wyczyszczenie, ustawienie, wejście w stan „Idle”, `EEUGLocation` aktywacja | 0x4412D4, 0x5EAE25, 0x5E9664, 0x5F05BD, 0x61AD41, 0x61529E | 0x43D416, 0x5F88FE, 0x5F6FBC, 0x5FE863, 0x62DB0F, 0x627C99 | `docs/titan/kolejka_rozkazow.md` |
 | Struktury pamięci (kamera, gra, gracze, jednostki, ekrany) | `ee_warianty.KOMPILACJE` | `ee_warianty.KOMPILACJE` | `Riverlands_MCP/riverlands_mcp/ee_warianty.py` |
 
 ## Narzędzia

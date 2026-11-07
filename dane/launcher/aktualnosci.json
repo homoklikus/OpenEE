@@ -6,6 +6,18 @@
   {
    "data": "2026-11-07",
    "tytul": {
+    "pl": "Etap 21: kolejka rozkazów (Shift)",
+    "en": "Stage 21: order queue (Shift)"
+   },
+   "tekst": {
+    "pl": "Odtworzone, jak oryginał zapamiętuje kolejne punkty wydane z Shift, kiedy jednostka rusza do następnego i jak zwykły rozkaz kasuje kolejkę.",
+    "en": "Reconstructed how the original remembers waypoints given with Shift, when a unit moves on to the next one and how a normal order clears the queue."
+   },
+   "raport": "RAPORT_ETAP_21.md"
+  },
+  {
+   "data": "2026-11-07",
+   "tytul": {
     "pl": "Etap 20: ruch w szyku",
     "en": "Stage 20: formation march"
    },
@@ -13,7 +25,7 @@
     "pl": "Odtworzone, co się dzieje, gdy rozkaz ruchu wydaje się przeciągnięciem prawego przycisku: małe i szybkie oddziały zachowują kolejność miejsc w szyku.",
     "en": "Reconstructed what happens when a move order is given by dragging the right mouse button: small, fast groups keep their order of places in the formation."
    },
-   "raport": "RAPORT_ETAP_20.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_20.md"
   },
   {
    "data": "2026-11-07",
