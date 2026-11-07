@@ -2,7 +2,8 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_18.md`](../RAPORT_ETAP_18.md) – etap 18: przydział celów jednostkom w silniku Titan (EE i AoC). Leży
+[`RAPORT_ETAP_19.md`](../RAPORT_ETAP_19.md) – etap 19: przydział pozycji szyku przy ruchu na krótki dystans w silniku Titan
+(EE i AoC). Leży
 w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -48,3 +49,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_15.md`](archiwum/RAPORT_ETAP_15.md) | etap 15 | przydział taktów: serwer lockstep, 15 taktów co 350 ms, tempo 1,461, n = 44 (przepełnienie bajtu) |
 | [`RAPORT_ETAP_16.md`](archiwum/RAPORT_ETAP_16.md) | etap 16 | droga rozkazu ruchu: `EEMPathTo`, kolejka serwera, takt komunikacji, wykonanie w `EEPhysics`; rejestr błędów oryginału |
 | [`RAPORT_ETAP_17.md`](archiwum/RAPORT_ETAP_17.md) | etap 17 | grupy ruchu: podział zaznaczenia według środowiska, cel `EEUGLocation`, Shift jako flaga grupy, stan 8000 |
+| [`RAPORT_ETAP_18.md`](archiwum/RAPORT_ETAP_18.md) | etap 18 | cele jednostek: szyk `EEFShortLine`, przydział daleki sortowaniem według klucza poprzecznego, `EEUGLocation` na jednostkę, BO-2 |

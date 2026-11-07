@@ -55,7 +55,7 @@ Jeden plik na podsystem, np. `docs/titan/ruch_jednostek.md`. W pliku jedna sekcj
 
 ## Już ustalone miejsca w kodzie
 
-Wpisy atlasu: `zegar_symulacji.md` (etap 14), `przydzial_taktow.md` (etap 15), `rozkazy_gracza.md` (etap 16), `grupy_ruchu.md` (etap 17), `cele_jednostek.md` (etap 18).
+Wpisy atlasu: `zegar_symulacji.md` (etap 14), `przydzial_taktow.md` (etap 15), `rozkazy_gracza.md` (etap 16), `grupy_ruchu.md` (etap 17), `cele_jednostek.md` (etap 18), `przydzial_bliski.md` (etap 19).
 Rejestr błędów oryginału (odtwarzanych wiernie, zasada w `CLAUDE.md`): `BLEDY_ORYGINALU.md`. Pozostałe miejsca są opisane w innych dokumentach i przy następnej
 analizie zostaną przeniesione do atlasu:
 
@@ -69,6 +69,7 @@ analizie zostaną przeniesione do atlasu:
 | Rozkaz ruchu: `EEAMouseClick` +0x0C / +4, `EEMPathTo` (Export/Execute), `EEServer` +0x60, wykonanie poleceń w `EEPhysics` | 0x403CF1, 0x403AA1, 0x4BA0A0, 0x4B9D7B, 0x4C3D90, 0x547263 | 0x403350, 0x403009, 0x4C2B41, 0x4C281C, 0x4CC1F9, pętla w 0x55355C | `docs/titan/rozkazy_gracza.md` |
 | Grupy ruchu: wypełnienie, warunek przebiegu, cel `EEUGLocation`, ustawienie celu, maszyna stanów grupy, flagi środowiska typu | 0x5DD18B, 0x5DD2D8, 0x614D47, 0x5DD436, 0x5DD463, 0x61CCEC | 0x5ED9D4, 0x5EDB21, 0x627742, 0x5EDC93, 0x5EDCC0, 0x62FD1C | `docs/titan/grupy_ruchu.md` |
 | Cele jednostek: obsługa stanu 8000, układ szyku liniowego, `EEFormation` vtable +4 | 0x5DB641, 0x4D79D9, 0x4D7E0B | 0x5EBF85, 0x4DD9A3, 0x4DDDD5 | `docs/titan/cele_jednostek.md` |
+| Przydział bliski: ścieżka bliska stanu 8000, kąt względem osi +y, sortowanie i porównanie jednostek | 0x5DC364, 0x62D460, 0x5DFBB9, 0x5E0641 | 0x5ECCA1, 0x642345, 0x5F0627, 0x5F109A | `docs/titan/przydzial_bliski.md` |
 | Struktury pamięci (kamera, gra, gracze, jednostki, ekrany) | `ee_warianty.KOMPILACJE` | `ee_warianty.KOMPILACJE` | `Riverlands_MCP/riverlands_mcp/ee_warianty.py` |
 
 ## Narzędzia

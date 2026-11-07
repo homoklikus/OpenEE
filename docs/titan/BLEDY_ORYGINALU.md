@@ -78,3 +78,30 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. OpenEE ma odtwarzać klucz dokładnie,
   z wartością bezwzględną i współrzędnymi mapy.
 - **Źródło:** etap 18, `docs/titan/cele_jednostek.md`.
+
+### BO-3 (podejrzenie): flaga kierunku w przydziale bliskim liczona względem stałej osi +y mapy
+
+- **Zachowanie.** W ścieżce bliskiej przydziału pozycji szyku (stan grupy 8000, cel przy grupie) jednostki o tej samej
+  prędkości i „Size of collider” wybierają pozycje w kolejności numerów w grupie: rosnąco albo malejąco. O kierunku
+  decyduje flaga: ile jednostek ma kąt ≤ π/2 między wektorem (pozycja − cel) a osią odniesienia; gdy co najmniej
+  obcięcie(n/2), numery rosną.
+  - Osią odniesienia jest wektor (0, 1, 0) przekształcony **domyślną** `GETransformation`, utworzoną w funkcji i
+    nieustawioną. W praktyce to stała oś +y mapy, czyli flaga mówi, czy co najmniej połowa jednostek stoi na północ
+    od celu (y ≥ G.y), niezależnie od kierunku rozkazu.
+  - Po arccos funkcja zmienia znak kąta dla wartości ujemnej, ale arccos zwraca wartości ≥ 0, więc ta gałąź nigdy nie
+    działa.
+
+  Obecność przekształcenia i gałęzi znaku sugeruje, że autorzy chcieli liczyć kąt względem kierunku szyku (θ) [H].
+- **Lokalizacja.** `Empire Earth.exe` 0x62D460 (wywołanie z 0x5DC490, próg π/2 w 0x831414); `EE-AOC.exe` 0x642345
+  (wywołanie z 0x5ECDC7, próg w 0x846CF0). Kod identyczny.
+- **Przyczyna.** `GETransformation::GETransformation()` bez ustawienia orientacji przed `Apply`; porównanie wyniku
+  `UMArcCos` z 0 zamiast np. znaku iloczynu wektorowego [W: kod].
+- **Skutki.** Kolejność wyboru jednostek jednego typu zależy od tego, po której stronie celu na osi północ–południe
+  mapy stoją jednostki, a nie od kierunku ruchu. Przydział pozycji może się więc zmieniać przy obróceniu sytuacji na
+  mapie [H]. Sam mechanizm flagi i oba kierunki numeracji zmierzono w EE i AoC (zadania 405, 412, 415).
+- **Pewność:** zachowanie [P] – oś +y wynika jednoznacznie z kodu. W rozkazach 402 i 412 flaga liczona względem
+  kierunku rozkazu θ dałaby inną kolejność i inny przydział niż zmierzony, a flaga z osi +y mapy daje zgodny wynik.
+  To, że jest to błąd (zamiar autorów), oraz ocena skutków – [H].
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. OpenEE ma liczyć flagę względem osi +y mapy,
+  z progiem π/2 i progiem obcięcie(n/2).
+- **Źródło:** etap 19, `docs/titan/przydzial_bliski.md`.

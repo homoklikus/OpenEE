@@ -100,7 +100,8 @@ Dla 5 kolumn: [0, −1, 1, −2, 2] [P].
 | jednostka +0x298 / +0x29C | numer pozycji w szyku | [P] – pomiar: 0, 1, 2 (3 jednostki), 0–5 (6 jednostek) |
 | jednostka +0x2DC / +0x2E0 | obcięcie(4 · numer / liczba pozycji) | [P] – pomiar: 6 jednostek → 0, 0, 1, 2, 2, 3 |
 | typ +0x470 / +0x174 | „Size in formation” – odstęp szyku (największy w grupie) | [P] – kod i pomiar: gwardia 0,625, Aleksander 0,77, prorok 0,625 |
-| typ +0x474 / +0x178 | druga wielkość typu (maksimum w grupie, warunek ścieżki specjalnej) | [N] znaczenie |
+| typ +0x474 / +0x178 | druga wielkość typu (maksimum w grupie, warunek ścieżki specjalnej) | [N] znaczenie. [Etap 19: wartości zgodne z „Size of collider”; kryterium sortowania w ścieżce bliskiej – `przydzial_bliski.md`] |
+| typ +0x430 / +0x134 | prędkość typu (wartości zgodne z „Speed”) – kryterium sortowania w ścieżce bliskiej | [Etap 19] odczyt [P], nazwa [W] |
 
 ## Algorytm (ścieżka podstawowa)
 
@@ -128,7 +129,8 @@ Dokładny punkt odniesienia w obsłudze kliknięcia nie jest ustalony [W].
 - Środek jednostek: średnia pozycji jednostek. Prostokąt otaczający jednostki, E = dłuższy bok.
 - **Ścieżka daleka**, gdy cel leży poza prostokątem i E² < D, gdzie D to kwadrat odległości celu od punktu prostokąta
   wyznaczonego przez 0x5DFAFC (najbliższy punkt – W) [P: kod].
-- W przeciwnym razie ścieżka bliska (0x5DC364) [N]. Jest też gałąź zależna od +0xB6 grupy i parametrów typu (+0x474)
+- W przeciwnym razie ścieżka bliska (0x5DC364) [N]. [Etap 19 – zastąpione: algorytm opisany w § „Przydział bliski — etap 19”
+  i w `przydzial_bliski.md`.] Jest też gałąź zależna od +0xB6 grupy i parametrów typu (+0x474)
   [N, poza ścieżką podstawową].
 
 ### 3. Ścieżka daleka – przydział
@@ -174,7 +176,7 @@ Przewidywania liczono skryptem modelu (`model.py` w notatkach sesji; algorytm ja
 | EE, 1 obywatel | (182,5; 109,5) | cel jednostki = cel grupy (190,903; 116,927), numer 0, θ = −0,847 | [P] |
 | EE, 3 jednostki (gwardia, Aleksander, prorok), ścieżka daleka | (178,557; 125,241), (178,094; 124,911), (177,679; 123,731) | G = (173,5; 128,5), θ = 0,8532, S = 0,77; Aleksander → 0 (173,5; 128,5), prorok → 1 (172,9936; 127,92), gwardia → 2 (174,0064; 129,08) | **pozycje i przydział dokładnie** [P] |
 | AoC, te same 3 jednostki | jw. | θ = 0,8527; te same numery, pozycje (172,9934; 127,9201), (174,0066; 129,0799) | **dokładnie** [P] |
-| EE, 6 jednostek, ścieżka bliska (cel w pobliżu części jednostek) | 3 gwardie w miejscu, 3 jednostki tuż przy celu | 6 pozycji, w tym jedna w drugim rzędzie (173,2647; 126,4101): **wszystkie pozycje zgodne z modelem**; przydział inny niż model ścieżki dalekiej | pozycje [P]; przydział w ścieżce bliskiej [N] |
+| EE, 6 jednostek, ścieżka bliska (cel w pobliżu części jednostek) | 3 gwardie w miejscu, 3 jednostki tuż przy celu | 6 pozycji, w tym jedna w drugim rzędzie (173,2647; 126,4101): **wszystkie pozycje zgodne z modelem**; przydział inny niż model ścieżki dalekiej | pozycje [P]; przydział w ścieżce bliskiej [N] [Etap 19: zgodny z modelem przydziału bliskiego] |
 | AoC, 3 jednostki, ścieżka bliska | – | pozycje (178,0203; 123,9346), (177,8182; 124,6776), (178,2224; 123,1916), θ = −1,3053 – zgodne | pozycje [P] |
 | +0x2DC (6 jednostek) | – | 0, 0, 1, 2, 2, 3 dla pozycji 0, 1, 2, 3, 4, 5 | [P] |
 
@@ -192,7 +194,8 @@ jednostek. Nowego narzędzia nie budowano.
 
 ## Nierozpoznane fragmenty
 
-1. Ścieżka bliska (0x5DC364…0x5DC6B5) – przydział, gdy cel jest blisko grupy [N].
+1. Ścieżka bliska (0x5DC364…0x5DC6B5) – przydział, gdy cel jest blisko grupy [N]. [Etap 19 – rozpoznane:
+   `przydzial_bliski.md`.]
 2. Gałąź specjalna (+0xB6 grupy i największe pole typu +0x474 < 1,0 oraz parametr grupy +0x70 > 0,5) [N].
 3. Znaczenie J+0x2DC, ostatecznych wartości +0x34 celu jednostki, jednostek z typem ruchu +0x4CC = 15 i lotniska [N].
 4. Pochodzenie kąta θ w obsłudze kliknięcia [W].
@@ -210,4 +213,21 @@ jednostek. Nowego narzędzia nie budowano.
   - pusty rząd co 5 rzędów.
 - Przydział w ścieżce dalekiej: sortowanie pozycji i jednostek według klucza k(p) i łączenie w pary według kolejności,
   z zachowaniem podejrzenia BO-2.
-- Ścieżka bliska wymaga osobnej analizy.
+- Ścieżka bliska wymaga osobnej analizy. [Etap 19 – zastąpione: patrz niżej.]
+
+## Przydział bliski — etap 19
+
+Szczegóły, adresy, weryfikacja i poziomy pewności: **`przydzial_bliski.md`**. W skrócie:
+- **Kiedy:** cel G w prostokącie jednostek (z brzegami włącznie) albo E² ≥ D, czyli gdy nie zachodzi warunek ścieżki
+  dalekiej [P].
+- **Metoda:** jednostki po kolei biorą najbliższą wolną pozycję szyku według kwadratu odległości (`GE3DPoint::
+  DistanceToSquared`). Wybrana pozycja wypada z listy, a decyzji nie zmienia się później [P].
+- **Kolejność:** prędkość typu rosnąco (EE +0x430, AoC +0x134), potem „Size of collider” malejąco (+0x474 / +0x178),
+  potem numer w grupie – rosnąco, gdy co najmniej połowa jednostek (obcięcie n/2) ma kąt ≤ π/2 do osi +y mapy względem
+  G, w przeciwnym razie malejąco [P].
+- **Remis kosztu:** wygrywa pozycja o wyższym numerze (przegląd od końca, zamiana tylko przy koszcie ściśle mniejszym)
+  [W].
+- **EE ↔ AoC:** kod identyczny (EE 0x5DC364–0x5DC6B5, AoC 0x5ECCA1–0x5ECFF2) [P].
+- **Pomiar:** 7 rozkazów, w tym 2 z etapu 18 (EE i AoC, 3 i 6 jednostek, obie wartości flagi) zgodnych z przewidywaniem co do numeru
+  pozycji każdej jednostki [P].
+- **Błąd oryginału:** BO-3 (podejrzenie) – flaga kierunku liczona względem stałej osi +y mapy, nie kierunku ruchu.
