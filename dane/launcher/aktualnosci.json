@@ -6,6 +6,18 @@
   {
    "data": "2026-11-07",
    "tytul": {
+    "pl": "Etap 16: rozkazy gracza",
+    "en": "Stage 16: player orders"
+   },
+   "tekst": {
+    "pl": "Prześledzona droga rozkazu ruchu w oryginale – od kliknięcia do wykonania w symulacji. Nowa zasada: błędy oryginału odtwarzamy wiernie.",
+    "en": "Traced how the original delivers a move order from the click to the simulation. New rule: the original's bugs are reproduced faithfully."
+   },
+   "raport": "RAPORT_ETAP_16.md"
+  },
+  {
+   "data": "2026-11-07",
+   "tytul": {
     "pl": "Etap 15: przydział taktów",
     "en": "Stage 15: tick allocation"
    },
@@ -13,7 +25,7 @@
     "pl": "Wyjaśnione, skąd tempo czasu gry w oryginale: gra odmierza takty porcjami co 0,35 s także w trybie jednoosobowym.",
     "en": "Explained the original's game-time pace: the game hands out ticks in batches every 0.35 s, even in single player."
    },
-   "raport": "RAPORT_ETAP_15.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_15.md"
   },
   {
    "data": "2026-11-07",

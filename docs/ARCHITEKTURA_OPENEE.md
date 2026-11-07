@@ -139,7 +139,7 @@ Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
 | Prędkość | `Speed` = pola na sekundę czasu gry; czas gry = 1,461 × rzeczywisty | [P] | `docs/MECHANIKA_PREDKOSCI_EE.md` |
 | Zegar gry | obiekt `EEPhysics` (`A_GRA`): ms czasu gry `+0xD0` = suma kroków 1000·G/n (n = 44 takty/s, szybkość gry G = 1,5 → 34,09 ms); takty przydziela serwer lockstep `NESynchronousServer` (także w grze jednoosobowej): 15 taktów co 350 ms = 42,857/s, stąd tempo 1,461; n = 44 to przepełnienie bajtu (300 − 256); pauza F3 = porcje 0 taktów; algorytm identyczny w EE i AoC | [P] | `docs/titan/zegar_symulacji.md`, `docs/titan/przydzial_taktow.md`, `docs/MECHANIKA_PREDKOSCI_EE.md` § 2 |
 | Kolizje | jednostki w ruchu przenikają się; pole jednostki stojącej jest omijane | [P] | `docs/KOLIZJE_JEDNOSTEK_EE.md` |
-| Rozkazy | nowy PPM zastępuje rozkaz [P]; Shift+PPM dopisuje do kolejki [W] | [P]/[W] | `docs/MECHANIKA_RUCHU_EE.md` § 7 |
+| Rozkazy | nowy PPM zastępuje rozkaz [P]; Shift+PPM dopisuje do kolejki [W]. Droga w kodzie (etap 16): `EEMPathTo` (typ 0x4D, x/y celu, bez listy jednostek – działa na zaznaczenie w symulacji z wersją) → `ProcessLocalUserInput` → kolejka serwera → takt komunikacji co 350 ms → wykonanie w `EEPhysics` przed taktami porcji | [P]/[W] | `docs/MECHANIKA_RUCHU_EE.md` § 7, `docs/titan/rozkazy_gracza.md` |
 | Grafika epok | wariant modelu zależny od epoki gracza (łańcuch `dbtechtree` → `dbevents`) | [P] | `docs/WARIANTY_EPOK.md` |
 | Przezroczystość budynków | tryb F5 | [P] (AoC) | `raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md` |
 | Pliki czytane przez oba exe | EE: tylko własny katalog; AoC: własny, potem EE | [P] | `docs/WARIANTY_GRY.md` § 2 |
@@ -164,8 +164,8 @@ Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
   scenariuszy, mgła wojny i pole widzenia, SI, morale, kalamity proroków, transport.
 - Scenariusze: polimorficzna lista celów jednostki (3 scenariusze EE czytane częściowo), zapis cywilizacji gracza
   w scenariuszu.
-- Synchronizacja lockstep: system poleceń graczy (kolejka serwera, wykonanie w `EEPhysics`), warstwa sieci,
-  domyślne ustawienia przydziału taktów (`docs/titan/przydzial_taktow.md` – zależności).
+- Synchronizacja lockstep: warstwa sieci, domyślne ustawienia przydziału taktów (`docs/titan/przydzial_taktow.md` –
+  zależności); dodatkowe polecenie po rozkazie ruchu i znaczenie flag `EEMPathTo` (`docs/titan/rozkazy_gracza.md`).
 - EE ↔ AoC: przezroczystość budynków i renderer terenu w EE (hipoteza wspólności).
 
 ## 8. Znane problemy architektoniczne (na przyszłość)
@@ -197,6 +197,7 @@ Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
 | Formaty plików | `docs/FORMATY.md`, `docs/FORMATY_ETAP2–5.md`, `docs/FORMATY_NAPRAWA_GRAFIKI.md`, `docs/FORMATY_DIAGNOSTYKA_051.md` |
 | Mechaniki | `docs/MECHANIKA_KAMERY_EE.md`, `docs/MECHANIKA_RUCHU_EE.md`, `docs/MECHANIKA_PREDKOSCI_EE.md`, `docs/KOLIZJE_JEDNOSTEK_EE.md`, `docs/WARIANTY_EPOK.md`, `docs/POROWNANIE_MECHANIK_EE_AOC.md` |
 | Lokalizacja, zasoby | `docs/LOKALIZACJA.md`, `docs/ZASOBY_ORYGINALNE.md` |
-| Atlas funkcji silnika Titan (zasady dokumentowania, wpisy) | `docs/titan/README.md`, `docs/titan/zegar_symulacji.md`, `docs/titan/przydzial_taktow.md` |
+| Atlas funkcji silnika Titan (zasady dokumentowania, wpisy) | `docs/titan/README.md`, `docs/titan/zegar_symulacji.md`, `docs/titan/przydzial_taktow.md`, `docs/titan/rozkazy_gracza.md` |
+| Rejestr błędów oryginału (odtwarzanych wiernie) | `docs/titan/BLEDY_ORYGINALU.md` |
 | Narzędzia | `narzedzia/README.md` |
-| Raporty etapów | aktualny: `RAPORT_ETAP_15.md` (katalog główny); archiwum z opisami i zasadą archiwizacji: `raporty/README.md` |
+| Raporty etapów | aktualny: `RAPORT_ETAP_16.md` (katalog główny); archiwum z opisami i zasadą archiwizacji: `raporty/README.md` |

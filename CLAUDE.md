@@ -6,7 +6,8 @@ Ten plik czytają kolejne sesje (Claude Code / Opus i inni agenci) przed pracą 
 
 - Stan projektu, moduły, przepływ danych EE/AoC i stan wiedzy o mechanikach: `docs/ARCHITEKTURA_OPENEE.md`.
 - Aktualny raport: jedyny plik `RAPORT_*.md` w katalogu głównym. Wcześniejsze raporty: `raporty/README.md`.
-- Zasady analizy kodu oryginalnego silnika (atlas Titan): `docs/titan/README.md`. Narzędzia: `narzedzia/README.md`.
+- Zasady analizy kodu oryginalnego silnika (atlas Titan): `docs/titan/README.md`. Rejestr błędów oryginału:
+  `docs/titan/BLEDY_ORYGINALU.md`. Narzędzia: `narzedzia/README.md`.
 
 ## Stała zasada: raporty
 
@@ -27,6 +28,15 @@ W katalogu głównym OpenEE leży **tylko jeden raport – najnowszy**. Przy ko�
 Nie twórz raportów bezpośrednio w `raporty/archiwum/`, chyba że chodzi o odzyskanie dokumentacji historycznej.
 Treści zarchiwizowanych raportów nie zmieniaj, poza odnośnikami potrzebnymi do nawigacji. Obalony wniosek oznacz
 adnotacją „[Etap … – zastąpione]” i nie usuwaj pierwotnej obserwacji.
+
+## Stała zasada: wierna rekonstrukcja, także błędów oryginału
+
+Priorytetem OpenEE jest wierna rekonstrukcja oryginalnego silnika Titan, **razem z jego błędami**.
+- Wykryte błędy oryginału dokumentuj w `docs/titan/BLEDY_ORYGINALU.md`: identyfikator, zachowanie, lokalizacja EE/AoC,
+  przyczyna, skutki, pewność, status.
+- Nie poprawiaj ich i nie zastępuj oryginalnego algorytmu „ulepszoną” wersją. Status wpisu: „zachować zgodność –
+  decyzja o ewentualnej naprawie odłożona”. O naprawie, np. jako opcji, decydujemy dopiero po zakończeniu rekonstrukcji.
+- Zachowanie, które tylko wygląda na błąd, wpisuj jako podejrzenie ([H]/[W]), nie jako fakt.
 
 ## Inne zasady projektu
 

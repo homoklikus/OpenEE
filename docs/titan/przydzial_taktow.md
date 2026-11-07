@@ -25,7 +25,7 @@ Etap 15 OpenEE, drugi wpis atlasu funkcji silnika Titan (`docs/titan/README.md`)
   Obsługa tego komunikatu w EXE tworzy z niego komunikat taktów `NEMPhysicsTick` (typ 0x28) i wstawia go do kolejki
   `EEPhysics` [P].
 - **Liczba taktów na komunikat** = obcięcie(n · I / 1000) = obcięcie(44 · 0,35) = obcięcie(15,4) = **15** [P].
-- **n = 44 to skutek przepełnienia bajtu.** Serwer liczy n = 1000 / (średni czas taktu · 100/30). Średni czas taktu
+- **n = 44 to skutek przepełnienia bajtu** (rejestr błędów oryginału: BO-1 w `BLEDY_ORYGINALU.md`). Serwer liczy n = 1000 / (średni czas taktu · 100/30). Średni czas taktu
   to 1 ms (0 zamieniane na 1), więc wynik wynosi 300. Zapisany do pola jednobajtowego daje 300 − 256 = **44**.
   Dopiero ta wartość jest porównywana z granicami 15–125 z rejestru, więc ograniczenie nie zadziała [P: kod +
   pomiar, wartość 44 możliwa tylko przy wyniku 300].
@@ -275,7 +275,7 @@ własnością algorytmu przy t ≤ 1 ms [P]. Pośrednio Wine mógłby wpłynąć
 ## Zależności i zakończone wątki
 
 1. **System poleceń graczy** (kolejka +0x84 serwera, `ProcessLocalUserInput`, wykonanie poleceń w `EEPhysics`) – osobny
-   podsystem; nie analizowano.
+   podsystem; nie analizowano. [Etap 16: droga rozkazu ruchu – `docs/titan/rozkazy_gracza.md`.]
 2. **Sieć:** połączenia, pomiar opóźnień, „serwer żyje”, wyrzucanie spóźnionych graczy, migracja serwera – nie
    analizowano. Dla gry jednoosobowej istotne jest tylko I = 350.
 3. **Suma kontrolna świata:** od 40. komunikatu każdy komunikat z taktami ma żądanie sumy, a `EEPhysics` odpowiada
