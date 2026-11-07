@@ -1,6 +1,116 @@
 {
- "opis": "Lokalne, statyczne aktualności launchera (bez pobierania z sieci). Pola tytul/tekst: słowniki język → tekst.",
+ "opis": "Lokalne, statyczne aktualności launchera (bez pobierania z sieci). Wpisy od najnowszego; ekran startowy pokazuje pierwsze 3. Pola tytul/tekst: słowniki język → tekst; raport: ścieżka w repozytorium względem katalogu głównego (aktualny raport w katalogu głównym, poprzednie w raporty/archiwum/) – kliknięcie otwiera repozytorium_url + raport. Nowy etap: dopisz wpis na początku i zmień ścieżkę poprzedniego raportu na raporty/archiwum/… (zasada w raporty/README.md).",
+ "repozytorium_url": "https://github.com/homoklikus/OpenEE/blob/main/",
+ "wiecej_url": "https://github.com/homoklikus/OpenEE/blob/main/raporty/README.md",
  "wpisy": [
+  {
+   "data": "2026-11-07",
+   "tytul": {
+    "pl": "Porządki przed rekonstrukcją silnika",
+    "en": "Clean-up before engine reconstruction"
+   },
+   "tekst": {
+    "pl": "Uporządkowany projekt i dokumentacja; scena RTS uruchamia się poprawnie także z polską wersją gry.",
+    "en": "Project and documentation tidied up; the RTS scene now also starts correctly with the Polish game version."
+   },
+   "raport": "RAPORT_PORZADKI_ETAP_13_5.md"
+  },
+  {
+   "data": "2026-11-07",
+   "tytul": {
+    "pl": "Etap 13: prędkość i kolizje",
+    "en": "Stage 13: speed and collisions"
+   },
+   "tekst": {
+    "pl": "Jednostki chodzą z prędkością zmierzoną w oryginale, mijają się jak w EE i omijają stojące oddziały.",
+    "en": "Units move at the speed measured in the original, pass through each other as in EE and walk around standing units."
+   },
+   "raport": "raporty/archiwum/RAPORT_ETAP_13.md"
+  },
+  {
+   "data": "2026-11-06",
+   "tytul": {
+    "pl": "Etap 12: EE i The Art of Conquest",
+    "en": "Stage 12: EE and The Art of Conquest"
+   },
+   "tekst": {
+    "pl": "Kamera, zaznaczanie i ruch sprawdzone w obu grach – OpenEE zachowuje się tak samo jak EE i AoC.",
+    "en": "Camera, selection and movement checked in both games – OpenEE behaves the same as EE and AoC."
+   },
+   "raport": "raporty/archiwum/RAPORT_ETAP_12_EE_AOC.md"
+  },
+  {
+   "data": "2026-11-06",
+   "tytul": {
+    "pl": "Etap 11: dwie gry na jednym silniku",
+    "en": "Stage 11: two games on one engine"
+   },
+   "tekst": {
+    "pl": "W launcherze wybierasz Empire Earth albo The Art of Conquest; każda gra korzysta z własnych danych.",
+    "en": "Choose Empire Earth or The Art of Conquest in the launcher; each game uses its own data."
+   },
+   "raport": "raporty/archiwum/RAPORT_EE_AOC_FORMATY.md"
+  },
+  {
+   "data": "2026-11-06",
+   "tytul": {
+    "pl": "Etap 10: kamera jak w oryginale",
+    "en": "Stage 10: camera as in the original"
+   },
+   "tekst": {
+    "pl": "Kąt, poziomy przybliżenia i przewijanie mapy odtworzone według pomiarów oryginalnej gry.",
+    "en": "Angle, zoom levels and map scrolling recreated from measurements of the original game."
+   },
+   "raport": "raporty/archiwum/RAPORT_KAMERA_OPENEE.md"
+  },
+  {
+   "data": "2026-11-06",
+   "tytul": {
+    "pl": "Etap 9: ruch grupowy",
+    "en": "Stage 9: group movement"
+   },
+   "tekst": {
+    "pl": "Zaznaczanie wielu jednostek, szyk grupy i kolejka rozkazów działają jak w EE.",
+    "en": "Selecting many units, group formation and order queue work as in EE."
+   },
+   "raport": "raporty/archiwum/RAPORT_RUCH_GRUPOWY_EE.md"
+  },
+  {
+   "data": "2026-11-06",
+   "tytul": {
+    "pl": "Etap 8: epoki i przezroczystość",
+    "en": "Stage 8: epochs and transparency"
+   },
+   "tekst": {
+    "pl": "Wygląd budynków i jednostek zależy od epoki; budynki mogą być przezroczyste (jak klawisz F5 w EE).",
+    "en": "Buildings and units look different in each epoch; buildings can be made transparent (like F5 in EE)."
+   },
+   "raport": "raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md"
+  },
+  {
+   "data": "2026-11-06",
+   "tytul": {
+    "pl": "Etap 7: świat bez odbicia",
+    "en": "Stage 7: world no longer mirrored"
+   },
+   "tekst": {
+    "pl": "Mapa wyświetla się w tej samej orientacji co w oryginalnej grze.",
+    "en": "The map is shown in the same orientation as in the original game."
+   },
+   "raport": "raporty/archiwum/RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md"
+  },
+  {
+   "data": "2026-11-06",
+   "tytul": {
+    "pl": "Etap 6: pomiary kamery EE",
+    "en": "Stage 6: EE camera measurements"
+   },
+   "tekst": {
+    "pl": "Pierwsze pomiary kamery oryginalnej gry i zbliżenie widoku OpenEE do EE.",
+    "en": "First measurements of the original camera and an OpenEE view closer to EE."
+   },
+   "raport": "raporty/archiwum/RAPORT_KAMERA_EE_OPENEE.md"
+  },
   {
    "data": "2026-11-05",
    "tytul": {
@@ -10,7 +120,8 @@
    "tekst": {
     "pl": "Diagnostyka modeli: bez czarnych brył, pasów i płaskich drzew; scena diagnostyczna modelu.",
     "en": "Model diagnostics: no black boxes, stripes or flat trees; single-model diagnostic scene."
-   }
+   },
+   "raport": "raporty/archiwum/RAPORT_DIAGNOSTYKA_MODELI_051.md"
   },
   {
    "data": "2026-11-05",
@@ -21,7 +132,8 @@
    "tekst": {
     "pl": "Naprawa grafiki: budynki bez rozsypanej geometrii, poprawne tekstury i kolor gracza.",
     "en": "Graphics repair: buildings without scattered geometry, correct textures and player colour."
-   }
+   },
+   "raport": "raporty/archiwum/RAPORT_NAPRAWA_GRAFIKI.md"
   },
   {
    "data": "2026-11-05",
@@ -32,7 +144,8 @@
    "tekst": {
     "pl": "Etap 5: zaznaczanie i ruch jednostek po mapach EE (trasy A*, woda, klify, budynki), animacje ruchu.",
     "en": "Stage 5: selecting and moving units on EE maps (A* paths, water, cliffs, buildings), walk animations."
-   }
+   },
+   "raport": "raporty/archiwum/RAPORT_ETAP_5.md"
   },
   {
    "data": "2026-11-05",
@@ -43,7 +156,8 @@
    "tekst": {
     "pl": "Etap 4: animacje jednostek z oryginalnych modeli, części potomne (koła, wieżyczki), animowana woda.",
     "en": "Stage 4: unit animations from the original models, child parts (wheels, turrets), animated water."
-   }
+   },
+   "raport": "raporty/archiwum/RAPORT_ETAP_4.md"
   },
   {
    "data": "2026-11-05",
@@ -54,7 +168,8 @@
    "tekst": {
     "pl": "Etap 3: mieszanie tekstur terenu jak w silniku EE, scenariusze EE 1.x, orientacja obiektów.",
     "en": "Stage 3: terrain texture blending as in the EE engine, EE 1.x scenarios, object orientation."
-   }
+   },
+   "raport": "raporty/archiwum/RAPORT_ETAP_3.md"
   },
   {
    "data": "2026-11-05",
@@ -65,7 +180,8 @@
    "tekst": {
     "pl": "Etap 2: scenariusz z instalacji GOG – teren, obiekty i kolory graczy.",
     "en": "Stage 2: a scenario from the GOG install – terrain, objects and player colours."
-   }
+   },
+   "raport": "raporty/archiwum/RAPORT_ETAP_2.md"
   },
   {
    "data": "2026-11-05",
@@ -76,7 +192,8 @@
    "tekst": {
     "pl": "Głosy, narracja i teksty PL jako osobna warstwa; wybór języka niezależny.",
     "en": "Polish voices, narration and texts as a separate layer; independent language choice."
-   }
+   },
+   "raport": "raporty/archiwum/RAPORT_ETAP_2.md"
   },
   {
    "data": "2026-11-04",
@@ -87,7 +204,8 @@
    "tekst": {
     "pl": "Mapa → Jednostki → Rozgrywka → Tryb pełny",
     "en": "Map → Units → Gameplay → Full mode"
-   }
+   },
+   "raport": "docs/MAPA_DROGOWA.md"
   },
   {
    "data": "2026-11-03",
@@ -98,7 +216,8 @@
    "tekst": {
     "pl": "Audyt instalacji, czytniki formatów SSA/SST/CEM/SCN, szkielet projektu Godot.",
     "en": "Install audit, SSA/SST/CEM/SCN readers, Godot project skeleton."
-   }
+   },
+   "raport": "raporty/archiwum/RAPORT_ETAP_1.md"
   }
  ]
 }

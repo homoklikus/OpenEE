@@ -601,6 +601,7 @@ func _karta_aktualnosci() -> Control:
 		o.max_lines_visible = 2
 		o.custom_minimum_size.x = 260
 		k[1].add_child(o)
+		_klikalna_aktualnosc([t, o], stan.url_aktualnosci(w))
 		n += 1
 	k[1].add_child(_odstep(false))
 	var wiecej := LinkButton.new()
@@ -609,9 +610,28 @@ func _karta_aktualnosci() -> Control:
 	wiecej.add_theme_color_override("font_hover_color", Color("#7db4ff"))
 	wiecej.size_flags_horizontal = Control.SIZE_SHRINK_END
 	wiecej.focus_mode = Control.FOCUS_NONE
-	wiecej.pressed.connect(_pokaz_strone.bind("informacje"))
+	var url_wiecej := stan.url_wiecej()
+	if url_wiecej != "":
+		wiecej.tooltip_text = url_wiecej
+		wiecej.pressed.connect(func(): OS.shell_open(url_wiecej))
+	else:
+		wiecej.pressed.connect(_pokaz_strone.bind("informacje"))
 	k[1].add_child(wiecej)
 	return k[0]
+
+
+## Aktualność klikalna: tytuł i opis otwierają raport na GitHubie w domyślnej przeglądarce (wygląd bez zmian).
+func _klikalna_aktualnosc(etykiety: Array, url: String) -> void:
+	if url == "":
+		return
+	for e in etykiety:
+		var l: Label = e
+		l.mouse_filter = Control.MOUSE_FILTER_STOP
+		l.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		l.tooltip_text = url
+		l.gui_input.connect(func(ev: InputEvent):
+			if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+				OS.shell_open(url))
 
 
 ## Etap 11: wybór GRY – Empire Earth albo The Art of Conquest (dwie gry na jednym silniku), niezależny od profilu.
@@ -1166,6 +1186,7 @@ func _strona_informacje() -> Control:
 		var o := _l(StanLaunchera.tekst(w.get("tekst", ""), tx.jezyk), 14, M.TEKST_PRZYGASZONY)
 		o.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		ka[1].add_child(o)
+		_klikalna_aktualnosc([t, o], stan.url_aktualnosci(w))
 	v.add_child(ka[0])
 	var kd := _karta("folder", tx.t("info_dokumenty"))
 	for d in ["raporty/archiwum/RAPORT_ETAP_2.md", "raporty/archiwum/RAPORT_LAUNCHER_UI.md", "docs/ARCHITEKTURA.md", "docs/LOKALIZACJA.md", "docs/FORMATY_ETAP2.md"]:

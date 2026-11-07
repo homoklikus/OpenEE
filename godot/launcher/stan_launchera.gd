@@ -459,6 +459,30 @@ func info_silnika() -> Dictionary:
 		"gotowy": info_instalacji().ok and (Z == null or bool(Z.get("gotowe")))}
 
 
-func aktualnosci() -> Array:
+func _aktualnosci_dane() -> Dictionary:
 	var d: Variant = _json("dane/launcher/aktualnosci.json")
-	return d.get("wpisy", []) if d is Dictionary else []
+	return d if d is Dictionary else {}
+
+
+func aktualnosci() -> Array:
+	return _aktualnosci_dane().get("wpisy", [])
+
+
+const URL_REPOZYTORIUM := "https://github.com/homoklikus/OpenEE/"
+
+
+## Adres raportu aktualności na GitHubie: `repozytorium_url` + `raport` (ścieżka w repozytorium, np.
+## RAPORT_….md w katalogu głównym albo raporty/archiwum/RAPORT_….md). Tylko adresy repozytorium OpenEE; inaczej "".
+## Bez pobierania czegokolwiek z sieci – adres otwiera dopiero kliknięcie (domyślna przeglądarka).
+func url_aktualnosci(w: Dictionary) -> String:
+	var baza := String(_aktualnosci_dane().get("repozytorium_url", ""))
+	var r := String(w.get("raport", "")).strip_edges()
+	if not baza.begins_with(URL_REPOZYTORIUM) or r == "" or r.begins_with("/") or ".." in r:
+		return ""
+	return baza.trim_suffix("/") + "/" + r.uri_encode().replace("%2F", "/")
+
+
+## „Więcej…” – indeks raportów na GitHubie (`wiecej_url`), tylko adres repozytorium OpenEE; inaczej "".
+func url_wiecej() -> String:
+	var u := String(_aktualnosci_dane().get("wiecej_url", ""))
+	return u if u.begins_with(URL_REPOZYTORIUM) else ""

@@ -295,6 +295,23 @@ func _testy_launchera(K, Z) -> void:
 	_ok("L profile: wbudowane profile wczytane (bez gry w profilu)", st.profile.size() >= 3 and not st.profil("vanilla").is_empty() and not st.profil("vanilla").has("gra"), st.profile.size())
 	_ok("L profile: stare id vanilla_aoc/vanilla_ee = alias profilu vanilla", st.profil("vanilla_aoc").get("id", "") == "vanilla" and st.profil("vanilla_ee").get("id", "") == "vanilla")
 	_ok("L profile: domyślnie vanilla + AoC = konfiguracja silnika", st.profil_id == "vanilla" and st.gra_id == "aoc" and st._warstwy_profilu(st.aktualny()) == ["vanilla", "aoc"])
+	# aktualności: wpisy lokalne (bez sieci), raporty na GitHubie – aktualny w katalogu głównym, poprzednie w archiwum
+	var akt := st.aktualnosci()
+	var akt_zle := []
+	var glowne := []
+	for w in akt:
+		var r := String(w.get("raport", ""))
+		if r == "" or not FileAccess.file_exists(K.katalog_openee.path_join(r)) or st.url_aktualnosci(w) != "https://github.com/homoklikus/OpenEE/blob/main/" + r:
+			akt_zle.append(r)
+		if r.begins_with("RAPORT_"):
+			glowne.append(r)
+	var raporty_glowne := Array(DirAccess.get_files_at(K.katalog_openee)).filter(func(f): return f.begins_with("RAPORT_") and f.ends_with(".md"))
+	_ok("L aktualności: każdy wpis ma istniejący raport i adres GitHub (repozytorium + ścieżka)", akt.size() >= 3 and akt_zle.is_empty(), akt_zle)
+	_ok("L aktualności: najnowszy wpis = jedyny raport w katalogu głównym, kolejne z raporty/archiwum/",
+		raporty_glowne.size() == 1 and String(akt[0].get("raport", "")) == raporty_glowne[0] and glowne == [raporty_glowne[0]]
+		and String(akt[1].get("raport", "")).begins_with("raporty/archiwum/") and String(akt[2].get("raport", "")).begins_with("raporty/archiwum/"), [raporty_glowne, glowne])
+	_ok("L aktualności: „Więcej…” → indeks raportów na GitHubie; adres spoza repozytorium odrzucany",
+		st.url_wiecej() == "https://github.com/homoklikus/OpenEE/blob/main/raporty/README.md" and st.url_aktualnosci({"raport": "../x.md"}) == "")
 	var inst := st.info_instalacji()
 	if not K.instalacje.has("referencyjna"):
 		_pomin(["L karta gry: wykryta instalacja bieżącego źródła"], "brak instalacji EE")
