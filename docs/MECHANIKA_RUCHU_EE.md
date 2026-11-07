@@ -94,10 +94,15 @@ Zmierzone prędkości (mediana w środkowej części ruchu, kilka przejść) [P]
 | Jeździec | 0,8 | 1,17 |
 
 Stosunek wynosi 1,45–1,55, średnio 1,46. Wniosek: prędkość = `Speed` × 1,46 [P dla trzech typów, AoC, Riverlands].
-Etap 12: na „Wojnie trojańskiej” mnożnik wynosi **1,706 w EE i w AoC** [P] – zależy od scenariusza, nie od gry (§ 10).
 
-Wyjaśnienie, że `Speed` podaje pola na sekundę czasu gry, a normalna szybkość gry to ok. 1,5 × czas rzeczywisty,
-jest hipotezą [H].
+**Etap 13 (`docs/MECHANIKA_PREDKOSCI_EE.md`):**
+- `Speed` to pola na sekundę **czasu gry** [P].
+- Licznik ms czasu gry (`A_GRA+0xD0`) rośnie o 1461 ms na sekundę rzeczywistą w EE i AoC [P], więc mnożnik wynosi
+  **1,461**. Dotychczasowa hipoteza jest potwierdzona.
+- Wartość 1,706 z etapu 12 była artefaktem: maksimum próbek 10 Hz przy położeniach zmienianych skokowo co takt.
+  Wycofano ją [P].
+- W scenariuszach testowych z kampanii „Blitzkrieg” dochodzi stały dodatek +0,15 pola/s czasu gry (obywatel, prorok;
+  EE i AoC). Przyczyna [N].
 
 ## 5. Trasy i nawigacja (pathfinding)
 
@@ -113,6 +118,10 @@ jest hipotezą [H].
 
 ## 6. Kolizje (unikanie lokalne)
 
+Etap 13 powtórzył te pomiary w EE i AoC na płaskim scenariuszu testowym w 7 przypadkach
+(`docs/KOLIZJE_JEDNOSTEK_EE.md`). Wyniki poniżej potwierdzono w obu grach. Doszła jedna reguła: **jednostka w ruchu
+omija pole jednostki stojącej** [P].
+
 | Cecha | EE | Pewność |
 |---|---|---|
 | Przenikanie | Jednostki tej samej i przeciwnej grupy przenikają się. | [P] |
@@ -122,7 +131,11 @@ jest hipotezą [H].
 | Promień kolizji według typu | Nieustalony – w ruchu nie działa. | [N] |
 | Gęstość w punkcie docelowym | Wynika wyłącznie z szyku: odstęp = „Size in formation”. | [P] |
 
-Unikanie lokalne nie zostało więc zaimplementowane: oryginał go nie wykazuje.
+| Jednostka stojąca na trasie (etap 13) | Objazd jej pola po siatce, bez zwalniania; najmniejsza odległość 0,66 pola. | [P] (EE i AoC, 1 układ) |
+| Wspólny punkt docelowy (etap 13) | Druga jednostka staje 0,3 pola od pierwszej; pierwsza nie jest przesuwana. | [W] |
+
+Unikanie lokalne jednostek w ruchu nie zostało zaimplementowane: oryginał go nie wykazuje. Od etapu 13 trasa omija
+pola jednostek stojących (`Symulacja.OMIJANIE_STOJACYCH`).
 
 ## 7. Rozkazy: zastępowanie, kolejka, pauza
 
@@ -139,12 +152,13 @@ Unikanie lokalne nie zostało więc zaimplementowane: oryginał go nie wykazuje.
 |---|---|---|
 | Reguły zaznaczania | `zaznaczenie_ee.gd`, `sterowanie_rts.gd` | Ramka z podglądem, Shift/Ctrl. Punkt jednostki na wysokości 0,3 [H]. |
 | Szyk grupy | `formacja_ee.gd`, `Symulacja.rozkaz_grupy` | Przydział według id [W]. |
-| Prędkość | `Symulacja.MNOZNIK_PREDKOSCI = 1,46` | [P] |
+| Prędkość | `Symulacja.MNOZNIK_PREDKOSCI = 1,461` (tempo czasu gry, etap 13) | [P] |
 | Trasy oktylowe przez środki pól | `Sciezki.oktylowe`, siatka `podzial = 1` w scenie RTS | Rozszerza istniejący A*, nie dodaje drugiego systemu. |
 | Kolejka Shift + PPM | `JednostkaSym.kolejka_celow` | Szyk punktu w kolejce liczony od poprzednich miejsc [H]. |
 | Cel nieosiągalny | `Sciezki.najblizszy_osiagalny` | [W] |
 | Obrys przeszkód | `rts_test.gd` | Promień = „Size of collider” / 2 [W]. |
-| Przenikanie jednostek | Brak kodu unikania | [P] |
+| Przenikanie jednostek w ruchu | Brak kodu unikania | [P] |
+| Objazd jednostek stojących | `Symulacja.zajete_komorki`, `Sciezki.znajdz(..., zajete)` | [P]; trasa liczona przy rozkazie [H] |
 | Animacja | Stan „ruch” / „bezczynność” z symulacji | Bez zmian względem etapu 5. |
 
 ## 9. Nieustalone (do dalszych badań)
@@ -160,8 +174,12 @@ Unikanie lokalne nie zostało więc zaimplementowane: oryginał go nie wykazuje.
 9. Grupa mieszana:
    - czas dojścia w EE o ~20% dłuższy niż wynika z prędkości;
    - krętość 1,09.
-10. Różnice EE 1.0 ↔ AoC – zbadane w etapie 12 (§ 10); otwarte: unikanie przy grupach idących naprzeciw w EE,
-    prędkość proroka, przyczyna mnożnika prędkości zależnego od scenariusza.
+10. Różnice EE 1.0 ↔ AoC – zbadane w etapach 12 i 13. Wyjaśnione w etapie 13:
+    - grupy idące naprzeciw w EE przenikają się jak w AoC;
+    - prorok ma prędkość = `Speed` (bez własnego mnożnika);
+    - mnożnik 1,706 był artefaktem pomiaru.
+
+    Otwarta jest przyczyna dodatku +0,15 w scenariuszu z „Blitzkriegu”.
 
 ## 10. Etap 12 – Empire Earth i The Art of Conquest
 
@@ -187,6 +205,8 @@ Scenariusz „Wojna trojańska” (SCN 231) wczytany w obu grach, te same jednos
 Wnioski:
 - Mechaniki zaimplementowane w OpenEE (§ 8) zachowują się w EE tak samo jak w AoC. Wspólny kod wystarcza, bez
   rozgałęzień według gry.
-- `Symulacja.MNOZNIK_PREDKOSCI = 1,46` zostaje bez zmian. Wartość 1,706 dotyczy innego scenariusza, w obu grach
-  jednakowo, a przyczyna różnicy między scenariuszami jest nieustalona [N].
-- Unikania lokalnego nie dodano: w EE nie zmierzono go jednoznacznie [N].
+- `Symulacja.MNOZNIK_PREDKOSCI = 1,46` zostało bez zmian. Wartość 1,706 dotyczyła innego scenariusza, w obu grach
+  jednakowo, a przyczyna różnicy między scenariuszami była nieustalona [N]. **Etap 13:** 1,706 to artefakt metody;
+  stała to tempo czasu gry, 1,461.
+- Unikania lokalnego nie dodano: w EE nie zmierzono go jednoznacznie [N]. **Etap 13:** przenikanie potwierdzone
+  w EE [P].

@@ -68,15 +68,20 @@ wyniki zadań MCP `Testy_MCP/ee_zadania/180…235_*.wynik.json` (lokalnie, poza 
 | LPM na murze | zaznacza mur | zaznacza mur | tak (obie) [P] | jw. |
 | LPM na pustym terenie | nie zmierzono w EE (punkt testowy trafił w mur) | odznacza (etap 9) | obie? [H] | – |
 | Limit zaznaczenia | nie badano | ≥ 50 (etap 9) | [N] – 50 nie jest udowodnionym maksimum | – |
-| Prędkość jednostki | Speed × 1,706 (obywatel 0,853, gwardia 1,023, bohater 1,366) | Speed × 1,706 (gwardia 1,023, bohater 1,38) | tak (obie) [P] na tym samym scenariuszu | zad. 189, 215, 225 |
-| Mnożnik prędkości a scenariusz | 1,706 („Wojna trojańska”) | 1,46 (Riverlands, etap 9) i 1,706 („Wojna trojańska”) | mnożnik zależy od scenariusza, nie od gry [P]; przyczyna [N] (np. ustawienia scenariusza lub cechy cywilizacji [H]) | etap 9; zad. 189, 215 |
-| Prorok (Speed 0,45 w obu bazach) | 0,853 pola/s | 0,96 pola/s | [H] – jedna krótka trasa (1,2–1,3 pola) w każdej grze; żadna wartość nie wynika z Speed × 1,706 | zad. 189, 215 |
+| Prędkość jednostki | **etap 13:** `Speed` pól/s czasu gry; czas gry = 1,461 × rzeczywisty | to samo | tak (obie) [P] | `MECHANIKA_PREDKOSCI_EE.md`; zad. 292–344 |
+| Mnożnik prędkości a scenariusz | etap 12: 1,706 („Wojna trojańska”) – **etap 13: artefakt metody** (maksimum próbek); średnia: Speed × 1,43–1,50 | to samo | jeden mnożnik 1,461 (obie) [P] | jw. |
+| Dodatek prędkości w scenariuszu z „Blitzkriegu” | +0,15 pola/s gry (obywatel, prorok) | +0,15 (to samo) | tak (obie) [P]; przyczyna [N], bez implementacji | zad. 268–335, 307, 308 |
+| Prorok (Speed 0,45) | **etap 13:** 0,600 pola/s gry na trasie 27–28,6 pola („Blitzkrieg”), 0,461 („Wojna trojańska”) | 0,600 („Blitzkrieg”), 0,461 („Wojna trojańska”) | brak osobnego mnożnika (obie) [P]; wartości 0,853/0,96 z etapu 12 (trasa 1,2 pola) wycofane | zad. 307, 308, 342, 346 |
+| Zegar czasu gry `A_GRA+0xD0` | 1460,9–1461,5 ms/s; stoi w pauzie (F3) i w przerywniku | 1460,7–1461,1 ms/s | tak (obie) [P] | zad. 292, 307, 308, 337, 342, 346 |
 | Start ruchu, obrót | wszystkie w tym samym takcie, obrót pomijalny | to samo | tak (obie) [P] | jw. |
 | Szyk i miejsca końcowe | identyczne z AoC w granicy 0,05 pola | – | tak (obie) [P] | porównanie trajektorii zad. 189/215 |
 | Prędkość indywidualna w grupie | każda jednostka własna | to samo | tak (obie) [P] | jw. |
 | Nowy PPM w trakcie ruchu | zastępuje rozkaz natychmiast | to samo | tak (obie) [P] | jw. |
 | Shift + PPM (kolejka) | dopisuje punkt | dopisuje punkt | tak (obie) [W] | jw. |
-| Grupy idące naprzeciw | częściowe skrzyżowanie 2 + 2 jednostek: najmniejsza odległość 0,99 pola, odchylenia boczne do 1,8 pola (trasa obok muru i bramy) | czysty test nieudany (zaznaczenie trafiało sąsiednie jednostki) | [N] dla EE ↔ AoC; etap 9 (AoC, Riverlands): przenikanie bez unikania [P, AoC] | zad. 227, 231, 233, 234 |
+| Grupy idące naprzeciw | **etap 13:** przenikanie, 1 na 1, 5 na 5, 10 na 10: d_min 0,017–0,054, bez zatrzymań | to samo: d_min 0,015–0,030 | tak (obie) [P] | `KOLIZJE_JEDNOSTEK_EE.md`; zad. 268–284 |
+| Skrzyżowanie pod kątem prostym, przesmyk 1 pola | przenikanie, bez kolejki | to samo | tak (obie) [P] | zad. 278, 290, 325, 327 |
+| Jednostka stojąca na trasie | objazd jej pola (d_min 0,660) | objazd (0,666), trajektoria zgodna do 0,01 pola | tak (obie) [P]; OpenEE: `OMIJANIE_STOJACYCH` | zad. 329, 331 |
+| Wspólny punkt docelowy | druga jednostka staje 0,297 od pierwszej | 0,295 | tak (obie) [W] – 2 jednostki | zad. 333, 335 |
 | Teren, woda, modele, skala | ta sama geometria, te same modele i woda | – | tak (obie) [P] | 5 par kadrów, § 4 |
 | Jasność kadru | ~10 jednostek ciemniej | – | [H] – możliwa mgła lub stan rozpoznania mapy; **bez zmian renderera** | jw. |
 
@@ -100,9 +105,8 @@ Potwierdzonych różnic mechaniki nie ma. Różnice, które istnieją, leżą w 
 ### 3.3. Nieustalone – bez zmian w kodzie
 
 - narastanie prędkości przewijania krawędzią w AoC [W] i jego brak w EE (przyczyna: gra czy czułość myszy);
-- prędkość proroka [H];
-- unikanie lokalne przy grupach idących naprzeciw w EE [N] (w AoC na Riverlands: brak unikania [P]);
-- przyczyna mnożnika prędkości zależnego od scenariusza [N];
+- ~~prędkość proroka~~, ~~unikanie lokalne w EE~~, ~~mnożnik zależny od scenariusza~~ – wyjaśnione w etapie 13 (§ 6);
+- przyczyna dodatku +0,15 pola/s gry w scenariuszu z „Blitzkriegu” [N];
 - LPM na pustym terenie w EE [H];
 - limit zaznaczenia [N];
 - jasność kadru EE [H].
@@ -124,3 +128,12 @@ renderera, więc renderer OpenEE nie został zmieniony.
 - Parametry wspólne obu gier zapisano w `dane/mechaniki_ee_aoc.json` (wartości, zakres, pewność, dowód). Testy
   etapu 12 sprawdzają zgodność `ModelKameryEE` z tymi danymi dla obu gier.
 - Renderer – bez zmian (§ 4).
+
+## 6. Etap 13 – prędkość i kolizje
+
+Pomiary z zegarem czasu gry i trajektoriami 30 Hz na scenariuszach testowych zbudowanych z kopii „Blitzkriegu” oraz
+na „Wojnie trojańskiej”, w obu grach z tymi samymi plikami i rozkazami (`docs/MECHANIKA_PREDKOSCI_EE.md`,
+`docs/KOLIZJE_JEDNOSTEK_EE.md`). Różnic EE ↔ AoC nie stwierdzono: zegar gry, prędkości i trajektorie kolizji są zgodne
+w granicy 0,01–0,03 pola. Zmiany w OpenEE dotyczą obu gier jednakowo, bez rozgałęzień:
+- `MNOZNIK_PREDKOSCI` 1,461;
+- omijanie pól jednostek stojących.

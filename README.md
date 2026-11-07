@@ -72,22 +72,35 @@ zawiera żadnych zasobów Empire Earth – patrz [docs/ZASOBY_ORYGINALNE.md](doc
    narzedzia/przygotuj_dane_lokalne.sh "/ścieżka/do/Empire Earth Gold" ["/ścieżka/do/instalacji z wersją PL"]
    ```
 
-Podgląd scenariusza z wiersza poleceń: `godot --path godot res://sceny/test_scenariusz.tscn -- --kampania=EETheGreeks.ssa --scenariusz="trojan war"`
+Podgląd scenariusza z wiersza poleceń: `godot --path godot res://sceny/test_scenariusz.tscn -- --kampania=EETheGreeks.ssa --scenariusz-nr=3` (numer na liście kampanii – niezależny od języka instalacji)
 (opcje: `--okno=r0,c0,n | pelne`, `--kamera=blisko`, `--zrzut=plik.png`, `--pomiar=N`, `--bez-animacji`).
 
 Scena animacji: `./uruchom_openee.sh animacje --model=Phalanx --sekwencja=atak` (albo `--galeria=Phalanx;Citizen Paleo;Cannon - 12 Pounder`,
 `--pomiar=100,1000,4000`, `--film=katalog`).
+
+## Testy: bez okna i na GPU
+| Zestaw | Polecenie | Wymaga |
+|---|---|---|
+| Testy Godota (formaty, scenariusze, symulacja, kamera, kolizje, model prędkości – 322 testy) | `./uruchom_openee.sh testy` albo `godot --headless --path godot --script res://testy/uruchom_testy.gd` | tylko CPU, **bez okna i GPU** (`--headless`); część testów pomijana bez instalacji gry lub danych lokalnych |
+| Test wizualny modeli (OpenGL i Vulkan) | `GODOT=… narzedzia/test_wizualny_051.sh <katalog>` | **GPU** (bez GPU: xvfb + lavapipe – wynik nie jest weryfikacją GPU) |
+| Porównanie rendererów | `narzedzia/porownaj_renderery.sh` | **GPU** |
+| Zrzuty scen (`test_scenariusz`, `rts_test`, animacje `--film`) | `godot --path godot res://sceny/… -- --zrzut=plik.png` | **GPU** i okno (renderer okienkowy) |
+| Pomiary oryginalnych gier (Riverlands_MCP, zadania `Testy_MCP/ee_zadania`) | narzędzia MCP | uruchomiona gra pod Wine, serwer X11; GPU jak do gry; poza repozytorium |
+
+Testy z `--headless` nie sprawdzają obrazu. Renderer weryfikuje się zrzutami na prawdziwym GPU; w projekcie robi się
+to na RTX 5090, narzędziem `oe_render` z Riverlands_MCP, zawsze przy zamkniętej grze oryginalnej.
 
 ## Dokumentacja
 * [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md) – struktura silnika i projektu
 * [docs/FORMATY.md](docs/FORMATY.md), [docs/FORMATY_ETAP2.md](docs/FORMATY_ETAP2.md), [docs/FORMATY_ETAP3.md](docs/FORMATY_ETAP3.md) – formaty plików EE
 * [docs/WARIANTY_GRY.md](docs/WARIANTY_GRY.md) – Empire Earth i The Art of Conquest jako dwie gry na jednym silniku; [docs/FORMATY_DB_EE_VS_AOC.md](docs/FORMATY_DB_EE_VS_AOC.md) – bazy EE 1.0 i AoC
 * [docs/POROWNANIE_MECHANIK_EE_AOC.md](docs/POROWNANIE_MECHANIK_EE_AOC.md) – pomiary mechanik Empire Earth i The Art of Conquest
+* [docs/MECHANIKA_RUCHU_EE.md](docs/MECHANIKA_RUCHU_EE.md), [docs/MECHANIKA_PREDKOSCI_EE.md](docs/MECHANIKA_PREDKOSCI_EE.md), [docs/KOLIZJE_JEDNOSTEK_EE.md](docs/KOLIZJE_JEDNOSTEK_EE.md) – ruch, prędkość i kolizje jednostek (pomiary oryginału)
 * [docs/LOKALIZACJA.md](docs/LOKALIZACJA.md) – lokalizacja i prawa do nagrań
 * [docs/ZASOBY_ORYGINALNE.md](docs/ZASOBY_ORYGINALNE.md) – zasady korzystania z oryginalnych zasobów
 * [docs/HISTORIA.md](docs/HISTORIA.md) – historia rozwoju, [docs/MAPA_DROGOWA.md](docs/MAPA_DROGOWA.md) – plan
 * [CONTRIBUTING.md](CONTRIBUTING.md) – zasady współpracy
-* Raporty etapów: `RAPORT_ETAP_1.md`, `RAPORT_ETAP_2.md`, `RAPORT_ETAP_3.md`, `RAPORT_LAUNCHER_UI.md`, `RAPORT_EE_AOC_FORMATY.md` (etap 11), `RAPORT_ETAP_12_EE_AOC.md` (etap 12)
+* Raporty etapów: `RAPORT_ETAP_1.md`, `RAPORT_ETAP_2.md`, `RAPORT_ETAP_3.md`, `RAPORT_LAUNCHER_UI.md`, `RAPORT_EE_AOC_FORMATY.md` (etap 11), `RAPORT_ETAP_12_EE_AOC.md` (etap 12), `RAPORT_ETAP_13.md` (etap 13)
 
 ## Licencja
 OpenEE jest udostępniany na licencji **GNU General Public License v3.0** – plik [LICENSE](LICENSE). Projekt zawiera
