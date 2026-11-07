@@ -90,7 +90,9 @@ func skladowe(pol: PolitykaRuchu) -> PackedInt32Array:
 
 
 ## Trasa z punktu `start` do `cel` (punkty mapy) dla polityki `pol`.
-func znajdz(start: Vector2, cel: Vector2, pol: PolitykaRuchu) -> Dictionary:
+## `zajete` – indeksy komórek traktowanych jako nieprzechodnie tylko w tym zapytaniu (komórki stojących jednostek,
+## etap 13: docs/KOLIZJE_JEDNOSTEK_EE.md); komórka startu i celu nigdy nie jest blokowana.
+func znajdz(start: Vector2, cel: Vector2, pol: PolitykaRuchu, zajete: PackedInt32Array = PackedInt32Array()) -> Dictionary:
 	var t0 := Time.get_ticks_usec()
 	statystyka.zapytania += 1
 	var ks := mapa.komorka(start); var kc := mapa.komorka(cel)
@@ -111,6 +113,11 @@ func znajdz(start: Vector2, cel: Vector2, pol: PolitykaRuchu) -> Dictionary:
 		return _wynik(false, PackedVector2Array(), "cel nieosiągalny (inny obszar, np. za wodą lub otoczony przeszkodami)", 0, t0)
 	if ks == kc:
 		return _wynik(true, PackedVector2Array([cel]), "", 1, t0)
+	if not zajete.is_empty():
+		pr = pr.duplicate()
+		var i_s := mapa.indeks(ks); var i_c := mapa.indeks(kc)
+		for zi in zajete:
+			if zi != i_s and zi != i_c and zi >= 0 and zi < pr.size(): pr[zi] = 0
 	_przygotuj()
 	_pokolenie += 1
 	var otw := _pokolenie * 2; var zamk := otw + 1

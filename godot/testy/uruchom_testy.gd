@@ -11,6 +11,7 @@ extends SceneTree
 ## Ruch grupowy EE (etap 9): zaznaczanie, szyk, trasy oktylowe, kolejka, przesmyk, kolizje (testy/testy_ruchu.gd).
 ## Kamera RTS: model kamery EE, kamera produkcyjna bez obrotu, kamera diagnostyczna (testy/testy_kamery.gd).
 ## Etap 12: pomiary mechanik EE i AoC a wspólny kod kamery i ruchu (testy/testy_etapu12.gd).
+## Etap 13: scenariusz kampanii po numerze (niezależnie od języka), model prędkości, kolizje (testy/testy_etapu13.gd).
 ## Launcher: teksty UI PL/EN, model profili/modów/języka (w pamięci, bez zapisu), ikony, budowa sceny launchera.
 
 var wyniki: Array = []
@@ -110,6 +111,7 @@ func _initialize() -> void:
 	await TestyWariantow.new(self).uruchom(K, Z)
 	TestyGierEeAoc.new(self).uruchom(K, Z)
 	TestyEtapu12.new(self).uruchom(K)
+	TestyEtapu13.new(self).uruchom(K)
 	TestyRuchuEE.new(self).uruchom()
 	TestyPrzezroczystosci.new(self).uruchom()
 	await _testy_launchera(K, Z)

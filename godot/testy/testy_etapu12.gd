@@ -99,8 +99,9 @@ func uruchom(K: Node) -> void:
 		is_equal_approx(ModelKameryEE.WSP_PREDKOSCI_KRAWEDZI, 5.0 / 6.0) and not (load("res://silnik/kamera/model_kamery_ee.gd") as Script).get_script_constant_map().has("PRZYSPIESZENIE_KRAWEDZI"))
 
 	# mnożnik prędkości: wartość etapu 9; pomiar etapu 12 na innym scenariuszu nie zmienia stałej
-	t._ok("E12 ruch: Symulacja.MNOZNIK_PREDKOSCI = 1,46 (etap 9), niezależny od gry",
+	t._ok("E12 ruch: Symulacja.MNOZNIK_PREDKOSCI = dane openee (1,461 od etapu 13), niezależny od gry",
 		is_equal_approx(Symulacja.MNOZNIK_PREDKOSCI, float(d.get("openee", {}).get("mnoznik_predkosci", -1.0))))
-	var mn: Dictionary = m.get("mnoznik_predkosci_scenariusz", {})
-	t._ok("E12 ruch: mnożnik na „Wojnie trojańskiej” taki sam w EE i AoC (zależy od scenariusza, nie od gry)",
-		mn.get("zakres") == "obie" and is_equal_approx(float(mn.get("ee", 0)), float(mn.get("aoc", 1))))
+	# etap 13: mnożnik 1,706 wycofany (artefakt próbkowania); wspólny dla obu gier jest zegar czasu gry
+	var mn: Dictionary = m.get("zegar_gry_na_sekunde", {})
+	t._ok("E12 ruch: tempo czasu gry takie samo w EE i AoC (etap 13: zegar A_GRA+0xD0)",
+		mn.get("zakres") == "obie" and absf(float(mn.get("ee", 0)) - float(mn.get("aoc", 1))) < 0.002)

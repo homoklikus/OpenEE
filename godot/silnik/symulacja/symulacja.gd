@@ -14,13 +14,16 @@ extends RefCounted
 const KROK := 0.05                 # 20 taktów/s [H – częstotliwość symulacji EE nieustalona]
 const PROG_OBROTU := 0.79          # rad (~45°): większa różnica kursu → obrót w miejscu przed ruchem
 const TOLERANCJA_CELU := 0.05      # pola
-## Prędkość w polach na sekundę = dbobjects „Speed” × MNOZNIK_PREDKOSCI. Pomiar w oryginale (etap 9, normalna szybkość
-## gry): obywatel 0,5 → 0,73, miecznik 0,6 → 0,875, jeździec 0,8 → 1,17 pola/s (stosunek 1,45–1,55, średnio 1,46) [P];
-## zgodne z hipotezą „Speed w polach na sekundę czasu gry, normalna szybkość = ok. 1,5 × czas rzeczywisty” [H].
-## Etap 12 (docs/POROWNANIE_MECHANIK_EE_AOC.md): pomiar etapu 9 pochodzi z AoC na Riverlands. Na „Wojnie trojańskiej”
-## mnożnik wynosi 1,706 w EE i w AoC jednakowo [P] – zależy od scenariusza, nie od gry; przyczyna [N]. Stała zostaje
-## wspólna dla obu gier i bez zmian, dopóki przyczyna nie jest ustalona.
-const MNOZNIK_PREDKOSCI := 1.46
+## Prędkość w polach na sekundę rzeczywistą = dbobjects „Speed” × MNOZNIK_PREDKOSCI.
+## Etap 13 (docs/MECHANIKA_PREDKOSCI_EE.md): „Speed” to pola na sekundę CZASU GRY [P]; licznik ms czasu gry (A_GRA+0xD0)
+## przy normalnej szybkości rośnie o 1460,7–1461,5 ms na sekundę rzeczywistą w EE i AoC [P] – stąd mnożnik. Zgadza się
+## z pomiarem etapu 9 (Riverlands, AoC: 1,45–1,55). Wartość 1,706 z etapu 12 była artefaktem metody (maksimum próbek
+## 10 Hz przy położeniach zmienianych skokowo co takt) i została wycofana. Dodatek +0,15 pola/s gry w scenariuszach
+## z kampanii „Blitzkrieg” – przyczyna [N], bez implementacji.
+const MNOZNIK_PREDKOSCI := 1.461
+## Etap 13 (docs/KOLIZJE_JEDNOSTEK_EE.md): jednostka w ruchu omija pole jednostki STOJĄCEJ (trasa po siatce obchodzi
+## to pole) [P: EE i AoC, ta sama trajektoria]; jednostki idące przenikają się [P]. Bez fizyki i odpychania.
+const OMIJANIE_STOJACYCH := true
 
 var mapa: MapaNawigacji
 var sciezki: Sciezki
@@ -33,6 +36,7 @@ var zdarzenia: Array = []          # zdarzenia ostatniego taktu
 var dziennik: Array = []           # diagnostyka (ostatnie wpisy)
 var czas_taktow_us: int = 0
 var czas_tras_us: int = 0
+var _ruszajace := {}               # id jednostek z rozkazem w bieżącym takcie (nie blokują tras innych)
 
 
 func _init(m: MapaNawigacji) -> void:
@@ -93,6 +97,12 @@ func krok() -> void:
 	var t0 := Time.get_ticks_usec()
 	zdarzenia.clear()
 	var rozkazy := _kolejka; _kolejka = []
+	_ruszajace.clear()
+	for r in rozkazy:
+		if r.typ == "grupa":
+			for i in r.ids: _ruszajace[int(i)] = true
+		elif r.typ == "ruch":
+			_ruszajace[int(r.id)] = true
 	for r in rozkazy:
 		if r.typ == "grupa":
 			_wykonaj_grupe(r.ids, r.cel, bool(r.get("dolacz", false))); continue
@@ -113,9 +123,25 @@ func krok() -> void:
 	czas_taktow_us += Time.get_ticks_usec() - t0
 
 
+## Komórki jednostek stojących (bez rozkazu w tym takcie) – przeszkody dla trasy `j` [P, etap 13].
+func zajete_komorki(j: JednostkaSym) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	if not OMIJANIE_STOJACYCH: return out
+	for id in _kolejnosc:
+		if id == j.id or _ruszajace.has(id): continue
+		var u: JednostkaSym = jednostki[id]
+		if u.ruch != JednostkaSym.Ruch.STOI: continue
+		var k := mapa.komorka(u.pozycja)
+		if k.x >= 0: out.append(mapa.indeks(k))
+	return out
+
+
 func _wykonaj_ruch(j: JednostkaSym, cel: Vector2, proba := false) -> bool:
 	var t0 := Time.get_ticks_usec()
-	var w := sciezki.znajdz(j.pozycja, cel, j.polityka)
+	var zaj := zajete_komorki(j)
+	var w := sciezki.znajdz(j.pozycja, cel, j.polityka, zaj)
+	if not w.ok and not zaj.is_empty():
+		w = sciezki.znajdz(j.pozycja, cel, j.polityka)   # stojące jednostki zamykają przejście – trasa bez nich [H]
 	czas_tras_us += Time.get_ticks_usec() - t0
 	if not w.ok and proba:
 		return false

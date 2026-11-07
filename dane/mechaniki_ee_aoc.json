@@ -20,11 +20,11 @@
   "srodkowy_200_jednostek": {"ee": 35.9, "aoc": 36.7, "openee": null, "tolerancja_wzgledna": 0.05, "zakres": "obie", "pewnosc": "P", "uwaga": "zgodność EE ↔ AoC dla tego samego wejścia; wartość bezwzględna różna od etapu 10 – [N] (przyspieszenie wskaźnika X11?)"},
   "granica_ogniska_narozniki": {"ee": [[69.918, 70.082], [209.918, 210.082]], "aoc": [[69.87, 70.13], [209.87, 210.13]], "openee": "ogranicz() dla rombu u ∈ [N, 3N], v ∈ [−N, N], N = 140", "tolerancja": 0.2, "zakres": "obie", "pewnosc": "P"},
   "wysokosc_ogniska_nad_morzem": {"ee": 0.4, "aoc": 0.4, "openee": "wysokosc_ogniska(h < 0)", "tolerancja": 0.01, "zakres": "obie", "pewnosc": "P"},
-  "mnoznik_predkosci_scenariusz": {"ee": 1.706, "aoc": 1.706, "openee": null, "tolerancja_wzgledna": 0.01, "zakres": "obie", "pewnosc": "P", "uwaga": "Speed × mnożnik; na Riverlands (etap 9, AoC) 1,46 – mnożnik zależy od scenariusza, nie od gry; przyczyna [N]. OpenEE zostaje przy Symulacja.MNOZNIK_PREDKOSCI = 1,46."}
+  "zegar_gry_na_sekunde": {"ee": 1.461, "aoc": 1.461, "openee": "Symulacja.MNOZNIK_PREDKOSCI", "tolerancja": 0.003, "zakres": "obie", "pewnosc": "P", "uwaga": "Etap 13: licznik ms czasu gry A_GRA+0xD0 – 1460,7–1461,5 ms na sekundę rzeczywistą (EE i AoC, 6 pomiarów po 5–10 s, scenariusze z „Blitzkriegu” i „Wojna trojańska”); stoi w pauzie (F3) i w przerywniku. Speed z dbobjects = pola na sekundę czasu gry. Wartość 1,706 z etapu 12 wycofana: maksimum próbek 10 Hz przy położeniach zmienianych co takt (43,32 taktów/s) – artefakt metody."},
+  "modyfikator_predkosci_blitzkrieg": {"ee": 0.15, "aoc": 0.15, "openee": null, "tolerancja": 0.01, "zakres": "obie", "pewnosc": "P", "uwaga": "Pola/s gry ponad Speed w scenariuszach testowych z kampanii „Blitzkrieg” (gracz 1 „Niemcy”, epoka atomowa): obywatel 0,5 → 0,649, prorok 0,45 → 0,600, w EE i AoC. Przyczyna [N]: nie dbobjects, nie badane technologie gracza, nie cywilizacja „Germany” (bez premii prędkości), pole Speed w obiekcie klasy niezmienione. Na „Wojnie trojańskiej” i Riverlands brak dodatku. OpenEE bez implementacji."}
  },
- "openee": {"mnoznik_predkosci": 1.46},
+ "openee": {"mnoznik_predkosci": 1.461},
  "roznice": [
-  {"mechanika": "narastanie prędkości przewijania krawędzią", "ee": "brak", "aoc": "~1 s", "pewnosc": "W", "implementacja": "brak – przyczyna nieustalona"},
-  {"mechanika": "prędkość proroka (Speed 0,45)", "ee": 0.853, "aoc": 0.96, "pewnosc": "H", "implementacja": "brak – jedna krótka trasa"}
+  {"mechanika": "narastanie prędkości przewijania krawędzią", "ee": "brak", "aoc": "~1 s", "pewnosc": "W", "implementacja": "brak – przyczyna nieustalona"}
  ]
 }
