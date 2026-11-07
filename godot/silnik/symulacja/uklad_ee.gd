@@ -1,6 +1,6 @@
 class_name UkladEE
 extends RefCounted
-## Jedyna warstwa konwersji współrzędnych Empire Earth ↔ Godot (etap 7, RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md).
+## Jedyna warstwa konwersji współrzędnych Empire Earth ↔ Godot (etap 7, raporty/archiwum/RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md).
 ##
 ## Świat EE: x = kolumna, y = wiersz, z = góra (układ prawoskrętny – tak gra pokazuje mapę na ekranie: oś x biegnie
 ## w prawo-w-dół, oś y w prawo-w-górę, x → y przeciwnie do ruchu wskazówek zegara [Z: pomiar kamery EE i rzuty punktów

@@ -128,7 +128,7 @@ func _czesc20(r: _Czytnik) -> Dictionary:
 		# indeksy trójkątów materiału są WZGLĘDNE wobec v_offset materiału [D: 544/544 materiałów z v_offset > 0 ma
 		# indeksy w [0, v_liczba), żaden nie mieści się w [v_offset, v_offset + v_liczba)] – etapy 1–5 czytały je
 		# bezwzględnie, przez co trójkąty drugiego i kolejnych materiałów (zwykle „player color”) brały wierzchołki
-		# pierwszego: rozsypana geometria, złe UV i plamy koloru gracza (RAPORT_NAPRAWA_GRAFIKI.md)
+		# pierwszego: rozsypana geometria, złe UV i plamy koloru gracza (raporty/archiwum/RAPORT_NAPRAWA_GRAFIKI.md)
 		var ind := PackedInt32Array()
 		for t in range(z.x, z.x + z.y):
 			ind.append(vo + lods[0][3 * t]); ind.append(vo + lods[0][3 * t + 2]); ind.append(vo + lods[0][3 * t + 1])

@@ -1,6 +1,6 @@
 class_name TestyWariantow
 extends RefCounted
-## Testy etapu 8 (RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md): dekodery dbtechtree/dbevents/dbeffects, blok EE gracza
+## Testy etapu 8 (raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md): dekodery dbtechtree/dbevents/dbeffects, blok EE gracza
 ## w scenariuszu, wybór grafiki wg epoki (WariantyGrafiki), zmiana wariantu bez naruszenia symulacji.
 ## Jednostkowe – dane syntetyczne; integracyjne – tabele i scenariusze z instalacji EE.
 

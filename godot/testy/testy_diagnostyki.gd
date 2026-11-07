@@ -1,6 +1,6 @@
 class_name TestyDiagnostyki
 extends RefCounted
-## Testy diagnostyki modeli 0.5.1 (RAPORT_DIAGNOSTYKA_MODELI_051.md): wykrywanie trójkątów współpłaszczyznowych i
+## Testy diagnostyki modeli 0.5.1 (raporty/archiwum/RAPORT_DIAGNOSTYKA_MODELI_051.md): wykrywanie trójkątów współpłaszczyznowych i
 ## duplikatów, spójność nawinięcia, reguły materiałów (wycinanie alfa we wszystkich materiałach, kolor pod alfa = 0),
 ## odrzucanie tylnych ścian z uwzględnieniem lustrzanej bazy obiektów, obrót billboardów, przesunięcie głębi.
 ## UWAGA: testy odczytu i reguł nie zastępują testu wizualnego – ten jest w narzedzia/test_wizualny_051.sh

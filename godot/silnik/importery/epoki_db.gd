@@ -1,6 +1,6 @@
 class_name EpokiDB
 extends RefCounted
-## Dekodery tabel epok i efektów EE/AoC (etap 8, RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md § 1) – odpowiednik
+## Dekodery tabel epok i efektów EE/AoC (etap 8, raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md § 1) – odpowiednik
 ## narzedzia/eeformaty/epoki.py. Tabele nie mają nagłówka „u32 N + N rekordów”, więc nie przechodzą przez BazaDB.
 ## * dbtechtree: 15 grup „i32 liczba_dzieci, rekord epoki, dzieci”; rekord 272 B + 4 B × „Num of tech builders”,
 ## * dbevents: NAME 100 B, i32 sekwencja, i32 n, n × i32 ID efektu (indeks rekordu = „Event ID” z dbtechtree),

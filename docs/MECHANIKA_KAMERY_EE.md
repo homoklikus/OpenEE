@@ -1,7 +1,7 @@
 # Mechanika kamery – Empire Earth 1 / The Art of Conquest
 
 Etap 10 OpenEE. Zebrane tu zachowanie **oryginalnej gry** zmierzono przed zmianą kamery OpenEE. Dokument rozszerza
-`RAPORT_KAMERA_EE_OPENEE.md` (pierwsze badanie kamery). Wcześniejsze ustalenia sprawdziłem ponownie, a pozycje
+`raporty/archiwum/RAPORT_KAMERA_EE_OPENEE.md` (pierwsze badanie kamery). Wcześniejsze ustalenia sprawdziłem ponownie, a pozycje
 oznaczone tam jako nieznane uzupełniłem.
 
 **Zakres gier.** §§ 1–6 opisują pomiary etapu 10 w **The Art of Conquest**. Etap 12 powtórzył je w **podstawowym

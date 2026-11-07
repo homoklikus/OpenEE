@@ -13,6 +13,11 @@ Dziękujemy za zainteresowanie! OpenEE to wczesna wersja rozwojowa – zmiany s�
 4. Licencja wkładu: **GPLv3** (jak cały projekt). Kod z innych projektów tylko na licencji zgodnej z GPLv3 i z podaniem
    autorstwa w [AUTORZY.md](AUTORZY.md).
 
+## Raporty etapów
+W katalogu głównym leży tylko najnowszy raport `RAPORT_*.md`. Kończąc etap, dodaj nowy raport w katalogu głównym,
+a poprzedni przenieś (`git mv`) do `raporty/archiwum/` i popraw odwołania – szczegóły w `raporty/README.md`
+i `CLAUDE.md`.
+
 ## Przed wysłaniem zmian
 * Uruchom testy: `./uruchom_openee.sh testy` – wynik `ZALICZONE` (testy wymagające instalacji mogą być pominięte;
   jeśli masz instalację – uruchom też `narzedzia/przygotuj_dane_lokalne.sh` i pełny zestaw).

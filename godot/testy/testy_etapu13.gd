@@ -1,6 +1,6 @@
 class_name TestyEtapu13
 extends RefCounted
-## Testy etapu 13 (RAPORT_ETAP_13.md):
+## Testy etapu 13 (raporty/archiwum/RAPORT_ETAP_13.md):
 ##  * scenariusz kampanii wybierany numerem z listy kampanii (campaigns/*_scenariolist.txt), nie przetłumaczonym
 ##    tytułem – dane syntetyczne PL/EN i (jeśli są) obie instalacje: polska społecznościowa i angielska referencyjna;
 ##  * domyślny scenariusz scen testowych z definicji gry (dane/gry.json „kampania_testowa”) dla EE i AoC;

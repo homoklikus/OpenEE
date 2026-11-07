@@ -28,11 +28,11 @@ Porządek od etapu 13.5:
 
 | Plik | Etap | Dokument |
 |---|---|---|
-| `analiza_modelu.py` (+ `kierunek_billboardow.py`, `statystyka_alfa.py`, `uv_modelu.py`, `wspolplaszczyznowe.py` – importują `analiza_modelu`) | 5.1 | `RAPORT_DIAGNOSTYKA_MODELI_051.md`, `docs/FORMATY_DIAGNOSTYKA_051.md` |
-| `izolowane_ee.sh`, `izolowane_ee_sesja.py` | 5 | izolowana sesja gry pod Xvfb (`RAPORT_ETAP_5.md`); zastąpiona w praktyce przez Riverlands_MCP, zachowana do odtwarzania pomiarów bez MCP |
+| `analiza_modelu.py` (+ `kierunek_billboardow.py`, `statystyka_alfa.py`, `uv_modelu.py`, `wspolplaszczyznowe.py` – importują `analiza_modelu`) | 5.1 | `raporty/archiwum/RAPORT_DIAGNOSTYKA_MODELI_051.md`, `docs/FORMATY_DIAGNOSTYKA_051.md` |
+| `izolowane_ee.sh`, `izolowane_ee_sesja.py` | 5 | izolowana sesja gry pod Xvfb (`raporty/archiwum/RAPORT_ETAP_5.md`); zastąpiona w praktyce przez Riverlands_MCP, zachowana do odtwarzania pomiarów bez MCP |
 | `warianty_epok.py` | 8 | `docs/WARIANTY_EPOK.md` |
 | `scenariusz_testowy_ruchu.py` | 9 | `docs/MECHANIKA_RUCHU_EE.md` – mapa Riverlands z grupami jednostek |
-| `analiza_ruchu_ee.py` | 9 | trajektorie z MCP → tabela (`RAPORT_RUCH_GRUPOWY_EE.md`) |
+| `analiza_ruchu_ee.py` | 9 | trajektorie z MCP → tabela (`raporty/archiwum/RAPORT_RUCH_GRUPOWY_EE.md`) |
 | `audyt_ee_aoc.py` | 11 | `docs/FORMATY_DB_EE_VS_AOC.md`, `docs/WARIANTY_GRY.md` |
 | `scenariusz_testowy_kolizji.py` | 13 | `docs/KOLIZJE_JEDNOSTEK_EE.md`, `docs/MECHANIKA_PREDKOSCI_EE.md` |
 | `sonda_scn.py`, `test_formatow.py`, `test_dcl_c.py` | 1–2 | sondy czytników: scenariusze z kampanii, wszystkie formaty na archiwach, DCL w C a w Pythonie. Nie są używane w żadnym dokumencie ani skrypcie; zostawione jako szybkie sprawdzenie czytników po zmianach w `eeformaty` |

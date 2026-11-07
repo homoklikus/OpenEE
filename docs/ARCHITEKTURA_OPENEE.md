@@ -21,6 +21,8 @@ odpowiednią adnotację.
   OpenEE ma być jedną grą z połączoną zawartością; na razie obie gry są wybierane i testowane osobno.
 - Mechaniki odtwarza się według kolejności: oryginał → pomiar → dokumentacja → implementacja → porównanie → testy.
   Bez dowodu z oryginału mechanika nie jest wprowadzana.
+- Raporty: w katalogu głównym tylko najnowszy `RAPORT_*.md`; poprzednie trafiają do `raporty/archiwum/`
+  (`raporty/README.md`, `CLAUDE.md`).
 
 ## 2. Moduły (`godot/`)
 
@@ -115,12 +117,12 @@ historia rozbudowy: `Riverlands_MCP/RAPORT_ROZBUDOWA_EE_MCP.md`.
 | Teren według reguł EE, woda animowana | [P] dla reguł mieszania; tabela faz wody 33×33 – [N] | `docs/FORMATY_ETAP3.md`, `docs/FORMATY_ETAP4.md` |
 | Modele: materiały, kolor gracza, alfa, odrzucanie ścian, billboardy | [P] | `docs/FORMATY_NAPRAWA_GRAFIKI.md`, `docs/FORMATY_DIAGNOSTYKA_051.md` |
 | Animacje CEM i hierarchia części | [P] dane; tempo i interpolacja – [H] | `docs/FORMATY_ETAP4.md` |
-| Układ współrzędnych (bez odbicia lustrzanego) | [P] | `RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md` |
-| Grafika zależna od epoki (warianty), przezroczystość budynków (F5) | [P] w AoC; w EE – [H] (obie?) | `docs/WARIANTY_EPOK.md`, `RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md` |
+| Układ współrzędnych (bez odbicia lustrzanego) | [P] | `raporty/archiwum/RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md` |
+| Grafika zależna od epoki (warianty), przezroczystość budynków (F5) | [P] w AoC; w EE – [H] (obie?) | `docs/WARIANTY_EPOK.md`, `raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md` |
 | Kamera produkcyjna wierna EE | [P] w EE i AoC | `docs/MECHANIKA_KAMERY_EE.md` |
 | Zaznaczanie (klik, Shift/Ctrl, ramka) | [P] | `docs/MECHANIKA_RUCHU_EE.md` § 2 |
 | Rozkaz grupy i szyk, trasy oktylowe A*, prędkość, przenikanie, objazd stojących | [P] (szczegóły z poziomami pewności w dokumentach) | `docs/MECHANIKA_RUCHU_EE.md`, `docs/MECHANIKA_PREDKOSCI_EE.md`, `docs/KOLIZJE_JEDNOSTEK_EE.md` |
-| Launcher | działa; ocena wizualna tylko na GPU | `RAPORT_LAUNCHER_UI.md` |
+| Launcher | działa; ocena wizualna tylko na GPU | `raporty/archiwum/RAPORT_LAUNCHER_UI.md` |
 
 Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
 
@@ -139,7 +141,7 @@ Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
 | Kolizje | jednostki w ruchu przenikają się; pole jednostki stojącej jest omijane | [P] | `docs/KOLIZJE_JEDNOSTEK_EE.md` |
 | Rozkazy | nowy PPM zastępuje rozkaz [P]; Shift+PPM dopisuje do kolejki [W] | [P]/[W] | `docs/MECHANIKA_RUCHU_EE.md` § 7 |
 | Grafika epok | wariant modelu zależny od epoki gracza (łańcuch `dbtechtree` → `dbevents`) | [P] | `docs/WARIANTY_EPOK.md` |
-| Przezroczystość budynków | tryb F5 | [P] (AoC) | `RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md` |
+| Przezroczystość budynków | tryb F5 | [P] (AoC) | `raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md` |
 | Pliki czytane przez oba exe | EE: tylko własny katalog; AoC: własny, potem EE | [P] | `docs/WARIANTY_GRY.md` § 2 |
 | Intro startowe | jedna funkcja inicjalizacji (EE 0x538867, AoC 0x5439B5) | [P] | `Riverlands_MCP/RAPORT_ROZBUDOWA_EE_MCP.md` § 17 |
 
@@ -195,4 +197,4 @@ Rozgrywki jeszcze nie ma: brak ekonomii, walki, SI, interfejsu gry i wyzwalaczy.
 | Lokalizacja, zasoby | `docs/LOKALIZACJA.md`, `docs/ZASOBY_ORYGINALNE.md` |
 | Atlas funkcji silnika Titan (zasady dokumentowania) | `docs/titan/README.md` |
 | Narzędzia | `narzedzia/README.md` |
-| Raporty etapów | `RAPORT_ETAP_1–5.md`, `RAPORT_LAUNCHER_UI.md`, `RAPORT_NAPRAWA_GRAFIKI.md`, `RAPORT_DIAGNOSTYKA_MODELI_051.md`, `RAPORT_KAMERA_EE_OPENEE.md` (6), `RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md` (7), `RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md` (8), `RAPORT_RUCH_GRUPOWY_EE.md` (9), `RAPORT_KAMERA_OPENEE.md` (10), `RAPORT_EE_AOC_FORMATY.md` (11), `RAPORT_ETAP_12_EE_AOC.md`, `RAPORT_ETAP_13.md`, `RAPORT_PORZADKI_ETAP_13_5.md` |
+| Raporty etapów | aktualny: `RAPORT_PORZADKI_ETAP_13_5.md` (katalog główny); archiwum z opisami i zasadą archiwizacji: `raporty/README.md` |

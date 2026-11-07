@@ -1,6 +1,6 @@
 class_name TestyGrafiki
 extends RefCounted
-## Testy naprawy grafiki (RAPORT_NAPRAWA_GRAFIKI.md): indeksy materiałów względne wobec v_offset, wybór obrazu SST
+## Testy naprawy grafiki (raporty/archiwum/RAPORT_NAPRAWA_GRAFIKI.md): indeksy materiałów względne wobec v_offset, wybór obrazu SST
 ## polem tekstura_id, reguła koloru gracza, UV, hierarchia, wykrywanie złych indeksów i braków tekstur.
 
 var t

@@ -1,6 +1,6 @@
 class_name TerenEE
 extends RefCounted
-## Budowa terenu Empire Earth wg reguł silnika oryginalnego (ustalenia etapu 3 – RAPORT_ETAP_3.md §2, docs/FORMATY_ETAP3.md).
+## Budowa terenu Empire Earth wg reguł silnika oryginalnego (ustalenia etapu 3 – raporty/archiwum/RAPORT_ETAP_3.md §2, docs/FORMATY_ETAP3.md).
 ## Kod własny OpenEE; reguły opisane słownie na podstawie analizy Low-Level Engine.dll / EE-AOC.exe i sprawdzone na danych.
 ##
 ## [K] = potwierdzone kodem, [D] = danymi, [H] = hipoteza.

@@ -61,7 +61,7 @@ Opisane w innych dokumentach, przy następnej analizie do przeniesienia tutaj:
 |---|---|---|---|
 | Intro startowe (lista `Movies\*.bik`, pętla odtwarzania) | 0x538867 (wywołanie 0x535EE5) | 0x5439B5 (wywołanie 0x5410BA) | `Riverlands_MCP/RAPORT_ROZBUDOWA_EE_MCP.md` § 17 |
 | Parsowanie wiersza poleceń (`hostgame`, `joinbyip`) | – | 0x52D9E5 | jw. |
-| Tryb przezroczystości budynków (F5) | – | opis w raporcie | `RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md` |
+| Tryb przezroczystości budynków (F5) | – | opis w raporcie | `raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md` |
 | Struktury pamięci (kamera, gra, gracze, jednostki, ekrany) | `ee_warianty.KOMPILACJE` | `ee_warianty.KOMPILACJE` | `Riverlands_MCP/riverlands_mcp/ee_warianty.py` |
 
 ## Narzędzia

@@ -1,7 +1,7 @@
 class_name WariantyGrafiki
 extends RefCounted
 ## Wybór grafiki (dbgraphics) obiektu wg epoki i zbadanych technologii gracza – etap 8,
-## RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md § 1–2. Wyłącznie dane gry, bez list nazw:
+## raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md § 1–2. Wyłącznie dane gry, bez list nazw:
 ##   technologia epoki (dbtechtree, głowa grupy) → „Event ID” → dbevents → efekty dbeffects o kodzie 6
 ##   („Object 1” → „New graphic”), nakładane rosnąco wg numeru epoki dla wszystkich epok ≤ epoki gracza;
 ##   następnie zdarzenia zbadanych technologii nie-epokowych (np. ulepszenia obywatela w epoce nano).

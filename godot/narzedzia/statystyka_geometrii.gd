@@ -2,7 +2,7 @@ extends SceneTree
 ## Statystyka geometrii wszystkich modeli z dbgraphics (OpenEE 0.5.1, diagnostyka): spójność nawinięcia trójkątów
 ## z normalnymi wierzchołków, pary współpłaszczyznowe (zwrot przeciwny = ściana dwustronna z dwóch trójkątów;
 ## zwrot zgodny = nakładka), duplikaty, trójkąty „player color” nad alfa = 0. Podstawa decyzji o odrzucaniu tylnych
-## ścian i wycinaniu alfa w materiale koloru gracza (RAPORT_DIAGNOSTYKA_MODELI_051.md).
+## ścian i wycinaniu alfa w materiale koloru gracza (raporty/archiwum/RAPORT_DIAGNOSTYKA_MODELI_051.md).
 ##   godot --headless --path godot --script res://narzedzia/statystyka_geometrii.gd [-- --limit=N]
 ##   → wyniki/statystyka_geometrii.json
 

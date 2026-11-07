@@ -1,7 +1,7 @@
 """Scenariusze SCN Empire Earth – lokalizacja kawałków FSChunk i odczyt terenu (kawałek 4).
 
 Układ wg dokumentacji laboratorium (RAPORT_SCN.md, RAPORT_EEMAP.md), zweryfikowany ponownie
-na plikach kampanii (patrz RAPORT_ETAP_1.md). Implementacja OpenEE – nie wymaga parsera całego
+na plikach kampanii (patrz raporty/archiwum/RAPORT_ETAP_1.md). Implementacja OpenEE – nie wymaga parsera całego
 nagłówka: szuka listy identyfikatorów kawałków (i32 N, N × u32), pomija 7 napisów ANSI i u32,
 a następnie sprawdza, że ramki kawałków układają się dokładnie do końca pliku.
 

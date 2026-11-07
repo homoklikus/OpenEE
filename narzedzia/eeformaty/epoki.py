@@ -1,6 +1,6 @@
 """Epoki i warianty grafiki Empire Earth (etap 8) – dekodery OpenEE, tylko odczyt.
 
-Łańcuch danych oryginału (RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md § 1–2):
+Łańcuch danych oryginału (raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md § 1–2):
 
   scenariusz (kawałek 5, blok EE gracza)  → technologia bieżącej epoki gracza (ID w dbtechtree)
   dbtechtree (rekord epoki)               → „Event ID” (indeks w dbevents), „Epoch number” (1–15)

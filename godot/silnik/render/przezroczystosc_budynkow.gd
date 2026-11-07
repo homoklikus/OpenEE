@@ -1,7 +1,7 @@
 class_name PrzezroczystoscBudynkow
 extends Node
 ## Opcjonalna przezroczystość budynków (etap 8) – odtworzenie mechanizmu „ukrywania jednostek” oryginalnego EE
-## (RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md § 3). Ustalenia z gry i pliku EE-AOC.exe:
+## (raporty/archiwum/RAPORT_EPOKI_WARIANTY_PRZEZROCZYSTOSC.md § 3). Ustalenia z gry i pliku EE-AOC.exe:
 ## * trzy tryby przełączane klawiszem F5 cyklicznie 1 → 2 → 0 → 1 (komunikaty „Standardowy sposób ukrywania jednostek”,
 ##   „Budynki zawsze przezroczyste”, „Budynki zawsze nieprzezroczyste”); domyślnie 1 (stan po starcie gry) [D: pamięć],
 ## * przezroczyste mogą stać się tylko obiekty z flagą dbobjects „Unknown#52” (bajt +0x3AE rekordu, kopiowany do

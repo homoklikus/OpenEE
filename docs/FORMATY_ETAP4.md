@@ -82,7 +82,7 @@ Przyjęte: **czas cyklu sekwencji = wartość × 0,01 s** (`SekwencjeAnimacji.CZ
   w etapie 5**: średnia obejmowała klatki śmierci; w klatkach ruchu/ataku/bezczynności `attack` leży po +Y, a stopa
   podparta w chodzie przesuwa się w −Y ⇒ przód = +Y (FORMATY_ETAP5 §3). Strona broni (±X) nie rozstrzyga lustrzaności.
 * ~~OpenEE **nie zmienia** układu osi – kwestia pozostaje otwarta (porównanie z grą).~~ **Rozstrzygnięte w etapie 7**
-  (RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md): gra pokazuje świat (x = kolumna, y = wiersz, z = góra) jako układ
+  (raporty/archiwum/RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md): gra pokazuje świat (x = kolumna, y = wiersz, z = góra) jako układ
   prawoskrętny, a modele CEM są w tym samym układzie co świat (L = I). Dawne mapowanie świata C(x, y, z) = (x, z, y)
   było odbiciem – mapa OpenEE była lustrzana. Obecnie W(x, y, z) = (x, z, −y) (obrót, = P siatek), jedyna warstwa:
   `UkladEE`.

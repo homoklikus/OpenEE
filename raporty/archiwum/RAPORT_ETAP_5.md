@@ -2,7 +2,7 @@
 
 Wersja: **0.5.0-dev** (rozwojowa). Punkt wyjścia: `main` = `509f812` (GitHub i lokalnie zgodne, drzewo czyste),
 95/95 testów. Kopia przed zmianami: `kopie_OpenEE/OpenEE_przed_etap5_2026-11-05.tar.gz`.
-Reguły i formaty: [docs/FORMATY_ETAP5.md](docs/FORMATY_ETAP5.md); architektura: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md) §Etap 5.
+Reguły i formaty: [docs/FORMATY_ETAP5.md](../../docs/FORMATY_ETAP5.md); architektura: [docs/ARCHITEKTURA.md](../../docs/ARCHITEKTURA.md) §Etap 5.
 
 **Kryterium zakończenia – spełnione na mapie „The Trojan War” (EE):**
 * zaznaczenie jednostki myszą (LPM);

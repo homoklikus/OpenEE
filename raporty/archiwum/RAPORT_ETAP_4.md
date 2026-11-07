@@ -2,7 +2,7 @@
 
 Wersja: **0.4.0-dev** (rozwojowa). Punkt wyjścia: `main` = `82ef227` (GitHub i lokalnie zgodne, drzewo czyste).
 Kopia przed zmianami: `kopie_OpenEE/OpenEE_przed_etap4_2026-11-05.tar.gz` (poza repozytorium).
-Szczegóły formatów: [docs/FORMATY_ETAP4.md](docs/FORMATY_ETAP4.md); architektura: [docs/ARCHITEKTURA.md](docs/ARCHITEKTURA.md) §Etap 4.
+Szczegóły formatów: [docs/FORMATY_ETAP4.md](../../docs/FORMATY_ETAP4.md); architektura: [docs/ARCHITEKTURA.md](../../docs/ARCHITEKTURA.md) §Etap 4.
 
 ## 1. Rozpoznana struktura animacji CEM
 * **Klatki kluczowe pełnej geometrii, bez szkieletu** [D]: każda klatka zawiera pozycje i normalne wszystkich

@@ -1168,7 +1168,7 @@ func _strona_informacje() -> Control:
 		ka[1].add_child(o)
 	v.add_child(ka[0])
 	var kd := _karta("folder", tx.t("info_dokumenty"))
-	for d in ["RAPORT_ETAP_2.md", "RAPORT_LAUNCHER_UI.md", "docs/ARCHITEKTURA.md", "docs/LOKALIZACJA.md", "docs/FORMATY_ETAP2.md"]:
+	for d in ["raporty/archiwum/RAPORT_ETAP_2.md", "raporty/archiwum/RAPORT_LAUNCHER_UI.md", "docs/ARCHITEKTURA.md", "docs/LOKALIZACJA.md", "docs/FORMATY_ETAP2.md"]:
 		var p: String = K.katalog_openee.path_join(d)
 		if FileAccess.file_exists(p):
 			var lb := LinkButton.new()

@@ -3,7 +3,7 @@ extends RefCounted
 ## Model kamery RTS oryginalnego Empire Earth: The Art of Conquest – parametry zmierzone w pamięci działającej gry
 ## (narzędzia MCP ee_kamera / ee_kamera_ustaw, 2026-11-06, mapa Riverlands 100×100, okno 3440×1440, Wine/DXVK).
 ## Oznaczenia: [P] potwierdzone powtarzalnymi pomiarami, [W] wniosek z ograniczonych pomiarów, [H] przybliżenie OpenEE,
-## [N] nieustalone. Szczegóły i dane: docs/MECHANIKA_KAMERY_EE.md (etap 10), RAPORT_KAMERA_EE_OPENEE.md.
+## [N] nieustalone. Szczegóły i dane: docs/MECHANIKA_KAMERY_EE.md (etap 10), raporty/archiwum/RAPORT_KAMERA_EE_OPENEE.md.
 ##
 ## Wielkości kamery są wyrażone w układzie świata EE (x = kolumna, y = wiersz, z = góra); do Godota przechodzą
 ## wyłącznie przez UkladEE (etap 7: obrót bez odbicia – kadr OpenEE pokrywa się z kadrem EE, nie jest odbity).

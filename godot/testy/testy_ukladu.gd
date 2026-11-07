@@ -1,6 +1,6 @@
 class_name TestyUkladu
 extends RefCounted
-## Testy układu współrzędnych (etap 7, RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md): konwersje UkladEE (punkty, kierunki,
+## Testy układu współrzędnych (etap 7, raporty/archiwum/RAPORT_UKLAD_WSPOLRZEDNYCH_OPENEE.md): konwersje UkladEE (punkty, kierunki,
 ## macierze), zachowanie odległości i skrętności, orientacja trójkątów i normalnych, rzut asymetrycznego układu punktów
 ## kontrolnych z oryginalnego EE (scenariusz „Żołnierze dla Rzymu”, zmierzone piksele) przez kamerę produkcyjną,
 ## wskazywanie myszą (piksel → promień → jednostka/teren) oraz dekodowanie napisów Windows-1250. Bez instalacji EE.

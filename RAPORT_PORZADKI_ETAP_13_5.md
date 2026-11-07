@@ -118,7 +118,7 @@ Formaty pozostałych wywołań MCP są bez zmian.
 | `docs/ARCHITEKTURA.md` | adnotacja: dokument historyczny, aktualny opis w `ARCHITEKTURA_OPENEE.md` |
 | `docs/HISTORIA.md` | etapy 6–10, 13 i 13.5; lista hipotez obalonych w etapach 6–13 |
 | `docs/MAPA_DROGOWA.md` | „Zrobione w etapach 6–13”; „Najbliżej” bez pozycji już zrobionych |
-| `RAPORT_ETAP_5.md`, `RAPORT_RUCH_GRUPOWY_EE.md`, `RAPORT_ETAP_12_EE_AOC.md`, `docs/FORMATY_ETAP5.md`, `docs/MECHANIKA_RUCHU_EE.md`, `docs/POROWNANIE_MECHANIK_EE_AOC.md` | adnotacje **„[Etap 13.5 – zastąpione]”** przy wnioskach obalonych lub uzupełnionych: 1,706, prorok 0,853/0,96, brak unikania i formacji, `Speed` jako pola/s; pierwotne obserwacje pozostały |
+| `raporty/archiwum/RAPORT_ETAP_5.md`, `raporty/archiwum/RAPORT_RUCH_GRUPOWY_EE.md`, `raporty/archiwum/RAPORT_ETAP_12_EE_AOC.md`, `docs/FORMATY_ETAP5.md`, `docs/MECHANIKA_RUCHU_EE.md`, `docs/POROWNANIE_MECHANIK_EE_AOC.md` | adnotacje **„[Etap 13.5 – zastąpione]”** przy wnioskach obalonych lub uzupełnionych: 1,706, prorok 0,853/0,96, brak unikania i formacji, `Speed` jako pola/s; pierwotne obserwacje pozostały |
 | MCP `README.md`, `RAPORT_ROZBUDOWA_EE_MCP.md` § 19 | kolejka, sprzątanie, usunięte kroki, wyniki audytu MCP |
 
 ## 7. Problemy odłożone na później

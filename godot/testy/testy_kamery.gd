@@ -1,6 +1,6 @@
 class_name TestyKamery
 extends RefCounted
-## Testy kamery RTS (RAPORT_KAMERA_EE_OPENEE.md): model kamery EE (kierunek, pochylenie, poziomy zoomu, prędkość
+## Testy kamery RTS (raporty/archiwum/RAPORT_KAMERA_EE_OPENEE.md): model kamery EE (kierunek, pochylenie, poziomy zoomu, prędkość
 ## przesuwania, granice mapy), kamera produkcyjna (brak obrotu, kółko, strzałki, ograniczenie do mapy, promień
 ## wskazywania) oraz kamera diagnostyczna (obrót i wolny zoom zachowane). Bez okna i bez instalacji EE.
 

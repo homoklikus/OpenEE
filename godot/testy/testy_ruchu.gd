@@ -1,6 +1,6 @@
 class_name TestyRuchuEE
 extends RefCounted
-## Testy etapu 9 (docs/MECHANIKA_RUCHU_EE.md, RAPORT_RUCH_GRUPOWY_EE.md): reguły zaznaczania EE, szyk grupy, trasy
+## Testy etapu 9 (docs/MECHANIKA_RUCHU_EE.md, raporty/archiwum/RAPORT_RUCH_GRUPOWY_EE.md): reguły zaznaczania EE, szyk grupy, trasy
 ## oktylowe, kolejka Shift + PPM, zastępowanie rozkazów, ruch grupy w terenie otwartym i przez przesmyk, przenikanie
 ## jednostek, omijanie budynków, rozkaz do terenu nieosiągalnego, stan animacji. Mapy syntetyczne; dane odniesienia
 ## – trajektorie zmierzone w oryginale (Testy_MCP/ee_ruch, pozycje startowe i końcowe – liczby, bez zasobów gry).
