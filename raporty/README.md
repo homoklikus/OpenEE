@@ -2,8 +2,8 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_16.md`](../RAPORT_ETAP_16.md) – etap 16: droga rozkazu ruchu gracza w silniku Titan (EE i AoC), rejestr
-błędów oryginału. Leży w katalogu głównym repozytorium.
+[`RAPORT_ETAP_17.md`](../RAPORT_ETAP_17.md) – etap 17: grupy ruchu w silniku Titan (EE i AoC). Leży w katalogu głównym
+repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
 
@@ -46,3 +46,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_PORZADKI_ETAP_13_5.md`](archiwum/RAPORT_PORZADKI_ETAP_13_5.md) | etap 13.5 | porządki: audyt, martwy kod, dokument architektury, zasady atlasu Titan, kolejka zadań MCP |
 | [`RAPORT_ETAP_14.md`](archiwum/RAPORT_ETAP_14.md) | etap 14 | zegar symulacji Titan: `EEPhysics`, krok 1000·G/n, pauza; EE ↔ AoC |
 | [`RAPORT_ETAP_15.md`](archiwum/RAPORT_ETAP_15.md) | etap 15 | przydział taktów: serwer lockstep, 15 taktów co 350 ms, tempo 1,461, n = 44 (przepełnienie bajtu) |
+| [`RAPORT_ETAP_16.md`](archiwum/RAPORT_ETAP_16.md) | etap 16 | droga rozkazu ruchu: `EEMPathTo`, kolejka serwera, takt komunikacji, wykonanie w `EEPhysics`; rejestr błędów oryginału |

@@ -36,7 +36,8 @@ eksportów DLL), porównanie EE ↔ AoC instrukcja po instrukcji po normalizacji
    pierwszym z nowo przydzielonych taktów** [P: kod].
 6. `EEMPathTo::Execute` sprawdza pole celu i dla zaznaczonej grupy gracza tworzy grupy ruchu z celem. W EE robi to w
    4, w AoC w 5 przebiegach, co odpowiada podziałowi na rodzaje jednostek [H]. Dalej zaczyna się podsystem ruchu i
-   wyszukiwania tras, czyli granica tego dokumentu.
+   wyszukiwania tras, czyli granica tego dokumentu. [Etap 17: przebiegi to grupy środowiska ruchu –
+   powietrze, ląd, nawodne, podwodne, w AoC kosmos; `docs/titan/grupy_ruchu.md`.]
 7. **Opóźnienie:** rozkaz wykonuje się na granicy taktu komunikacji. Od kliknięcia do pierwszej zmiany kierunku
    jednostki zmierzono 0,10–0,30 s, w granicach algorytmu: do 350 ms plus klatka i takt [P: pomiar EE i AoC zgodny
    z kodem].
@@ -62,9 +63,9 @@ eksportów DLL), porównanie EE ↔ AoC instrukcja po instrukcji po normalizacji
 | +0x0D | u8 | 0; poza serializacją | [P] |
 | +0x10 | f32 | wartość przekazywana do obiektu celu ruchu. W ścieżce minimapy jest to wynik `atan2` wektora od środka widoku, czyli kąt lub kierunek | [W] |
 | +0x14 / +0x18 | f32 | **x, y celu** (jednostki pól mapy) | [P] |
-| +0x1C | u8 | 1, gdy w flagach kliknięcia bit 1 = 0. Prawdopodobnie „zastąp rozkaz” (bez Shift); przekazywane do celu ruchu | [W] |
+| +0x1C | u8 | 1, gdy w flagach kliknięcia bit 1 = 0. Prawdopodobnie „zastąp rozkaz” (bez Shift); przekazywane do celu ruchu | [W] [Etap 17 – zastąpione: przy Shift+PPM pole pozostaje 1, więc to nie flaga Shift; znaczenie [N] – `grupy_ruchu.md`] |
 | +0x1D | u8 | argument kliknięcia, przekazywany do celu ruchu | [N] znaczenie |
-| +0x1E | u8 | bajt flag kliknięcia (w minimapie: bit 0 flag), przekazywany do ustawienia celu grupy | [N] znaczenie |
+| +0x1E | u8 | bajt flag kliknięcia (w minimapie: bit 0 flag), przekazywany do ustawienia celu grupy | [N] znaczenie [Etap 17: **Shift** – grupa +0xB5 = 1 przy Shift+PPM, pomiar AoC; [P]] |
 | +0x1F | u8 | przepisywany do obiektu celu ruchu (+0x33) | [N] znaczenie |
 
 Serializacja (`ExportMessage` / `ImportMessage`):

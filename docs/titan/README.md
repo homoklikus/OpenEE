@@ -55,7 +55,7 @@ Jeden plik na podsystem, np. `docs/titan/ruch_jednostek.md`. W pliku jedna sekcj
 
 ## Już ustalone miejsca w kodzie
 
-Wpisy atlasu: `zegar_symulacji.md` (etap 14), `przydzial_taktow.md` (etap 15), `rozkazy_gracza.md` (etap 16).
+Wpisy atlasu: `zegar_symulacji.md` (etap 14), `przydzial_taktow.md` (etap 15), `rozkazy_gracza.md` (etap 16), `grupy_ruchu.md` (etap 17).
 Rejestr błędów oryginału (odtwarzanych wiernie, zasada w `CLAUDE.md`): `BLEDY_ORYGINALU.md`. Pozostałe miejsca są opisane w innych dokumentach i przy następnej
 analizie zostaną przeniesione do atlasu:
 
@@ -67,6 +67,7 @@ analizie zostaną przeniesione do atlasu:
 | Zegar symulacji: wątek, takt `EEPhysics`, komunikat taktów, ustawienie n, krok, reset | 0x5532FB, 0x546C63, 0x5470B0, 0x553663, 0x5476C1, 0x54650E | 0x56140C, 0x553082, 0x55355C, 0x561774, 0x553BD8, 0x552909 | `docs/titan/zegar_symulacji.md` |
 | Przydział taktów: serwer lockstep (DLL `Send`, `SendCommunicationsTick`, `TuneForSlowCPU`), komunikat 0x26 → 0x28 w EXE | DLL 0x10055D2E, 0x10054AB8, 0x10055099; EXE 0x4C3839 | DLL 0x10049D13, 0x10048A9D, 0x1004907E; EXE 0x4CBC77 | `docs/titan/przydzial_taktow.md` |
 | Rozkaz ruchu: `EEAMouseClick` +0x0C / +4, `EEMPathTo` (Export/Execute), `EEServer` +0x60, wykonanie poleceń w `EEPhysics` | 0x403CF1, 0x403AA1, 0x4BA0A0, 0x4B9D7B, 0x4C3D90, 0x547263 | 0x403350, 0x403009, 0x4C2B41, 0x4C281C, 0x4CC1F9, pętla w 0x55355C | `docs/titan/rozkazy_gracza.md` |
+| Grupy ruchu: wypełnienie, warunek przebiegu, cel `EEUGLocation`, ustawienie celu, maszyna stanów grupy, flagi środowiska typu | 0x5DD18B, 0x5DD2D8, 0x614D47, 0x5DD436, 0x5DD463, 0x61CCEC | 0x5ED9D4, 0x5EDB21, 0x627742, 0x5EDC93, 0x5EDCC0, 0x62FD1C | `docs/titan/grupy_ruchu.md` |
 | Struktury pamięci (kamera, gra, gracze, jednostki, ekrany) | `ee_warianty.KOMPILACJE` | `ee_warianty.KOMPILACJE` | `Riverlands_MCP/riverlands_mcp/ee_warianty.py` |
 
 ## Narzędzia
