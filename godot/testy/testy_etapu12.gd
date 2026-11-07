@@ -101,7 +101,5 @@ func uruchom(K: Node) -> void:
 	# mnożnik prędkości: wartość etapu 9; pomiar etapu 12 na innym scenariuszu nie zmienia stałej
 	t._ok("E12 ruch: Symulacja.MNOZNIK_PREDKOSCI = dane openee (1,461 od etapu 13), niezależny od gry",
 		is_equal_approx(Symulacja.MNOZNIK_PREDKOSCI, float(d.get("openee", {}).get("mnoznik_predkosci", -1.0))))
-	# etap 13: mnożnik 1,706 wycofany (artefakt próbkowania); wspólny dla obu gier jest zegar czasu gry
-	var mn: Dictionary = m.get("zegar_gry_na_sekunde", {})
-	t._ok("E12 ruch: tempo czasu gry takie samo w EE i AoC (etap 13: zegar A_GRA+0xD0)",
-		mn.get("zakres") == "obie" and absf(float(mn.get("ee", 0)) - float(mn.get("aoc", 1))) < 0.002)
+	# etap 13: mnożnik 1,706 wycofany (artefakt próbkowania); zgodność tempa czasu gry EE = AoC sprawdza
+	# test „E13 prędkość: MNOZNIK_PREDKOSCI = tempo zegara gry” (testy_etapu13.gd) – tu bez powtórzenia (etap 13.5)

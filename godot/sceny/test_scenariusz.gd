@@ -585,14 +585,6 @@ static func _baza_obiektu(tr: PackedByteArray) -> Basis:
 	return UkladEE.baza(UkladEE.R_z_rekordu(tr))
 
 
-static func _mnoz(a: Array, b: Array) -> Array:
-	var w := [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-	for i in 3:
-		for j in 3:
-			w[i][j] = a[i][0] * b[0][j] + a[i][1] * b[1][j] + a[i][2] * b[2][j]
-	return w
-
-
 func _scena() -> void:
 	var n := okno.z
 	var sw := DirectionalLight3D.new()

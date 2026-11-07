@@ -55,14 +55,6 @@ static func z_rekordu(rek: Dictionary) -> SekwencjeAnimacji:
 	return s
 
 
-static func z_wartosci(wartosci: Array) -> SekwencjeAnimacji:
-	## Dla testów: lista [gniazdo, od, do, wartość, pętla] → sekwencje.
-	var s := SekwencjeAnimacji.new()
-	for x in wartosci:
-		s._dodaj(int(x[0]), 0, [256, x[1], x[2], x[3], x[4], 0], [], [-1, -1])
-	return s
-
-
 func _dodaj(g: int, j: int, q: Array, zd: Array, snd: Array) -> void:
 	var od := int(q[1]); var do_ := int(q[2]); var wart := int(q[3])
 	var petla := int(q[4]) & 0xFF
