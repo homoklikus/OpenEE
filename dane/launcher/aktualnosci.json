@@ -6,6 +6,18 @@
   {
    "data": "2026-11-07",
    "tytul": {
+    "pl": "Etap 18: cele jednostek",
+    "en": "Stage 18: unit targets"
+   },
+   "tekst": {
+    "pl": "Odtworzone, jak oryginał ustawia jednostki w szyku po rozkazie ruchu i która jednostka trafia na które miejsce.",
+    "en": "Reconstructed how the original arranges units in formation after a move order and which unit takes which spot."
+   },
+   "raport": "RAPORT_ETAP_18.md"
+  },
+  {
+   "data": "2026-11-07",
+   "tytul": {
     "pl": "Etap 17: grupy ruchu",
     "en": "Stage 17: movement groups"
    },
@@ -13,7 +25,7 @@
     "pl": "Odtworzone, jak oryginał dzieli zaznaczone jednostki na grupy ruchu – lądowe, powietrzne, morskie, podwodne, a w AoC także kosmiczne.",
     "en": "Reconstructed how the original splits selected units into movement groups – land, air, sea, submarine and, in AoC, space."
    },
-   "raport": "RAPORT_ETAP_17.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_17.md"
   },
   {
    "data": "2026-11-07",

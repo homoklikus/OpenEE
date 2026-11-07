@@ -201,7 +201,8 @@ Zadania MCP, tylko odczyt pamięci (Riverlands_MCP: `jednostki`, `ruch_zaznacz`,
 
 ## Nierozpoznane zależności i granica
 
-1. **0x5DB641**, czyli obsługa kodu 8000 (ok. 1900 instrukcji):
+1. **0x5DB641**, czyli obsługa kodu 8000 (ok. 1900 instrukcji) [Etap 18: ścieżka podstawowa – szyk `EEFShortLine` i
+   przydział celów – opisana w `docs/titan/cele_jednostek.md`]:
    - cele poszczególnych jednostek (nowe `EEUGLocation` w kolejce jednostki +0x90, 0x4A0131);
    - osobna gałąź dla samolotów (`Unit type` 3) i dla rodzaju celu 8;
    - szyk (parametry +0x70…+0xAC / gracza);

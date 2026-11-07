@@ -56,3 +56,25 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. Odtworzenie w OpenEE: stałe n = 44 z porcjami
   po 15 taktów, a nie „poprawione” 125 ani tempo 1,5.
 - **Źródło:** etap 15, `docs/titan/przydzial_taktow.md`, `raporty/archiwum/RAPORT_ETAP_15.md`.
+
+### BO-2 (podejrzenie): klucz przydziału pozycji szyku liczony od początku układu mapy z wartością bezwzględną
+
+- **Zachowanie.** W ścieżce dalekiej przydziału celów jednostkom (stan grupy 8000) pozycje szyku i jednostki są
+  sortowane według klucza k(p) = |a·y + b·x| + |0,1·b·y − 0,1·a·x|. Para (a, b) to kierunek od środka jednostek do
+  środka szyku, znormalizowany sumą wartości bezwzględnych. Rzuty są liczone dla **bezwzględnych współrzędnych mapy**,
+  nie względem środków, i potem brana jest ich wartość bezwzględna.
+  - Dopóki wszystkie rzuty mają ten sam znak, kolejność odpowiada ustawieniu poprzecznemu i przydział zachowuje szyk.
+  - Gdy prosta zerowego rzutu przechodzi przez obszar grupy, wartość bezwzględna „składa” kolejność i jednostki z obu
+    stron osi mogą dostać pozycje na krzyż. Ta prosta przechodzi przez początek układu mapy, a przy ruchu po przekątnej
+    także przez środek mapy.
+
+  Zamiarem autorów było najpewniej porządkowanie względem środka grupy [H].
+- **Lokalizacja.** `Empire Earth.exe` 0x5DB641 (klucze pozycji ok. 0x5DBFF2–0x5DC105, jednostek 0x5DC186–0x5DC277),
+  `EE-AOC.exe` 0x5EBF85 (ta sama logika).
+- **Przyczyna.** Obliczenie rzutu bez odjęcia punktu odniesienia; `fabs` po obu składnikach [W: kod].
+- **Skutki.** Możliwe krzyżowanie się tras jednostek przy niektórych kierunkach i położeniach na mapie [H].
+  W pomiarach etapu 18 wszystkie rzuty miały ten sam znak i przydział był zgodny z modelem.
+- **Pewność:** kod [W] – odczytany jednoznacznie, ale bez pomiaru przypadku złożenia; skutek [H].
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. OpenEE ma odtwarzać klucz dokładnie,
+  z wartością bezwzględną i współrzędnymi mapy.
+- **Źródło:** etap 18, `docs/titan/cele_jednostek.md`.
