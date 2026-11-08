@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_25.md`](../RAPORT_ETAP_25.md) – etap 25: wykonywanie trasy, dynamika ruchu (prędkość, obrót, hamowanie) i stany jednostki lądowej w Titan (EE i AoC), z niezależnym modelem ruchu.
+[`RAPORT_ETAP_26.md`](../RAPORT_ETAP_26.md) – etap 26: fizyka terenu (wysokość, nachylenie, prędkość na stoku), test kroku, kolizje i objazdy, skrypty stanów `.tai`, parametry szyku, weryfikacja BO-6 i BO-7, model ruchu całego przebiegu (EE i AoC).
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -55,3 +55,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_22.md`](archiwum/RAPORT_ETAP_22.md) | etap 22 | wejście do nawigacji: prośby o trasę grupy i jednostki, `EEPathManager`, punkty pośrednie +0x32, znaczniki celu +0x34 |
 | [`RAPORT_ETAP_23.md`](archiwum/RAPORT_ETAP_23.md) | etap 23 | architektura tras: `EEPathManager`, `EEAIContinentManager`, sektory, podsektory, obszary, maszyny A*, budżety, kolejki odroczeń |
 | [`RAPORT_ETAP_24.md`](archiwum/RAPORT_ETAP_24.md) | etap 24 | A* po polach: koszt 10/14, heurystyka 10·Manhattan, kolejność sąsiadów i reguła narożników, lista otwarta z kubełkami, koniec trasy w najbliższym dostępnym węźle, kolejka +0x7C jednostki, `Bounded`; model zgodny z pomiarami; BO-5, BO-6 |
+| [`RAPORT_ETAP_25.md`](archiwum/RAPORT_ETAP_25.md) | etap 25 | ruch jednostki: maszyna stanów, takt, prędkość (±a·dt, dyskretna droga hamowania), obrót trapezowy, zaliczanie punktów, przeszkody, Shift, punkty +0x32, niezależny model; BO-7 |

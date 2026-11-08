@@ -145,7 +145,7 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona.
 - **Źródło:** etap 24, `docs/titan/astar_wyniki.md` § 2.
 
-### BO-6 (podejrzenie): trasa do celu nieosiągalnego przez pola niedostępne dla typu jednostki
+### BO-6 (podejrzenie, zachowanie wyjaśnione w etapie 26 – nie jest błędem ruchu): trasa do celu nieosiągalnego przez pola niedostępne dla typu jednostki
 
 - **Zachowanie.** Jednostka lądowa dostała rozkaz na wodę (156,143). Trasa w jej kolejce prowadziła prosto po x = 147
   przez pola z terenem 10, który tablica typu (`EEUCLand` +0x5D6) oznacza jako niedostępny, do punktu pośredniego grafu
@@ -170,6 +170,16 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
     3. Po wyczerpaniu limitu prób celu (wejście w 8000) następuje Idle z porzuceniem celu.
   - Szczegóły: `docs/titan/ruch_trasa_przeszkody.md` § 4–5.
 
+- **[Etap 26 – rozstrzygnięcie zachowania]** Odczyt końcowy zadania 483 (etap 24) pokazuje stan **6002 „UnitRotting”**
+  (tryb 6), +0x1F0 = 0 i v = 0, czyli jednostka **zginęła** [P]. Powtórki EE 513–514 i 524 na ten sam cel kończą się
+  tak samo: popychanie w rejonie (150–154, 126–131), potem 6000 Dying → 6002 → 6003 Dead, w obecności wrogów
+  scenariusza [P].
+  - „Zatrzymanie i utrata celu” to więc skutek śmierci, a nie błąd ruchu ani trasy.
+  - Otwarte pozostaje tylko to, czy zapisana w etapie 24 trasa prowadziła przez pola z terenem 10. Powtórka szła inną
+    trasą [N].
+  - Wpis zostaje w rejestrze jako nierozstrzygnięte podejrzenie dotyczące wyłącznie trasy (`docs/titan/kolizje_objazdy.md`
+    § 10).
+
 ### BO-7 (obserwacja): docisk ostatniego kroku porównuje prędkość z odległością i nie działa przy vmax
 
 - **Zachowanie.** W fazie przyspieszania przy jednym punkcie trasy (+0x8C == 1) nowa prędkość v′ = v + a·dt jest
@@ -187,5 +197,48 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
     wynosi wtedy d·dt, a dojazd staje się wykładniczy (stała czasowa ok. 1 s gry), dopóki d ≥ 0,05 [W; skutek
     niezmierzony].
 - **Pewność:** kod [W]; zgodność z pomiarem przy vmax [P]; skutek dla krótkich rozkazów niezmierzony.
+- **[Etap 26 – potwierdzone pomiarem]** Skutek zmierzony w EE i AoC [P]:
+  - krótki rozkaz EE 517 (cel ok. 0,4 pola): po rozpędzie v = d co takt, czyli 0,2556 → 0,2469 … (×0,966 = 1 − dt);
+    dojazd ok. 80 taktów (2,7 s gry) zamiast ok. 15;
+  - AoC 525 (Aleksander, ok. 0,5 pola): to samo, 0,6818 → 0,6667 → 0,644 …;
+  - cel w miejscu jednostki (d < 0,05): v′ = d = 0, brak ruchu, od razu 9006 → 5001 → 5000.
+
+  Przy v = vmax docisk nie działa. Także po hamowaniu na stoku v + a·dt w precyzji x87 jest o 7,5e-9 większe od vmax
+  [P: model w precyzji 53/64 bitów bezbłędny w EE 517]. Model z dosłownym kodem odtwarza krótkie rozkazy co do taktu.
+  Status bez zmian: zachować zgodność.
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona.
 - **Źródło:** etap 25, `docs/titan/ruch_jednostki.md` § 5–6.
+
+### BO-8 (podejrzenie): ocena stanu Idle „co 350 ms” działa w praktyce co takt
+
+- **Zachowanie.** Krok maszyny stanów pomija ocenę w stanie Idle, gdy termin +0x254 jest **mniejszy** od zegara gry
+  (EEPhysics+0xD0).
+  - Każda ocena w Idle ustawia termin na zegar + 350 ms, a wejście w Idle na 0xFFFFFFFF.
+  - Warunek pomija więc ocenę tylko wtedy, gdy od ostatniej oceny minęło ponad 350 ms, czyli praktycznie nigdy.
+  - Idle jest oceniany co takt, a nie co 350 ms, jak sugeruje pole terminu.
+- **Lokalizacja.** `Empire Earth.exe` 0x5F0F7E (porównanie z +0x254), wejście w Idle 0x61B05B; `EE-AOC.exe` 0x5FF2E8
+  (+0x258) – identycznie.
+- **Przyczyna.** Prawdopodobnie odwrócony warunek porównania [W co do kodu, H co do intencji].
+- **Skutki.**
+  - Każda jednostka w spoczynku ocenia co takt przejście CanISeeEnemy (szukanie wrogów).
+  - Koszt obliczeń. Zmienia też chwile wykrycia wroga i wywołań generatora losowego, co wpływa na determinizm.
+
+  Pomiar: przejście Idle → 2015 następuje w takcie zaraz po rozkazie [P]. Zgodne z oceną co takt, ale nie rozstrzyga.
+- **Pewność:** kod [W]; intencja [H].
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona.
+- **Źródło:** etap 26, `docs/titan/skrypty_stanow.md` § 3.
+
+### BO-9 (podejrzenie): test bramy nadpisuje wynik testu zgodności rozkazów w pętli kolizji
+
+- **Zachowanie.** W pętli kontaktów 0x5498C4 najpierw liczony jest wynik „zgodność rozkazów”: kontakt pomijany, gdy
+  obie jednostki mają flagę +0x347 i ten sam rozkaz zbioru / budowy.
+  - Następnie dla obiektu typu 25 sprawdzane jest rzutowanie na `EEUCGate`. Gdy się nie udaje, czyli dla każdego
+    obiektu, który nie jest bramą, wynik ustawiany jest na 1 („kolizja”).
+  - To nadpisuje poprzedni wynik, więc pominięcie kolizji dla zgodnych rozkazów nigdy nie działa.
+- **Lokalizacja.** `Empire Earth.exe` 0x5498C4; `EE-AOC.exe` 0x5560CF (te same operacje, inne przesunięcia).
+- **Przyczyna.** Przypisanie zamiast koniunkcji [W co do kodu, H co do intencji].
+- **Skutki.** Jednostki wykonujące razem ten sam rozkaz zbioru lub budowy odpychają się mimo flagi +0x347 [H; dla
+  ruchu zwykłego bez skutku].
+- **Pewność:** kod [W]; skutek niezmierzony.
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona.
+- **Źródło:** etap 26, `docs/titan/kolizje_objazdy.md` § 7.

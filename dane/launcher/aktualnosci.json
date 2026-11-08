@@ -6,6 +6,18 @@
   {
    "data": "2026-11-08",
    "tytul": {
+    "pl": "Etap 26: teren, zderzenia i scenariusze zachowań",
+    "en": "Stage 26: terrain, collisions and behaviour scripts"
+   },
+   "tekst": {
+    "pl": "Odtworzone, jak zbocza spowalniają jednostki, co się dzieje, gdy jednostka wpadnie na inną, oraz jak oryginalne skrypty decydują o kolejnych krokach ruchu – model przewiduje teraz cały przejazd z dokładnością do setnych części pola.",
+    "en": "Reconstructed how slopes slow units down, what happens when a unit bumps into another, and how the original scripts drive each step of movement – the model now predicts a whole trip to within hundredths of a tile."
+   },
+   "raport": "RAPORT_ETAP_26.md"
+  },
+  {
+   "data": "2026-11-08",
+   "tytul": {
     "pl": "Etap 25: jak jednostka jedzie po trasie",
     "en": "Stage 25: how a unit drives along its route"
    },
@@ -13,7 +25,7 @@
     "pl": "Odtworzone, jak jednostka przyspiesza, skręca, mija kolejne punkty trasy, hamuje i staje dokładnie w celu – z liczbami z kodu oryginału, sprawdzonymi pomiarami w obu wersjach gry.",
     "en": "Reconstructed how a unit accelerates, turns, passes route points, brakes and stops exactly at its goal – with numbers taken from the original code and checked by measurements in both game versions."
    },
-   "raport": "RAPORT_ETAP_25.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_25.md"
   },
   {
    "data": "2026-11-07",

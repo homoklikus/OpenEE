@@ -88,7 +88,7 @@ Wszystkie są [W]. Zgodność EE/AoC: logika i stałe identyczne, różnią się
 | **+0x238** | f32 | bieżąca prędkość liniowa [pola/s czasu gry] | [P] |
 | +0x240 / +0x244 | f32 | skala / promień kolizji = typ+0x474·min(skala, 1), co najmniej 0,05 | [P]: 0,5 gwardia, 0,55 Aleksander |
 | +0x248 | int | ms ciągłego odpychania (podstawa „ObstacleDetected”) | [W] |
-| +0x254 (AoC +0x258) | int | czas następnej oceny stanu w Idle (co 350 ms gry) | [W] |
+| +0x254 (AoC +0x258) | int | czas następnej oceny stanu w Idle (co 350 ms gry) [Etap 26 – zastąpione: warunek odwrócony, Idle oceniany co takt – `skrypty_stanow.md` § 3, BO-8] | [W] |
 | +0x264 (AoC +0x268) | int | tryb ruchu: 0 / 3 / 4 / 5 | [P]: 3 w spoczynku |
 | +0x33F (AoC +0x34B) | u8 | „osiągnięto bieżący punkt” (wynik testu z taktu fizyki) | [W] |
 
@@ -127,9 +127,9 @@ Pewność: odczyt pamięci EE 508 [P]; role z kodu [W]; zgodność kroków a·dt
   prawdziwy i gdy fałszywy.
 - Zdarzenia ocenia dispatcher 0x61B677; dla celu `EEUGLocation` najpierw cel→vt+0x64.
 - Na takt zachodzi najwyżej jedno przejście, a po nim akcja wejścia (0x61AD41).
-- W Idle maszyna jest oceniana najwyżej co 350 ms czasu gry.
+- W Idle maszyna jest oceniana najwyżej co 350 ms czasu gry. *[Etap 26 – zastąpione: w praktyce co takt, BO-8.]*
 
-**Diagram nie jest zapisany w EXE.** Przejścia czyta parser skryptów z katalogu `Unit AI Scripts\` (pliki `.tai`,
+*[Etap 26: skrypty odnalezione w `data.ssa`; pełna tabela przejść – `skrypty_stanow.md`.]* **Diagram nie jest zapisany w EXE.** Przejścia czyta parser skryptów z katalogu `Unit AI Scripts\` (pliki `.tai`,
 0x619B9D). Tablica nazw 0x618E11 to tylko słownik dla tego parsera [W].
 
 Diagram poniżej to zmierzona kolejność obiektów stanu (EE 500, 508) uzupełniona o warunki zdarzeń z kodu.
@@ -139,10 +139,10 @@ Diagram poniżej to zmierzona kolejność obiektów stanu (EE 500, 508) uzupełn
 | Stan | Akcja wejścia | Pomiar |
 |---|---|---|
 | 5000 Idle | tryb 3; czyści trasę; zdejmuje cel (0x5EAE25) i aktywuje następny; +0x214 = −10000 | stan spoczynku [P] |
-| 5001 (nazwa [N]) | brak w switchu [W] | 1 takt między 9006 a 5000 po obrocie [P] |
+| 5001 ReacquireGoal *[Etap 26]* | akcja 0x61B241 [W] | 1 takt między 9006 a 5000 po obrocie [P] |
 | 8000 PrepareToMove | gdy licznik prób celu (cel+0x18) > limitu: przejście do Idle (porzucenie celu); inaczej czyści trasę, zwiększa cel+0x18 i prosi o trasę (0x4A1AFF) | – |
 | 9000 GetNextMoveWaypoint | zdejmuje **jeden** punkt z przodu trasy (0x5EDCF4); przy typ+0x5D4 & 2 najpierw test narożnika | 1 takt przy każdym punkcie [P] |
-| 9002 RepathAroundObstacle | czyści trasę, sprawdza 4 sąsiednie pola, dopisuje objazd albo prosi o nową trasę | – |
+| 9002 RepathAroundObstacle | czyści trasę, sprawdza 4 sąsiednie pola, dopisuje objazd albo prosi o nową trasę *[Etap 26 – uściślone: 4 pola tylko w pościgu; ogólnie synchroniczne A* w oknie ±50 pól – `kolizje_objazdy.md` § 6]* | – |
 | 9006 TurnToUnitFacing | tryb 5, chyba że cel ma typ 1 i obrót jest już zakończony | hamowanie i obrót na końcu [P] |
 | 10003 Advance | tryb 0; +0x33F = 0 | jazda [P] |
 | 10006 Stop | tryb 4 (w AoC brak przypadku) | – |
@@ -193,7 +193,7 @@ odgałęzienia z kodu:
 Pewność diagramu:
 - sekwencja 2015 → 10003 → 9000 → 2015 → 10003 przy każdym punkcie oraz 9000 → 9006 → 5001 → 5000 na końcu: [P] (EE
   500; AoC 505 – ta sama liczba taktów);
-- odgałęzienia: [H], bo skrypty `.tai` są niedostępne.
+- odgałęzienia: [H], bo skrypty `.tai` są niedostępne. *[Etap 26 – zastąpione: odgałęzienia odczytane ze skryptów, [W] – `skrypty_stanow.md` § 4.]*
 
 Każdy cykl przy punkcie trwa 3 takty: zdjęcie w 9000, przejście do 2015, powrót do Advance. Kolejny punkt można więc
 zaliczyć najwcześniej po 3 taktach [P/W].
@@ -232,7 +232,7 @@ tryb 0 (Advance i stany przejściowe 9000 / 2015, bo tryb ustawia tylko wejście
   u+0x238 = v';  u+0x21C = max(v', par+0xBC)
   -- ruch --
   P += (−sin kurs', cos kurs')·v'·dt       ; po NOWYM kursie
-  test przejezdności (0x54E275, [N]); z = wysokość terenu (0x4C0201 [H]); pochylenie, gdy typ+0x5F3 / +0x5F4
+  test przejezdności (0x54E275 – `fizyka_terenu.md` § 4); z = GetMeshZ (0x4C0201 – `fizyka_terenu.md` § 1, [P]); pochylenie, gdy typ+0x5F3 / +0x5F4
   u+0x33F = osiągnięto(u, d)               ; d sprzed ruchu (0x6213D8)
   zapis transformacji, pola +0x1C / +0x20, list kolizji (0x5F043B)
 tryb 4: v' = max(0, v − a·dt), ω hamowane, ruch naprzód o v'·dt po dotychczasowym kursie
@@ -267,7 +267,7 @@ po każdym trybie oprócz 2: kolizje i odpychanie (0x549E61):
    piłokształtną prędkość 0,6 / 0,532 / 0,464 pod górę [P: pomiar EE 500, AoC 505; reguła z kodu].
    - 61 z 77 spadków prędkości w EE 500 to dokładnie 1·a·dt, 6 to 2·a·dt.
    - Jednostka zwalnia średnio do ok. 0,56–0,57 pola/s.
-   - Funkcja nachylenia (0x51216A) – [N].
+   - Funkcja nachylenia (0x51216A) – [N]. *[Etap 26 – rozpoznane: asin(Δz/1,3) z punktów ±0,65 wzdłuż osi jednostki, na macierzy sprzed ruchu; model z tą regułą zgodny z pomiarem – `fizyka_terenu.md` § 2–3.]*
 8. **Prędkość nie zależy od pozostałej długości trasy**, poza decyzją o hamowaniu. Nie zależy też od odległości do
    punktu pośredniego, poza zakrętami > 45° [W/P].
 
@@ -331,8 +331,8 @@ po każdym trybie oprócz 2: kolizje i odpychanie (0x549E61):
 
 ## 10. Niewiadome
 
-- [N] Treść skryptów `.tai`, czyli pełny diagram, nazwa stanu 5001 i to, kto wchodzi w 8000 przy rozkazie.
-- [N] Funkcja nachylenia 0x51216A, test przejezdności 0x54E275, wysokość 0x4C0201, rozdzielanie kolizji 0x5498C4.
-- [N] Skąd pochodzą wartości parametrów +0xA8…+0xCC (baza jednostek, ulepszenia, loader 0x4D63F1).
+- [N] Treść skryptów `.tai`, czyli pełny diagram, nazwa stanu 5001 i to, kto wchodzi w 8000 przy rozkazie. *[Etap 26 – rozpoznane poza wejściem w 8000 – `skrypty_stanow.md`.]*
+- [N] Funkcja nachylenia 0x51216A, test przejezdności 0x54E275, wysokość 0x4C0201, rozdzielanie kolizji 0x5498C4. *[Etap 26 – rozpoznane – `fizyka_terenu.md`, `kolizje_objazdy.md`.]*
+- [N] Skąd pochodzą wartości parametrów +0xA8…+0xCC (baza jednostek, ulepszenia, loader 0x4D63F1). *[Etap 26 – rozpoznane: rekord bazy jednostek +0x94…+0xA4, init 0x627942, SetSpeed 0x628051; 0x4D63F1 to tablica obrażeń – `kolizje_objazdy.md` § 8.]*
 - [N] Ruch w szyku: wartości grupa+0x7C / +0x88 i to, dlaczego po rozkazie z przeciągnięciem pojedyncza jednostka
-  jechała ok. 0,40–0,46 i hamowała stopniowo (`ruch_trasa_przeszkody.md` § 8, eksperyment H).
+  jechała ok. 0,40–0,46 i hamowała stopniowo (`ruch_trasa_przeszkody.md` § 8, eksperyment H). *[Etap 26 – rozpoznane: grupa = min(średnia, k·min), w szyku gwardia 0,7 z Aleksandrem; 0,40–0,46 to stok – `kolizje_objazdy.md` § 8, `fizyka_terenu.md` § 3.]*

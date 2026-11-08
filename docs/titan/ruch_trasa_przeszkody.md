@@ -112,7 +112,7 @@ Na końcu B: hamowanie do zera, obrót do kursu celu (5 → 39,9°), potem cykl 
 
 **RepathAroundObstacle 9002** (0x6225E7 / AoC 0x636B69) [W]:
 - czyści trasę;
-- sprawdza 4 sąsiednie pola;
+- sprawdza 4 sąsiednie pola *[Etap 26 – tylko w pościgu; ogólnie A* w oknie ±50 pól – `kolizje_objazdy.md` § 6]*;
 - dopisuje punkty objazdu (0x5E8BAC) albo zleca nowe szukanie (0x4A1E11, 0x4A2034);
 - dokładna logika – [N].
 
@@ -122,7 +122,7 @@ Na końcu B: hamowanie do zera, obrót do kursu celu (5 → 39,9°), potem cykl 
   zdarzenia dla jednostki lądowej z celem-położeniem.
 
 **Lokalne omijanie** w sensie sterowania nie istnieje [W]. Jednostki rozdziela odpychanie, a omijanie przeszkód
-stałych daje trasa A*. Nieudany krok (0x54E275, test przejezdności po ruchu) – szczegóły [N].
+stałych daje trasa A*. Nieudany krok (0x54E275, test przejezdności po ruchu) – szczegóły [N]. *[Etap 26 – rozpoznane: ślizg po osiach albo cofnięcie, zatrzymanie na komórce ze środkiem innej jednostki – `fizyka_terenu.md` § 4, `kolizje_objazdy.md` § 3.]*
 
 ## 5. Cel nieosiągalny (eksperyment I, BO-6)
 
@@ -135,7 +135,7 @@ Pomiar EE 509–510: gwardia, rozkaz na wodę (156,5; 143,5) z (178,6; 125,2) [P
   - Ostatni punkt to węzeł wybrany przez A* (+0x94, `astar_wyniki.md` § 1), nie kliknięcie.
 - Inaczej niż w przypadku BO-6 (etap 24, start (150,7; 115,7)), jednostka nie zatrzymała się przy brzegu i nie
   straciła celu przed jego osiągnięciem.
-- BO-6 nie zostało tu powtórzone. Możliwy mechanizm z kodu: niedostępne pole → ciągłe odpychanie / test 0x54E275 →
+- *[Etap 26 – rozstrzygnięte: jednostka z etapu 24 zginęła (stan 6002), powtórki też kończą się śmiercią w tym rejonie – `kolizje_objazdy.md` § 10.]* BO-6 nie zostało tu powtórzone. Możliwy mechanizm z kodu: niedostępne pole → ciągłe odpychanie / test 0x54E275 →
   9000 po 3–5 s → objazd / wyczerpanie prób → Idle [H] (adnotacja w `BLEDY_ORYGINALU.md`).
 
 ## 6. Usuwanie punktów pośrednich +0x32 „ok. 15 pól wcześniej”
@@ -178,7 +178,9 @@ Pomiary z etapu 25 nie pokazują jednej przyczyny dla wszystkich przypadków.
 | koniec trasy w najbliższym dostępnym węźle A* | cel niedostępny (woda, budynek, krawędź) | dowolna, zwykle ≥ 1 pole; punkt końca w środku pola | [P] EE 509–510 |
 | pozycja szyku | rozkaz grupowy – każda jednostka ma własny cel przesunięty szykiem | ok. 1–2 pola od kliknięcia | [P] etapy 17–20 |
 | odepchnięcie po dojściu | inne jednostki u celu; rozdzielanie działa także w spoczynku | ułamek pola do ok. 1 pola | [W] |
-| porzucenie celu (limit prób, BO-6) | trasa przez pola niedostępne / blokada | dowolna | [H] |
+| porzucenie celu (limit prób, BO-6) | trasa przez pola niedostępne / blokada | dowolna | [H] *[Etap 26: BO-6 to śmierć jednostki]* |
+| *[Etap 26]* stojąca jednostka na komórce na drodze | test kroku cofa krok, rozkaz kończy się (9000 → 9006 → 5001 → 5000) | ok. 1–2 pola | [P] EE 518, AoC 525 |
+| *[Etap 26]* wykładniczy dojazd BO-7 | dojście przy v < vmax z d < v | jednostka dochodzi, ale 1–2 s dłużej | [P] EE 517, AoC 525 |
 | przełączenie celu +0x32 z wyprzedzeniem | punkty pośrednie trasy grupowej | ≤ N pól przed węzłem pośrednim, nie przed celem końcowym | [W] |
 
 Przy zwykłym rozkazie na dostępne miejsce jednostka staje w punkcie kliknięcia z dokładnością < 0,05
@@ -248,3 +250,50 @@ taktów):
   Odcinkowo maksimum wynosi 3–5°.
 - Odchyłki maksymalne odcinkowe (0,06 / 0,14) dotyczą odcinków 2–3 (y ≈ 122–124), gdzie gra jedzie pod górę
   z piłokształtną prędkością. Pozostałe odcinki mają ≤ 0,03 pola (EE ≤ 0,02).
+
+## 10. Model etapu 26 (teren) – porównanie z modelem etapu 25
+
+*[Etap 26]* Model v3 (`Testy_MCP/e26/model_ruchu3.py`) dodaje do v2:
+- regułę stoku z nachyleniem liczonym jak w kodzie (asin(Δz/1,3), punkty ±0,65, tablicowe UMArcCos);
+- siatkę wysokości z pamięci gry;
+- pochylanie macierzy dla typów z flagą +0x5F3;
+- arytmetykę porównań prędkości w precyzji x87 (53/64 bity).
+
+Zgodność z grą [P]:
+- wysokość z jednostki zgadza się z modelem bit w bit;
+- nachylenie macierzy Aleksandra zgadza się z modelem.
+
+Kolizji, testu kroku i objazdów model nie zawiera. W porównywanych przebiegach nie było kontaktów ani ślizgów.
+
+Próbki co 1–2 takty, porównywane tylko takty zmierzone, bez interpolacji. „Takty rozbieżne”: |Δpoz| > 0,01 albo |Δv| >
+0,001.
+
+| Scenariusz | Model | Próbek | Pozycja śr / max | v śr / max | Kąt śr / max | Koniec ruchu (model − gra) [takty] | Stany zgodne | Punkt aktywny zgodny | Takty rozbieżne |
+|---|---|---|---|---|---|---|---|---|---|
+| EE 500 gwardia (etap 25) | v2 | 811 | 0,1185 / 0,1582 | 0,0088 / 0,409 | 1,19° / 31,7° | -7 | 755/811 | 720/811 | 712 |
+| EE 500 gwardia (etap 25) | v3 | 815 | 0,0106 / 0,0262 | 0,0010 / 0,136 | 0,29° / 9,7° | +0 | 794/815 | 809/815 | 415 |
+| AoC 505 Aleksander (etap 25) | v2 | 733 | 0,1764 / 0,2419 | 0,0152 / 0,477 | 1,00° / 26,0° | -8 | – | 611/733 | 652 |
+| AoC 505 Aleksander (etap 25) | v3 | 749 | 0,0055 / 0,0842 | 0,0040 / 0,541 | 0,38° / 15,6° | +15 | – | 734/749 | 44 |
+| EE 517 krótki z zawrotem (BO-7) | v2 | 69 | 0,0062 / 0,0131 | 0,0086 / 0,068 | 2,30° / 10,6° | +0 | 69/69 | 69/69 | 66 |
+| EE 517 krótki z zawrotem (BO-7) | v3 | 69 | 0,0062 / 0,0131 | 0,0086 / 0,068 | 2,30° / 10,6° | +0 | 69/69 | 69/69 | 66 |
+| EE 517 ok. 1,4 pola na stoku | v2 | 60 | 0,0350 / 0,1640 | 0,0667 / 0,370 | 0,00° / 0,0° | -35 | 56/60 | 56/60 | 34 |
+| EE 517 ok. 1,4 pola na stoku | v3 | 86 | 0,0000 / 0,0001 | 0,0000 / 0,000 | 0,01° / 0,0° | +0 | 86/86 | 86/86 | 0 |
+| AoC 525 krótki (BO-7) | v2 | 81 | 0,0259 / 0,0492 | 0,0317 / 0,069 | 0,02° / 0,9° | -3 | – | 78/81 | 81 |
+| AoC 525 krótki (BO-7) | v3 | 81 | 0,0259 / 0,0492 | 0,0317 / 0,069 | 0,02° / 0,9° | -3 | – | 78/81 | 81 |
+| AoC 525 ok. 1,9 pola na stoku | v2 | 61 | 0,0022 / 0,0135 | 0,0251 / 0,205 | 0,02° / 0,2° | -3 | – | 60/61 | 17 |
+| AoC 525 ok. 1,9 pola na stoku | v3 | 62 | 0,0010 / 0,0148 | 0,0115 / 0,136 | 0,02° / 0,2° | -2 | – | 61/62 | 7 |
+
+Wnioski:
+- **EE 500 – cały przebieg:** średni błąd 0,119 → 0,011, maksymalny 0,158 → 0,026, koniec ruchu w tym samym takcie.
+  - Do taktu 109 zgodność wynosi 1e-4.
+  - Potem rozjazd: drgania ω przy wyrównanym kursie mają w grze inny znak niż w modelu (±α·dt). Znak zależy od błędu
+    kursu rzędu 1e-5 rad, czyli od zapisów f32 i UMArcTan2 z DLL (`fizyka_terenu.md` § 6).
+- **AoC 505:** średnio 0,006, ale koniec ruchu +15 taktów.
+  - Przyczyna: przypadek graniczny decyzji hamowania przy celu. Gra ma d = 0,1739 > S = 0,1736, a model ze względu na
+    różnicę pozycji ok. 1e-3 hamuje takt wcześniej, po czym wpada w docisk BO-7.
+  - To nie brakujący mechanizm, tylko czułość na precyzję.
+- **EE 517 (ok. 1,4 pola na stoku):** model v3 bezbłędny (0 rozbieżnych taktów); v2 bez terenu myli się o 35 taktów.
+- **Krótkie rozkazy (BO-7):** model odtwarza wykładniczy dojazd. Pozostały błąd (0,006–0,026) pochodzi z szacowania
+  punktu celu z samego przebiegu, bo cel nie jest odczytywany z pamięci (kolejka +0x7C wymaga dwóch dereferencji).
+- **Stany i punkt aktywny:** zgodne w 97–100 % próbek. Rozbieżności wynikają tylko z przesunięcia o 1 takt przy
+  zdjęciu punktu.
