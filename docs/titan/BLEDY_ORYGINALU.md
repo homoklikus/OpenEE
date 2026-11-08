@@ -225,10 +225,17 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
 
   Pomiar: przejście Idle → 2015 następuje w takcie zaraz po rozkazie [P]. Zgodne z oceną co takt, ale nie rozstrzyga.
 - **Pewność:** kod [W]; intencja [H].
+  **[Etap 27]** kod potwierdzony: skok `jb` (porównanie bez znaku), termin = zegar + 350 przy każdej ocenie. Wejście w
+  Idle zużywa warunkowo 2 losowania globalnego generatora, więc błąd wpływa na sekwencję RNG całej gry. Pewność kodu
+  [P], intencji [H] (`skrypty_stanow.md` § 6).
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona.
-- **Źródło:** etap 26, `docs/titan/skrypty_stanow.md` § 3.
+- **Źródło:** etap 26, `docs/titan/skrypty_stanow.md` § 3; etap 27, § 6.
 
-### BO-9 (podejrzenie): test bramy nadpisuje wynik testu zgodności rozkazów w pętli kolizji
+### BO-9 (podejrzenie obalone w etapie 27 – zob. BO-9′): test bramy nadpisuje wynik testu zgodności rozkazów w pętli kolizji
+
+**[Etap 27 – zastąpione]** Nadpisanie wyniku na 1 dotyczy tylko obiektów kategorii 0x19 (25), które nie są bramą,
+czyli murów. Dla zwykłych jednostek wynik testu zgodności nie jest nadpisywany. Opis poniżej to pierwotna obserwacja.
+
 
 - **Zachowanie.** W pętli kontaktów 0x5498C4 najpierw liczony jest wynik „zgodność rozkazów”: kontakt pomijany, gdy
   obie jednostki mają flagę +0x347 i ten sam rozkaz zbioru / budowy.
@@ -242,3 +249,16 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
 - **Pewność:** kod [W]; skutek niezmierzony.
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona.
 - **Źródło:** etap 26, `docs/titan/kolizje_objazdy.md` § 7.
+
+### BO-9′ (podejrzenie): flaga pominięcia kontaktu nie jest zerowana między kontaktami
+
+- **Zachowanie.** W pętli kontaktów 0x5498C4 flaga „pomiń kontakt” (zgodność rozkazów zbioru / budowy, +0x347)
+  ustawiana jest przed pętlą i nie jest zerowana na początku każdej iteracji. Jeśli jeden kontakt ją ustawi, kolejne
+  kontakty tej jednostki w tym samym takcie też mogą zostać pominięte.
+- **Lokalizacja.** `Empire Earth.exe` 0x5498C4; `EE-AOC.exe` 0x5560CF.
+- **Przyczyna.** Inicjalizacja zmiennej poza pętlą [W co do kodu, H co do intencji].
+- **Skutki.** Jednostki zbierające razem surowce lub budujące mogą przenikać inne jednostki z listy kontaktów [H].
+  Dla zwykłego ruchu bez rozkazów zbioru / budowy bez skutku [W].
+- **Pewność:** kod [W]; skutek niezmierzony [H].
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona.
+- **Źródło:** etap 27, `docs/titan/walidacja_kolizji.md` § 8.

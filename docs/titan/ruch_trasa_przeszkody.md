@@ -297,3 +297,6 @@ Wnioski:
   punktu celu z samego przebiegu, bo cel nie jest odczytywany z pamięci (kolejka +0x7C wymaga dwóch dereferencji).
 - **Stany i punkt aktywny:** zgodne w 97–100 % próbek. Rozbieżności wynikają tylko z przesunięcia o 1 takt przy
   zdjęciu punktu.
+
+**[Etap 27 – uzupełnione]** Model v4 (UMArcTan2 z tablic DLL, zapisy f32 jak w oryginale, obrót AoC) i pełna tabela
+metryk v2/v3/v4: `testy_referencyjne_ruchu.md` § 5. AoC 505 kończy się w tym samym takcie co gra (v3: +15).

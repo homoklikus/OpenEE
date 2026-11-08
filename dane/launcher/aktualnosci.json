@@ -6,6 +6,18 @@
   {
    "data": "2026-11-08",
    "tytul": {
+    "pl": "Etap 27: dokładna matematyka ruchu i plan wdrożenia",
+    "en": "Stage 27: exact movement maths and an implementation plan"
+   },
+   "tekst": {
+    "pl": "Odtworzone, jak oryginał liczy kąty i zaokrągla liczby, dzięki czemu przejazd w The Art of Conquest kończy się w tym samym momencie co w grze. Sprawdzone przepychanie jednostek, powtarzalność losowania i przygotowany szczegółowy plan przeniesienia ruchu do OpenEE.",
+    "en": "Reconstructed how the original computes angles and rounds numbers, so a trip in The Art of Conquest now ends at the same moment as in the game. Unit pushing and repeatable randomness were verified, and a detailed plan for bringing movement into OpenEE was prepared."
+   },
+   "raport": "RAPORT_ETAP_27.md"
+  },
+  {
+   "data": "2026-11-08",
+   "tytul": {
     "pl": "Etap 26: teren, zderzenia i scenariusze zachowań",
     "en": "Stage 26: terrain, collisions and behaviour scripts"
    },
@@ -13,7 +25,7 @@
     "pl": "Odtworzone, jak zbocza spowalniają jednostki, co się dzieje, gdy jednostka wpadnie na inną, oraz jak oryginalne skrypty decydują o kolejnych krokach ruchu – model przewiduje teraz cały przejazd z dokładnością do setnych części pola.",
     "en": "Reconstructed how slopes slow units down, what happens when a unit bumps into another, and how the original scripts drive each step of movement – the model now predicts a whole trip to within hundredths of a tile."
    },
-   "raport": "RAPORT_ETAP_26.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_26.md"
   },
   {
    "data": "2026-11-08",

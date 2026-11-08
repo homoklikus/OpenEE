@@ -205,6 +205,7 @@ macierz. Osobnej wysokości kontaktu nie ma. Tylko AoC dla jednostek pływający
     f32 i UMArcTan2 z DLL [P: pierwszy rozjazd modelu w EE 500 w takcie 110].
 - **Funkcje DLL:** UMArcCos, UMArcTan2, Normalize i IntersectsIn2D pochodzą z `Low-Level Engine.dll`, a nie z libm.
   Wiernie odtworzyć trzeba tablicę acos [W] i UMArcTan2 [N].
+  **[Etap 27 – zastąpione]** UMArcTan2 zrekonstruowane, tablice cos/acos opisane (`precyzja_numeryczna.md` § 2) [P].
 - **FPS renderowania nie ma wpływu:** dt to stała EEPhysics (1,5/44 s gry), a wysokość i nachylenie liczone są w takcie
   symulacji [W, P].
 
@@ -215,3 +216,13 @@ macierz. Osobnej wysokości kontaktu nie ma. Tylko AoC dla jednostek pływający
 - [N] Pełne warunki przepuszczania obiektów w teście kroku (obiekt→vt48, typ→vt54, [+0x30][+0x340]: bramy, mury,
   sojusznicy).
 - [N] Czy D3D zmienia precyzję FPU w trakcie gry. Pomiar wskazuje, że nie.
+
+## 8. Aktualizacja etapu 27
+
+- **Kwantowanie kursu:** kurs to UMArcTan2(−m01, m11) z macierzy zapisanej przez `SetOrientationYPR` z tablicowych
+  cos/sin. Wszystkie 1251 wartości macierzy EE 500 to wartości tablicowe [P] (`precyzja_numeryczna.md` § 2.4).
+- **Precyzja:** pełna tabela punktów zapisu f32 i porównań z rejestru – `precyzja_numeryczna.md` § 5. Wniosek z § 6
+  („x87 w pełnej precyzji”) jest doprecyzowany: PC_53, czyli równoważnie f64 [P].
+- **Obrót AoC** różni się od EE (0x554F56 / 0x554738), co wyjaśnia +15 taktów AoC 505 (`precyzja_numeryczna.md` § 6).
+- **Teren:** reguły GetMeshZ i nachylenia bez zmian. Syntetyczne przypadki podjazdu i zjazdu (S6, S7) w
+  `dane/testy_ruchu/ruch_syntetyczne_etap27.json`.

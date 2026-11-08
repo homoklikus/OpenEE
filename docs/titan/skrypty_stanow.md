@@ -155,3 +155,17 @@ po kolizji:      10003 (v → 0) → 9000 → 9006 → 5001 → 5000            
   pomiarze stan 8000 trwa krócej niż 1 próbka.
 - [N] Pole rekordu bazy jednostek z nazwą skryptu; skrypty innych typów (np. Land Patrolling) dla ruchu.
 - [N] Warunki CanITargetEnemies i postawy (+0x208) poza ruchem bez wrogów.
+
+## 6. Aktualizacja etapu 27
+
+- **BO-8 potwierdzone w kodzie** [W→P co do kodu]: porównanie terminu +0x254 z zegarem to skok `jb` (bez znaku). Ocena
+  jest pomijana tylko wtedy, gdy termin < zegar. Każda ocena ustawia termin = zegar + 350, więc w Idle ocena zachodzi
+  co takt. Wejście w Idle zużywa 2 losowania z globalnego generatora (warunkowo). Ma to znaczenie dla determinizmu
+  (`specyfikacja_ruchu_godot.md` § 5).
+- **Wyjście z grupy:** wejście w Idle (EE 0x55C567) odłącza jednostkę od grupy ruchu, a grupa przelicza parametry
+  (`kolizje_objazdy.md` § 11) [P].
+- **Sekwencje stanów zmierzone w etapie 27** (EE 532, 535, 536):
+  10003 → 9000 → 2015 → 10003 … → 9006 → 5001 → 5000, zgodnie z diagramem § 4 [P].
+  Kolizja z regułą (a): 10003 → 9006 → 5001 w jednym–dwóch taktach [P].
+- **Nie zweryfikowano kontrolowanym testem:** Shift (aktywacja następnego celu), automatyczny punkt +0x32, porzucenie
+  rozkazu, objazd 9002 [N].

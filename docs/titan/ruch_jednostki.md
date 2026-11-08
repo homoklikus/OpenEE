@@ -336,3 +336,15 @@ po każdym trybie oprócz 2: kolizje i odpychanie (0x549E61):
 - [N] Skąd pochodzą wartości parametrów +0xA8…+0xCC (baza jednostek, ulepszenia, loader 0x4D63F1). *[Etap 26 – rozpoznane: rekord bazy jednostek +0x94…+0xA4, init 0x627942, SetSpeed 0x628051; 0x4D63F1 to tablica obrażeń – `kolizje_objazdy.md` § 8.]*
 - [N] Ruch w szyku: wartości grupa+0x7C / +0x88 i to, dlaczego po rozkazie z przeciągnięciem pojedyncza jednostka
   jechała ok. 0,40–0,46 i hamowała stopniowo (`ruch_trasa_przeszkody.md` § 8, eksperyment H). *[Etap 26 – rozpoznane: grupa = min(średnia, k·min), w szyku gwardia 0,7 z Aleksandrem; 0,40–0,46 to stok – `kolizje_objazdy.md` § 8, `fizyka_terenu.md` § 3.]*
+
+## 11. Aktualizacja etapu 27
+
+- **Decyzja obrotu AoC** (0x554F56, rdzeń 0x554738) nie jest identyczna z EE [P]. Liczy liczbę kroków przez ceil,
+  porównuje resztę kąta z drogą hamowania i nie pozwala |ω| spaść poniżej α·dt, dopóki diff ma ten sam znak
+  (`precyzja_numeryczna.md` § 6). Wcześniejsze twierdzenie „logika i stałe identyczne” (§ 2, § 9) nie obejmuje obrotu.
+  **[Etap 27 – zastąpione w zakresie obrotu]**
+- **Kurs** nie jest polem kąta: zawsze UMArcTan2(−m01, m11) z macierzy. `atan2` w pseudokodzie § 5 oznacza UMArcTan2
+  z DLL [P].
+- **„Obliczenia w f32. Tylko sqrt działa w f64”** (§ 5) – zastąpione [Etap 26/27]: obliczenia w rejestrach x87 przy
+  PC_53, zapisy f32 w miejscach z `precyzja_numeryczna.md` § 5 [P].
+- Model v4 i jego metryki: `testy_referencyjne_ruchu.md` § 5.

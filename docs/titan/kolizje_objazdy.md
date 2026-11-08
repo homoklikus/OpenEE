@@ -92,6 +92,10 @@ Mechanizm z kodu [W/H]:
 
 Pełnej sekwencji stanów nie uchwycono, bo próbki szły co 2 takty [H].
 
+**[Etap 27 – zastąpione]** Interpretacja EE 518 i AoC 525 poniżej jest poprawiona w `walidacja_kolizji.md` § 4.
+Kliknięcie rozkazu trafiło w model stojącej jednostki, więc cel był jej pozycją, a zatrzymanie wynika z reguły (a)
+„cel zajęty”, nie z testu kroku. Pierwotna obserwacja:
+
 **To jedna z głównych przyczyn „zatrzymania przed celem”** [P]: jednostka, która trafia na komórkę ze stojącą jednostką,
 kończy rozkaz zamiast ją objechać albo zepchnąć, gdy obie są tego samego rozmiaru.
 
@@ -128,6 +132,8 @@ jeśli +0x248 > T: +0x248 = 0; PRAWDA
 - **Generator** – `Low-Level Engine.dll` 0x10002117 (AoC 0x1000DDE9) [W]:
   - s = (214013·s + 2531011) mod 2³¹, wynik s/2³¹;
   - jeden obiekt w RTSPhysics ([0x919774]+0x18), ziarno 1 w konstruktorze, odtwarzane z zapisu gry;
+    **[Etap 27 – uzupełnione]** przy rozpoczęciu gry ziarno ustawia `EEMStartLoading` (EE 0x4BEE9D) z `TMGetTime`;
+    ziarno 1 z konstruktora jest nadpisywane (`specyfikacja_ruchu_godot.md` § 5);
   - wspólny dla wszystkich jednostek i ponad 280 innych miejsc kodu.
 - **Losowanie co takt** [W]: zachodzi przy każdej ocenie zdarzenia, czyli w każdym takcie w stanie Advance, w którym
   punkt nie został osiągnięty (ArrivedAtMoveWaypoint jest sprawdzane wcześniej). Próg nie jest losowany raz na
@@ -222,6 +228,7 @@ dla członków:  Σ, max, min dla vmax (+0x70 / +0x74 / +0x78), a (+0x7C …), �
 
 - Po rozkazie PPM grupa przeliczyła się po odłączeniu Aleksandra do 0,6 / 0,6 / 0,6 [P].
 - k·min ≥ średnia: k ≥ 0,7/0,6 = 1,17. Dokładna wartość k [N].
+  **[Etap 27 – zastąpione]** k = 2,0: `dbworld.dat` WorldID 0x31 (EE i AoC), pomiar grupa+0xB0 = 2,0 [P].
 - **W szyku wolniejsza jednostka jedzie szybciej niż jej własna vmax** (0,7 > 0,6), a szybsza wolniej. Przyspieszenie i
   skręcanie też są uśrednione: gwardia w szyku ma α 9,6 zamiast 12,2 [P].
 - Obserwacja H z etapu 25 (0,395–0,464) to wpływ stoku, a nie parametru grupy (`fizyka_terenu.md` § 3).
@@ -272,3 +279,23 @@ dla członków:  Σ, max, min dla vmax (+0x70 / +0x74 / +0x78), a (+0x7C …), �
 - Model z dosłownym kodem odtwarza krótkie rozkazy co do taktu (EE 517: koniec 80 / 80) [P].
 - Skutek: każde dojście przy v < vmax w zasięgu d < v (do ok. 0,6–0,8 pola) kończy się wykładniczym dojazdem,
   trwającym zwykle 1–2 s gry. Dotyczy to krótkich rozkazów i dojazdu po zakręcie.
+
+## 11. Aktualizacja etapu 27
+
+Pomiary i ponowna analiza: `walidacja_kolizji.md`. Zmiany względem tego dokumentu:
+- **Wzór odpychania 0x549179 potwierdzony dokładnie** (EE 535, 4 takty, zgodność do precyzji f32) [P]. Reguła (a)
+  „cel zajęty” potwierdzona w EE 528: v = 0, +0x330 = 8 w jednym takcie [P].
+- **§ 3:** zatrzymania w EE 518 / AoC 525 wynikają z reguły (a), nie z testu kroku (adnotacja wyżej).
+- **§ 5:** ObstacleDetected nadal nieosiągnięte. Max +0x248 to 2693 ms (EE 535). Licznik zeruje się przy zmianie
+  komórki i zdjęciu punktu [P]. Wejście w 9000 z pre-testem następnego odcinka (typ+0x5D4 & 2 → +0x20C,
+  +0x330 = 2) [W].
+- **§ 5, generator:** ziarno z `TMGetTime` przy starcie gry. Co takt co najmniej 2 losowania globalne (0x546CE9,
+  0x547C09), Advance – 1 na jednostkę na takt (poza taktem osiągnięcia punktu i przy +0x20C ≠ 0). W pomiarze
+  15–40 losowań na takt w całej grze. Determinizm przy powtórzonych startach [P] (`rng_527`).
+- **§ 7, BO-9:** nadpisanie dotyczy tylko kategorii 0x19 bez bramy (mury). Nowe podejrzenie BO-9′
+  (`BLEDY_ORYGINALU.md`).
+- **§ 8:** k = 2,0 [P]. Jednostka opuszcza grupę przy wejściu w Idle (EE 0x55C567), a grupa jest przeliczana. Pomiar
+  EE 537: grupa mieszana 0,7, jednorodna 0,6, po dojeździe przeliczenie do 0,6 [P]. Grupy mieszanej w AoC nie uzyskano
+  (539–540: za mało próbek) [N].
+- **§ 9:** ruchu dwóch jednostek jednocześnie nadal nie zmierzono (`walidacja_kolizji.md` § 5) [N].
+- **Odbudowa kontaktów EE ↔ AoC:** różnica w kodzie potwierdzona, bez testu dynamicznego – [W].
