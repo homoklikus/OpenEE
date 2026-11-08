@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_32.md`](../RAPORT_ETAP_32.md) – etap 32: pomiary odporne na wygaszacz ekranu, pierwsza rozbieżność walki EE wyjaśniona kodem Titan (zakończenie i przycięcie obrotu, obrót w trybie 4) – pojedynek 578 G1 zgodny z grą w każdym takcie, cfg modyfikatora wysokości i tablice obrażeń AoC z gry, symulacja okna AoC, statyka mgły i kolejności kandydatów, aktualizacja prognozy.
+[`RAPORT_ETAP_33.md`](../RAPORT_ETAP_33.md) – etap 33: współczynnik obrażeń 0,8 wyjaśniony (morale z budynków, EEAEMoraleFromBuildings w TakeDamage), obrót AoC z kodu 0x554738 (AoC 505: pierwszy rozbieżny takt 224 → 803), próby rozkazu ataku przez MCP, wycofanie w trakcie walki i pościg AI, remisy i osiągalność w wyborze celu, aktualizacja prognozy.
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -62,3 +62,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_29.md`](archiwum/RAPORT_ETAP_29.md) | etap 29 | etap 29: A* po polach, test kroku, kolizje w takcie i kolejka celów w OpenEE Core (C++), porównanie Core z pomiarami EE/AoC, rejestracja wielu jednostek w Riverlands_MCP, mapa systemów Titan i prognoza rekonstrukcji |
 | [`RAPORT_ETAP_30.md`](archiwum/RAPORT_ETAP_30.md) | etap 30 | etap 30: import rzeczywistych map SCN do OpenEE Core, schemat struktur Titan i narzędzia statyki, narzędzie pomiar → Core, kamera i kolejka celów w Riverlands_MCP, początek rekonstrukcji walki (pojedynek wręcz EE odtworzony bez różnic), aktualizacja prognozy |
 | [`RAPORT_ETAP_31.md`](archiwum/RAPORT_ETAP_31.md) | etap 31 | etap 31: pełny cykl ataku w OpenEE Core (wybór celu z wagami z gry, podejście i pościg, zasięg, łuk i obrót, atak, przeładowanie, śmierć), przeładowanie AoC 0x5FEA22, obrażenia klas, walka zintegrowana ze `Swiat`, API walki w GDExtension, porównanie Core z grą, aktualizacja prognozy |
+| [`RAPORT_ETAP_32.md`](archiwum/RAPORT_ETAP_32.md) | etap 32 | etap 32: pomiary odporne na wygaszacz ekranu, pierwsza rozbieżność walki EE wyjaśniona kodem Titan (zakończenie i przycięcie obrotu, obrót w trybie 4), 578 G1 zgodny w każdym takcie, cfg wysokości i tablice obrażeń AoC, statyka mgły i kolejności kandydatów |

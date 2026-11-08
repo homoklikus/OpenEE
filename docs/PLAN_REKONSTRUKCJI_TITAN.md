@@ -1,4 +1,4 @@
-# Plan rekonstrukcji silnika Titan (EE / AoC) i prognoza – etap 32
+# Plan rekonstrukcji silnika Titan (EE / AoC) i prognoza – etap 33
 
 Dokument roboczy aktualizowany w każdym etapie. Zawiera:
 - mapę rozpoznanych i nierozpoznanych systemów;
@@ -444,3 +444,22 @@ reguła obrotu AoC przy Δ = 0. Walka wręcz ma dziś dokładny przebieg dla 1:1
 
 Spadek tylko o część zużytego nakładu (~2 h ≈ 0,08 J), bo pojawiły się nowe niewiadome (≈ 0,03 J). Prognoza nie jest
 obietnicą terminu.
+
+### 4.10. Aktualizacja po etapie 33
+
+**Pomiar etapu 33** (czas lokalny; [P]): początek ok. 20:55, zadania MCP 591–601 (11): 4 odczyty (modyfikatory,
+EEPhysics), 7 eksperymentów walki; niepowodzenia startu – 2 (592: wczytanie scenariusza AoC; 601: odprawa,
+ponowione automatycznie z sukcesem); rozkaz ataku – 3 nieudane zadania; koniec ok. 22:45.
+
+**Ocena.** Zamknięto dwie niewiadome z etapu 32 (współczynnik 0,8 – morale; obrót AoC przy Δ ≈ 0). Pojawiły się
+nowe: źródła morale (budynki: typy, zasięg, maksimum – potrzebne do Core bez pomiaru), rozkaz ataku przez MCP
+(obiekt pod kursorem), kurs w trybie 1 przy ruchomym celu (590 takt 97). Bilans pracy nad walką zbliżony do zera:
+zużyte ok. 1,8 h ≈ 0,07 J, nowe niewiadome ≈ 0,05 J.
+
+| Cel | Pozostało (J) | Realistyczny (÷1,25) | Realistyczny, 18 h/tydz. | Zużyte od etapu 30 |
+|---|---|---|---|---|
+| A | ≈ **5,73 J** | ≈ **115 h** | ≈ **6,4 tyg.** | ≈ 7,3 h |
+| B | ≈ **12,63 J** | ≈ **290 h** | ≈ **16 tyg.** | ≈ 7,3 h |
+| C | ≈ **20,13 J** | ≈ **523 h** | ≈ **29 tyg.** | ≈ 7,3 h |
+
+Prognoza nie jest obietnicą terminu.

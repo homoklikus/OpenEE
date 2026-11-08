@@ -108,6 +108,17 @@ double modyfikator_wysokosci(const ModyfikatorWysokosci& m, int ta, int tc, doub
     return 1.0;
 }
 
+int obrazenia_po_modyfikatorach(int obrazenia, const std::vector<int>& morale) {
+    int wynik = obrazenia;
+    for (int poziom : morale) {
+        const int n = poziom > 10 ? 10 : (poziom < 0 ? 0 : poziom);           // 0x6640CB–0x6640E3
+        const long double t = (long double)n * (long double)0.1f * (long double)obrazenia;   // fild; fmul f32 0,1; fimul
+        const float t32 = float(t);                                            // fstp dword
+        wynik = obrazenia - int(std::nearbyint(t32));                          // fistp; sub
+    }
+    return wynik;
+}
+
 bool przyjmij_obrazenia(StanWalki& cel, int obrazenia) {
     if (cel.hp <= 0) return false;
     cel.hp -= obrazenia;

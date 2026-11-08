@@ -112,6 +112,11 @@ struct WynikObrazen {
 ///   r = modyfikator wysokości 0x61E500 (r ≠ 1: r > 1 → max(r·d, d + 1); r < 1 → min(r·d, d − 1)) [W]
 ///   ten sam gracz → d ·= ogień bratobójczy;  obrażenia = fistp(f32(d)) (zaokrąglenie do najbliższej, remis do
 ///   parzystej – tryb FPU domyślny), co najmniej 1.
+/// TakeDamage (EE 0x6172BC) → 0x664EA1: każdy modyfikator jednostki liczy wynik z tych samych obrażeń wejściowych
+/// i nadpisuje wynik (nie kumulują się – ostatni wygrywa). EEAEMoraleFromBuildings vt+0x30 (0x6640BA):
+/// wynik = obrażenia − fistp(f32(min(max(poziom, 0), 10) · 0,1f · obrażenia)) [P: 578/587/589 EE, 580/581 AoC].
+int obrazenia_po_modyfikatorach(int obrazenia, const std::vector<int>& morale);
+
 WynikObrazen oblicz_obrazenia(const ParametryWalki& atakujacy, const ParametryWalki& cel, double m, double w,
                               double r_wysokosci = 1.0, bool ten_sam_gracz = false);
 

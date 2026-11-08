@@ -968,9 +968,11 @@ void Swiat::liczniki_walki(Jednostka& u) {
                                            pw == premia_wys_.end() ? 0.0 : double(pw->second));
     const auto o = oblicz_obrazenia(b.p, t->boj->p, *m, w_mnoznik(u, *t), r, u.gracz == t->gracz);
     ++diag_.trafienia;
-    zdarzenia_walki_.push_back({takty_, u.id, t->id, "trafienie", o.obrazenia});
+    zdarzenia_walki_.push_back({takty_, u.id, t->id, "trafienie", obrazenia_po_modyfikatorach(o.obrazenia, t->boj->morale)});
     t->boj->szukanie_ms = 0;   // TakeDamage 0x6172BC zeruje +0x2AC [W]
-    if (przyjmij_obrazenia(t->boj->s, o.obrazenia)) {
+    // TakeDamage 0x6172BC: modyfikatory celu (morale z budynków); liczniki +0x2C4/+0x2C8 (0x5EDCA4) – w Core 0 [N]
+    const int obr = obrazenia_po_modyfikatorach(o.obrazenia, t->boj->morale);
+    if (przyjmij_obrazenia(t->boj->s, obr)) {
         ++b.s.zabicia;
         ++diag_.zgony;
         zdarzenia_walki_.push_back({takty_, t->id, u.id, "smierc", 0});

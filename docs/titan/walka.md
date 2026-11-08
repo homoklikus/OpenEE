@@ -1,7 +1,8 @@
 # Walka w Titan – podstawy: cel ataku, cykl ataku, obrażenia, śmierć (EE / AoC)
 
 Wpis atlasu Titan, etap 30 – **początek** rekonstrukcji walki; etap 31 – wybór celu, podejście, obrót, pełny cykl w Core (§ 8–14);
-etap 32 – zakończenie obrotu, przycięcie kroku obrotu, cfg wysokości, tablice AoC, mgła (§ 15–19). Zakres: pojedynek dwóch zwykłych jednostek lądowych
+etap 32 – zakończenie obrotu, przycięcie kroku obrotu, cfg wysokości, tablice AoC, mgła (§ 15–19);
+etap 33 – morale z budynków (współczynnik 0,8), obrót AoC, rozkaz ataku przez MCP, remisy (§ 20–24). Zakres: pojedynek dwóch zwykłych jednostek lądowych
 walczących wręcz (gwardia królewska, typ 422) oraz gwardia przeciw obywatelowi. Pociski, obrażenia obszarowe,
 jednostki specjalne, budynki, morze i powietrze – poza zakresem.
 
@@ -341,7 +342,7 @@ Progi: dz ≥ 2,0·0,408248 = 0,8165 → r = 1,5; dz ≤ −0,408 → r = 0,8. A
 
 **Korekta etapu 31:** „857: 13 zamiast 16” i „AoC 12 zamiast 15” mają stosunek dokładnie kary 0,8
 (min(0,8·d, d − 1)), ale z jednostek w 578 G3 (ad3 0,00; 857 0,01 – pole +0x15C) nie spełnia progu −0,408.
-Przyczyna [N]; to samo dotyczy EE 579 (obywatel 21 zamiast 42). Plan: odczyt argumentów 0x61E500 i 0x61DE61
+Przyczyna [N]; to samo dotyczy EE 579 (obywatel 21 zamiast 42). [Etap 33 – zastąpione: morale z budynków, § 20] Plan: odczyt argumentów 0x61E500 i 0x61DE61
 w takcie trafienia (rejestracja +0x15C atakującego i celu oraz wyniku r).
 
 ## 17. Tablice obrażeń AoC
@@ -382,3 +383,104 @@ systemy (wzór 0x5FEA22 – 14/14 na prawdziwym ciągu).
 
 Wniosek dla etapu 33: odwrót trzeba wyzwalać zdarzeniem (pierwsze trafienie), nie czasem; rozkaz ataku wymaga
 sprawdzenia obiektu pod kursorem z pamięci gry przed PPM.
+
+---
+
+# Etap 33 – dokładne obrażenia, obrót AoC, rozkaz ataku
+
+## 20. Współczynnik 0,8 = morale z budynków (EEAEMoraleFromBuildings)
+
+Pełna ścieżka trafienia wręcz [W kod EE, P wyniki]:
+
+```
+DealDamage 0x61DE61 (this = typ atakującego, arg1 = atakujący, arg2 = cel):
+  typ ataku = atakujący+0x1C0 albo this; U = parametry gracza (gracz+0x874)[typ+0x4B8]; atak = U+0xD8
+  U+0xA0 ≠ 0 → obszar 0x61DAE6
+  w = f32 T_8D2050[cel.typ+0x4C0·6 + typ+0x4C0];  m = 0x4D5F2C(rodzina, typ celu, gracz celu, gracz atakującego)
+  d = f32(m·w·atak) − cel.parametry+0xE0[typ+0x4C0]
+  r = 0x61E500(atakujący, cel): r ≠ 1 → r > 1: max(r·d, d + 1); r < 1: min(r·d, d − 1)
+  obr = max(1, fistp(f32(d)))
+  ten sam gracz albo sojusz: atakujący+0x200 ≠ 0 → ceil(obr·0,1) (0x832090), inaczej 0
+  cel vt+0x70 (TakeDamage 0x6172BC)(atakujący, obr, gracz, 1)
+TakeDamage:
+  (cel+0x30)+0x1CC ≠ 0 → przekazanie dalej; flaga [0x918EA0] / +0x33B → bez obrażeń
+  arg4 ≠ 2 → 0x664EA1: wektor modyfikatorów celu (+0xF8: +0x100…+0x104); każdy: vt+0x30(1, obr, &wynik) –
+      wynik liczony z TYCH SAMYCH obr i nadpisywany (modyfikatory się nie kumulują – ostatni wygrywa) [W]
+  0x5EDCA4: wynik −= fistp(obr·0,8) gdy +0x2C4 > 0; wynik += fistp(obr·0,6) gdy +0x2C8 > 0 [W]
+EEAEMoraleFromBuildings vt+0x30 (0x6640BA):
+  n = min(+0x24, +0x20) (vt+0x4C 0x664202), obcięte do 0…10
+  wynik = obr − fistp(f32(n · 0,1f · obr))                       (0x827810 = 0,1)
+```
+
+Pomiar [P]:
+- Odczyt `walka_modyfikatory` (591 EE, 596 AoC, 593 EE b): w scenariuszu e31_a gwardie 857 i 858 (gracz 1) mają
+  jeden modyfikator `EEAEMoraleFromBuildings` (budynek w (185, 110), +0x20 = +0x24 = 2 → poziom 2); pozostałe
+  jednostki – brak.
+- Wszystkie trafienia z 6 pomiarów (578, 579, 580, 581, 587, 589): każde zmniejszone trafienie (poza dwoma
+  przypadkami [N] niżej) ma w chwili trafienia niepusty wektor +0x100/+0x104, każde pełne – pusty. 857: EE 16 → 13 (= 16 − fistp(3,2)), AoC 15 → 12
+  (= 15 − 3); obywatel w (164,5; 101,5) przy budynku Troi: 42 → 21 (poziom 5 [W] – poziomu w tej chwili nie
+  odczytano).
+- Modyfikator wysokości 0x61E500 w tych trafieniach zwraca 1 (dz ≈ 0,01) – hipoteza z etapu 31 obalona.
+- [N]: 856 w 589 (takt ~5841) otrzymuje 18 bez modyfikatora – inny atakujący (kilku jednocześnie), nieustalony;
+  AoC obywatel 36 → 23 (poziom niepasujący do 36 – inny atakujący [H]); 857 w 589 późne trafienia 14.
+
+Core: `BojJednostki::morale` (poziomy modyfikatorów), `obrazenia_po_modyfikatorach` (0x6640BA, ostatni wygrywa),
+`Swiat::ustaw_morale`. Źródła morale (budynki, zasięg, maksimum) – poza Core [N]; w testach poziomy z odczytu.
+578 G3: różnice HP 384 → 59, pierwsza różnica HP przesunięta z taktu 102 na 334.
+
+## 21. Obrót AoC (0x554738) i reguły EE
+
+Rdzeń obrotu AoC 0x554738 ma tę samą budowę co EE 0x548266 (to samo przycięcie kroku 0x5549C3, bez przycięcia przy
+Δ = 0). Różnią się gałęzie zmiany ω po decyzji 0x554F56 [W kod, P pomiar]:
+- kod 3 (0x554980): Δ < 0 → ω − ad (≥ −ωmax), **inaczej, także przy Δ = 0**, ω + ad (≤ ωmax);
+- kod 4 (0x5548D6): ω < 0 → ω′ = ω + ad, przy Δ < 0 co najmniej −ad, przy Δ = 0 zero gdy ω′ > −0,001;
+  ω ≥ 0 → ω′ = ω − ad, przy Δ > 0 co najmniej +ad, przy Δ = 0 zero gdy ω′ < 0,001. **Przy ω = 0 i Δ ≠ 0
+  jednostka zaczyna obrót (±ad)** – Core (model v4) dawał 0;
+- ad zapisywane jako f32 (fst), próg 0,001 = f32 0x84237C.
+Skutek: AoC 505 – pierwszy rozbieżny takt 224 → **803**, kąt śr. 0,12° → 0,00°; 580 G1 – kurs i ω zgodne
+w oknie (pierwsza różnica stanu w takcie 57 to spóźniona próbka stanu gry, pozycja identyczna; pierwsza
+rzeczywista – przeładowanie 146: ciąg LCG zużywany także przez inne systemy gry). AoC 525 1,9 pola: pierwszy takt
+bez zmian (68), metryki po nim +0,00002 pola. S5a (model v4 AoC) przeliczony (`zmiana_etap33`).
+EE 500 +1 takt końca ruchu – nie wyjaśnione [N]; reguła EE (0x54880E) nie ma odpowiednika zmienionych gałęzi.
+
+## 22. Rozkaz ataku przez Riverlands_MCP
+
+`walka_atak_weryfikowany`: kamera na parze atakujący–cel, piksel celu potwierdzany zaznaczeniem gracza (LPM),
+wybór atakującego w tym samym kadrze, PPM w potwierdzony piksel, kontrola EEUGAttackUnit w kolejce, maks. 3 próby
+z zapisem powodu. Wynik 594: **piksel celu nie został potwierdzony** (zaznaczenie gracza pozostaje puste po LPM na
+wrogu) – wróg był we mgle (856 nie doszedł do zadanego punktu: punkt PPM różni się od zamierzonego o ok. 2 pola,
+z terenu przyjęto z = 1,84) [P]. 597/598 (cel widoczny, w kadrze, 1,4–1,75 pola od atakującego): **LPM na wrogu nie zmienia
+zaznaczenia gracza** (lista pozostaje pusta) – weryfikacja przez zaznaczenie działa tylko dla własnych jednostek [P].
+Rozkaz ataku przez MCP nadal nieosiągnięty; następny krok: wskaźnik „obiekt pod kursorem” z pamięci (różnicowy
+odczyt przy kursorze nad celem / poza nim).
+
+**Wycofanie w trakcie walki (601)** [P] – wyzwalacz zdarzeniem (`walka_czekaj_na_stan`: 2012/2001), rozkaz
+ruchu bez ponownego wyboru: 855 (HP 103) dostaje rozkaz w stanie 2021 i odchodzi ok. 10 pól. ad0 (AI, HP 29)
+**ściga go przez całą drogę** (pętla 10003/5002/2013/2024/8000, poza zasięgiem miejsca pierwszego kontaktu –
+zgodnie z AI+7 = 1), zadaje 2 trafienia w trakcie odwrotu; po dojściu 855 przechodzi w Idle i **sam ponownie wybiera
+ad0** (2013 po 1 takcie), zabija go; ad0 nie traci celu (brak EnemyUnitNoLongerVisible – cel cały czas w LOS).
+Utrata celu poza LOS i przeszkoda – nadal bez pomiaru [N].
+Narzędzie: nieudany start 601 (zawieszenie na odprawie przy odblokowanym pulpicie) został wykryty i ponowiony
+automatycznie z zapisem powodu (`proby_startu`).
+
+## 23. Remisy i kolejność kandydatów
+
+- 0x6399CA: osiągalność 0x62D696 sprawdzana **tylko dla kandydata z wynikiem większym od dotychczasowego**
+  (+0x68); osiągalny → najlepszy := kandydat; nieosiągalny → 0x5E8651 (rejestr nieosiągalnych) i przegląd trwa.
+  Wynik ≥ W+0x24 (próg) **kończy przegląd** (+0x6D = 1) – pierwszy kandydat powyżej progu wygrywa niezależnie
+  od dalszych [W].
+- Klucz permutacji [0x919774]+0xB0 – odczyt 595 [P]: wartości 1, 0, 0, 1 przy liczniku taktów +0xB4 = 375, 418,
+  462, 505 – zgodne z parzystością licznika taktów [H]; dla n kandydatów s = k mod n ∈ {0, 1}. Permutacja
+  0x40CFC7 nie jest wdrożona – brak pomiaru kolejności na scenariuszu z remisem [N].
+- 0x62D696 [W częściowo]: odrzuca cel z polem −10000; zasięg² z ulepszenia+0x9C, porównanie z 0x825784; dalej
+  test ścieżki (typ+0x430, +0x5D4) – nieprzeczytany do końca.
+
+## 24. Pierwsze rozbieżne takty (etap 33)
+
+| Okno | Pierwszy takt | Przyczyna |
+|---|---|---|
+| 578 G1 | brak | – |
+| 578 G3 | 169 (ω 857 w 2021) | [N]; HP do taktu 334 zgodne (morale) |
+| 580 G1 (AoC) | 57 (spóźniona próbka stanu) / 146 przeładowanie | ciąg LCG gry [N – inne systemy losujące] |
+| 590 G1 | 97 (kurs w trybie 1) | Core obraca o jeden krok ω przy ruchomym celu, gra nie [N]; kolejność jednostek odwrócona daje gorszy wynik (64) |
+| 589 G3 (nowe) | 1 | start okna w trakcie trasy (odtworzenie trasy z próbki) [N] |

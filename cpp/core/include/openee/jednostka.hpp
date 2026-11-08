@@ -75,6 +75,9 @@ struct BojJednostki {
     double icl_x = 0, icl_y = 0, icl_kurs = -10000.0;
     std::uint64_t takt_wejscia_ataku = 0;
     UstawieniaAI ai;
+    // Modyfikatory obrażeń jednostki (EEUnit +0xF8, wektor +0x100…+0x104), etap 33: poziomy morale obiektów
+    // EEAEMoraleFromBuildings (min(+0x24, +0x20)). Źródło (budynki i ich zasięg) – poza Core [N]; ustawiane z zewnątrz.
+    std::vector<int> morale;
 };
 
 struct Jednostka {

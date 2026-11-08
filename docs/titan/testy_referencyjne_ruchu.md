@@ -146,3 +146,9 @@ przycięcie kroku obrotu 0x548477, tryb 4 0x54DE35) – wartości z modelu v4 za
 obaliły (`walka.md` § 15). Pole `zmiana_etap32` w pliku przypadków opisuje zmianę; S1, S3, S5a, S6, S7 bez zmian
 bitowo. Skrót zbiorczy: c36721320b3595e4 (etap 27–31) → 13b25b683deb815f (etap 32). Test `core_porownanie_gra`
 wymaga teraz, by błąd Core względem gry nie był większy niż modelu v4 (EE 500: „lepszy”).
+
+## Aktualizacja etapu 33
+
+S5a (AoC) przeliczony po korekcie gałęzi obrotu AoC (0x554738, kody 3 i 4) – pole `zmiana_etap33`; AoC 505:
+pierwszy rozbieżny takt 224 → 803. Skrót zbiorczy 13b25b683deb815f → 68b0c69ecb8b0cbc. `core_porownanie_gra`
+wymaga, by pierwszy rozbieżny takt Core względem gry nie był wcześniejszy niż w modelu v4.

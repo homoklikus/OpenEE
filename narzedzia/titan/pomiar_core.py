@@ -175,7 +175,7 @@ def _cel_atak(j: dict) -> str | None:
     return None
 
 
-def walka(d: dict, od: int, do: int, ids: list[str], tabele: dict, nazwa: str) -> dict:
+def walka(d: dict, od: int, do: int, ids: list[str], tabele: dict, nazwa: str, morale: dict | None = None) -> dict:
     """Seria openee_walka_v1 (etap 31). Błąd = BladPomiaru; brak dopasowania wartości."""
     war = d["wariant"]
     pr = d["probki"]
@@ -211,7 +211,8 @@ def walka(d: dict, od: int, do: int, ids: list[str], tabele: dict, nazwa: str) -
         jedn.append({"id": i, "typ": typ, "gracz": gracz, "czlowiek": gracz == 1,
                      "x": j["x"], "y": j["y"], "m01": j["m01"], "m11": j["m11"], "v": j["v"], "w": j["w"],
                      "tryb": j["tryb"], "stan": j["stan"], "X": j["X"], "Y": j["Y"], "trasa": [q[:2] for q in (j.get("trasa") or [])],
-                     "cele": cele, **stan})
+                     "cele": cele, **stan,
+                     **({"morale": morale[i]} if morale and i in morale else {})})
     probki = []
     for n, p in enumerate(pr[od:do]):
         probki.append({"takt": n, "t": p["t"], "rng": p["rng"],
@@ -265,6 +266,8 @@ def main(argv=None) -> int:
     ap.add_argument("--od", type=int)
     ap.add_argument("--do", type=int)
     ap.add_argument("--tabele", help="wynik zadania Riverlands_MCP z krokami walka_tabele / walka_priorytety")
+    ap.add_argument("--morale", help="etap 33: poziomy morale (EEAEMoraleFromBuildings) z odczytu walka_modyfikatory, "
+                                     "np. 0x1000857=2,0x1000858=2 (kilka modyfikatorów: 2+1)")
     ap.add_argument("pomiar")
     ap.add_argument("-o", "--wyjscie")
     ap.add_argument("--wariant")
@@ -302,7 +305,12 @@ def main(argv=None) -> int:
             for k in zad.get("kroki", []):
                 if k.get("ok") and k.get("f") in ("walka_tabele", "walka_priorytety", "walka_przeladowanie_aoc"):
                     tab[k["f"]] = k["wynik"]
-            s = walka(d, a.od, a.do, d["jednostki"], tab, Path(a.pomiar).stem)
+            mor = {}
+            for w in (a.morale or "").split(","):
+                if w.strip():
+                    k, v = w.split("=")
+                    mor[k.strip().lower()] = [int(x) for x in v.split("+")]
+            s = walka(d, a.od, a.do, d["jednostki"], tab, Path(a.pomiar).stem, mor)
             Path(a.wyjscie).write_text(json.dumps(s))
             print(json.dumps({"ok": True, "plik": a.wyjscie, "jednostki": d["jednostki"], "probek": len(s["probki"])}, ensure_ascii=False))
             return 0

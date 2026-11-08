@@ -35,18 +35,31 @@ WynikObrotu FizykaLadowa::obrot(const KontekstFizyki& k, const Jednostka& u, dou
                 kod = (f32(double(m) * dt * w1) - S < rem) ? 3 : 4;
             }
         }
-        const int s = diff > 0 ? 1 : -1;
-        if (kod == 3) {
-            w2 = w + double(s) * ad;
-            w2 = std::max(-wmax, std::min(wmax, w2));
-        } else if (kod == 4) {
-            if (diff == 0) {
-                w2 = std::fabs(w) < 0.001 ? 0.0 : (w > 0 ? w - ad : w + ad);
-            } else if (w * double(s) > 0) {
-                w2 = w - double(s) * ad;
-                if (std::fabs(w2) < ad || w2 * double(s) < 0) w2 = double(s) * ad;
+        // etap 33 [W kod AoC 0x5548A9–0x5549BE]: ad = f32(α·dt) (fst), −ad i progi f32; kolejność gałęzi jak w kodzie
+        const double adf = f32(ad), eps = double(0.001f);   // 0x84237C
+        if (kod == 3) {   // 0x554980: Δ < 0 → ω − ad (≥ −ωmax), inaczej (także Δ = 0) ω + ad (≤ ωmax)
+            if (diff < 0) {
+                w2 = w - adf;
+                if (w2 < -wmax) w2 = -wmax;
             } else {
-                w2 = (w != 0) ? w - double(w > 0 ? 1 : -1) * ad : 0.0;
+                w2 = w + adf;
+                if (w2 > wmax) w2 = wmax;
+            }
+        } else if (kod == 4) {   // 0x5548D6: hamowanie ω o ad z minimum ad w kierunku Δ; przy Δ = 0 zero, gdy |ω′| < 0,001
+            if (w < 0) {
+                w2 = w + adf;
+                if (diff < 0) {
+                    if (w2 > -adf) w2 = -adf;
+                } else if (diff == 0) {
+                    if (w2 > -eps) w2 = 0.0;
+                }
+            } else {   // ω ≥ 0 (także ω = 0: ω′ = −ad, przy Δ > 0 podniesione do +ad)
+                w2 = w - adf;
+                if (diff > 0) {
+                    if (w2 < adf) w2 = adf;
+                } else if (diff == 0) {
+                    if (w2 < eps) w2 = 0.0;
+                }
             }
         }
     } else {  // EE 0x54880E + 0x548266

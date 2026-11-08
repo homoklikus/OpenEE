@@ -99,6 +99,13 @@ public:
     // --- walka (etap 31): stan bojowy w tej samej liście jednostek, ten sam zegar, RNG i maszyna stanów ---
     /// Nadaje jednostce stan bojowy (HP, parametry typu i gracza, ustawienia AI).
     bool ustaw_walke(IdJednostki id, int gracz, bool czlowiek, const ParametryWalki& p, int hp, UstawieniaAI ai = {});
+    /// Poziomy morale (EEAEMoraleFromBuildings) jednostki – źródło w budynkach poza Core (etap 33).
+    bool ustaw_morale(IdJednostki id, std::vector<int> poziomy) {
+        Jednostka* u = jednostka(id);
+        if (!u || !u->boj) return false;
+        u->boj->morale = std::move(poziomy);
+        return true;
+    }
     /// Dyplomacja: wiersz gracza +0x9E4 (≠ 0 = wróg). Domyślnie różni gracze są wrogami.
     void ustaw_wrogow(int g1, int g2, bool wrog);
     bool wrogowie(int g1, int g2) const;

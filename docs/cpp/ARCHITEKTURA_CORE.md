@@ -246,3 +246,13 @@ Tablice, prędkość, zapisy f32 i teren są wspólne [P].
   PIERWSZY ROZBIEŻNY TAKT okna z rodzajem różnicy. Okno AoC 580 G1 – symulowane na tablicach AoC z gry (588).
 - Przypadki S2, S4, S4b, S5 przeliczone (`testy_referencyjne_ruchu.md`); `core_porownanie_gra`: Core nie gorszy
   od modelu v4 względem gry.
+
+## 15. Etap 33 – morale w TakeDamage, obrót AoC
+
+- `BojJednostki::morale` + `Swiat::ustaw_morale` – poziomy modyfikatorów `EEAEMoraleFromBuildings` (EEUnit +0xF8);
+  `obrazenia_po_modyfikatorach` (0x6640BA, modyfikatory nie kumulują się). Źródło morale (budynki) poza Core.
+- `FizykaLadowa::obrot`, wariant AoC: gałęzie kodu 3 i 4 dokładnie jak 0x554980 / 0x5548D6 (ad f32, próg 0,001 f32,
+  ω = 0 w kodzie 4 → ±ad). EE bez zmian.
+- `core_porownanie_gra`: kryterium – pierwszy rozbieżny takt względem gry nie wcześniejszy niż w modelu v4.
+- `core_walka_swiat`: okna 578 G1/G3, 580 G1, 590 G1, 589 G3; poziomy morale z pola `morale` w oknie
+  (`pomiar_core walka --morale`).

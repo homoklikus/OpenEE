@@ -6,6 +6,18 @@
   {
    "data": "2026-11-08",
    "tytul": {
+    "pl": "Etap 33: morale z budynków i obrót w Art of Conquest",
+    "en": "Stage 33: morale from buildings and turning in Art of Conquest"
+   },
+   "tekst": {
+    "pl": "Wyjaśniliśmy, czemu niektórzy wojownicy otrzymywali mniejsze obrażenia: chroni ich morale od pobliskich budynków. Nowy silnik liczy to dokładnie jak oryginał. Poprawiliśmy też obrót jednostek w dodatku Art of Conquest – teraz zgadza się z grą przez kilkaset klatek dłużej.",
+    "en": "We found out why some warriors took less damage: morale from nearby buildings protects them. The new engine now calculates this exactly like the original. We also corrected how units turn in the Art of Conquest expansion – it now matches the game for hundreds of frames longer."
+   },
+   "raport": "RAPORT_ETAP_33.md"
+  },
+  {
+   "data": "2026-11-08",
+   "tytul": {
     "pl": "Etap 32: pojedynek co do klatki",
     "en": "Stage 32: a frame-exact duel"
    },
@@ -13,7 +25,7 @@
     "pl": "Odczytaliśmy z kodu oryginalnej gry, jak dokładnie wojownik kończy obrót i jak „przestrzeliwuje” kierunek. Po tej poprawce pojedynek dwóch gwardzistów w nowym silniku przebiega identycznie jak w Empire Earth – w każdej klatce. Poznaliśmy też tablice obrażeń dodatku Art of Conquest.",
     "en": "We read from the original game's code exactly how a warrior finishes turning and how it overshoots its heading. After this fix a duel between two guards in the new engine runs exactly as in Empire Earth – frame by frame. We also decoded the damage tables of the Art of Conquest expansion."
    },
-   "raport": "RAPORT_ETAP_32.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_32.md"
   },
   {
    "data": "2026-11-08",
