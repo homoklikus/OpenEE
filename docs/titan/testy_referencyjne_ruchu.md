@@ -123,3 +123,18 @@ objazdu 9002, maszyny celów (Shift), ruchu grupowego. Przebieg, w którym te me
 Model v4 i skrypty (`model_ruchu4.py`, `metryki4.py`, `kolizje.py`, `gen_syntetyczne.py`, `umarctan2.py`,
 `transform.py`) leżą lokalnie w `Testy_MCP/e27/model/`, poza repozytorium. Wymagają tablic z DLL. Implementacja Godota
 ma powstać niezależnie, według `specyfikacja_ruchu_godot.md`. Ten zestaw służy do jej sprawdzenia.
+
+## 7. Aktualizacja etapu 29
+
+| Zestaw | Gdzie | Zawartość |
+|---|---|---|
+| A* syntetyczne | `cpp/tests/dane/astar_referencja.json` (repozytorium) | 18 siatek, wynik modelu e24 z przebiegiem rozwijania |
+| A* na mapie gry | `Testy_MCP/e29/astar_mapa_e24_lokalne.json` (lokalnie) | dostępność pól z pamięci gry, trasy A/C i liczby E z gry |
+| serie porównawcze | `Testy_MCP/e29/serie_porownawcze.json` (lokalnie) | EE 500, AoC 505, EE 517 ×2, AoC 525 ×2 + teren + serie dwóch jednostek EE 546/547 |
+| rejestracje surowe | `Testy_MCP/ee_obserwacja/e29_54x_*.json` (lokalnie) | 5 jednostek co takt, wszystkie pola ruchu, RNG |
+
+Przypadek 10 („kolizja i odpychanie”) ma teraz pomiar dwóch jednostek w ruchu (EE 547). Przypadek 12 (objazd) nadal
+nie jest potwierdzony.
+
+Metryki Core kontra gra (`core_porownanie_gra`) są identyczne z metrykami modelu v4 (§ 5), bo Core to bitowy port
+modelu.

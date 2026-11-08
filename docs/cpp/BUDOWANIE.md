@@ -105,10 +105,22 @@ Wynik GDExtension: `godot/bin/libopenee.linux.template_debug.x86_64.so`.
 | `core_dll` | brak pliku, plik nie-PE, PE x86-64, SHA-256 (wektory FIPS), wczytanie EE i AoC | SKIP części z DLL |
 | `core_tai` | parser (include, remove, zastępowanie, błąd parametrów), opcjonalnie oryginalny `land.tai` (`OPENEE_TAI`) | działa |
 | `core_determinizm` | powtarzalność, niezależność od kolejności uruchomienia, 5 jednostek w jednym świecie | SKIP |
+| `core_astar` | 18 przypadków A* bitowo z modelem e24: trasa, kolejność rozwijania, iteracje, wywołania | działa |
+| `core_astar_gra` | mapa z gry (lokalnie): trasy A, C i liczba iteracji E zgodne z grą | SKIP bez `OPENEE_DANE_LOKALNE` |
+| `core_krok` | 9 gałęzi testu kroku (to samo pole, przejezdne, ślizgi, cofnięcie, narożnik, jednostka blokująca, poza mapą, romb) | SKIP |
+| `core_kolizje_takt` | ruchoma → stojąca większa, reguła (a), czołowe EE/AoC | SKIP |
+| `core_kolejka` | zwykły rozkaz, Shift ×2, kolejność A → B → C, czyszczenie, Shift bez celu | SKIP |
+| `core_scenariusze` | prosta trasa, objazd ściany, zakręty, cel nieosiągalny, wspólny cel | SKIP |
+| `core_porownanie_gra` | Core kontra pomiary EE/AoC (6 serii jednej jednostki, 2 serie dwóch jednostek), metryki | SKIP bez danych lokalnych |
 | `core_podsystemy` | wypis stanu wdrożenia | działa |
 
 - Kod 77 oznacza SKIP. CTest wyświetla go jako „Skipped” i **nie liczy jako zaliczonego**.
 - Ścieżki DLL: `OPENEE_INSTALACJA` (CMake albo zmienna środowiskowa), `OPENEE_DLL_EE`, `OPENEE_DLL_AOC`.
+- Dane lokalne (etap 29, nie publikowane): `OPENEE_DANE_LOKALNE=…/Testy_MCP/e29`:
+  - `astar_mapa_e24_lokalne.json` – dostępność pól mapy z gry;
+  - `serie_porownawcze.json` – serie pomiarowe, teren i serie wielojednostkowe z Riverlands_MCP.
+- `OPENEE_TAI` – katalog z wypakowanymi `.tai` (porównanie parsera).
+- `OPENEE_DEBUG_POROWNANIE=1` – wypis taktów po pierwszej rozbieżności.
 
 ## 6. Godot
 

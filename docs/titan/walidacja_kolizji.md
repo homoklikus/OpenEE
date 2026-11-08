@@ -134,3 +134,38 @@ Nieudany objazd (A* w oknie ±50 pól nie znajduje drogi): kod czyści trasę i 
 3. Reguła (a) przed regułami pchania.
 4. Lista kontaktów odbudowywana tylko przy zmianie komórki, w kolejności EE albo AoC.
 5. Nie używać fizyki Godota (`CharacterBody3D`, `move_and_slide`) – wynik zależy od kolejności i jest jednostronny.
+
+## 10. Aktualizacja etapu 29 – dwie jednostki w ruchu [P]
+
+**Narzędzia.** Riverlands_MCP `ee_obserwacja`:
+- weryfikowany wybór jednostki;
+- rozkaz z kontrolą celu;
+- rejestracja wszystkich pól ruchu co takt dla wielu jednostek, w tle.
+
+Zadania 542–548, serie `Testy_MCP/ee_obserwacja/e29_54x_*.json` (lokalne).
+
+**Wybór jednostki.** Problem z § 5 jest rozwiązany: 18b w 1 próbie, 18d w 4 próbach. Trzy pierwsze kliknięcia
+zaznaczyły 55c – to dokładnie przeszkoda z etapów 26–27, teraz wykrywana i powtarzana.
+
+**EE 547 – czołowe zbliżenie dwóch gwardii w ruchu:**
+- obie w Advance przez 92 takty jednocześnie, min. odległość 0,334;
+- kontakt (1) od odległości ok. 0,61;
+- push niezerowy tylko u jednej (E) w odczycie, ale +0x248 rośnie u obu, czyli obie są przesuwane przez 0x549A08.
+  Push drugiej zużywany jest w tym samym takcie przed odczytem – zgodne z modelem jednostronnym i kolejnością od końca
+  listy.
+- **OpenEE Core odtworzył ten przebieg:**
+  - średni błąd pozycji 0,0003 / 0,0001, max 0,021;
+  - **0 taktów z inną obecnością kontaktu**, 0 taktów z inną obecnością +0x248;
+  - 8 taktów z innym stanem – przesunięcie chwili rozkazu o 1 takt.
+
+**EE 546 – jednostka w ruchu mija stojącą** (0,487 od środka):
+- weszła na pole ze środkiem stojącej jednostki **bez** +0x20C;
+- Core po poprawce testu kroku: błąd pozycji 0.
+
+**Wnioski:**
+1. Test kroku nie blokuje na polu ze środkiem zwykłej jednostki [P]. Poprawka w `fizyka_terenu.md` § 4.
+2. Kontakty powstają już przy odległości ok. 0,6 między środkami. Lista oparta wyłącznie na środkach pól (§ 2) nie
+   wyjaśnia tego, a obrys obiektu (jednostka na listach pól, na które zachodzi jej promień) wyjaśnia – [H]
+   wspierana pomiarem 547 i liczbą kontaktów 18d = 2 w 546.
+3. Różnica EE/AoC w odbudowie kontaktów nadal bez testu dynamicznego AoC [W].
+4. Objazd 9002: próba 548 nieudana (cel poza kadrem kamery). Wejście w 9002 nie zostało zarejestrowane [N].

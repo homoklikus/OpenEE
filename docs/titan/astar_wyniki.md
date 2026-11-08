@@ -204,3 +204,11 @@ Model potwierdza algorytm dla przypadków A–E w EE i A, E w AoC. Przypadku F n
 5. Związek z „CannotPathToTarget” i stanem jednostki po porażce (w F jednostka straciła cel i trasę) [N].
 6. Pierwsza próba z limitem 15 – w tej ścieżce jest to wynik częściowy, a ponowienie następuje przez „PrepareToMove”
    z licznikiem prób celu +0x18 [H].
+
+## 10. Aktualizacja etapu 29 – implementacja C++
+
+`cpp/core/src/nawigacja.cpp` (`AStarTitan`) odtwarza model z § 8.
+- 18 syntetycznych przypadków (`cpp/tests/dane/astar_referencja.json`) jest zgodnych z modelem w kolejności
+  rozwijania węzłów, trasie, liczbie iteracji i wywołań. Obejmują ściany, pułapki, cele nieosiągalne, kary, limit
+  całkowity, Bounded i losowe mapy 48×48.
+- Na mapie z gry (lokalnie): trasy A i C identyczne z grą, E: 145 iteracji w 8 wywołaniach = gra [P].

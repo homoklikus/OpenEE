@@ -21,6 +21,8 @@ GDScript (core_cpp.gd, sceny) ──► OpenEESymulacja (GDExtension, godot-cpp)
 | `utworz_swiat(wariant) -> bool` | `"ee"` / `"aoc"`, teren syntetyczny etapu 27; false bez tablic |
 | `dodaj_jednostke(parametry, x, y, kurs) -> int` | klucze: `a, vmax, alfa, wmax, rozmiar, c4, c8, t488, pochyla`; zwraca id (0 = błąd) |
 | `nadaj_trase(id, punkty_xy, kurs_koncowy, start) -> bool` | `PackedFloat64Array [x0, y0, x1, y1, …]`, kurs `float` albo `null`, start `"rozkaz"` (8000) / `"advance"` |
+| `rozkaz_ruchu(id, x, y, kurs_koncowy, shift) -> bool` | etap 29: rozkaz do punktu z kolejką celów; trasa z A* w Core |
+| `ustaw_przejezdnosc(ix, iy, przejezdne)` | etap 29: przejezdność pola terenu syntetycznego |
 | `takt(ile) -> int` | wykonuje `ile` taktów w jednym wywołaniu; zwraca licznik taktów |
 | `migawka() -> PackedFloat64Array` | 12 pól na jednostkę (`pola_migawki()`), kolejność listy Core |
 | `pola_migawki() -> PackedStringArray` | `id, x, y, z, v, omega, kurs, stan, tryb, zdjete_punkty, pozostalo_punktow, licznik_blokady_ms` |

@@ -299,3 +299,13 @@ Pomiary i ponowna analiza: `walidacja_kolizji.md`. Zmiany względem tego dokumen
   (539–540: za mało próbek) [N].
 - **§ 9:** ruchu dwóch jednostek jednocześnie nadal nie zmierzono (`walidacja_kolizji.md` § 5) [N].
 - **Odbudowa kontaktów EE ↔ AoC:** różnica w kodzie potwierdzona, bez testu dynamicznego – [W].
+
+## 12. Aktualizacja etapu 29
+
+- **Test kroku a jednostki:** zwykłe jednostki nie blokują pola [P] (`walidacja_kolizji.md` § 10). Ścieżka
+  ObstacleDetected przez +0x20C dotyczy obiektów blokujących (mury, drzewa, budynki) [W].
+- **Lista kontaktów:** obrys obiektu zamiast środka pola [H, wspierane pomiarem 547]. W OpenEE Core:
+  `Swiat::odbuduj_kontakty`.
+- **Dwie jednostki w ruchu:** zmierzone (EE 547) i odtworzone przez Core [P]. § 9 jest nieaktualny w części
+  „Pomiaru … nie wykonano”. **[Etap 29 – zastąpione]**
+- **9002:** nadal bez pomiaru. W Core zaimplementowany jako A* ±50 i oznaczony jako niezweryfikowany.

@@ -102,6 +102,26 @@ func _testy() -> void:
 	for i in 100:
 		sym.takt(1)
 	_wynik("takt(100) == 100 × takt(1)", a == sym.migawka())
+	# etap 29: rozkaz z A* w Core, przeszkoda, kolejka Shift, dwie jednostki
+	sym.utworz_swiat("ee")
+	for y in range(6, 15):
+		sym.ustaw_przejezdnosc(14, y, false)
+	var par: Dictionary = przypadki[0]["parametry"]
+	var ja_id: int = sym.dodaj_jednostke(par, 10.5, 10.5, 0.0)
+	var jb_id: int = sym.dodaj_jednostke(par, 20.5, 10.5, 0.0)
+	sym.rozkaz_ruchu(ja_id, 17.5, 10.5, null, false)
+	sym.rozkaz_ruchu(ja_id, 17.5, 13.5, null, true)
+	sym.rozkaz_ruchu(jb_id, 20.5, 13.5, null, false)
+	var weszla := false
+	for i in 1500:
+		sym.takt(1)
+		var j: Dictionary = sym.jednostka(ja_id)
+		if int(floor(j["x"])) == 14 and int(floor(j["y"])) >= 6 and int(floor(j["y"])) <= 14:
+			weszla = true
+	var ja: Dictionary = sym.jednostka(ja_id)
+	var jb: Dictionary = sym.jednostka(jb_id)
+	_wynik("rozkaz + A* w Core: objazd ściany i drugi cel z Shift", not weszla and ja["stan"] == 5000 and absf(ja["x"] - 17.5) < 0.06 and absf(ja["y"] - 13.5) < 0.06,
+		"A (%.3f, %.3f) stan %d, B (%.3f, %.3f) stan %d, A* iteracji %d" % [ja["x"], ja["y"], ja["stan"], jb["x"], jb["y"], jb["stan"], sym.diagnostyka()["astar_iteracje"]])
 	var d: Dictionary = sym.diagnostyka()
 	_wynik("diagnostyka: tablice zgodne, RNG liczy losowania", d["tablice_zgodne"] and int(d["rng_losowania"]) > 0,
 		"rng %d, losowań %d, nieobsługiwanych zdarzeń %d" % [d["rng_stan"], d["rng_losowania"], d["zdarzenia_nieobslugiwane"]])

@@ -129,7 +129,7 @@ bool FizykaLadowa::tryb_jazda(const KontekstFizyki& k, Jednostka& u) {
     const double x0 = u.x, y0 = u.y;
     u.x = f32(u.x + f32(step * n.m01()));
     u.y = f32(u.y + f32(step * n.m11()));
-    // test kroku (fizyka_terenu.md § 4) – niewdrożony: teren syntetyczny bez pól nieprzejezdnych
+    test_kroku(k, u, x0, y0);  // fizyka_terenu.md § 4 – wynik w trybie 0 ignorowany (ta sama orientacja)
     u.z = k.teren.get_mesh_z(u.x, u.y);
     if (u.param.pochyla) {
         const double pt2 = k.teren.nachylenie(k.mat, u.x, u.y, n.m01(), n.m11());
@@ -144,6 +144,63 @@ bool FizykaLadowa::tryb_jazda(const KontekstFizyki& k, Jednostka& u) {
         u.osiagnieto_punkt = dreg < PROG_DOJAZDU;
     }
     return true;
+}
+
+WynikKroku FizykaLadowa::test_kroku(const KontekstFizyki& k, Jednostka& u, double x0, double y0) {
+    const double x1 = u.x, y1 = u.y;
+    if (!k.teren.komorka_istnieje(podloga(u.x), podloga(u.y))) {  // brak komórki: P −= krok
+        u.x = x0;
+        u.y = y0;
+        ++u.kroki_cofniete;
+        return WynikKroku::poza_mapa;
+    }
+    int proba = 0;
+    WynikKroku w = WynikKroku::ok;
+    for (;;) {
+        const std::int64_t ix = podloga(u.x), iy = podloga(u.y);
+        if (ix == u.komorka_x && iy == u.komorka_y) break;  // pozostanie na tym samym polu – zawsze dozwolone
+        bool ok = k.teren.pole_przejezdne(ix, iy);
+        const IdJednostki blok = k.srodek_w_polu ? k.srodek_w_polu(ix, iy, u.id) : 0;
+        if (blok) ok = false;
+        if (ok && ix != u.komorka_x && iy != u.komorka_y)  // przekątna: jedna z komórek bocznych przejezdna
+            ok = k.teren.pole_przejezdne(u.komorka_x, iy) || k.teren.pole_przejezdne(ix, u.komorka_y);
+        if (ok) break;
+        if (blok) {  // środek obiektu w tej komórce: zapamiętaj blokującego, +0x330 = 2, cofnij krok
+            u.blokujacy = blok;
+            u.flaga_330 = 2;
+            u.x = x0;
+            u.y = y0;
+            ++u.kroki_cofniete;
+            return WynikKroku::zablokowany_przez_jednostke;
+        }
+        ++proba;
+        if (proba == 1) {         // cofnij x → ślizg wzdłuż y
+            u.x = x0;
+            u.y = y1;
+            w = WynikKroku::slizg_wzdluz_y;
+        } else if (proba == 2) {  // przywróć x, cofnij y → ślizg wzdłuż x
+            u.x = x1;
+            u.y = y0;
+            w = WynikKroku::slizg_wzdluz_x;
+        } else {                  // cofnij x – krok odrzucony
+            u.x = x0;
+            u.y = y0;
+            ++u.kroki_cofniete;
+            u.licznik_blokady_ms += k.ms_taktu;
+            return WynikKroku::cofniety;
+        }
+    }
+    // przycięcie do brzegu mapy (0x549FF3, ±0,001) [W]
+    const double xmax = double(k.teren.szerokosc() - 1) - 0.001, ymax = double(k.teren.wysokosc() - 1) - 0.001;
+    if (u.x < 0.001) u.x = f32(0.001);
+    if (u.y < 0.001) u.y = f32(0.001);
+    if (u.x > xmax) u.x = f32(xmax);
+    if (u.y > ymax) u.y = f32(ymax);
+    if (w != WynikKroku::ok) {
+        u.licznik_blokady_ms += k.ms_taktu;
+        ++u.kroki_slizg;
+    }
+    return w;
 }
 
 void FizykaLadowa::tryb_hamowanie(const KontekstFizyki& k, Jednostka& u) {

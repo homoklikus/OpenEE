@@ -13,6 +13,7 @@
 #include "openee/interfejsy.hpp"
 #include "openee/jednostka.hpp"
 #include "openee/maszyna_stanow.hpp"
+#include "openee/nawigacja.hpp"
 #include "openee/teren.hpp"
 
 namespace openee {
@@ -24,6 +25,12 @@ struct Diagnostyka {
     std::uint64_t wejscia_niewdrozone = 0;        // np. RepathAroundObstacle, stany walki
     std::string ostatnie_niewdrozone;
     std::uint64_t losowania_idle_pominiete = 0;   // wejście w Idle: warunkowe losowania [N]
+    std::uint64_t objazdy_niezweryfikowane = 0;   // wejścia w 9002 (objazd A* ±50 – [W], bez pomiaru)
+    std::uint64_t kolizje = 0;                    // wywołania 0x549179 z kolizją
+    std::uint64_t kroki_odpychania = 0;           // udane przesunięcia 0x549A08
+    std::uint64_t cele_zajete = 0;                // reguła (a)
+    WynikAStar ostatnia_trasa;                    // ostatnie pełne A* (diagnostyka)
+    bool ostatnia_bounded_sukces = false;
 };
 
 /// Migawka jednej jednostki do przekazania warstwie prezentacji.
@@ -64,6 +71,15 @@ public:
     const Jednostka* jednostka(IdJednostki id) const;
     const std::vector<Jednostka>& jednostki() const { return jednostki_; }
 
+    /// Rozkaz ruchu do punktu (kolejka celów, etap 21): zwykły – czyści kolejkę i wstawia cel na początek (8000);
+    /// shift – dopisuje na koniec, gdy jednostka ma cel (inaczej jak zwykły). Trasa: A* w Core przy wejściu w 8000.
+    bool rozkaz_ruchu(IdJednostki id, double x, double y, std::optional<double> kurs_koncowy = std::nullopt,
+                      bool shift = false);
+
+    /// Włącza/wyłącza kolizje w takcie (testy izolowane). Domyślnie włączone.
+    void ustaw_kolizje(bool w) { kolizje_wlaczone_ = w; }
+    TerenSiatka& teren_edycja() { return teren_; }
+
     /// Gotowa trasa (bez A*) i cel-miejsce z opcjonalnym kursem końcowym.
     bool nadaj_trase(IdJednostki id, const std::vector<Punkt2>& punkty, std::optional<double> kurs_koncowy,
                      StartTrasy start);
@@ -79,6 +95,14 @@ private:
     bool ocen_przejscie(Jednostka& u, const Przejscie& p);
     void wejdz_w_stan(Jednostka& u, const StanSkryptu& s);
     void nieobslugiwane(const std::string& n);
+    bool przygotuj_trase(Jednostka& u, int okno);
+    void aktywuj_cel(Jednostka& u);
+    void po_ruchu(Jednostka& u, double x0, double y0);
+    void odbuduj_kontakty(Jednostka& u, double cx, double cy);
+    void krok_koncowy(Jednostka& u);
+    void zastosuj_push(Jednostka& u);
+    IdJednostki srodek_w_polu(std::int64_t ix, std::int64_t iy, IdJednostki pytajaca) const;
+    bool kolizje_wlaczone_ = true;
 
     MatematykaTitan mat_;
     TerenSiatka teren_;

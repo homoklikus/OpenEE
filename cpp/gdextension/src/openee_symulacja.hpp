@@ -27,6 +27,8 @@ public:
     int64_t dodaj_jednostke(const godot::Dictionary& parametry, double x, double y, double kurs);
     bool nadaj_trase(int64_t id, const godot::PackedFloat64Array& punkty_xy, const godot::Variant& kurs_koncowy,
                      const godot::String& start);
+    bool rozkaz_ruchu(int64_t id, double x, double y, const godot::Variant& kurs_koncowy, bool shift);
+    void ustaw_przejezdnosc(int64_t ix, int64_t iy, bool przejezdne);
     int64_t takt(int64_t ile);
     godot::PackedFloat64Array migawka() const;
     godot::PackedStringArray pola_migawki() const;

@@ -184,6 +184,7 @@ flagą „niezweryfikowane”.
 | 5 | maszyna stanów (parser podzbioru `.tai`, skrypt `land`) | częściowy (zdarzenia walki → fałsz) | `core_tai`, sekwencje stanów w S1–S7 |
 | 6 | `KolizjeTitan` | tylko wzór 0x549179 | `core_odpychanie` |
 | 7–10 | test kroku, kolejka celów, grupy, nawigacja | niewdrożone – interfejsy w `interfejsy.hpp` | – |
+| **etap 29** | A* + Bounded, test kroku, kolizje w takcie, kolejka celów, 9002 (niezweryfikowany) | wdrożone / częściowe | `core_astar`, `core_krok`, `core_kolizje_takt`, `core_kolejka`, `core_scenariusze`, `core_porownanie_gra` |
 
 Integracja i scena diagnostyczna: `docs/cpp/INTEGRACJA_GODOT.md`. Testy przez Godota:
 `godot/testy/testy_gdextension.gd`.

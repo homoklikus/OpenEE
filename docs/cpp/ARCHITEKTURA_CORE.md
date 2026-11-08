@@ -54,6 +54,7 @@ C++ wystarcza – brak innych zależności.
 | kolizje | `kolizje.hpp/.cpp` | wzór odpychania 0x549179 | `walidacja_kolizji.md` § 2 |
 | świat | `symulacja.hpp/.cpp` | `Swiat`: jednostki, takt, zdarzenia, akcje wejścia, migawka, diagnostyka | `specyfikacja_ruchu_godot.md` § 3 |
 | interfejsy | `interfejsy.hpp` | `INawigacja`, `IKolejkaCelow`, `IGrupy`, `IKolizje`, status podsystemów | – |
+| nawigacja (etap 29) | `nawigacja.hpp/.cpp` | `AStarTitan`: lista otwarta (lista + 53 kubełki, uzupełnianie po 15), zamknięta, sąsiedzi, reguła narożników, koszty 10/14 + kary, limity, wybór najbliższego, Bounded (koniec bez testu dostępności), przebieg rozwijania | `astar_pola.md`, `astar_wyniki.md` |
 
 ## 3. Arytmetyka i determinizm
 
@@ -163,3 +164,34 @@ Tablice, prędkość, zapisy f32 i teren są wspólne [P].
   - przelicza VA → RVA → offset przez nagłówki sekcji;
   - sprawdza zakres sekcji, FNV tablicy, monotoniczność i odchyłkę od cos/acos < 2e-6.
 - Nieznana wersja kończy się błędem z sumą pliku. Nie ma heurystycznego szukania tablic.
+
+## 11. Etap 29 – nawigacja, test kroku, kolizje w takcie, kolejka celów
+
+- **A\*** (`AStarTitan::szukaj`):
+  - port modelu weryfikacyjnego etapu 24;
+  - 18 syntetycznych przypadków bitowo zgodnych z modelem (trasa, kolejność rozwijania, iteracje, wywołania);
+  - na mapie z gry (lokalnie) trasy A i C identyczne z grą, E: 145 iteracji w 8 wywołaniach = gra.
+- **Prośba o trasę** (`Swiat::przygotuj_trase`):
+  - Bounded (m = d + 4, d > 20 → d/20; prostokąt ±(m+1)), przy porażce pełne A* od końca Bounded (limit 3000);
+  - punkty (x + 0,5; y + 0,5), pominięcie pola startu, ostatni punkt = dokładny cel [W];
+  - **synchronicznie** – w grze pełne A* rozkłada się na kolejne takty, więc trasa jest gotowa później [W];
+  - kary za stojące jednostki +50/+150 [W, bez pomiaru].
+- **Przejezdność:**
+  - `TerenSiatka::ustaw_przejezdnosc` / `pole_przejezdne`, linie brzegu rombu;
+  - import z mapy scenariusza – niewdrożony.
+- **Test kroku** (`FizykaLadowa::test_kroku`):
+  - kolejność: to samo pole → teren/obiekty → przekątna (jedna komórka boczna) → ślizg y → ślizg x → cofnięcie;
+  - przycięcie do brzegu, +0x248 przy ślizgu;
+  - **zwykłe jednostki nie blokują pola** [P – pomiary 546/547]. Mechanizm +0x20C/+0x330 = 2 zostaje dla obiektów
+    blokujących (callback `srodek_w_polu`, w świecie nieużywany, dopóki obiekty stałe nie są importowane).
+- **Kolizje w takcie** (`Swiat::krok_koncowy`, `zastosuj_push`, `odbuduj_kontakty`):
+  - lista kontaktów odbudowywana przy zmianie komórki – EE od nowej, AoC od starej pozycji [W];
+  - **obiekt na listach pól swojego obrysu** [H, wspierane pomiarem 547: 0 taktów z inną obecnością kontaktu];
+  - 0x549179 i reguła (a) (zaliczenie punktu – [H]), 0x549A08 (przycięcie, test pola, +0x248, dosadzenie);
+  - budzik, kolejność od końca listy.
+- **Kolejka celów** (`Swiat::rozkaz_ruchu`):
+  - zwykły rozkaz: wyczyszczenie, cel na początek, 8000;
+  - Shift: na koniec (bez celu – jak zwykły);
+  - wejście w Idle zdejmuje cel i aktywuje następny;
+  - punkty +0x32, porzucenie i BO-4 – niewdrożone.
+- **9002:** A* w oknie ±50 pól – **niezweryfikowany dynamicznie**, liczony w `Diagnostyka::objazdy_niezweryfikowane`.

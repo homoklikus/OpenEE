@@ -20,6 +20,17 @@ TerenSiatka TerenSiatka::syntetyczny_etap27() {
     return TerenSiatka(n, n, std::move(z));
 }
 
+void TerenSiatka::ustaw_przejezdnosc(std::int64_t ix, std::int64_t iy, bool p) {
+    if (!komorka_istnieje(ix, iy)) return;
+    if (przejezdne_.empty()) przejezdne_.assign(std::size_t(szer_) * std::size_t(wys_), 1);
+    przejezdne_[std::size_t(iy) * std::size_t(szer_) + std::size_t(ix)] = p ? 1 : 0;
+}
+
+bool TerenSiatka::pole_przejezdne(std::int64_t ix, std::int64_t iy) const {
+    if (!komorka_istnieje(ix, iy) || na_brzegu_rombu(ix, iy)) return false;
+    return przejezdne_.empty() || przejezdne_[std::size_t(iy) * std::size_t(szer_) + std::size_t(ix)] != 0;
+}
+
 double TerenSiatka::h(std::int64_t ix, std::int64_t iy) const {
     if (!wierzcholek_istnieje(ix, iy)) {
         ++poza_mapa_;

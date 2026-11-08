@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstdint>
+#include <deque>
 #include <optional>
 #include <string>
 #include <vector>
@@ -37,6 +38,16 @@ enum class TypCelu : std::uint8_t { brak = 0, miejsce = 1 };
 
 struct Punkt2 {
     double x = 0, y = 0;  // f32 przechowywane jako double
+};
+
+/// Cel w kolejce celów (EEUGLocation, kolejka_rozkazow.md). Poziom 0 zwykłej jednostki lądowej.
+struct CelRuchu {
+    TypCelu typ = TypCelu::miejsce;
+    double x = 0, y = 0;                  // dokładny punkt rozkazu
+    std::optional<double> kurs_koncowy;   // cel+0x2C
+    bool od_gracza = true;
+    bool punkt_automatyczny = false;      // flaga +0x32 (punkty pośrednie podsystemu tras) – niewdrożone
+    std::uint32_t proby = 0;              // cel+0x18: licznik prób przygotowania trasy
 };
 
 struct Jednostka {
@@ -74,9 +85,14 @@ struct Jednostka {
     IdJednostki blokujacy = 0;      // +0x20C (0 = brak)
     std::uint16_t flaga_330 = 0;    // +0x330
     double push_x = 0, push_y = 0;  // +0x230 / +0x234
-    std::uint32_t kontakty = 0;     // +0xC8 (lista kontaktów niewdrożona – zawsze 0)
+    std::uint32_t kontakty = 0;     // +0xC8 liczba kontaktów (= lista_kontaktow.size())
+    std::vector<IdJednostki> lista_kontaktow;  // +0xC4 (symetryczna; odbudowa przy zmianie komórki)
+    std::int64_t komorka_x = 0, komorka_y = 0;  // +0x1C/+0x20 pole jednostki (zapis transformacji)
+    std::deque<CelRuchu> kolejka_celow;         // +0x90 poziom 0; front = cel bieżący (+0x1F0)
+    std::uint64_t kroki_cofniete = 0, kroki_slizg = 0;  // diagnostyka testu kroku
 
     std::size_t pozostalo_punktow() const { return trasa.size() - zdjete_punkty; }
+    bool ma_cel() const { return !kolejka_celow.empty() || cel != TypCelu::brak; }
 };
 
 }  // namespace openee

@@ -23,6 +23,8 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("dodaj_jednostke", "parametry", "x", "y", "kurs"), &OpenEESymulacja::dodaj_jednostke);
     ClassDB::bind_method(D_METHOD("nadaj_trase", "id", "punkty_xy", "kurs_koncowy", "start"),
                          &OpenEESymulacja::nadaj_trase);
+    ClassDB::bind_method(D_METHOD("rozkaz_ruchu", "id", "x", "y", "kurs_koncowy", "shift"), &OpenEESymulacja::rozkaz_ruchu);
+    ClassDB::bind_method(D_METHOD("ustaw_przejezdnosc", "ix", "iy", "przejezdne"), &OpenEESymulacja::ustaw_przejezdnosc);
     ClassDB::bind_method(D_METHOD("takt", "ile"), &OpenEESymulacja::takt);
     ClassDB::bind_method(D_METHOD("migawka"), &OpenEESymulacja::migawka);
     ClassDB::bind_method(D_METHOD("pola_migawki"), &OpenEESymulacja::pola_migawki);
@@ -30,7 +32,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("diagnostyka"), &OpenEESymulacja::diagnostyka);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.6.0 (etap 28, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.7.0 (etap 29, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -96,6 +98,17 @@ bool OpenEESymulacja::nadaj_trase(int64_t id, const PackedFloat64Array& xy, cons
         kk = double(kurs_koncowy);
     const auto s = start == String("advance") ? openee::StartTrasy::advance : openee::StartTrasy::rozkaz;
     return swiat_->nadaj_trase(openee::IdJednostki(id), pts, kk, s);
+}
+
+bool OpenEESymulacja::rozkaz_ruchu(int64_t id, double x, double y, const Variant& kurs_koncowy, bool shift) {
+    if (!swiat_) return false;
+    std::optional<double> kk;
+    if (kurs_koncowy.get_type() == Variant::FLOAT || kurs_koncowy.get_type() == Variant::INT) kk = double(kurs_koncowy);
+    return swiat_->rozkaz_ruchu(openee::IdJednostki(id), x, y, kk, shift);
+}
+
+void OpenEESymulacja::ustaw_przejezdnosc(int64_t ix, int64_t iy, bool przejezdne) {
+    if (swiat_) swiat_->teren_edycja().ustaw_przejezdnosc(ix, iy, przejezdne);
 }
 
 int64_t OpenEESymulacja::takt(int64_t ile) {
@@ -167,6 +180,10 @@ Dictionary OpenEESymulacja::diagnostyka() const {
         d["zdarzenia_nieobslugiwane"] = int64_t(g.zdarzenia_nieobslugiwane);
         d["ostatnie_nieobslugiwane"] = gtekst(g.ostatnie_nieobslugiwane);
         d["wejscia_niewdrozone"] = int64_t(g.wejscia_niewdrozone);
+        d["kolizje"] = int64_t(g.kolizje);
+        d["kroki_odpychania"] = int64_t(g.kroki_odpychania);
+        d["objazdy_niezweryfikowane"] = int64_t(g.objazdy_niezweryfikowane);
+        d["astar_iteracje"] = int64_t(g.ostatnia_trasa.iteracje);
     }
     Array ps;
     for (const auto& p : openee::podsystemy()) {

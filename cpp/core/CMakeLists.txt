@@ -8,6 +8,7 @@ add_library(openee_core STATIC
   src/maszyna_stanow.cpp
   src/kolizje.cpp
   src/symulacja.cpp
+  src/nawigacja.cpp
 )
 target_include_directories(openee_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(openee_core PUBLIC cxx_std_20)

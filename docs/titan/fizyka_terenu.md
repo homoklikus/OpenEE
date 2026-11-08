@@ -142,6 +142,9 @@ jeśli był ślizg: u+0x248 += ms taktu
   - pełny predykat przejezdności 0x62C7C8 (AoC 0x641658) wołany jest tylko przy przekątnych;
   - A* liczy stojące jednostki tylko jako koszt (+50 / +150), a test kroku zatrzymuje jednostkę na komórce, w której
     leży środek innej jednostki.
+    **[Etap 29 – zastąpione]** Zwykłe jednostki nie blokują pola w teście kroku [P]. Pomiary 546 i 547 (rejestracja
+    co takt): jednostka w ruchu weszła na pole ze środkiem stojącej jednostki, a +0x20C pozostało 0. Blokują obiekty
+    z typem blokującym, np. mury i drzewa (`walidacja_kolizji.md` § 10).
 
   Planowanie i wykonanie korzystają więc z innych reguł [W].
 - **Trasa przez pole niedostępne:** krok do takiego pola ślizga się albo cofa. Licznik +0x248 rośnie, a po 3–5 s
