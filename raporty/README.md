@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_30.md`](../RAPORT_ETAP_30.md) – etap 30: import rzeczywistych map SCN do OpenEE Core, schemat struktur Titan i narzędzia statyki, narzędzie pomiar → Core, kamera i kolejka celów w Riverlands_MCP, początek rekonstrukcji walki (pojedynek wręcz EE odtworzony bez różnic), aktualizacja prognozy.
+[`RAPORT_ETAP_31.md`](../RAPORT_ETAP_31.md) – etap 31: pełny cykl ataku w OpenEE Core (wybór celu z wagami z gry, podejście i pościg, zasięg, łuk i obrót, atak, przeładowanie, śmierć), przeładowanie AoC 0x5FEA22, obrażenia klas i modyfikator wysokości, walka zintegrowana ze `Swiat`, API walki w GDExtension, porównanie Core z grą (zgodne jakościowo, rozjazd o 1 takt), aktualizacja prognozy.
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -60,3 +60,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_27.md`](archiwum/RAPORT_ETAP_27.md) | etap 27 | etap 27: UMArcTan2 i tablice trygonometryczne z DLL, precyzja x87 i zapisy f32, przyczyna rozbieżności AoC 505 (obrót AoC), walidacja odpychania, RNG i determinizm, BO-8/BO-9′, k = 2,0, model v4, testy referencyjne i specyfikacja ruchu dla Godota |
 | [`RAPORT_ETAP_28.md`](archiwum/RAPORT_ETAP_28.md) | etap 28 | etap 28: natywny rdzeń OpenEE Core w C++20 (matematyka Titan z tablicami DLL, generator, teren, fizyka EE/AoC, maszyna stanów, odpychanie), GDExtension (godot-cpp 10.0.0, API 4.7), testy S1–S7 bitowo w Debug i Release, scena diagnostyczna |
 | [`RAPORT_ETAP_29.md`](archiwum/RAPORT_ETAP_29.md) | etap 29 | etap 29: A* po polach, test kroku, kolizje w takcie i kolejka celów w OpenEE Core (C++), porównanie Core z pomiarami EE/AoC, rejestracja wielu jednostek w Riverlands_MCP, mapa systemów Titan i prognoza rekonstrukcji |
+| [`RAPORT_ETAP_30.md`](archiwum/RAPORT_ETAP_30.md) | etap 30 | etap 30: import rzeczywistych map SCN do OpenEE Core, schemat struktur Titan i narzędzia statyki, narzędzie pomiar → Core, kamera i kolejka celów w Riverlands_MCP, początek rekonstrukcji walki (pojedynek wręcz EE odtworzony bez różnic), aktualizacja prognozy |

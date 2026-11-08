@@ -21,6 +21,20 @@ const NazwaNumer NAZWY[] = {
     {"Dying", 6000},
     {"UnitRotting", 6002},
     {"Dead", 6003},
+    // etap 31: stany walki (tablica rejestracji EE 0x618E11, numery identyczne w AoC [P: kod obu binarek])
+    {"AttackEnemyUnit", 2001},
+    {"FaceEnemyUnit", 2012},
+    {"CheckRange", 2013},
+    {"InitialAttackState", 2016},
+    {"UnderAttack", 2018},
+    {"RunFromAttacker", 2019},
+    {"RetaliateAgainstAttacker", 2020},
+    {"WaitForReload", 2021},
+    {"ShouldIFollowEnemyUnit", 2024},
+    {"ReturnToInitialContactLocation", 2026},
+    {"ChangeTargetForSpecialEnemy", 2031},
+    {"ReacquireEnemyUnit", 5002},
+    {"ResourcesRotting", 6001},
 };
 }  // namespace
 
@@ -190,7 +204,8 @@ const StanSkryptu* SkryptStanow::stan(int numer) const {
 
 SkryptStanow SkryptStanow::wbudowany_land() {
     // Odtworzone z tabeli docs/titan/skrypty_stanow.md § 4 (połączony land.tai: najpierw przejścia z części ataku,
-    // potem ruchu). Własny zapis, nie kopia pliku gry. Stany walki, transportu i eksploracji – tylko nazwy celów.
+    // potem ruchu). Własny zapis, nie kopia pliku gry. Etap 31: stany walki wręcz z Generic Attack (kolejność przejść
+    // jak w połączonym skrypcie [P: przebiegi 564]) i stany śmierci; transport, eksploracja, FaceLocation – tylko nazwy.
     static const char* TEKST = R"TAI(
 Idle { CanISeeEnemy true(CheckRange) }
 PrepareToMove {
@@ -236,6 +251,51 @@ ReacquireGoal {
 ShouldIReturnToInitialContactLocation {
   allof(HasValidInitialContactLocation,ReturnsToInitialContactLocation,GoalIsNotPlayerInitiated) true(ReturnToInitialContactLocation) false(Idle)
 }
+CheckRange {
+  anyof(EnemyUnitDestroyed,CeaseFire,UnitNotOnMap,EnemyWithinMinimumRange) true(ShouldIReturnToInitialContactLocation)
+  allof(EnemyUnitNoLongerVisible,GoalIsNotPlayerInitiated) true(ShouldIReturnToInitialContactLocation)
+  UnitInWeaponRange true(FaceEnemyUnit)
+  anyof(CanIMoveFreely,GoalIsPlayerInitiated) true(ShouldIFollowEnemyUnit) false(ShouldIReturnToInitialContactLocation)
+}
+ShouldIFollowEnemyUnit {
+  allof(OneWaypointRemaining,GoalIsUnit,EnemyUnitHasNotMovedOneTile) true(Advance)
+  anyof(CanIPursuePastInitialContactLOS,EnemyInsideInitialContactLOS,GoalIsPlayerInitiated) true(PrepareToMove) false(ShouldIReturnToInitialContactLocation)
+}
+FaceEnemyUnit {
+  ShouldIRun true(RunFromAttacker)
+  anyof(EnemyUnitDestroyed,CeaseFire,UnitNotOnMap,EnemyWithinMinimumRange) true(ShouldIReturnToInitialContactLocation)
+  allof(EnemyUnitNoLongerVisible,GoalIsNotPlayerInitiated) true(ShouldIReturnToInitialContactLocation)
+  UnitInWeaponRange false(CheckRange)
+  allof(TargetIsSpecialEnemy,Reloaded,EnemyUnitInsideFiringArch) true(ChangeTargetForSpecialEnemy)
+  allof(Reloaded,EnemyUnitInsideFiringArch) true(AttackEnemyUnit)
+  FacingEnemyUnit true(WaitForReload)
+}
+ChangeTargetForSpecialEnemy { AlwaysTrue true(ReacquireGoal) }
+AttackEnemyUnit {
+  ShouldIRun true(RunFromAttacker)
+  ShouldIRetaliate true(RetaliateAgainstAttacker)
+  EnemyUnitInsideFiringArch false(FaceEnemyUnit)
+  AlwaysTrue true(WaitForReload)
+}
+WaitForReload {
+  ShouldIRun true(RunFromAttacker)
+  ShouldIRetaliate true(RetaliateAgainstAttacker)
+  allof(GoalIsAttackLocation,Reloaded) true(FaceLocation)
+  Reloaded true(FaceEnemyUnit)
+  anyof(EnemyUnitDestroyed,CeaseFire,UnitNotOnMap,EnemyWithinMinimumRange) true(ShouldIReturnToInitialContactLocation)
+  allof(EnemyUnitNoLongerVisible,GoalIsNotPlayerInitiated) true(ShouldIReturnToInitialContactLocation)
+}
+InitialAttackState {
+  GoalIsUnit true(FaceEnemyUnit)
+  GoalIsAttackLocation true(FaceLocation)
+}
+ReacquireEnemyUnit { EnemyUnitReachable true(CheckRange) false(ShouldIReturnToInitialContactLocation) }
+RetaliateAgainstAttacker { GoalIsUnit true(CheckRange) false(PrepareToMove) }
+RunFromAttacker { AlwaysTrue true(PrepareToMove) }
+ReturnToInitialContactLocation { AlwaysTrue true(PrepareToMove) }
+Dying { DyingAnimationFinished true(ResourcesRotting) }
+ResourcesRotting { ResourcesRottedAway true(UnitRotting) }
+UnitRotting { UnitRottedAway true(Dead) }
 )TAI";
     SkryptStanow s;
     std::string blad;

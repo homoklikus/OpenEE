@@ -1,4 +1,4 @@
-# Plan rekonstrukcji silnika Titan (EE / AoC) i prognoza – etap 30
+# Plan rekonstrukcji silnika Titan (EE / AoC) i prognoza – etap 31
 
 Dokument roboczy aktualizowany w każdym etapie. Zawiera:
 - mapę rozpoznanych i nierozpoznanych systemów;
@@ -31,9 +31,9 @@ stanów, trudny pomiar, niedeterminizm względem wejść).
 | Objazd 9002 | kod [W], bez pomiaru (etapy 26–30: 0 z 7 prób) | `kolizje_objazdy.md` § 6, § 13 | próg czasu zablokowania nieosiągnięty (maks. 2011 ms) | 3 | dłuższe zablokowanie, wąskie przejście | kamera „pokaż punkt” [jest] | A*, kolizje |
 | Kolejka celów, Shift | rozpoznana, w C++ [P/W] | `kolejka_rozkazow.md` | punkty +0x32, porzucenie, BO-4 | 2 | rozkazy Shift w ruchu | `obs_rozkaz(modyfikator)` [jest] | stany |
 | Maszyna stanów `.tai` (ruch) | rozpoznana [P] | `skrypty_stanow.md` | – | 2 | – | rejestracja stanów [jest] | – |
-| Maszyna stanów `.tai` (walka, transport, patrol, eksploracja) | składnia [P], zdarzenia [N] | `skrypty_stanow.md` | ~150 zdarzeń, akcje wejścia | 4 | scenariusze walki | rejestracja przejść + celów | walka, transport |
+| Maszyna stanów `.tai` (walka, transport, patrol, eksploracja) | składnia [P]; walka wręcz – stany i zdarzenia celu w Core (etap 31) [P/W]; reszta [N] | `skrypty_stanow.md` | ~150 zdarzeń, akcje wejścia | 4 | scenariusze walki | rejestracja przejść + celów | walka, transport |
 | Formacje, grupy | rozpoznane [P/W] (etapy 17–20) | `grupy_ruchu.md` … `przydzial_specjalny.md` | 8 rodzajów szyku, „Szybko/Sprytnie” | 3 | grupy 2–50 jednostek | rejestracja wielu jednostek [jest] | kolejka, fizyka |
-| Walka: cele, zasięg, tempo ataku | pojedynek wręcz 1:1 EE [P], w Core; AoC – losowe przeładowanie [W] | `walka.md` | wybór celu, pościg, dystans, 1:N | 4 | pojedynki 1:N, strzelcy | `ee_walka` [jest] | stany, kolizje |
+| Walka: cele, zasięg, tempo ataku | etap 31: wybór celu, podejście, łuk/obrót, pełny cykl wręcz w Core [P/W]; AoC przeładowanie [P]; porównanie z grą jakościowo zgodne, nie bitowe (rozjazd 1 takt od ~50 taktu) | `walka.md` § 8–14 | CompletedUnitFacing, kolejność kandydatów i listy fizyki, mgła, osiągalność, cfg wysokości, strzelcy | 4 | rozkaz ataku gracza, utrata celu, strzelcy, odczyt cfg | `ee_walka` + `pomiar_core walka` [jest] | stany, kolizje |
 | Pancerze i obrażenia | wzór [P] (EE), tablice trafień [P] | `walka.md` | obszarowe, premie, AoC [W] | 3 | serie z ulepszeniami | `walka_tabele` [jest] | walka |
 | Pociski, balistyka | [N] | – | trajektorie, trafienie, rozrzut | 4 | strzelcy, artyleria | śledzenie obiektów pocisków | walka, teren |
 | Lotnictwo | [N] | – | paliwo, lotniska, ruch 3D | 4 | samoloty, śmigłowce | rejestracja obiektów powietrznych | nawigacja (klucz 4?), walka |
@@ -382,4 +382,37 @@ realistycznym, a jeden etap to za mało, żeby je przeliczyć.
 | B | 12,8 × 1,15 × 25 ≈ 368 h | ≈ **294 h** | ≈ 263 h | ≈ **16 tyg.** (bez rozwoju 20, silna automatyzacja 15) |
 | C | 20,3 × 1,3 × 25 ≈ 660 h | ≈ **528 h** | ≈ 471 h | ≈ **29 tyg.** |
 
+Niepewność bez zmian (§ 4.5). Prognoza nadal nie jest obietnicą terminu.
+
+### 4.8. Aktualizacja po etapie 31
+
+**Pomiar etapu 31** (czas UTC z commitów i plików zadań; [P]):
+
+| Element | Wartość |
+|---|---|
+| początek etapu | 14:43 (commit etapu 30) |
+| zadania MCP | 13 (572–584), 15:07 → 16:00 |
+| zadania nieudane lub z błędem kroku | 7 (572–574, 577: odprawa/kamera; 582–584: gra nie przeszła odprawy – kursor zablokowany przy aktywnym pulpicie użytkownika) |
+| udane serie walki | 4 (578 EE 1:1 i 2:1, 579 EE obywatel, 580 AoC 1:1, 581 AoC obywatel) + odczyty 575/576 |
+| pełny cykl w Core bez parametru „takt ataku” | ok. 15:45 (pierwsze porównanie okna 578 G1) |
+| koniec (commit) | ok. 16:30 |
+
+Podział czasu (szacunek, [H]): statyka wyboru celu/podejścia/łuku ok. 35 min, eksperymenty i narzędzia ok. 30 min,
+implementacja Core ok. 30 min, testy, synchronizacja i dokumentacja – reszta.
+
+**Nakład dotychczasowy na walkę** (etapy 30–31): ok. 3,5 h ≈ 0,14 J [P z czasu commitów].
+
+**Ocena.** Etap dał pełny cykl w Core, ale nie zgodność bitową: pierwsze różnice pojawiają się w 48.–58. takcie i
+wynikają głównie z systemów spoza walki (CompletedUnitFacing w maszynie ruchu, kolejność listy fizyki, dryf
+kolizji). Odkryto nowe niewiadome (cfg wysokości, mgła, kolejność stref, osiągalność). Zgodnie z § 4.6 nie skracam
+prognozy tylko dlatego, że etap się skończył: wagę walki obniżam o zużyte 0,14 J i podnoszę o ok. 0,05 J za
+nowe niewiadome.
+
+| Cel | Pozostało (J) | Realistyczny (÷1,25) | Realistyczny, 18 h/tydz. | Zużyte od etapu 30 |
+|---|---|---|---|---|
+| A | 5,9 − 0,09 ≈ **5,8 J** | ≈ **116 h** | ≈ **6,4 tyg.** | ≈ 3,5 h |
+| B | 12,8 − 0,09 ≈ **12,7 J** | ≈ **292 h** | ≈ **16 tyg.** | ≈ 3,5 h |
+| C | 20,3 − 0,09 ≈ **20,2 J** | ≈ **525 h** | ≈ **29 tyg.** | ≈ 3,5 h |
+
+Liczby to prognoza **pozostałej** pracy; czas zużyty jest w ostatniej kolumnie, nie odejmowany drugi raz.
 Niepewność bez zmian (§ 4.5). Prognoza nadal nie jest obietnicą terminu.

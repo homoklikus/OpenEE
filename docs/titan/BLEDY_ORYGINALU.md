@@ -262,3 +262,19 @@ czyli murów. Dla zwykłych jednostek wynik testu zgodności nie jest nadpisywan
 - **Pewność:** kod [W]; skutek niezmierzony [H].
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona.
 - **Źródło:** etap 27, `docs/titan/walidacja_kolizji.md` § 8.
+
+### BO-10 (podejrzenie): punkt przechwycenia celu liczony z błędnie dodanymi składowymi z
+
+- **Zachowanie.** Funkcja przechwycenia ruchomego celu 0x62C963 liczy długość wektora atakującego jako
+  sqrt(dx² + dy² + 2·dz) zamiast sqrt(dx² + dy² + dz²), a iloczyn skalarny jako Dty·Day + Dtz + Daz + Dtx·Dax
+  (składowe z dodane zamiast pomnożone). Punkt bieżący trasy celu ma z = 0, a odległość d jest liczona w 3D.
+- **Lokalizacja.** `Empire Earth.exe` 0x62C963 (wołana z celu EEUGAttackUnit vt+0x08 0x60AF05 przez PrepareToMove
+  0x6222A8); AoC – odpowiednik nieodczytany [N].
+- **Przyczyna.** Sekwencja `fadd` w miejscu `fmul` dla składowych z [W co do kodu, H co do intencji].
+- **Skutki.** Na terenie pochyłym punkt przechwycenia przesuwa się względem geometrycznie poprawnego; na płaskim
+  (dz = 0) błąd znika. Pomiar 578 (takt 2076): punkt z gry (177,1906; 106,795) odtworzony bitowo **tylko** wzorem
+  z błędami [P].
+- **Pewność:** kod [W]; zgodność wyniku [P].
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. Core odtwarza wzór z błędami
+  (`Swiat::punkt_podejscia`).
+- **Źródło:** etap 31, `docs/titan/walka.md` § 10.

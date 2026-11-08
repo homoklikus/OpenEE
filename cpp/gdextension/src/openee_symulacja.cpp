@@ -40,9 +40,14 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("mapa_pewnosc", "x", "y"), &OpenEESymulacja::mapa_pewnosc);
     ClassDB::bind_method(D_METHOD("utworz_swiat_na_mapie", "wariant", "teren_dozwolony"), &OpenEESymulacja::utworz_swiat_na_mapie);
     ClassDB::bind_method(D_METHOD("pole_przejezdne", "x", "y"), &OpenEESymulacja::pole_przejezdne);
+    ClassDB::bind_method(D_METHOD("ustaw_walke", "id", "gracz", "czlowiek", "parametry", "hp"), &OpenEESymulacja::ustaw_walke);
+    ClassDB::bind_method(D_METHOD("ustaw_tablice_walki", "tablice", "wagi"), &OpenEESymulacja::ustaw_tablice_walki);
+    ClassDB::bind_method(D_METHOD("rozkaz_ataku", "id", "cel"), &OpenEESymulacja::rozkaz_ataku);
+    ClassDB::bind_method(D_METHOD("walka", "id"), &OpenEESymulacja::walka);
+    ClassDB::bind_method(D_METHOD("zdarzenia_walki"), &OpenEESymulacja::zdarzenia_walki);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.8.0 (etap 30, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.9.0 (etap 31, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -281,3 +286,111 @@ bool OpenEESymulacja::utworz_swiat_na_mapie(const String& wariant, const PackedB
 }
 
 bool OpenEESymulacja::pole_przejezdne(int64_t x, int64_t y) const { return swiat_ && swiat_->teren().pole_przejezdne(x, y); }
+
+// ---------------------------------------------------------------------------------------------- walka (etap 31)
+
+bool OpenEESymulacja::ustaw_walke(int64_t id, int64_t gracz, bool czlowiek, const Dictionary& d, int64_t hp) {
+    if (!swiat_) return false;
+    openee::ParametryWalki p;
+    p.hp_max = int(liczba(d, "hp_max", double(hp)));
+    p.atak = float(liczba(d, "atak", 0));
+    if (d.has("pancerz")) {
+        const Array a = d["pancerz"];
+        for (int64_t i = 0; i < a.size() && i < 6; ++i) p.pancerz[std::size_t(i)] = float(double(a[i]));
+    }
+    p.zasieg_max = float(liczba(d, "zasieg_max", 0));
+    p.pole_widzenia = float(liczba(d, "pole_widzenia", 0));
+    p.obszar = float(liczba(d, "obszar", 0));
+    p.przeladowanie_ms = int(liczba(d, "przeladowanie_ms", 0));
+    p.rodzaj_ataku = int(liczba(d, "rodzaj_ataku", 0));
+    p.wiersz_celu = int(liczba(d, "wiersz_celu", 0));
+    p.klasa_trafienia = int(liczba(d, "klasa_trafienia", 0));
+    p.rodzina_ataku = int(liczba(d, "rodzina_ataku", 0));
+    p.opoznienie_trafienia_ms = int(liczba(d, "opoznienie_trafienia_ms", -1));
+    p.luk_ataku = float(liczba(d, "luk_ataku", 0));
+    p.kat_broni = float(liczba(d, "kat_broni", 0));
+    p.rozmiar = float(liczba(d, "rozmiar", 0.5));
+    p.rozmiar_jeden = bool(liczba(d, "rozmiar_jeden", 0));
+    p.punktowy = bool(liczba(d, "punktowy", 0));
+    p.szukanie_ms = int(liczba(d, "szukanie_ms", 0));
+    p.zasieg_min = float(liczba(d, "zasieg_min", 0));
+    p.pole_ac = float(liczba(d, "pole_ac", 0));
+    p.typ_bazy = int(liczba(d, "typ_bazy", 0));
+    p.typ_jednostki = int(liczba(d, "typ_jednostki", 0));
+    return swiat_->ustaw_walke(openee::IdJednostki(id), int(gracz), czlowiek, p, int(hp));
+}
+
+bool OpenEESymulacja::ustaw_tablice_walki(const Dictionary& d, const Array& wagi) {
+    if (!swiat_) return false;
+    openee::TabliceObrazen t;
+    t.trudnosc = int(liczba(d, "trudnosc", 0));
+    if (d.has("mnozniki")) {
+        const Array m = d["mnozniki"];
+        for (int64_t i = 0; i < m.size(); ++i) {
+            const Array r = m[i];
+            std::array<float, 6> a{};
+            for (int64_t k = 0; k < r.size() && k < 6; ++k) a[std::size_t(k)] = float(double(r[k]));
+            t.mnozniki.push_back(a);
+        }
+    }
+    const char* kl[3] = {"08", "0C", "10"};
+    if (d.has("trafienie")) {
+        const Dictionary tr = d["trafienie"];
+        for (int i = 0; i < 3; ++i) {
+            if (!tr.has(kl[i])) continue;
+            const Dictionary k = tr[kl[i]];
+            const Array klucze = k.keys();
+            for (int64_t j = 0; j < klucze.size(); ++j) {
+                const PackedFloat32Array f = k[klucze[j]];
+                std::vector<float> v(f.ptr(), f.ptr() + f.size());
+                t.trafienie[std::size_t(i)][int(klucze[j])] = v;
+            }
+        }
+    }
+    std::array<openee::WagiCelu, 3> w{};
+    for (int64_t i = 0; i < wagi.size() && i < 3; ++i) {
+        const Array r = wagi[i];
+        std::vector<int> v;
+        for (int64_t k = 0; k < r.size(); ++k) v.push_back(int(r[k]));
+        w[std::size_t(i)] = openee::WagiCelu::z_rekordu(v);
+    }
+    swiat_->ustaw_tablice_walki(std::move(t), w);
+    return true;
+}
+
+bool OpenEESymulacja::rozkaz_ataku(int64_t id, int64_t cel) {
+    return swiat_ && swiat_->rozkaz_ataku(openee::IdJednostki(id), openee::IdJednostki(cel));
+}
+
+Dictionary OpenEESymulacja::walka(int64_t id) const {
+    Dictionary d;
+    if (!swiat_) return d;
+    const openee::Jednostka* u = swiat_->jednostka(openee::IdJednostki(id));
+    if (!u || !u->boj) return d;
+    d["hp"] = u->boj->s.hp;
+    d["przeladowanie_ms"] = u->boj->s.przeladowanie_ms;
+    d["szukanie_ms"] = u->boj->szukanie_ms;
+    d["animacja"] = u->boj->animacja;
+    d["zabicia"] = u->boj->s.zabicia;
+    d["gracz"] = u->gracz;
+    int64_t cel = 0;
+    if (!u->kolejka_celow.empty() && u->kolejka_celow.front().typ == openee::TypCelu::jednostka)
+        cel = int64_t(u->kolejka_celow.front().cel_jednostka);
+    d["cel"] = cel;
+    return d;
+}
+
+Array OpenEESymulacja::zdarzenia_walki() const {
+    Array a;
+    if (!swiat_) return a;
+    for (const auto& e : swiat_->zdarzenia_walki()) {
+        Dictionary d;
+        d["takt"] = int64_t(e.takt);
+        d["kto"] = int64_t(e.kto);
+        d["cel"] = int64_t(e.cel);
+        d["rodzaj"] = String(e.rodzaj.c_str());
+        d["wartosc"] = e.wartosc;
+        a.push_back(d);
+    }
+    return a;
+}

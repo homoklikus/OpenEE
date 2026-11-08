@@ -808,6 +808,304 @@ int test_walka() {
     return bledy ? FAIL : PASS;
 }
 
+// --------------------------------------------------------------------------------------------- walka w Swiat (etap 31)
+TerenSiatka teren_z_mapy_json(const Wartosc& j, const std::string& typ) {
+    DaneTerenuScn d;
+    d.A = int(j["A"].n); d.B = int(j["B"].n);
+    for (const auto& v : j["tekstura"].t) d.tekstura.push_back(std::uint8_t(v.n));
+    for (const auto& v : j["flagi"].t) d.flagi.push_back(std::uint8_t(v.n));
+    for (const auto& v : j["f10"].t) d.f10.push_back(float(v.n));
+    for (const auto& v : j["wysokosc"].t) d.wysokosc.push_back(float(v.n));
+    std::array<std::int16_t, 256> rd;
+    rd.fill(-1);
+    for (const auto& [k, v] : j["rodzina_tekstury"].o) rd[std::size_t(std::stoi(k))] = std::int16_t(v.n);
+    MapaTitan m = MapaTitan::z_scn(d, rd);
+    if (const Wartosc* pm = j.znajdz("pamiec"))
+        for (const auto& [k, v] : (*pm)["teren"].o) {
+            const auto p = k.find(',');
+            m.ustaw_teren_z_pamieci(std::stoi(k.substr(0, p)), std::stoi(k.substr(p + 1)), int(v.n));
+        }
+    for (const auto& o : j["obiekty"].t) {
+        const Wartosc* ty = j["typy"].znajdz(std::to_string(int(o["typ"].n)));
+        const Wartosc* tp = j.znajdz("pamiec") ? j["pamiec"]["typy"].znajdz(std::to_string(int(o["typ"].n))) : nullptr;
+        ObiektMapy ob;
+        ob.id = std::uint32_t(o["id"].n); ob.typ_db = int(o["typ"].n);
+        ob.pole_x = int(o["X"].n); ob.pole_y = int(o["Y"].n);
+        ob.kwadrat = ty ? int((*ty)["kwadrat"].n) : 1;
+        ob.blokuje = tp && int((*tp)["blokuje"].n) != 0;
+        m.obiekty().push_back(ob);
+    }
+    std::array<std::uint8_t, 16> dz{};
+    dz.fill(1);
+    if (const Wartosc* td = j.znajdz("teren_dozwolony"))
+        if (const Wartosc* t = td->znajdz(typ))
+            for (std::size_t i = 0; i < 16 && i < t->t.size(); ++i) dz[i] = std::uint8_t((*t)[i].n);
+    return m.siatka(dz);
+}
+ParametryWalki gwardia_ee_pelna() {   // + pola typu z odczytu 575/578 [P]
+    ParametryWalki p = gwardia_ee();
+    p.luk_ataku = 0.3490658700466156f; p.kat_broni = 0.0f; p.rozmiar = 0.5f; p.punktowy = true; p.szukanie_ms = 2000;
+    p.zasieg_min = 0.0f; p.pole_ac = 0.6000000238418579f; p.typ_bazy = 422;
+    return p;
+}
+std::array<WagiCelu, 3> wagi_ee_575() {   // [0x8CFA28] → 3 rekordy, odczyt 575/578 [P]
+    return {WagiCelu::z_rekordu({2, 1, 50, 1, 1, 0, 1, 50, -500, 50}), WagiCelu::z_rekordu({15, 20, 30, 6, 6, 0, 1, 2, -500, 15}),
+            WagiCelu::z_rekordu({10, 15, 50, 4, 4, 0, 1, 0, -500, 15})};
+}
+TabliceObrazen tablice_syntetyczne() {   // wartości gwardii z odczytu 566 (klasa 13, rodzina 48) – reszta pominięta
+    TabliceObrazen t;
+    t.mnozniki.assign(16, {1, 1, 1, 1, 1, 1});
+    std::vector<float> w(64, 0.0f);
+    w[48] = 1.071f; t.trafienie[0][13] = w;
+    w[48] = 1.5f; t.trafienie[1][13] = w;
+    w[48] = 2.1f; t.trafienie[2][13] = w;
+    return t;
+}
+void stan_jednostki_z_json(Swiat& sw, IdJednostki id, const Wartosc& j, const Wartosc& pw,
+                           const std::map<std::string, IdJednostki>& mapa_id) {
+    Jednostka& u = *sw.jednostka(id);
+    // orientacja: wartości m01/m11 z pamięci gry bitowo (macierz obrotu wokół z: m00 = m11, m10 = −m01) – odtworzenie
+    // przez kurs zmieniało ostatnie bity i rozstrzygnięcie |Δkurs| = π (578 G1, takt 38)
+    u.orientacja.m = {j["m11"].n, j["m01"].n, 0.0, -j["m01"].n, j["m11"].n, 0.0, 0.0, 0.0, 1.0};
+    u.x = j["x"].n; u.y = j["y"].n;
+    u.komorka_x = int(j["X"].n); u.komorka_y = int(j["Y"].n);
+    u.v = j["v"].n; u.omega = j["w"].n;
+    u.tryb = TrybRuchu(int(j["tryb"].n));
+    u.stan = int(j["stan"].n);
+    u.trasa.clear(); u.dl_przed.clear(); u.dl_po.clear(); u.zdjete_punkty = 0;
+    double c = 0.0, px = u.x, py = u.y;
+    for (const auto& q0 : j["trasa"].t) {
+        const Punkt2 q{f32(q0[0].n), f32(q0[1].n)};
+        u.dl_przed.push_back(f32(c));
+        c += std::hypot(q.x - px, q.y - py);
+        u.dl_po.push_back(f32(c));
+        px = q.x; py = q.y;
+        u.trasa.push_back(q);
+    }
+    u.trasa_gotowa = !u.trasa.empty();
+    u.kolejka_celow.clear();
+    for (const auto& c0 : j["cele"].t) {
+        CelRuchu cr;
+        cr.od_gracza = c0["od_gracza"].b;
+        cr.x = c0["x"].n; cr.y = c0["y"].n;
+        if (c0["rodzaj"].s == "jednostka") {
+            cr.typ = TypCelu::jednostka;
+            auto it = mapa_id.find(c0["cel_id"].s);
+            cr.cel_jednostka = it == mapa_id.end() ? 0 : it->second;
+            cr.pole_x = std::int64_t(c0["pole"][0].n); cr.pole_y = std::int64_t(c0["pole"][1].n);
+        } else {
+            cr.typ = TypCelu::miejsce;
+            if (const Wartosc* o = c0.znajdz("obrot"); o && o->b) cr.kurs_koncowy = c0["kat"].n;
+        }
+        u.kolejka_celow.push_back(cr);
+    }
+    if (!u.kolejka_celow.empty()) {
+        u.cel = u.kolejka_celow.front().typ;
+        u.cel_od_gracza = u.kolejka_celow.front().od_gracza;
+        u.kurs_koncowy = u.kolejka_celow.front().kurs_koncowy;
+    } else {
+        u.cel = TypCelu::brak;
+    }
+    ParametryWalki p;
+    p.hp_max = int(pw["hp"].n); p.atak = float(pw["atak"].n);
+    for (std::size_t i = 0; i < 6; ++i) p.pancerz[i] = float(pw["pancerz"][i].n);
+    p.zasieg_max = float(pw["zasieg_max"].n); p.pole_widzenia = float(pw["pole_widzenia"].n); p.obszar = float(pw["obszar"].n);
+    p.przeladowanie_ms = int(pw["przeladowanie_ms"].n); p.rodzaj_ataku = int(pw["rodzaj_ataku"].n);
+    p.wiersz_celu = int(pw["wiersz_celu"].n); p.klasa_trafienia = int(pw["klasa_trafienia"].n);
+    p.rodzina_ataku = int(pw["rodzina_ataku"].n); p.opoznienie_trafienia_ms = int(pw["opoznienie_trafienia_ms"].n);
+    p.luk_ataku = float(pw["luk_ataku"].n); p.kat_broni = float(pw["kat_broni"].n); p.rozmiar = float(pw["rozmiar"].n);
+    p.rozmiar_jeden = pw["rozmiar_jeden"].b; p.punktowy = pw["punktowy"].b; p.szukanie_ms = int(pw["szukanie_ms"].n);
+    p.zasieg_min = float(pw["zasieg_min"].n); p.pole_ac = float(pw["pole_ac"].n); p.typ_bazy = int(pw["typ_bazy"].n);
+    p.reszta_przeladowania_bez_spoczynku = pw["reszta_przeladowania_bez_spoczynku"].b;
+    sw.ustaw_walke(id, int(j["gracz"].n), j["czlowiek"].b, p, int(j["hp"].n));
+    u.boj->s.przeladowanie_ms = int(j["r"].n);
+    u.boj->szukanie_ms = int(j["szuk"].n);
+    u.boj->animacja = int(j["anim"].n);
+}
+
+int test_walka_swiat() {
+    // 1. elementy (wartości z kodu, bez gry): ocena celu, zasięg wręcz typów punktowych, przeładowanie AoC
+    const ParametryWalki g = gwardia_ee_pelna();
+    const auto w = wagi_ee_575();
+    bool spec = false;
+    const int o4 = ocena_celu(g, g, 0.5, 4.0, 2.1, false, w[0], spec);
+    std::printf("  ocena celu gwardia→gwardia, d² = 4, m = 2,1: %d (fistp(50/4) = 12, fistp(2,1) = 2)\n", o4);
+    sprawdz(o4 == 14 && !spec, "ocena 0x6399CA: 12 + 2 = 14 (zaokrąglenie do parzystej 12,5 → 12)");
+    sprawdz(ocena_celu(g, g, 0.5, 0.2, 2.1, true, w[0], spec) == 2 + 50 + 250 + 2, "w zasięgu i atakuje mnie: 2 + 50 + 250 + 2");
+    sprawdz(w_zasiegu_punktowy(0.7604 * 0.7604, 0.5, 0.5) && !w_zasiegu_punktowy(0.7605 * 0.7605, 0.5, 0.5),
+            "zasięg wręcz 0x631501: próg (0,071 + 0,5 + 0,5)·1,42/2 = 0,7604");
+    sprawdz(w_zasiegu_punktowy(0.6533 * 0.6533, 0.5, 0.5) && !w_zasiegu_punktowy(0.8017 * 0.8017, 0.5, 0.5),
+            "zasięg wręcz zgodny z 564: wejście w 2012 przy 0,6533, brak przy 0,8017");
+    sprawdz(przeladowanie_aoc(0.0, 0.8, 1.2, 2000) == 1600 && przeladowanie_aoc(0.5, 0.8, 1.2, 2000) == 2000,
+            "przeładowanie AoC 0x5FEA22: lo·2000 przy r = 0, środek przedziału przy r = 0,5");
+    // 2. świat syntetyczny: dwie gwardie (gracze 1 i 5), wykrycie, wybór celu, podejście, obrót, ataki, śmierć
+    auto tab = tablice_lub_skip();
+    if (!tab) return bledy ? FAIL : SKIP;
+    auto pojedynek = [&](bool dwie_na_jedna) {
+        Swiat sw(tab, TerenSiatka::syntetyczny_etap27());
+        sw.ustaw_tablice_walki(tablice_syntetyczne(), wagi_ee_575());
+        ParametryRuchu pr;
+        const IdJednostki a = sw.dodaj_jednostke(pr, 10.5, 10.5, 0.0);
+        const IdJednostki b = sw.dodaj_jednostke(pr, 13.5, 11.0, 0.0);
+        sw.ustaw_walke(a, 1, true, g, 215);
+        sw.ustaw_walke(b, 5, false, g, 215);
+        IdJednostki c = 0;
+        if (dwie_na_jedna) {
+            c = sw.dodaj_jednostke(pr, 10.5, 12.0, 0.0);
+            sw.ustaw_walke(c, 1, true, g, 215);
+        }
+        for (int k = 0; k < 1400; ++k) sw.takt();
+        return std::make_tuple(std::move(sw), a, b, c);
+    };
+    {
+        auto [sw, a, b, c] = pojedynek(false);
+        (void)c;
+        int wybory = 0, ataki = 0, trafienia = 0, zgony = 0;
+        std::uint64_t h = 1469598103934665603ull;
+        for (const auto& e : sw.zdarzenia_walki()) {
+            wybory += e.rodzaj == "wybor_celu"; ataki += e.rodzaj == "atak"; trafienia += e.rodzaj == "trafienie";
+            zgony += e.rodzaj == "smierc";
+            h = (h ^ (e.takt * 31 + e.kto * 7 + std::uint64_t(e.wartosc))) * 1099511628211ull;
+        }
+        const auto* ua = sw.jednostka(a);
+        const auto* ub = sw.jednostka(b);
+        std::printf("  pojedynek syntetyczny: wybory %d, ataki %d, trafienia %d, zgony %d; HP %d / %d; skrót %016" PRIx64 "\n",
+                    wybory, ataki, trafienia, zgony, ua->boj->s.hp, ub->boj->s.hp, h);
+        sprawdz(wybory == 2 && zgony == 1 && ub->boj->s.hp == 0 && ub->stan == 6000 && ua->boj->s.hp == 215 - 7 * 16,
+                "pojedynek w Swiat (model): obie jednostki wybierają cel same, 7 × 31 zabija B, A traci 7 × 16");
+        sprawdz(h == 0x9ddaf83720646edbull, "pojedynek w Swiat: skrót zdarzeń stały (regresja modelu, Debug = Release)");
+    }
+    {
+        auto [sw, a, b, c] = pojedynek(true);
+        int wybory = 0;
+        for (const auto& e : sw.zdarzenia_walki()) wybory += e.rodzaj == "wybor_celu";
+        std::printf("  2 na 1 syntetyczne: wybory %d, HP A %d, B %d, C %d, takt śmierci B %" PRIu64 "\n", wybory,
+                    sw.jednostka(a)->boj->s.hp, sw.jednostka(b)->boj->s.hp, sw.jednostka(c)->boj->s.hp,
+                    [&] { for (const auto& e : sw.zdarzenia_walki()) if (e.rodzaj == "smierc") return e.takt; return std::uint64_t(0); }());
+        sprawdz(wybory >= 3 && sw.jednostka(b)->boj->s.hp == 0, "2 na 1: obie gwardie gracza 1 wybierają B, B ginie");
+    }
+    // 3. dane lokalne: walka z gry (578, okna G1 i G3) – stan startowy z próbki, dalej Core sam
+    const std::string kat = katalog_lokalny();
+    const std::string tm = kat.empty() ? "" : czytaj(kat + "/mapa_troja_ee.json");
+    if (tm.empty()) {
+        std::printf("  SKIP części lokalnej: brak OPENEE_DANE_LOKALNE/mapa_troja_ee.json i walka_578_*.json (pomiar gry)\n");
+        return bledy ? FAIL : PASS;
+    }
+    const Wartosc jm = json_mini::Parser(tm).parsuj();
+    for (const char* plik : {"walka_578_g1.json", "walka_578_g3.json", "walka_580_g1.json"}) {
+        const std::string tw = czytaj(kat + "/" + plik);
+        if (tw.empty()) {
+            std::printf("  SKIP %s: brak pliku\n", plik);
+            continue;
+        }
+        const Wartosc j = json_mini::Parser(tw).parsuj();
+        const bool aoc = j["wariant"].s == "aoc";
+        // przeładowanie AoC 0x5FEA22 na prawdziwym ciągu LCG: wartość z gry musi powstać ze stanu generatora osiągalnego
+        // w tym takcie (kroki od stanu z poprzedniej próbki do stanu z bieżącej)
+        if (aoc) {
+            const Wartosc* pa = j.znajdz("przeladowanie_aoc");
+            const double lo = pa ? (*pa)["lo"].n : 0.8, hi = pa ? (*pa)["hi"].n : 1.2;
+            int zg = 0, n = 0;
+            for (const auto& e : j["wejscia_ataku"].t) {
+                ++n;
+                GeneratorTitan gl(std::uint32_t(e["rng_przed"].n));
+                bool ok = false;
+                for (int k = 0; k < 400 && !ok; ++k) {
+                    const double r = gl.losuj();
+                    ok = przeladowanie_aoc(r, lo, hi, 2000) == int(e["przeladowanie"].n);
+                    if (gl.stan() == std::uint32_t(e["rng_po"].n)) break;
+                }
+                zg += ok;
+            }
+            std::printf("  %s: przeładowania AoC z ciągu LCG gry: %d / %d wejść w atak odtworzonych wzorem 0x5FEA22 (lo %.1f, hi %.1f)\n",
+                        plik, zg, n, lo, hi);
+            sprawdz(n > 0 && zg == n, "przeładowanie AoC = fistp(f32((lo + r·(hi − lo))·2000)) dla każdego ataku w pomiarze");
+        }
+        if (j["tabele"].typ != Wartosc::Typ::obiekt) {
+            std::printf("  SKIP symulacji %s: pomiar bez tablic obrażeń wariantu %s (brak odczytu walka_tabele)\n", plik,
+                        aoc ? "AoC" : "EE");
+            continue;
+        }
+        const TerenSiatka ter = teren_z_mapy_json(jm, "422");
+        Swiat sw(tab, ter, aoc ? WariantTitan::aoc() : WariantTitan::ee());
+        TabliceObrazen to;
+        to.trudnosc = int(j["tabele"]["trudnosc"].n);
+        for (const auto& r : j["tabele"]["mnozniki"].t) {
+            std::array<float, 6> a{};
+            for (std::size_t i = 0; i < 6; ++i) a[i] = float(r[i].n);
+            to.mnozniki.push_back(a);
+        }
+        const char* kl[3] = {"08", "0C", "10"};
+        for (int t = 0; t < 3; ++t)
+            for (const auto& [k, v] : j["tabele"]["trafienie"][kl[t]].o) {
+                std::vector<float> f;
+                for (const auto& x : v.t) f.push_back(float(x.n));
+                to.trafienie[std::size_t(t)][std::stoi(k)] = f;
+            }
+        std::array<WagiCelu, 3> wg;
+        for (int t = 0; t < 3; ++t) {
+            std::vector<int> r;
+            for (const auto& x : j["wagi"][std::size_t(t)].t) r.push_back(int(x.n));
+            wg[std::size_t(t)] = WagiCelu::z_rekordu(r);
+        }
+        sw.ustaw_tablice_walki(to, wg);
+        std::map<std::string, IdJednostki> mid;
+        for (const auto& u : j["start"].t) {
+            const Wartosc& pr = j["parametry_ruchu"][u["typ"].s];
+            ParametryRuchu p;
+            p.a = pr["a"].n; p.vmax = pr["vmax"].n; p.alfa = pr["alfa"].n; p.wmax = pr["wmax"].n; p.rozmiar = pr["rozmiar"].n;
+            p.c4 = pr["c4"].n; p.c8 = pr["c8"].n; p.t488 = pr["t488"].n;
+            mid[u["id"].s] = sw.dodaj_jednostke(p, u["x"].n, u["y"].n, 0.0);
+        }
+        for (const auto& u : j["start"].t) stan_jednostki_z_json(sw, mid[u["id"].s], u, j["parametry_walki"][u["typ"].s], mid);
+        sw.generator().ustaw_ziarno(std::uint32_t(j["probki"][0]["rng"].n));
+        const auto& pr = j["probki"].t;
+        int por = 0, r_stan = 0, r_hp = 0, r_r = 0, r_cel = 0;
+        double emax = 0, esum = 0;
+        std::string pierwszy;
+        std::map<std::string, std::string> pierwsze;
+        for (std::size_t k = 1; k < pr.size(); ++k) {
+            sw.takt();
+            for (const auto& [ids, gid] : mid) {
+                const Wartosc& g2 = pr[k]["j"][ids];
+                const Jednostka& u = *sw.jednostka(gid);
+                ++por;
+                const double e = std::hypot(u.x - g2["x"].n, u.y - g2["y"].n);
+                emax = std::max(emax, e);
+                esum += e;
+                std::string cel_core = "-";
+                if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::jednostka)
+                    for (const auto& [s2, i2] : mid) if (i2 == u.kolejka_celow.front().cel_jednostka) cel_core = s2;
+                const std::string cel_gry = g2["cel"].s.empty() ? "-" : g2["cel"].s;
+                auto zap = [&](const char* co, bool roz, int& licz) {
+                    if (!roz) return;
+                    ++licz;
+                    if (!pierwsze.count(co)) {
+                        char b2[260];
+                        std::snprintf(b2, sizeof b2, "takt %zu %s: Core stan %d hp %d r %d szuk %d cel %s (%.4f,%.4f) | gra stan %d hp %d r %d szuk %d cel %s (%.4f,%.4f)",
+                                      k, ids.c_str(), u.stan, u.boj->s.hp, u.boj->s.przeladowanie_ms, u.boj->szukanie_ms, cel_core.c_str(), u.x, u.y,
+                                      int(g2["stan"].n), int(g2["hp"].n), int(g2["r"].n), int(g2["szuk"].n), cel_gry.c_str(), g2["x"].n, g2["y"].n);
+                        pierwsze[co] = b2;
+                    }
+                };
+                if (const char* dbg = std::getenv("OPENEE_DEBUG_WALKA"); dbg && ids == dbg && k < 400)
+                    std::printf("    D %zu Core %d (%.4f,%.4f) v %.4f tr %zu cel (%.4f,%.4f) | gra %d (%.4f,%.4f) v %.4f\n", k, u.stan, u.x, u.y, u.v,
+                                u.pozostalo_punktow(), u.kolejka_celow.empty() ? 0.0 : u.kolejka_celow.front().x,
+                                u.kolejka_celow.empty() ? 0.0 : u.kolejka_celow.front().y, int(g2["stan"].n), g2["x"].n, g2["y"].n, g2["v"].n);
+                zap("stan", u.stan != int(g2["stan"].n), r_stan);
+                zap("hp", u.boj->s.hp != int(g2["hp"].n), r_hp);
+                zap("przeladowanie", u.boj->s.przeladowanie_ms != int(g2["r"].n), r_r);
+                zap("cel", cel_core != cel_gry, r_cel);
+            }
+        }
+        std::printf("  %s: %d porównań; różne: stan %d, HP %d, +0x2A0 %d, cel %d; pozycja śr. %.4f maks. %.4f; trafień Core %" PRIu64 ", założeń [N] %" PRIu64 " (%s)\n",
+                    plik, por, r_stan, r_hp, r_r, r_cel, esum / std::max(1, por), emax, sw.diagnostyka().trafienia,
+                    sw.diagnostyka().zalozenia_walki, sw.diagnostyka().ostatnie_zalozenie.c_str());
+        for (const auto& [co, opis] : pierwsze) std::printf("    pierwsza różnica (%s): %s\n", co.c_str(), opis.c_str());
+    }
+    return bledy ? FAIL : PASS;
+}
+
 // --------------------------------------------------------------------------------------------- test kroku (izolowane gałęzie)
 int test_krok() {
     auto tab = tablice_lub_skip();
@@ -1183,7 +1481,7 @@ int test_podsystemy() {
 int main(int argc, char** argv) {
     const std::map<std::string, std::function<int()>> grupy = {
         {"trygonometria", test_trygonometria}, {"rng", test_rng}, {"teren", test_teren}, {"ruch", test_ruch},
-        {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka},
+        {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka}, {"walka_swiat", test_walka_swiat},
         {"podsystemy", test_podsystemy}};
     std::vector<std::string> wybrane;
     for (int i = 1; i < argc; ++i) wybrane.push_back(argv[i]);

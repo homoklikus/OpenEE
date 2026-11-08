@@ -6,6 +6,7 @@
 #include <memory>
 
 #include <godot_cpp/classes/ref_counted.hpp>
+#include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/packed_float64_array.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
@@ -47,6 +48,12 @@ public:
     int64_t mapa_pewnosc(int64_t x, int64_t y) const;
     bool utworz_swiat_na_mapie(const godot::String& wariant, const godot::PackedByteArray& teren_dozwolony);
     bool pole_przejezdne(int64_t x, int64_t y) const;
+    // etap 31: walka w Core – GDScript podaje dane i czyta migawki; decyzje i obrażenia liczy wyłącznie Core
+    bool ustaw_walke(int64_t id, int64_t gracz, bool czlowiek, const godot::Dictionary& parametry, int64_t hp);
+    bool ustaw_tablice_walki(const godot::Dictionary& tablice, const godot::Array& wagi);
+    bool rozkaz_ataku(int64_t id, int64_t cel);
+    godot::Dictionary walka(int64_t id) const;
+    godot::Array zdarzenia_walki() const;
 
 protected:
     static void _bind_methods();

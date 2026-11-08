@@ -169,3 +169,30 @@ po kolizji:      10003 (v → 0) → 9000 → 9006 → 5001 → 5000            
   Kolizja z regułą (a): 10003 → 9006 → 5001 w jednym–dwóch taktach [P].
 - **Nie zweryfikowano kontrolowanym testem:** Shift (aktywacja następnego celu), automatyczny punkt +0x32, porzucenie
   rozkazu, objazd 9002 [N].
+
+## 7. Aktualizacja etapu 31 – stany walki (`Generic Attack.tai`, `land.tai`)
+
+**Diagram walki wręcz** (EE 578/580, gwardia; [P] sekwencje, [W] warunki):
+```
+Idle 5000 ──CanISeeEnemy 20002 (licznik szukania 0)──▶ cel EEUGAttackUnit ──▶ 8000 PrepareToMove (punkt podejścia)
+  ▶ 10003 ruch ⇄ 5002 ReacquireEnemyUnit / 2013 CheckRange / 2024 ShouldIFollowEnemyUnit
+  ▶ 2013 CheckRange ──UnitInWeaponRange──▶ 2012 FaceEnemyUnit ──FacingEnemyUnit (≤ 2,5°)──▶ 2001 AttackEnemyUnit
+  ▶ (1122 ms – trafienie) ▶ 2021 WaitForReload ──Reloaded (+0x2A0 == 0)──▶ 2012 …
+  ▶ EnemyUnitDestroyed 2003 ──▶ 2025 ShouldIReturnToInitialContactLocation ──▶ 5000 (szukanie następnego celu)
+cel atakowany:  UnderAttack 2018 ──▶ RetaliateAgainstAttacker 2020 / RunFromAttacker 2019 (obywatel: ucieczka 8000 → 10003)
+śmierć:         HP 0 ──▶ 6000 Dying (ten sam takt) ──▶ 6001 / 6002 ──▶ 6003
+```
+- Wejścia stanów (cel EEUGAttackUnit vt+0x40, 0x60B26F): 2012 – tryb fizyki 1, animacja 13 gdy niezwrócony, trasa
+  czyszczona; 2001 – tryb 1, animacja 0, +0x2A0 := ulepszenie+0x138 (AoC: 0x5FEA22), +0x2AC := 0; 2021 (0x61AF33) –
+  tryb 3, gdy animacja ≠ 0 i bit 0 typ+0x5D4 = 0; 2013 (0x61ADD7) – zapis ICL (+0x118/+0x11C) i kursu +0x214 [P].
+- **Zdarzenia celu** (vt+0x64 0x60B5CB) oceniane przed dispatcherem jednostki. Gdy czołowym celem nie jest
+  `EEUGAttackUnit`, zdarzenia celu (EnemyUnitDestroyed, UnitInWeaponRange, FacingEnemyUnit, InsideFiringArch,
+  EnemyUnitNoLongerVisible, UnitNotOnMap) są w Core **fałszem z diagnostyką** (licznik zdarzeń nieobsłużonych), nie
+  cichym fałszem – w etapie 30 EnemyUnitDestroyed bez celu dawał prawdę i psuł ruch.
+- Core: `SkryptStanow::wbudowany_land()` zawiera teraz także CheckRange, ShouldIFollowEnemyUnit, FaceEnemyUnit,
+  ChangeTargetForSpecialEnemy, AttackEnemyUnit, WaitForReload, InitialAttackState, ReacquireEnemyUnit,
+  RetaliateAgainstAttacker, RunFromAttacker, ReturnToInitialContactLocation, Dying, ResourcesRotting, UnitRotting.
+  Cykl ruchu (S1–S7, skrót c36721320b3595e4) bez zmian [P].
+- [N] CompletedUnitFacing przy przejściu 9006 → 5001: reguła „ω == 0” daje 1 takt różnicy w 578 G1 (takt 48);
+  usunięcie warunku psuje S2/S4b – właściwy warunek nieustalony.
+- [N] Postawy (+0x208: pościg, powrót, ucieczka) inne niż domyślne – nie mierzone.

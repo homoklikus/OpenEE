@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Testy narzędzi etapu 30 bez danych gry: pomiar_core (walidacja i konwersja), struktury (schemat), switch_titan.
+"""Testy narzędzi etapów 30–31 bez danych gry: pomiar_core (walidacja, konwersja ruchu i walki), struktury (schemat), switch_titan.
 Uruchomienie: python3 narzedzia/titan/test_titan_narzedzia.py"""
 import copy
 import json
@@ -96,6 +96,27 @@ class TestStruktury(unittest.TestCase):
 
     def test_markdown(self):
         self.assertIn("| v | f32 | 0x238 | 0x238 | [P]", S.markdown(S.wczytaj()))
+
+
+class TestWalka(unittest.TestCase):
+    """Konwersja okna walki (etap 31): błędne dane muszą dawać czytelny BladPomiaru, nie cichą serię."""
+
+    def test_zakres_poza_pomiarem(self):
+        with self.assertRaises(P.BladPomiaru) as k:
+            P.walka(pomiar(), 3, 99, ["0x1000001"], {}, "x")
+        self.assertIn("poza pomiarem", str(k.exception))
+
+    def test_brak_surowych_pol_walki(self):
+        with self.assertRaises(P.BladPomiaru) as k:
+            P.walka(pomiar(), 0, 5, ["0x1000001"], {}, "x")
+        self.assertIn("surowych bajtów", str(k.exception))
+
+    def test_nieznany_cel(self):
+        d = pomiar()
+        d["probki"][0]["0x1000001"]["kolejka"] = {"poziomy": [{"cele": [{"klasa": "EEUGGather"}]}]}
+        with self.assertRaises(P.BladPomiaru) as k:
+            P.walka(d, 0, 5, ["0x1000001"], {}, "x")
+        self.assertIn("nieobsługiwany", str(k.exception))
 
 
 if __name__ == "__main__":

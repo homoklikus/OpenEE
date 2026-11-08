@@ -210,3 +210,27 @@ Tablice, prędkość, zapisy f32 i teren są wspólne [P].
   stanów `Swiat` (zdarzenia CanISeeEnemy, UnitInWeaponRange, FacingEnemyUnit…) – następny etap; do tego czasu
   zdarzenia walki w `Swiat` zostają fałszem z licznikiem (diagnostyka).
 - **Narzędzie** `cpp/tools/openee_porownaj` – porównanie serii pomiarowej z Core (§ BUDOWANIE 5).
+
+## 13. Etap 31 – walka w `Swiat`
+
+- **Jedna lista jednostek, jeden zegar, jeden RNG.** Walka nie ma osobnego świata: `Jednostka` dostaje opcjonalne
+  `BojJednostki` (parametry walki, HP, liczniki +0x2A0/+0x2AC, ustawienia AI +0x208, cel walki, ICL) oraz gracza i
+  flagę człowieka. Dyplomacja: `Swiat::ustaw_wrogow`. Tablice obrażeń i wagi celu: `ustaw_tablice_walki`.
+- **Jedna maszyna stanów i jedna kolejka celów.** Cel ataku to `CelRuchu{TypCelu::jednostka}` w tej samej kolejce
+  co cele ruchu; zdarzenia celu (`ZD_CELU`) są fałszem z diagnostyką, gdy czołowy cel nie jest jednostką.
+  `Swiat::zdarzenie()` deleguje do `zdarzenie_walki` tylko dla jednostek z `boj`.
+- **Bez drugiej nawigacji ani fizyki.** Wejście 8000 dla celu „jednostka” liczy punkt podejścia
+  (`punkt_podejscia`: przechwycenie 0x62C963 z BO-10 albo 8 slotów 0x63234D) i ustawia pole celu; dalej zwykły
+  PrepareToMove/A*. FaceEnemyUnit/AttackEnemyUnit używają nowego trybu fizyki `TrybRuchu::do_celu` (EEPMLand
+  vt+0x10: obrót do celu, hamowanie v' = max(0, v − dt·a)).
+- **Moduł `walka`** (bez stanu): `ocena_celu` (0x6399CA), `w_zasiegu_punktowy` (0x631501), `przeladowanie_aoc`
+  (0x5FEA22), `modyfikator_wysokosci` (0x61E500), wzór obrażeń z etapu 30.
+- **Takt:** przed fizyką ustawiany jest punkt celu walki; po fizyce `liczniki_walki` (−34 ms, szukanie, trafienie
+  przy 1122 ms od wejścia w 2001, śmierć → 6000). AoC: jedno `rng_.losuj()` na każde wejście w 2001 – żadnych
+  innych losowań. EE – bez losowań.
+- **Założenia [N]** są liczone w `Diagnostyka::zalozenia_walki` z opisem ostatniego (np. kolejność kandydatów =
+  lista Core, r = 1 bez cfg wysokości) – wynik testu porównawczego zawsze je pokazuje.
+- **Zdarzenia walki** (`zdarzenia_walki()`): takt, jednostka, rodzaj (wybór celu, atak, trafienie, śmierć), cel,
+  wartość – do testów i do warstwy prezentacji.
+- **Testy:** `core_walka` (wzór, pojedynek z etapu 30 – bez zmian), `core_walka_swiat` (elementy, pojedynek
+  syntetyczny ze skrótem zdarzeń, 2 na 1, okna gry 578/580 z danymi lokalnymi).

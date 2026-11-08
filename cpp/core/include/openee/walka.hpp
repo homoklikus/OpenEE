@@ -27,7 +27,61 @@ struct ParametryWalki {
     int rodzina_ataku = 0;                  // typ +0x4C8: kolumna tablicy trafień (atakujący; = dbobjects „Family attack type”)
     float ogien_bratobojczy = 0.0f;         // typ +0x494
     int opoznienie_trafienia_ms = -1;       // moment trafienia w cyklu (animacja ataku) – z pomiaru; −1 = nieznany [N]
+    // --- etap 31: wybór celu, zasięg wręcz, obrót (odczyt typu EE, zad. 575/578 [P]) ---
+    float luk_ataku = 0.0f;                 // typ +0x45C [rad] (gwardia 0,349066 = 20°); 2π → bez sprawdzania łuku
+    float kat_broni = 0.0f;                 // typ +0x458 [rad] – przesunięcie kierunku broni (obrót trybu 1, łuk)
+    float rozmiar = 0.5f;                   // typ +0x474 – rozmiar do zasięgu wręcz 0x631501
+    bool rozmiar_jeden = false;             // typ +0x612 ≠ 0: jako cel liczony z rozmiarem 1,0 (0x631935)
+    bool punktowy = false;                  // typ +0x61A ≠ 0: zasięg 0x631935, pozycje zamiast punktu celowania
+    int szukanie_ms = 0;                    // typ +0x564: okres szukania wroga (+0x2AC := ta wartość po szukaniu)
+    float zasieg_min = 0.0f;                // typ +0x41C (kwadrat → funktor +0x3C)
+    float pole_ac = 0.0f;                   // ulepszenie +0xAC – używane tylko w ocenie celu (znaczenie [N])
+    int typ_bazy = 0;                       // typ +0x4B8 (porównanie z wagą +0x14 „typ specjalny”)
+    bool reszta_przeladowania_bez_spoczynku = false;  // typ +0x5D4 bit 0: WaitForReload nie przełącza trybu 3
+    int typ_jednostki = 0;                  // typ +0x4B4 (dbobjects „Unit type”): 5 gwardia, 6 obywatel (zad. 579 [P])
 };
+
+/// Modyfikator wysokości 0x61E500 (EE; AoC 0x631918): konfiguracja reguł [0x917BB8] (AoC [0x92FCA8]) [W kod].
+/// Δz = z atakującego − z celu (+0x15C); próg = wartość · 0,408248 (krok wysokości siatki).
+struct ModyfikatorWysokosci {
+    bool wlaczony = false;
+    float prog_gora = 0.0f;     // cfg +0x5CC
+    float prog_dol = 0.0f;      // cfg +0x5E8
+    float premia = 1.0f;        // cfg +0x604 (+ gracz +0xA3C)
+    float kara = 1.0f;          // cfg +0x620
+};
+/// r = 0x61E500(atakujący, cel): 1, gdy rodzaj jednostki atakującej ∉ {5, 6} albo celu ∉ {2,5,6,13,15,16,19,23,24,25,29}.
+double modyfikator_wysokosci(const ModyfikatorWysokosci& m, int typ_atak, int typ_cel, double z_atak, double z_cel,
+                             double premia_gracza);
+
+/// Wagi oceny celu 0x6399CA: rekord [0x8CFA28 (EE) / 0x8E60C0 (AoC)][tryb] (int32, odczyt 575 [P]).
+/// Tryb funktora (+0x50): 0 gdy typ +0x61A ≠ 0; 1 gdy zasięg ≤ pole widzenia; 2 w przeciwnym razie.
+struct WagiCelu {
+    int atakuje_mnie = 0;        // +0x00: cel bieżący kandydata to EEUGAttackUnit na mnie
+    int w_zasiegu = 0;           // +0x08: d² ≤ (zasięg·f)²
+    int mniejsze_ac = 0;         // +0x0C: kandydat.+0xAC < moje +0xAC
+    int slabszy_atak = 0;        // +0x10: int(mój atak) > atak kandydata
+    int typ_specjalny = 0;       // +0x14: kandydat.typ+0x4B8 == ta wartość → wybór od razu
+    int waga_trafienia = 0;      // +0x18: + fistp(f32(waga · m))
+    int waga_odleglosci = 0;     // +0x1C: + fistp(f32(waga / d²))
+    int ac_zero = 0;             // +0x20: kandydat.+0xAC == 0
+    int prog = 0;                // +0x24: wynik ≥ próg kończy przegląd
+    static WagiCelu z_rekordu(const std::vector<int>& r);  // r = int32 rekordu od +0x00
+};
+
+/// Ocena kandydata (0x6399CA, gałąź po filtrach). d2 – kwadrat odległości (DistanceToSquared, z = 0), m – tablica
+/// trafień 0x4D5F2C, atakuje_mnie – kandydat ma cel ataku na oceniającego. Zwraca wynik; specjalny = trafienie
+/// w typ specjalny (wybór bez porównania wyniku). Filtry wstępne (gracz, dyplomacja, HP, widoczność, typ, zasięg
+/// minimalny, m > 0) – w Swiat::szukaj_wroga.
+int ocena_celu(const ParametryWalki& ja, const ParametryWalki& kand, double zasieg_f, double d2, double m,
+               bool atakuje_mnie, const WagiCelu& w, bool& specjalny);
+
+/// Zasięg wręcz typów punktowych (+0x61A): 0x631935 → 0x631501: 4·d² < ((0,05·1,42 + s_ja + s_cel)·1,42)² [W kod,
+/// P: 564 – wejście w FaceEnemyUnit przy d = 0,6533, brak przy 0,8017; próg 0,7604].
+bool w_zasiegu_punktowy(double d2, double s_ja, double s_cel);
+
+/// Przeładowanie AoC 0x5FEA22: fistp(f32((lo + r·(hi − lo)) · bazowe)), r = URandom::Generate [W kod].
+int przeladowanie_aoc(double r, double lo, double hi, int bazowe);
 
 /// Tablice obrażeń z pamięci gry (EE: 0x8D2050 i tablice trafień 0x8D2008/0C/10) – dane referencyjne, nie z EXE.
 struct TabliceObrazen {

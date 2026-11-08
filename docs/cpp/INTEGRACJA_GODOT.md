@@ -75,3 +75,17 @@ Scena diagnostyczna: `./uruchom_openee.sh core` (`godot/sceny/diag_core.tscn`).
 3. Kolejne pola stanu dopisywać do migawki z nazwą w `pola_migawki()`. GDScript czyta je po nazwie.
 4. Diagnostyka: liczniki w `openee::Diagnostyka`, status w `podsystemy()`.
 5. Nie przenosić decyzji (prędkość, obrót, kolizje, losowania) do GDScript, także „tymczasowo”.
+
+## 6. Etap 31 – walka przez GDExtension
+
+Metody `OpenEESymulacja` (tylko przekazanie danych; decyzje w Core):
+- `ustaw_walke(id, gracz, czlowiek, parametry: Dictionary, hp) -> bool` – parametry walki jednostki (atak, pancerz,
+  zasięg, LOS, przeładowanie, klasy tablic, łuk, rozmiar, szukanie…);
+- `ustaw_tablice_walki(tabele: Dictionary, wagi: Array) -> bool` – tablice obrażeń (trudność, mnożniki,
+  trafienie 08/0C/10) i trzy rekordy wag wyboru celu z gry (odczyt `walka_tabele` / `walka_priorytety`);
+- `rozkaz_ataku(id, cel) -> bool` – cel ataku w kolejce celów (jak rozkaz gracza);
+- `walka(id) -> Dictionary` – migawka: HP, liczniki przeładowania i szukania, cel, stan;
+- `zdarzenia_walki() -> Array` – zdarzenia z ostatnich taktów (do animacji i dźwięków).
+
+Godot nie liczy celu, zasięgu, obrotu ani obrażeń. Test: `godot/testy/testy_gdextension.gd` – „walka w Core przez
+GDExtension” (ten sam pojedynek co `core_walka_swiat`: wybory 2, śmierci 1, HP 103 / 0).

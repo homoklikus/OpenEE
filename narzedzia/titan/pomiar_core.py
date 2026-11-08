@@ -12,6 +12,10 @@ Użycie:
   pomiar_core.py waliduj POMIAR.json [--wariant ee|aoc]
   pomiar_core.py konwertuj POMIAR.json -o SERIA.json [--wariant ee] [--parametry P.json] [--tryb trasa|astar]
   pomiar_core.py porownaj POMIAR.json --instalacja KATALOG_GRY [--mapa MAPA.json] [--wyniki KATALOG] [--bin openee_porownaj]
+  pomiar_core.py walka POMIAR.json -o WALKA.json --od N --do M --jednostki ID,ID --tabele WYNIK_ZADANIA.json
+      (etap 31) seria walki openee_walka_v1: pełny stan startowy jednostek z próbki N (pozycja, orientacja, v, ω,
+      tryb, stan, trasa, kolejka celów, HP, +0x2A0, +0x2AC), parametry walki typu, tablice obrażeń i wag celu
+      z odczytu gry (walka_tabele / walka_priorytety) oraz próbki N…M do porównania co takt
 Dane pomiarowe są prywatne (lokalne) – narzędzie nie zapisuje nic w repozytorium.
 """
 from __future__ import annotations
@@ -138,6 +142,107 @@ def konwertuj(d: dict, nazwa: str, parametry: dict | None = None, tryb: str | No
             "parametry": uzyte, "jednostki": jedn, "rng": [p["rng"] for p in pr], "walidacja": w}
 
 
+# Parametry walki typu (etap 30–31, odczyt pamięci EE: upgrade +0x9C…+0x144, typ +0x41C…+0x61A; zad. 565/575/578 [P]).
+# opoznienie_trafienia_ms – moment trafienia w cyklu ataku z pomiaru (564/578/570: 1122 ms) [P wartość, N mechanizm].
+WALKA_PARAMETRY = {
+    "422": {"hp": 215, "atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "obszar": 0.0,
+            "przeladowanie_ms": 2000, "rodzaj_ataku": 0, "wiersz_celu": 0, "klasa_trafienia": 13, "rodzina_ataku": 48,
+            "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156, "kat_broni": 0.0, "rozmiar": 0.5,
+            "rozmiar_jeden": False, "punktowy": True, "szukanie_ms": 2000, "zasieg_min": 0.0, "pole_ac": 0.6000000238418579,
+            "typ_bazy": 422, "reszta_przeladowania_bez_spoczynku": False},
+}
+POLA_WALKI = {"ee": {"hp": 0x3C, "r": 0x2A0, "szuk": 0x2AC, "anim": 0x260},
+              "aoc": {"hp": 0x3C, "r": 0x2A4, "szuk": 0x2B0, "anim": 0x264}}
+
+
+def _i32(j: dict, off: int) -> int | None:
+    import base64
+    import struct
+    s = (j.get("surowe") or {}).get("0x0")
+    if not s:
+        return None
+    b = base64.b64decode(s)
+    return struct.unpack_from("<i", b, off)[0] if off + 4 <= len(b) else None
+
+
+def _cel_atak(j: dict) -> str | None:
+    for poz in (j.get("kolejka") or {}).get("poziomy", []):
+        for c in poz.get("cele", []):
+            if c.get("klasa") == "EEUGAttackUnit":
+                return c.get("cel_id")
+    return None
+
+
+def walka(d: dict, od: int, do: int, ids: list[str], tabele: dict, nazwa: str) -> dict:
+    """Seria openee_walka_v1 (etap 31). Błąd = BladPomiaru; brak dopasowania wartości."""
+    war = d["wariant"]
+    pr = d["probki"]
+    if not (0 <= od < do <= len(pr)):
+        raise BladPomiaru(f"zakres próbek {od}…{do} poza pomiarem (0…{len(pr)})")
+    okno = {**d, "probki": pr[od:do], "jednostki": ids}
+    w = waliduj(okno)
+    if not w["ok"]:
+        raise BladPomiaru("walidacja okna: " + "; ".join(w["bledy"][:5]))
+    pola = POLA_WALKI[war]
+    jedn = []
+    for i in ids:
+        typ = str(w["typy"][i])
+        if typ not in PARAMETRY or typ not in WALKA_PARAMETRY:
+            raise BladPomiaru(f"nieznany typ {typ} jednostki {i} – brak parametrów ruchu albo walki")
+        j = pr[od][i]
+        cele = []
+        for poz in (j.get("kolejka") or {}).get("poziomy", []):
+            for c in poz.get("cele", []):
+                if c.get("klasa") == "EEUGLocation":
+                    cele.append({"rodzaj": "miejsce", "x": c["punkt"][0], "y": c["punkt"][1],
+                                 "od_gracza": bool(c.get("pochodzenie_1C")), "kat": c.get("kat"),
+                                 "obrot": bool(c.get("obrot"))})
+                elif c.get("klasa") == "EEUGAttackUnit":
+                    cele.append({"rodzaj": "jednostka", "cel_id": c.get("cel_id"), "pole": c.get("cel_pole"),
+                                 "x": c["punkt"][0], "y": c["punkt"][1], "od_gracza": bool(c.get("pochodzenie_1C"))})
+                else:
+                    raise BladPomiaru(f"jednostka {i}: cel klasy {c.get('klasa')} – nieobsługiwany")
+        stan = {k: _i32(j, off) for k, off in pola.items()}
+        if None in stan.values():
+            raise BladPomiaru(f"jednostka {i}: brak surowych bajtów pól walki w próbce {od}")
+        gracz = int(i, 16) >> 24
+        jedn.append({"id": i, "typ": typ, "gracz": gracz, "czlowiek": gracz == 1,
+                     "x": j["x"], "y": j["y"], "m01": j["m01"], "m11": j["m11"], "v": j["v"], "w": j["w"],
+                     "tryb": j["tryb"], "stan": j["stan"], "X": j["X"], "Y": j["Y"], "trasa": [q[:2] for q in (j.get("trasa") or [])],
+                     "cele": cele, **stan})
+    probki = []
+    for n, p in enumerate(pr[od:do]):
+        probki.append({"takt": n, "t": p["t"], "rng": p["rng"],
+                       "j": {i: {"x": p[i]["x"], "y": p[i]["y"], "v": p[i]["v"], "stan": p[i]["stan"],
+                                 "hp": _i32(p[i], pola["hp"]), "r": _i32(p[i], pola["r"]), "szuk": _i32(p[i], pola["szuk"]),
+                                 "cel": _cel_atak(p[i])} for i in ids}})
+    # wejścia w AttackEnemyUnit: wartość licznika ustawiona w takcie (odczyt + 34 ms) i stany RNG przed/po takcie –
+    # do sprawdzenia wzoru przeładowania AoC (0x5FEA22) na prawdziwym ciągu LCG (etap 31)
+    wejscia = []
+    for n in range(1, len(pr[od:do])):
+        p0, p1 = pr[od + n - 1], pr[od + n]
+        for i in ids:
+            if p1[i]["stan"] == 2001 and p0[i]["stan"] != 2001:
+                wejscia.append({"takt": n, "id": i, "przeladowanie": _i32(p1[i], pola["r"]) + 34,
+                                "rng_przed": p0["rng"], "rng_po": p1["rng"]})
+    tb = tabele.get("walka_tabele")
+    pri = tabele.get("walka_priorytety")
+    if not pri:
+        raise BladPomiaru("brak wag wyboru celu (walka_priorytety) w pliku --tabele")
+    if tb and tb.get("wariant", war) != war:
+        raise BladPomiaru(f"tablice obrażeń z wariantu {tb.get('wariant')} – pomiar {war}")
+    if pri.get("wariant", war) != war:
+        raise BladPomiaru(f"wagi celu z wariantu {pri.get('wariant')} – pomiar {war}")
+    wagi = [r["i32"][:10] for r in pri["rekordy"]]
+    return {"format": "openee_walka_v1", "nazwa": nazwa, "wariant": war, "od": od, "do": do,
+            "parametry_ruchu": {t: PARAMETRY[t] for t in {u["typ"] for u in jedn}},
+            "parametry_walki": {t: WALKA_PARAMETRY[t] for t in {u["typ"] for u in jedn}},
+            "tabele": ({"trudnosc": tb["trudnosc"], "mnozniki": tb["mnozniki_0x8D2050"],
+                        "trafienie": {k: (v or {}).get("klasy") for k, v in tb["tabele"].items()}} if tb else None),
+            "wagi": wagi, "start": jedn, "probki": probki, "walidacja": w, "wejscia_ataku": wejscia,
+            "przeladowanie_aoc": tabele.get("walka_przeladowanie_aoc")}
+
+
 def raport_md(r: dict, w: dict) -> str:
     l = [f"# Porównanie Core ↔ oryginał: {r['nazwa']}", "", f"Wariant {r['wariant']}, teren: {r['teren']}, taktów {r['taktow']}, "
          f"tolerancja pozycji {r['tolerancja']}.", "", "| Jednostka | Próbek | Pozycja śr / max | Pierwszy rozbieżny takt | Inny stan | Inne kontakty |",
@@ -153,7 +258,10 @@ def raport_md(r: dict, w: dict) -> str:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("polecenie", choices=("waliduj", "konwertuj", "porownaj"))
+    ap.add_argument("polecenie", choices=("waliduj", "konwertuj", "porownaj", "walka"))
+    ap.add_argument("--od", type=int)
+    ap.add_argument("--do", type=int)
+    ap.add_argument("--tabele", help="wynik zadania Riverlands_MCP z krokami walka_tabele / walka_priorytety")
     ap.add_argument("pomiar")
     ap.add_argument("-o", "--wyjscie")
     ap.add_argument("--wariant")
@@ -183,6 +291,18 @@ def main(argv=None) -> int:
             w = waliduj(d, a.wariant, a.dopusc_luki)
             print(json.dumps(w, ensure_ascii=False, indent=1))
             return 0 if w["ok"] else 1
+        if a.polecenie == "walka":
+            if a.od is None or a.do is None or not a.jednostki or not a.tabele or not a.wyjscie:
+                raise BladPomiaru("walka wymaga --od, --do, --jednostki, --tabele i -o")
+            zad = json.loads(Path(a.tabele).read_text())
+            tab = {}
+            for k in zad.get("kroki", []):
+                if k.get("ok") and k.get("f") in ("walka_tabele", "walka_priorytety", "walka_przeladowanie_aoc"):
+                    tab[k["f"]] = k["wynik"]
+            s = walka(d, a.od, a.do, d["jednostki"], tab, Path(a.pomiar).stem)
+            Path(a.wyjscie).write_text(json.dumps(s))
+            print(json.dumps({"ok": True, "plik": a.wyjscie, "jednostki": d["jednostki"], "probek": len(s["probki"])}, ensure_ascii=False))
+            return 0
         par = json.loads(Path(a.parametry).read_text()) if a.parametry else None
         if a.wariant and d.get("wariant") != a.wariant:
             raise BladPomiaru(f"zmiana wariantu: plik {d.get('wariant')}, oczekiwano {a.wariant}")

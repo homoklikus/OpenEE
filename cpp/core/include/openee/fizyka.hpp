@@ -1,4 +1,4 @@
-// OpenEE Core – fizyka jednostki lądowej EEPMLand: tryby 0/3/4/5 (etap 28).
+// OpenEE Core – fizyka jednostki lądowej EEPMLand: tryby 0/1/3/4/5 (etap 28; tryb 1 – etap 31).
 // docs/titan/ruch_jednostki.md § 5–8, docs/titan/precyzja_numeryczna.md § 5–6, fizyka_terenu.md § 2–3.
 // Port modelu v4 (etap 27) – kolejność operacji i punkty zapisu f32 jak w oryginale.
 #pragma once
@@ -49,6 +49,7 @@ private:
     static bool tryb_jazda(const KontekstFizyki& k, Jednostka& u);
     static void tryb_hamowanie(const KontekstFizyki& k, Jednostka& u);
     static void tryb_obrot_w_miejscu(const KontekstFizyki& k, Jednostka& u);
+    static void tryb_do_celu(const KontekstFizyki& k, Jednostka& u);
 };
 
 }  // namespace openee

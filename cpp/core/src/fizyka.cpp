@@ -215,6 +215,28 @@ void FizykaLadowa::tryb_hamowanie(const KontekstFizyki& k, Jednostka& u) {
     u.z = k.teren.get_mesh_z(u.x, u.y);
 }
 
+void FizykaLadowa::tryb_do_celu(const KontekstFizyki& k, Jednostka& u) {
+    // tryb 1 – EE 0x54DA82 [W kod; P: 564 – hamowanie o a·dt na takt i obrót regułą EE w stanach 2012/2001/2021]:
+    // kurs do pozycji celu ataku (vt+0x1C z flagą 1 → 0x548266 z przesunięciem broni +0x458 – tu 0 [P: gwardia]),
+    // v' = max(0, v − 1,0·dt·a), krok v'·dt wzdłuż nowego kursu, test kroku (wynik pomijany), z z terenu.
+    const double cur = f32(k.mat.kurs_z_macierzy(u.orientacja));
+    const double des = f32(k.mat.kat_do_celu(u.x, u.y, u.cel_walki_x, u.cel_walki_y));
+    const double diff = MatematykaTitan::normalizuj_roznice(des - cur);
+    const WynikObrotu ob = obrot(k, u, cur, diff);
+    u.omega = ob.omega;
+    double v1 = f32(u.v - 1.0 * k.dt * f32(u.param.a));   // fld 1,0; fmul dt; fmul a; fsubr v; fst f32
+    if (v1 < 0.0) v1 = 0.0;
+    u.v = f32(v1);
+    const Macierz3 n = k.mat.set_orientation_ypr(ob.yaw);
+    const double step = f32(u.v * k.dt);
+    const double x0 = u.x, y0 = u.y;
+    u.x = f32(u.x + f32(step * n.m01()));
+    u.y = f32(u.y + f32(step * n.m11()));
+    test_kroku(k, u, x0, y0);
+    u.z = k.teren.get_mesh_z(u.x, u.y);
+    u.orientacja = n;
+}
+
 void FizykaLadowa::tryb_obrot_w_miejscu(const KontekstFizyki& k, Jednostka& u) {
     // tryb 5: przy v ≠ 0 jak tryb 4; inaczej obrót do kursu końcowego celu (cel+0x2C)
     if (u.v != 0.0) {
@@ -239,6 +261,9 @@ bool FizykaLadowa::takt(const KontekstFizyki& k, Jednostka& u) {
             return tryb_jazda(k, u);
         case TrybRuchu::hamowanie:
             tryb_hamowanie(k, u);
+            return true;
+        case TrybRuchu::do_celu:
+            tryb_do_celu(k, u);
             return true;
         case TrybRuchu::obrot_w_miejscu:
             tryb_obrot_w_miejscu(k, u);

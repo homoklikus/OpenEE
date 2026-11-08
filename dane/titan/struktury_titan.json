@@ -1,5 +1,5 @@
 {
- "wersja": 1,
+ "wersja": 2,
  "opis": "Wspólny opis struktur Titan (EE i AoC) – jedno źródło prawdy dla atlasu, Riverlands_MCP i diagnostyki OpenEE Core. Przesunięcia jako napisy szesnastkowe; null = nieustalone dla wariantu. Pola 'odczyt'/'zapis' zawierają tylko funkcje potwierdzone; kandydatów generuje narzedzia/titan/struktury.py dostep (wynik lokalny).",
  "pewnosc": {
   "P": "potwierdzone kodem i pomiarem",
@@ -274,7 +274,7 @@
      "rozmiar": 8,
      "pewnosc": "P",
      "zrodlo": "ruch_jednostki.md §3",
-     "opis": "pozycja w chwili rozkazu",
+     "opis": "pozycja w chwili rozkazu; etap 31: InitialAttackState (0x61ADD7) zapisuje ICL x/y (+0x118/+0x11C)",
      "odczyt": [],
      "zapis": []
     },
@@ -370,7 +370,7 @@
      "rozmiar": 4,
      "pewnosc": "P",
      "zrodlo": "ruch_jednostki.md §3",
-     "opis": "−10000 = brak",
+     "opis": "−10000 = brak; etap 31: InitialAttackState (0x61ADD7) zapisuje kurs miejsca pierwszego kontaktu (ICL)",
      "odczyt": [],
      "zapis": []
     },
@@ -496,7 +496,7 @@
      "rozmiar": 4,
      "pewnosc": "P",
      "zrodlo": "etap 30: wejście w AttackEnemyUnit EE 0x60B343 (:= parametry+0x138), AoC 0x5FEA22 (:= fistp(los[a,b]·parametry+0x138)); zdarzenie Reloaded = 0 (EE 0x61B746); pomiar 561/564/570",
-     "opis": "licznik przeładowania [ms]: −34 co takt (także po śmierci), 0 = Reloaded",
+     "opis": "licznik przeładowania [ms]: −34 co takt (także po śmierci), 0 = Reloaded; etap 31: := ulepszenie+0x138 przy wejściu w AttackEnemyUnit (EE), AoC losowo 0x5FEA22",
      "odczyt": [],
      "zapis": [],
      "grupa": "walka"
@@ -571,17 +571,34 @@
      "grupa": "walka"
     },
     {
-     "nazwa": "k2AC",
+     "nazwa": "termin_szukania",
      "typ": "i32",
      "ee": "0x2AC",
      "aoc": "0x2B0",
      "rozmiar": 4,
-     "pewnosc": "H",
-     "zrodlo": "etap 30: zerowane w 0x60B35C i 0x6176C6; AoC +0x2B0 zerowane w 0x61D9AE",
-     "opis": "pole stanu ataku – znaczenie [N]",
-     "odczyt": [],
+     "pewnosc": "P",
+     "zrodlo": "etap 31: 0x61AC11 ustawia := typ+0x564 po każdym szukaniu; pomiar 578/580 (−34 na takt)",
+     "opis": "licznik ms do następnego szukania wroga (LookForEnemies); > 0 blokuje szukanie poza celem-miejscem bez +0x30",
+     "odczyt": [
+      "0x61AC11"
+     ],
      "zapis": [],
      "grupa": "walka"
+    },
+    {
+     "nazwa": "ai",
+     "typ": "ptr",
+     "ee": "0x208",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 31: 0x61BFF4 czyta [+0x208]+8; ee_walka surowe [0,0x40,0x208] (vtable 0x82AB0C)",
+     "opis": "obiekt ustawień AI jednostki: +7 pościg poza ICL, +8 szuka wrogów, +9 powrót do ICL, +0xA ucieczka",
+     "odczyt": [
+      "0x61BFF4",
+      "0x61AC11"
+     ],
+     "zapis": []
     }
    ]
   },
@@ -740,6 +757,77 @@
      "zrodlo": "astar_pola.md §7",
      "opis": "obiekt blokuje pole",
      "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "zasieg_min",
+     "typ": "f32",
+     "ee": "0x41C",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x6399CA: odrzuca d² < typ+0x41C²",
+     "opis": "minimalny zasięg ataku",
+     "odczyt": [
+      "0x6399CA"
+     ],
+     "zapis": []
+    },
+    {
+     "nazwa": "kat_broni",
+     "typ": "f32",
+     "ee": "0x458",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "0x61FCAF: obrót wektora do przodu o R(+0x458) przed porównaniem",
+     "opis": "przesunięcie kątowe broni (rad)",
+     "odczyt": [
+      "0x61FCAF"
+     ],
+     "zapis": []
+    },
+    {
+     "nazwa": "luk_ataku",
+     "typ": "f32",
+     "ee": "0x45C",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x61FCAF: InsideFiringArch gdy |kąt| ≤ typ+0x45C/2; gwardia 0.349066 (odczyt 575)",
+     "opis": "pełny łuk ostrzału (rad), 2π = zawsze",
+     "odczyt": [
+      "0x61FCAF"
+     ],
+     "zapis": []
+    },
+    {
+     "nazwa": "szukanie_ms",
+     "typ": "i32",
+     "ee": "0x564",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x61AC11: EEUnit+0x2AC := typ+0x564 (2000 ms)",
+     "opis": "okres szukania wroga",
+     "odczyt": [
+      "0x61AC11"
+     ],
+     "zapis": []
+    },
+    {
+     "nazwa": "rodzaj_wag",
+     "typ": "u8",
+     "ee": "0x61A",
+     "aoc": null,
+     "rozmiar": 1,
+     "pewnosc": "P",
+     "zrodlo": "0x6399CA: tryb wag 0 gdy ustawione; 0x5F0CE8 → 0x631935 (zasięg punktowy)",
+     "opis": "flaga ataku wręcz/punktowego (gwardia 1, obywatel 0)",
+     "odczyt": [
+      "0x6399CA",
+      "0x5F0CE8"
+     ],
      "zapis": []
     }
    ]
@@ -1099,7 +1187,7 @@
      "rozmiar": 12,
      "pewnosc": "W",
      "zrodlo": "0x60AD45 (EE)",
-     "opis": "środek pola celu",
+     "opis": "środek pola celu; etap 31: punkt podejścia z 0x62C963 (przechwycenie, BO-10) albo 0x63234D (8 slotów), cel pola z 0x60B9D8",
      "odczyt": [],
      "zapis": []
     },

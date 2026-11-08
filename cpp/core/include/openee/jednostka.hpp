@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "openee/matematyka.hpp"
+#include "openee/walka.hpp"
 #include "openee/wariant.hpp"
 
 namespace openee {
@@ -31,10 +32,11 @@ struct ParametryRuchu {
 };
 
 /// Tryb fizyki EEPMLand (+0x264, AoC +0x268).
-enum class TrybRuchu : std::uint8_t { jazda = 0, spoczynek = 3, hamowanie = 4, obrot_w_miejscu = 5 };
+enum class TrybRuchu : std::uint8_t { jazda = 0, do_celu = 1, spoczynek = 3, hamowanie = 4, obrot_w_miejscu = 5 };
+// tryb 1 (etap 31): EEPMLand vt+0x10 = EE 0x54DA82 – obrót do celu ataku (vt+0x1C z flagą broni), hamowanie v.
 
-/// Typ celu (kolejka celów, etap 21) – na razie tylko miejsce.
-enum class TypCelu : std::uint8_t { brak = 0, miejsce = 1 };
+/// Typ celu (kolejka celów, etap 21): rodzaj celu +5 – 1 miejsce (EEUGLocation), 2 jednostka (EEUGAttackUnit, etap 31).
+enum class TypCelu : std::uint8_t { brak = 0, miejsce = 1, jednostka = 2 };
 
 struct Punkt2 {
     double x = 0, y = 0;  // f32 przechowywane jako double
@@ -48,6 +50,31 @@ struct CelRuchu {
     bool od_gracza = true;
     bool punkt_automatyczny = false;      // flaga +0x32 (punkty pośrednie podsystemu tras) – niewdrożone
     std::uint32_t proby = 0;              // cel+0x18: licznik prób przygotowania trasy
+    // EEUGAttackUnit (etap 31): +0x30 jednostka celu, +0x34/+0x38 pole celu (−10000 bez celu), punkt +0x20/+0x24
+    std::uint32_t cel_jednostka = 0;
+    std::int64_t pole_x = -10000, pole_y = -10000;
+};
+
+/// Ustawienia AI jednostki (EE +0x208 → bajty): +7 pościg poza LOS miejsca kontaktu, +8 szuka wrogów bez celu,
+/// +9 wraca do miejsca kontaktu, +0xA ucieka. moze_swobodnie = wynik 0x4D6B5B (CanIMoveFreely) [H: stała].
+struct UstawieniaAI {
+    bool poscig_poza_icl = true;
+    bool szuka_wrogow = true;
+    bool wraca_do_icl = false;
+    bool ucieka = false;
+    bool moze_swobodnie = true;
+};
+
+/// Stan bojowy jednostki w świecie (etap 31). Pola: HP +0x3C, przeładowanie +0x2A0 (AoC +0x2A4), szukanie +0x2AC,
+/// animacja +0x260, miejsce pierwszego kontaktu +0x118 i kurs +0x214 (−10000 = brak).
+struct BojJednostki {
+    ParametryWalki p;
+    StanWalki s;
+    int szukanie_ms = 0;
+    int animacja = 7;                  // 13 ruch, 0 atak, 7/8 spoczynek (pomiar etapu 30)
+    double icl_x = 0, icl_y = 0, icl_kurs = -10000.0;
+    std::uint64_t takt_wejscia_ataku = 0;
+    UstawieniaAI ai;
 };
 
 struct Jednostka {
@@ -90,6 +117,12 @@ struct Jednostka {
     std::int64_t komorka_x = 0, komorka_y = 0;  // +0x1C/+0x20 pole jednostki (zapis transformacji)
     std::deque<CelRuchu> kolejka_celow;         // +0x90 poziom 0; front = cel bieżący (+0x1F0)
     std::uint64_t kroki_cofniete = 0, kroki_slizg = 0;  // diagnostyka testu kroku
+
+    // --- walka (etap 31) ---
+    int gracz = 0;
+    bool czlowiek = false;                 // gracz vt+0x74 (wybór tablicy trafień 0x4D5F2C)
+    std::optional<BojJednostki> boj;       // brak = jednostka bez walki (dotychczasowe testy ruchu)
+    double cel_walki_x = 0, cel_walki_y = 0;  // pozycja celu dla trybu 1 (ustawiana przed fizyką)
 
     std::size_t pozostalo_punktow() const { return trasa.size() - zdjete_punkty; }
     bool ma_cel() const { return !kolejka_celow.empty() || cel != TypCelu::brak; }

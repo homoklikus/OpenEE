@@ -6,6 +6,18 @@
   {
    "data": "2026-11-08",
    "tytul": {
+    "pl": "Etap 31: jednostki same walczą w nowym silniku",
+    "en": "Stage 31: units fight on their own in the new engine"
+   },
+   "tekst": {
+    "pl": "Wojownicy w nowym silniku C++ sami zauważają wroga, wybierają cel tak jak oryginał, podchodzą, obracają się i atakują aż do śmierci przeciwnika. Odczytaliśmy też losowy czas przeładowania z dodatku Art of Conquest. Zgodność z grą jest już bliska, ale jeszcze nie co do klatki.",
+    "en": "Warriors in the new C++ engine now spot enemies, pick a target the way the original does, approach, turn and attack until the enemy dies. We also decoded the random reload time from the Art of Conquest expansion. The match with the game is close, but not yet frame-exact."
+   },
+   "raport": "RAPORT_ETAP_31.md"
+  },
+  {
+   "data": "2026-11-08",
+   "tytul": {
     "pl": "Etap 30: prawdziwe mapy i pierwsza walka w nowym silniku",
     "en": "Stage 30: real maps and the first fight in the new engine"
    },
@@ -13,7 +25,7 @@
     "pl": "Nowy silnik C++ wczytuje teraz prawdziwe mapy scenariuszy z ich terenem, wodą i przeszkodami. Zmierzyliśmy też w oryginalnej grze pojedynek dwóch wojowników – OpenEE odtwarza każdy cios i każdą utratę zdrowia dokładnie jak oryginał.",
     "en": "The new C++ engine now loads real scenario maps with their terrain, water and obstacles. We also measured a duel between two warriors in the original game – OpenEE reproduces every blow and every loss of health exactly like the original."
    },
-   "raport": "RAPORT_ETAP_30.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_30.md"
   },
   {
    "data": "2026-11-08",

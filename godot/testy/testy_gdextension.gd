@@ -126,6 +126,7 @@ func _testy() -> void:
 	var d: Dictionary = sym.diagnostyka()
 	_wynik("diagnostyka: tablice zgodne, RNG liczy losowania", d["tablice_zgodne"] and int(d["rng_losowania"]) > 0,
 		"rng %d, losowań %d, nieobsługiwanych zdarzeń %d" % [d["rng_stan"], d["rng_losowania"], d["zdarzenia_nieobslugiwane"]])
+	_test_walki(sym)
 	_koniec()
 
 
@@ -168,6 +169,37 @@ func _test_mapy(sym: Object) -> void:
 	var oczek := OS.get_environment("OPENEE_SKROT_MAPY_TEST")
 	_wynik("mapa prawdziwego scenariusza: GDScript → Core = ten sam skrót co ścieżka CTest", i2["ok"] and (oczek == "" or i2["skrot"] == oczek),
 		"%s, skrót %s, oczekiwany %s" % [str(i2.get("szerokosc", -1)), i2.get("skrot", "?"), oczek])
+
+
+func _test_walki(sym: Object) -> void:
+	# etap 31: walka liczona w Core; Godot tylko podaje dane (gwardia EE, tablice gwardii z odczytu 566) i czyta migawki
+	sym.utworz_swiat("ee")
+	var g := {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,
+		"klasa_trafienia": 13, "rodzina_ataku": 48, "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156,
+		"rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000, "pole_ac": 0.6000000238418579, "typ_bazy": 422, "typ_jednostki": 5}
+	var tr := {}
+	for i in 3:
+		var f := PackedFloat32Array(); f.resize(64); f[48] = [1.071, 1.5, 2.1][i]
+		tr[["08", "0C", "10"][i]] = {13: f}
+	var mn := []
+	for i in 16:
+		mn.append([1, 1, 1, 1, 1, 1])
+	var ok: bool = sym.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
+		[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var a: int = sym.dodaj_jednostke(p, 10.5, 10.5, 0.0)
+	var b: int = sym.dodaj_jednostke(p, 13.5, 11.0, 0.0)
+	ok = ok and sym.ustaw_walke(a, 1, true, g, 215) and sym.ustaw_walke(b, 5, false, g, 215)
+	sym.takt(1400)
+	var wybory := 0
+	var smierci := 0
+	for e in sym.zdarzenia_walki():
+		wybory += 1 if e["rodzaj"] == "wybor_celu" else 0
+		smierci += 1 if e["rodzaj"] == "smierc" else 0
+	var wa: Dictionary = sym.walka(a)
+	var wb: Dictionary = sym.walka(b)
+	_wynik("walka w Core przez GDExtension: wybór celu, podejście, ataki, śmierć (jak core_walka_swiat)", ok and wybory == 2 and smierci == 1 and wb["hp"] == 0 and wa["hp"] == 103,
+		"wybory %d, śmierci %d, HP %d / %d" % [wybory, smierci, wa.get("hp", -1), wb.get("hp", -1)])
 
 
 func _koniec() -> void:

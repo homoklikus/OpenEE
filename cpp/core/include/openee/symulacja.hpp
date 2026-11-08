@@ -3,7 +3,9 @@
 // listy 0x547AAD → krok maszyny stanów 0x5F0F7E → fizyka trybu 0x549F82 → krok końcowy kolizji 0x549E61).
 #pragma once
 
+#include <array>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -15,6 +17,7 @@
 #include "openee/maszyna_stanow.hpp"
 #include "openee/nawigacja.hpp"
 #include "openee/teren.hpp"
+#include "openee/walka.hpp"
 
 namespace openee {
 
@@ -31,6 +34,21 @@ struct Diagnostyka {
     std::uint64_t cele_zajete = 0;                // reguła (a)
     WynikAStar ostatnia_trasa;                    // ostatnie pełne A* (diagnostyka)
     bool ostatnia_bounded_sukces = false;
+    // --- walka (etap 31) ---
+    std::uint64_t szukania_wroga = 0;            // wywołania 0x61AC11 z przeglądem kandydatów
+    std::uint64_t wybory_celu = 0;               // utworzone cele EEUGAttackUnit
+    std::uint64_t trafienia = 0, zgony = 0;
+    std::uint64_t zalozenia_walki = 0;           // ocenione mechanizmy [N] z założeniem (osiągalność, mgła, …)
+    std::string ostatnie_zalozenie;
+};
+
+/// Zdarzenie walki w świecie (diagnostyka i porównania z grą).
+struct ZdarzenieWalkiSwiata {
+    std::uint64_t takt;
+    IdJednostki kto;
+    IdJednostki cel;
+    std::string rodzaj;   // wybor_celu, atak, trafienie, smierc
+    int wartosc;
 };
 
 /// Migawka jednej jednostki do przekazania warstwie prezentacji.
@@ -76,6 +94,26 @@ public:
     bool rozkaz_ruchu(IdJednostki id, double x, double y, std::optional<double> kurs_koncowy = std::nullopt,
                       bool shift = false);
 
+    // --- walka (etap 31): stan bojowy w tej samej liście jednostek, ten sam zegar, RNG i maszyna stanów ---
+    /// Nadaje jednostce stan bojowy (HP, parametry typu i gracza, ustawienia AI).
+    bool ustaw_walke(IdJednostki id, int gracz, bool czlowiek, const ParametryWalki& p, int hp, UstawieniaAI ai = {});
+    /// Dyplomacja: wiersz gracza +0x9E4 (≠ 0 = wróg). Domyślnie różni gracze są wrogami.
+    void ustaw_wrogow(int g1, int g2, bool wrog);
+    bool wrogowie(int g1, int g2) const;
+    /// Tablice obrażeń (0x8D2050, tablice trafień) i wagi wyboru celu (3 tryby) – dane referencyjne z gry.
+    void ustaw_tablice_walki(TabliceObrazen t, std::array<WagiCelu, 3> wagi);
+    /// AoC: granice losowego przeładowania [[0x92FCA8]+0x984/+0x988].
+    void ustaw_przeladowanie_aoc(double lo, double hi) { aoc_lo_ = lo; aoc_hi_ = hi; }
+    /// Modyfikator wysokości obrażeń (konfiguracja reguł gry) i premia gracza +0xA3C.
+    void ustaw_modyfikator_wysokosci(ModyfikatorWysokosci m) { mod_wys_ = m; }
+    void ustaw_premie_wysokosci(int gracz, float p) { premia_wys_[gracz] = p; }
+    /// Rozkaz ataku gracza (EEUGAttackUnit z +0x1C = 1): jak PPM na wrogu – cel na początek kolejki, stan CheckRange
+    /// ([H]: wejście rozkazu ataku w InitialAttackState/CheckRange nieodczytane; tu – CheckRange).
+    bool rozkaz_ataku(IdJednostki id, IdJednostki cel);
+    const std::vector<ZdarzenieWalkiSwiata>& zdarzenia_walki() const { return zdarzenia_walki_; }
+    /// Ustawia stan maszyny bez akcji wejścia (start z migawki gry).
+    void ustaw_stan(IdJednostki id, int stan);
+
     /// Włącza/wyłącza kolizje w takcie (testy izolowane). Domyślnie włączone.
     void ustaw_kolizje(bool w) { kolizje_wlaczone_ = w; }
     TerenSiatka& teren_edycja() { return teren_; }
@@ -102,7 +140,26 @@ private:
     void krok_koncowy(Jednostka& u);
     void zastosuj_push(Jednostka& u);
     IdJednostki srodek_w_polu(std::int64_t ix, std::int64_t iy, IdJednostki pytajaca) const;
+    // walka
+    Jednostka* cel_ataku(const Jednostka& u);
+    std::optional<bool> zdarzenie_walki(Jednostka& u, const std::string& n);
+    bool szukaj_wroga(Jednostka& u);
+    double odl2(const Jednostka& a, const Jednostka& b) const;
+    bool widoczny_dla(int gracz, const Jednostka& c) const;
+    Punkt2 punkt_podejscia(const Jednostka& u, const Jednostka& t);
+    double kat_do_celu_broni(const Jednostka& u, const Jednostka& t) const;
+    std::optional<double> m_trafienia(const Jednostka& a, const Jednostka& c) const;
+    double w_mnoznik(const Jednostka& a, const Jednostka& c) const;
+    void liczniki_walki(Jednostka& u);
+    void zalozenie(const char* opis);
     bool kolizje_wlaczone_ = true;
+    std::map<std::pair<int, int>, bool> dyplomacja_;
+    TabliceObrazen tablice_walki_;
+    std::array<WagiCelu, 3> wagi_celu_{};
+    double aoc_lo_ = 0.0, aoc_hi_ = 0.0;
+    ModyfikatorWysokosci mod_wys_;
+    std::map<int, float> premia_wys_;
+    std::vector<ZdarzenieWalkiSwiata> zdarzenia_walki_;
 
     MatematykaTitan mat_;
     TerenSiatka teren_;

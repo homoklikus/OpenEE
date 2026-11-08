@@ -23,7 +23,7 @@ Jednostka (EEUnit / EEComplexUnit). Wspólne pola obiektów mapy i pola ruchu je
 | poziomy_celow_pocz | ptr | 0x94 | 0x94 | [P] | – | kolejka_rozkazow.md; wektor poziomów celów (+0x90): początek; element 0x28 B |
 | poziomy_celow_kon | ptr | 0x98 | 0x98 | [P] | – | kolejka_rozkazow.md; wektor poziomów celów: koniec |
 | kontakty | u32 | 0xC8 | 0xC8 | [P] | – | etap 29 (ee_obserwacja); liczba kontaktów kolizyjnych |
-| poz_rozkazu | f32[2] | 0x118 | 0x118 | [P] | – | ruch_jednostki.md §3; pozycja w chwili rozkazu |
+| poz_rozkazu | f32[2] | 0x118 | 0x118 | [P] | – | ruch_jednostki.md §3; pozycja w chwili rozkazu; etap 31: InitialAttackState (0x61ADD7) zapisuje ICL x/y (+0x118/+0x11C) |
 | macierz | f32[16] | 0x130 | 0x130 | [P] | – | ruch_jednostki.md §3; orientacja; x +0x13C, y +0x14C, z +0x15C |
 | omega | f32 | 0x17C | 0x17C | [P] | – | ruch_jednostki.md §3; prędkość kątowa [rad/s] |
 | grupa | ptr | 0x1C8 | 0x1C8 | [W] | – | ruch_jednostki.md §3; grupa ruchu |
@@ -31,7 +31,7 @@ Jednostka (EEUnit / EEComplexUnit). Wspólne pola obiektów mapy i pola ruchu je
 | cel_rozkazu | ptr | 0x1EC | 0x1EC | [P] | – | kolejka_rozkazow.md; pierwszy cel bez flagi punktu trasy |
 | cel | ptr | 0x1F0 | 0x1F0 | [P] | – | kolejka_rozkazow.md; cel bieżący (początek poziomu 0) |
 | blokujacy | ptr | 0x20C | 0x20C | [P] | – | fizyka_terenu.md §4, walidacja_kolizji.md §10; obiekt blokujący krok |
-| kurs_docelowy | f32 | 0x214 | 0x214 | [P] | – | ruch_jednostki.md §3; −10000 = brak |
+| kurs_docelowy | f32 | 0x214 | 0x214 | [P] | – | ruch_jednostki.md §3; −10000 = brak; etap 31: InitialAttackState (0x61ADD7) zapisuje kurs miejsca pierwszego kontaktu (ICL) |
 | k21C | f32 | 0x21C | 0x21C | [W] | – | ruch_jednostki.md §3; max(v′, par+0xBC) |
 | push | f32[2] | 0x230 | 0x230 | [W] | – | ruch_jednostki.md §3; wektor odpychania |
 | v | f32 | 0x238 | 0x238 | [P] | – | ruch_jednostki.md §3; prędkość liniowa |
@@ -41,13 +41,14 @@ Jednostka (EEUnit / EEComplexUnit). Wspólne pola obiektów mapy i pola ruchu je
 | termin_idle | u32 | 0x254 | 0x258 | [W] | – | skrypty_stanow.md §3; termin oceny Idle (BO-8) |
 | animacja | i32 | 0x260 | 0x264 | [P] | 0x5EFD6D | 0x5EFD6D (EE) – etap 30; pomiar 561/564 (EE) i 570 (AoC): 13 w ruchu → 0 w AttackEnemyUnit, 4/5 przy śmierci; bieżąca animacja (indeks), ustawiana przy wejściu w stany ataku |
 | tryb | u32 | 0x264 | 0x268 | [P] | – | ruch_jednostki.md §3; tryb ruchu 0/1/3/4/5 |
-| przeladowanie | i32 | 0x2A0 | 0x2A4 | [P] | – | etap 30: wejście w AttackEnemyUnit EE 0x60B343 (:= parametry+0x138), AoC 0x5FEA22 (:= fistp(los[a,b]·parametry+0x138)); zdarzenie Reloaded = 0 (EE 0x61B746); pomiar 561/564/570; licznik przeładowania [ms]: −34 co takt (także po śmierci), 0 = Reloaded |
+| przeladowanie | i32 | 0x2A0 | 0x2A4 | [P] | – | etap 30: wejście w AttackEnemyUnit EE 0x60B343 (:= parametry+0x138), AoC 0x5FEA22 (:= fistp(los[a,b]·parametry+0x138)); zdarzenie Reloaded = 0 (EE 0x61B746); pomiar 561/564/570; licznik przeładowania [ms]: −34 co takt (także po śmierci), 0 = Reloaded; etap 31: := ulepszenie+0x138 przy wejściu w AttackEnemyUnit (EE), AoC losowo 0x5FEA22 |
 | k330 | u16 | 0x330 | 0x33C | [P] | – | fizyka_terenu.md §4; znacznik blokady kroku (2 = zablokowany) |
 | osiagniety_punkt | u8 | 0x33F | 0x34B | [W] | – | ruch_jednostki.md §3; osiągnięto bieżący punkt |
 | hp | i32 | 0x3C | 0x3C | [W] | 0x616F30, 0x6172BC | etap 30: setter EE 0x616F30, TakeDamage EE 0x6172BC (vt+0x70), EEHitPointUpgrader EE 0x638CBF / AoC 0x64F18D; bieżące punkty życia (int); ≤ 0 = martwy |
 | regeneracja_termin | i32 | 0x290 | – | [W] | – | etap 30: EE 0x625B47 (co 1000 ms + typ+0x578); termin następnej regeneracji HP |
 | zabicia | u16 | 0x332 | – | [W] | – | etap 30: EE 0x61DDC7 (inc, gdy cel ma HP ≤ 0 po trafieniu); licznik zabitych celów |
-| k2AC | i32 | 0x2AC | 0x2B0 | [H] | – | etap 30: zerowane w 0x60B35C i 0x6176C6; AoC +0x2B0 zerowane w 0x61D9AE; pole stanu ataku – znaczenie [N] |
+| termin_szukania | i32 | 0x2AC | 0x2B0 | [P] | – | etap 31: 0x61AC11 ustawia := typ+0x564 po każdym szukaniu; pomiar 578/580 (−34 na takt); licznik ms do następnego szukania wroga (LookForEnemies); > 0 blokuje szukanie poza celem-miejscem bez +0x30 |
+| ai | ptr | 0x208 | – | [P] | – | etap 31: 0x61BFF4 czyta [+0x208]+8; ee_walka surowe [0,0x40,0x208] (vtable 0x82AB0C); obiekt ustawień AI jednostki: +7 pościg poza ICL, +8 szuka wrogów, +9 powrót do ICL, +0xA ucieczka |
 
 ## EEUnitClass
 
@@ -67,6 +68,11 @@ Typ jednostki (jeden obiekt na typ).
 | flagi_ruchu | u8 | 0x5D4 | – | [W] | – | nawigacja_wejscie.md (AoC testuje +0x2D0 & 0xC); flagi ruchu |
 | teren_dozwolony | u8[] | 0x5D6 | – | [W] | – | astar_pola.md §7; bajt na typ terenu komórki; AoC – metoda typu |
 | blokuje | u8 | 0x600 | – | [W] | – | astar_pola.md §7; obiekt blokuje pole |
+| zasieg_min | f32 | 0x41C | – | [P] | – | 0x6399CA: odrzuca d² < typ+0x41C²; minimalny zasięg ataku |
+| kat_broni | f32 | 0x458 | – | [W] | – | 0x61FCAF: obrót wektora do przodu o R(+0x458) przed porównaniem; przesunięcie kątowe broni (rad) |
+| luk_ataku | f32 | 0x45C | – | [P] | – | 0x61FCAF: InsideFiringArch gdy |kąt| ≤ typ+0x45C/2; gwardia 0.349066 (odczyt 575); pełny łuk ostrzału (rad), 2π = zawsze |
+| szukanie_ms | i32 | 0x564 | – | [P] | – | 0x61AC11: EEUnit+0x2AC := typ+0x564 (2000 ms); okres szukania wroga |
+| rodzaj_wag | u8 | 0x61A | – | [P] | – | 0x6399CA: tryb wag 0 gdy ustawione; 0x5F0CE8 → 0x631935 (zasięg punktowy); flaga ataku wręcz/punktowego (gwardia 1, obywatel 0) |
 
 ## EEUnitClassUpgrade
 
@@ -127,7 +133,7 @@ Cel-atak na jednostkę (konstruktor EE 0x60AD45).
 
 | Pole | Typ | EE | AoC | Pewność | Zapis | Źródło / opis |
 |---|---|---|---|---|---|---|
-| punkt | f32[3] | 0x20 | 0x20 | [W] | – | 0x60AD45 (EE); środek pola celu |
+| punkt | f32[3] | 0x20 | 0x20 | [W] | – | 0x60AD45 (EE); środek pola celu; etap 31: punkt podejścia z 0x62C963 (przechwycenie, BO-10) albo 0x63234D (8 slotów), cel pola z 0x60B9D8 |
 | wlasciciel | ptr | 0x2C | 0x2C | [P] | – | 0x60AD45 (EE); pomiar 561: id = atakujący; jednostka atakująca |
 | cel | ptr | 0x30 | 0x30 | [P] | – | 0x60ADEC (EE); pomiar 561/564/570: vtable EEComplexUnit, id celu +0x24; atakowana jednostka |
 | cel_pole | i32[2] | 0x34 | 0x34 | [W] | – | 0x60ADFF (EE); pole celu przy utworzeniu (−10000 = brak) |
