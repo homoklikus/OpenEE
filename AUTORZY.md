@@ -14,6 +14,7 @@ Z pakietu schematu pominięto plik `language.txt` (zawiera teksty gry).
 
 ## Narzędzia (niezawarte)
 * **Godot Engine** (MIT) – silnik; nie jest dołączany do repozytorium.
+* **godot-cpp** (MIT) – wiązania C++ GDExtension; submoduł `cpp/thirdparty/godot-cpp` (tag 10.0.0-stable), pobierany osobno, nie jest kopiowany do repozytorium.
 * Analiza formatów: Ghidra (Apache 2.0) – używana lokalnie, jej wyniki nie są publikowane; publikowane są wyłącznie opisy.
 
 ## Dokumentacja formatów

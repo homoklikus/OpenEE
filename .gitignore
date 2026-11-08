@@ -43,6 +43,21 @@ export_presets.cfg
 .mono/
 /Godot_v4*
 
+# --- C++ (etap 28): katalogi budowania i biblioteki GDExtension ---
+/build*/
+/cmake-build-*/
+/out/
+CMakeUserPresets.json
+compile_commands.json
+Testing/
+/godot/bin/*.so
+/godot/bin/*.dll
+/godot/bin/*.dylib
+/godot/bin/*.framework/
+*.a
+*.lib
+*.pdb
+
 # --- Python / C ---
 __pycache__/
 *.py[cod]

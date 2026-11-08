@@ -1,0 +1,562 @@
+{
+ "opis": "Warto\u015bci referencyjne funkcji trygonometrycznych Titan (model umarctan2.py/transform.py, etap 27) \u2013 wyniki dla wybranych argument\u00f3w, bity IEEE. Wymagaj\u0105 tablic z Low-Level Engine.dll; nie zawieraj\u0105 tablic.",
+ "przypadki": [
+  {
+   "f": "um_arctan2",
+   "a": 1,
+   "b": 1,
+   "wynik_f64_bity": "0x3fe9222700000000",
+   "wynik_f32_bity": "0x3f491138"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 1,
+   "b": -1,
+   "wynik_f64_bity": "0x4002d971a0000000",
+   "wynik_f32_bity": "0x4016cb8d"
+  },
+  {
+   "f": "um_arctan2",
+   "a": -1,
+   "b": -1,
+   "wynik_f64_bity": "0xc002d971a0000000",
+   "wynik_f32_bity": "0xc016cb8d"
+  },
+  {
+   "f": "um_arctan2",
+   "a": -1,
+   "b": 1,
+   "wynik_f64_bity": "0xbfe9222700000000",
+   "wynik_f32_bity": "0xbf491138"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 0.3,
+   "b": 0.8,
+   "wynik_f64_bity": "0x3fd6f59460000000",
+   "wynik_f32_bity": "0x3eb7aca3"
+  },
+  {
+   "f": "um_arctan2",
+   "a": -0.7,
+   "b": -0.2,
+   "wynik_f64_bity": "0xbffd95e360000000",
+   "wynik_f32_bity": "0xbfecaf1b"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 0,
+   "b": 1,
+   "wynik_f64_bity": "0x0",
+   "wynik_f32_bity": "0x0"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 0,
+   "b": -1,
+   "wynik_f64_bity": "0x400921fb60000000",
+   "wynik_f32_bity": "0x40490fdb"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 1,
+   "b": 0,
+   "wynik_f64_bity": "0x3ff921fb60000000",
+   "wynik_f32_bity": "0x3fc90fdb"
+  },
+  {
+   "f": "um_arctan2",
+   "a": -1,
+   "b": 0,
+   "wynik_f64_bity": "0xbff921fb60000000",
+   "wynik_f32_bity": "0xbfc90fdb"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 0,
+   "b": 0,
+   "wynik_f64_bity": "0x3ff921fb60000000",
+   "wynik_f32_bity": "0x3fc90fdb"
+  },
+  {
+   "f": "um_arctan2",
+   "a": -0.0,
+   "b": -1,
+   "wynik_f64_bity": "0x400921fb60000000",
+   "wynik_f32_bity": "0x40490fdb"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 1e-30,
+   "b": -1,
+   "wynik_f64_bity": "0x400921fb60000000",
+   "wynik_f32_bity": "0x40490fdb"
+  },
+  {
+   "f": "um_arctan2",
+   "a": -1e-30,
+   "b": -1,
+   "wynik_f64_bity": "0xc00921fb60000000",
+   "wynik_f32_bity": "0xc0490fdb"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 0.001,
+   "b": -1,
+   "wynik_f64_bity": "0x40091ffb60000000",
+   "wynik_f32_bity": "0x4048ffdb"
+  },
+  {
+   "f": "um_arctan2",
+   "a": -0.001,
+   "b": -1,
+   "wynik_f64_bity": "0xc0091ffb60000000",
+   "wynik_f32_bity": "0xc048ffdb"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 0.0316,
+   "b": 1,
+   "wynik_f64_bity": "0x3fa02c6ed616de59",
+   "wynik_f32_bity": "0x3d016377"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 0.0317,
+   "b": 1,
+   "wynik_f64_bity": "0x3fa0002180000000",
+   "wynik_f32_bity": "0x3d00010c"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 1e-06,
+   "b": 1,
+   "wynik_f64_bity": "0x0",
+   "wynik_f32_bity": "0x0"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 1e-20,
+   "b": 3e-20,
+   "wynik_f64_bity": "0x3fd49845e0000000",
+   "wynik_f32_bity": "0x3ea4c22f"
+  },
+  {
+   "f": "um_arctan2",
+   "a": -2e-38,
+   "b": 1e-38,
+   "wynik_f64_bity": "0xbff1b6ec60000000",
+   "wynik_f32_bity": "0xbf8db763"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 1e-07,
+   "b": 0,
+   "wynik_f64_bity": "0x3ff921fb60000000",
+   "wynik_f32_bity": "0x3fc90fdb"
+  },
+  {
+   "f": "um_arctan2",
+   "a": -0.0472,
+   "b": 0.9989,
+   "wynik_f64_bity": "0xbfa85553e0000000",
+   "wynik_f32_bity": "0xbd42aa9f"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 0.6,
+   "b": -0.8,
+   "wynik_f64_bity": "0x4003fc0d08000000",
+   "wynik_f32_bity": "0x401fe068"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 0.00025,
+   "b": 1,
+   "wynik_f64_bity": "0x3f36a09e80000012",
+   "wynik_f32_bity": "0x39b504f4"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 0.00024,
+   "b": 1,
+   "wynik_f64_bity": "0x0",
+   "wynik_f32_bity": "0x0"
+  },
+  {
+   "f": "um_arctan2",
+   "a": -0.31415,
+   "b": 0.95,
+   "wynik_f64_bity": "0xbfd4709b80000000",
+   "wynik_f32_bity": "0xbea384dc"
+  },
+  {
+   "f": "um_arctan2",
+   "a": 5.0,
+   "b": -0.001,
+   "wynik_f64_bity": "0x3ff922db20000000",
+   "wynik_f32_bity": "0x3fc916d9"
+  },
+  {
+   "f": "um_arccos",
+   "x": 0.0,
+   "wynik_f64_bity": "0x3ff921fb60000000"
+  },
+  {
+   "f": "um_arccos",
+   "x": -0.0,
+   "wynik_f64_bity": "0x3ff921fb60000000"
+  },
+  {
+   "f": "um_arccos",
+   "x": 0.5,
+   "wynik_f64_bity": "0x3ff0c152c0000000"
+  },
+  {
+   "f": "um_arccos",
+   "x": -0.5,
+   "wynik_f64_bity": "0x4000c15200000000"
+  },
+  {
+   "f": "um_arccos",
+   "x": 0.9994,
+   "wynik_f64_bity": "0x3fa1e3a7e0000000"
+  },
+  {
+   "f": "um_arccos",
+   "x": 0.9995,
+   "wynik_f64_bity": "0x3fa0312156659eaa"
+  },
+  {
+   "f": "um_arccos",
+   "x": 0.99951,
+   "wynik_f64_bity": "0x3fa0076953b68e9a"
+  },
+  {
+   "f": "um_arccos",
+   "x": 0.99999,
+   "wynik_f64_bity": "0x3f72548fc00650c5"
+  },
+  {
+   "f": "um_arccos",
+   "x": 1.0,
+   "wynik_f64_bity": "0x0"
+  },
+  {
+   "f": "um_arccos",
+   "x": 1.5,
+   "wynik_f64_bity": "0x0"
+  },
+  {
+   "f": "um_arccos",
+   "x": -1.0,
+   "wynik_f64_bity": "0x400921fb60000000"
+  },
+  {
+   "f": "um_arccos",
+   "x": -0.99999,
+   "wynik_f64_bity": "0x400918d1181ffcd8"
+  },
+  {
+   "f": "um_arccos",
+   "x": 1e-06,
+   "wynik_f64_bity": "0x3ff921fb00000000"
+  },
+  {
+   "f": "um_arccos",
+   "x": 0.70710678,
+   "wynik_f64_bity": "0x3fe9222700000000"
+  },
+  {
+   "f": "um_arccos",
+   "x": -0.2,
+   "wynik_f64_bity": "0x3ffc5acb80000000"
+  },
+  {
+   "f": "um_arccos",
+   "x": 2.0,
+   "wynik_f64_bity": "0x0"
+  },
+  {
+   "f": "um_arccos",
+   "x": -3.0,
+   "wynik_f64_bity": "0x400921fb60000000"
+  },
+  {
+   "f": "um_cos",
+   "x": 0.0,
+   "wynik_f64_bity": "0x3ff0000000000000"
+  },
+  {
+   "f": "um_sin",
+   "x": 0.0,
+   "wynik_f64_bity": "0x0"
+  },
+  {
+   "f": "um_cos",
+   "x": 0.1,
+   "wynik_f64_bity": "0x3fefd6ffc0000000"
+  },
+  {
+   "f": "um_sin",
+   "x": 0.1,
+   "wynik_f64_bity": "0x3fb994af40000000"
+  },
+  {
+   "f": "um_cos",
+   "x": 1.0,
+   "wynik_f64_bity": "0x3fe14a6860000000"
+  },
+  {
+   "f": "um_sin",
+   "x": 1.0,
+   "wynik_f64_bity": "0x3feaed2aa0000000"
+  },
+  {
+   "f": "um_cos",
+   "x": -1.0,
+   "wynik_f64_bity": "0x3fe14a6860000000"
+  },
+  {
+   "f": "um_sin",
+   "x": -1.0,
+   "wynik_f64_bity": "0xbfeaed2aa0000000"
+  },
+  {
+   "f": "um_cos",
+   "x": 2.5,
+   "wynik_f64_bity": "0xbfe9a2ff00000000"
+  },
+  {
+   "f": "um_sin",
+   "x": 2.5,
+   "wynik_f64_bity": "0x3fe326a660000000"
+  },
+  {
+   "f": "um_cos",
+   "x": 3.14159274,
+   "wynik_f64_bity": "0xbff0000000000000"
+  },
+  {
+   "f": "um_sin",
+   "x": 3.14159274,
+   "wynik_f64_bity": "0x0"
+  },
+  {
+   "f": "um_cos",
+   "x": -3.0,
+   "wynik_f64_bity": "0xbfefae1ce0000000"
+  },
+  {
+   "f": "um_sin",
+   "x": -3.0,
+   "wynik_f64_bity": "0xbfc20d8880000000"
+  },
+  {
+   "f": "um_cos",
+   "x": 0.00019,
+   "wynik_f64_bity": "0x3ff0000000000000"
+  },
+  {
+   "f": "um_sin",
+   "x": 0.00019,
+   "wynik_f64_bity": "0x3f292a7380000000"
+  },
+  {
+   "f": "um_cos",
+   "x": 0.0001,
+   "wynik_f64_bity": "0x3ff0000000000000"
+  },
+  {
+   "f": "um_sin",
+   "x": 0.0001,
+   "wynik_f64_bity": "0x3f292a7380000000"
+  },
+  {
+   "f": "um_cos",
+   "x": 7.0,
+   "wynik_f64_bity": "0x3fe8204d20000000"
+  },
+  {
+   "f": "um_sin",
+   "x": 7.0,
+   "wynik_f64_bity": "0x3fe505a700000000"
+  },
+  {
+   "f": "um_cos",
+   "x": -9.5,
+   "wynik_f64_bity": "0xbfefe8dda0000000"
+  },
+  {
+   "f": "um_sin",
+   "x": -9.5,
+   "wynik_f64_bity": "0x3fb3395c40000000"
+  },
+  {
+   "f": "um_cos",
+   "x": 1.5707964,
+   "wynik_f64_bity": "0x0"
+  },
+  {
+   "f": "um_sin",
+   "x": 1.5707964,
+   "wynik_f64_bity": "0x3ff0000000000000"
+  },
+  {
+   "f": "um_cos",
+   "x": -3.1415927,
+   "wynik_f64_bity": "0xbff0000000000000"
+  },
+  {
+   "f": "um_sin",
+   "x": -3.1415927,
+   "wynik_f64_bity": "0x0"
+  },
+  {
+   "f": "um_cos",
+   "x": 100.0,
+   "wynik_f64_bity": "0x3feb982ec0000000"
+  },
+  {
+   "f": "um_sin",
+   "x": 100.0,
+   "wynik_f64_bity": "0xbfe0340920000000"
+  },
+  {
+   "f": "set_orientation_ypr",
+   "yaw": 0,
+   "pitch": 0,
+   "roll": 0,
+   "m_f32_bity": [
+    "0x3f800000",
+    "0x80000000",
+    "0x0",
+    "0x0",
+    "0x3f800000",
+    "0x80000000",
+    "0x0",
+    "0x0",
+    "0x3f800000"
+   ]
+  },
+  {
+   "f": "set_orientation_ypr",
+   "yaw": 0.1,
+   "pitch": 0,
+   "roll": 0,
+   "m_f32_bity": [
+    "0x3f7eb7fe",
+    "0xbdcca57a",
+    "0x0",
+    "0x3dcca57a",
+    "0x3f7eb7fe",
+    "0x80000000",
+    "0x0",
+    "0x0",
+    "0x3f800000"
+   ]
+  },
+  {
+   "f": "set_orientation_ypr",
+   "yaw": 1.0,
+   "pitch": 0,
+   "roll": 0,
+   "m_f32_bity": [
+    "0x3f0a5343",
+    "0xbf576955",
+    "0x0",
+    "0x3f576955",
+    "0x3f0a5343",
+    "0x80000000",
+    "0x0",
+    "0x0",
+    "0x3f800000"
+   ]
+  },
+  {
+   "f": "set_orientation_ypr",
+   "yaw": -1.0,
+   "pitch": 0,
+   "roll": 0,
+   "m_f32_bity": [
+    "0x3f0a5343",
+    "0x3f576955",
+    "0x80000000",
+    "0xbf576955",
+    "0x3f0a5343",
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x3f800000"
+   ]
+  },
+  {
+   "f": "set_orientation_ypr",
+   "yaw": 2.5,
+   "pitch": 0.1,
+   "roll": 0,
+   "m_f32_bity": [
+    "0xbf4d17f8",
+    "0xbf1870e6",
+    "0x3d74f2da",
+    "0x3f193533",
+    "0xbf4c1130",
+    "0x3da3f3ac",
+    "0x0",
+    "0x3dcca57a",
+    "0x3f7eb7fe"
+   ]
+  },
+  {
+   "f": "set_orientation_ypr",
+   "yaw": 3.14159274,
+   "pitch": -0.2,
+   "roll": 0.05,
+   "m_f32_bity": [
+    "0xbf7fadf3",
+    "0x80000000",
+    "0x3d4ce704",
+    "0xbc22d346",
+    "0xbf7ae5bd",
+    "0xbe4b2cd9",
+    "0x3d48d17c",
+    "0xbe4b6e0d",
+    "0x3f7a9553"
+   ]
+  },
+  {
+   "f": "set_orientation_ypr",
+   "yaw": -3.0,
+   "pitch": 0.0,
+   "roll": 0.3,
+   "m_f32_bity": [
+    "0xbf721d71",
+    "0x3e106c44",
+    "0x3e95d5b8",
+    "0xbe09f803",
+    "0xbf7d70e7",
+    "0x3d2ac428",
+    "0x3e975904",
+    "0x0",
+    "0x3f748f43"
+   ]
+  },
+  {
+   "f": "set_orientation_ypr",
+   "yaw": 0.7,
+   "pitch": 0.3,
+   "roll": -0.4,
+   "m_f32_bity": [
+    "0x3f21593f",
+    "0xbf1d901c",
+    "0x3ef24b4a",
+    "0x3f2e73a9",
+    "0x3f3b09d8",
+    "0x3d2eb4a9",
+    "0xbebe772a",
+    "0x3e975904",
+    "0x3f61417c"
+   ]
+  }
+ ]
+}

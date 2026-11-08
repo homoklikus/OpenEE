@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_27.md`](../RAPORT_ETAP_27.md) – etap 27: UMArcTan2 i tablice trygonometryczne z DLL, precyzja x87 i zapisy f32, przyczyna rozbieżności AoC 505 (obrót AoC), walidacja odpychania, RNG i determinizm, BO-8/BO-9′, k = 2,0, model v4, testy referencyjne i specyfikacja ruchu dla Godota.
+[`RAPORT_ETAP_28.md`](../RAPORT_ETAP_28.md) – etap 28: natywny rdzeń OpenEE Core w C++20 (matematyka Titan z tablicami DLL, generator, teren, fizyka EE/AoC, maszyna stanów, odpychanie), GDExtension (godot-cpp 10.0.0, API 4.7), testy S1–S7 bitowo w Debug i Release, scena diagnostyczna.
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -57,3 +57,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_24.md`](archiwum/RAPORT_ETAP_24.md) | etap 24 | A* po polach: koszt 10/14, heurystyka 10·Manhattan, kolejność sąsiadów i reguła narożników, lista otwarta z kubełkami, koniec trasy w najbliższym dostępnym węźle, kolejka +0x7C jednostki, `Bounded`; model zgodny z pomiarami; BO-5, BO-6 |
 | [`RAPORT_ETAP_25.md`](archiwum/RAPORT_ETAP_25.md) | etap 25 | ruch jednostki: maszyna stanów, takt, prędkość (±a·dt, dyskretna droga hamowania), obrót trapezowy, zaliczanie punktów, przeszkody, Shift, punkty +0x32, niezależny model; BO-7 |
 | [`RAPORT_ETAP_26.md`](archiwum/RAPORT_ETAP_26.md) | etap 26 | etap 26: fizyka terenu (wysokość, nachylenie, prędkość na stoku), test kroku, kolizje i objazdy, skrypty stanów `.tai`, parametry szyku, weryfikacja BO-6 i BO-7, model ruchu całego przebiegu (EE i AoC) |
+| [`RAPORT_ETAP_27.md`](archiwum/RAPORT_ETAP_27.md) | etap 27 | etap 27: UMArcTan2 i tablice trygonometryczne z DLL, precyzja x87 i zapisy f32, przyczyna rozbieżności AoC 505 (obrót AoC), walidacja odpychania, RNG i determinizm, BO-8/BO-9′, k = 2,0, model v4, testy referencyjne i specyfikacja ruchu dla Godota |

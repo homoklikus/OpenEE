@@ -6,6 +6,18 @@
   {
    "data": "2026-11-08",
    "tytul": {
+    "pl": "Etap 28: nowy silnik symulacji w C++",
+    "en": "Stage 28: a new C++ simulation engine"
+   },
+   "tekst": {
+    "pl": "OpenEE dostał własny, szybki rdzeń symulacji napisany w C++ i połączony z Godotem. Pierwsze jednostki jeżdżą w nim dokładnie tak, jak przewiduje odtworzony model oryginału – z tymi samymi liczbami co do ostatniego bitu.",
+    "en": "OpenEE now has its own fast simulation core written in C++ and connected to Godot. The first units move in it exactly as the reconstructed model of the original predicts – matching to the last bit."
+   },
+   "raport": "RAPORT_ETAP_28.md"
+  },
+  {
+   "data": "2026-11-08",
+   "tytul": {
     "pl": "Etap 27: dokładna matematyka ruchu i plan wdrożenia",
     "en": "Stage 27: exact movement maths and an implementation plan"
    },
@@ -13,7 +25,7 @@
     "pl": "Odtworzone, jak oryginał liczy kąty i zaokrągla liczby, dzięki czemu przejazd w The Art of Conquest kończy się w tym samym momencie co w grze. Sprawdzone przepychanie jednostek, powtarzalność losowania i przygotowany szczegółowy plan przeniesienia ruchu do OpenEE.",
     "en": "Reconstructed how the original computes angles and rounds numbers, so a trip in The Art of Conquest now ends at the same moment as in the game. Unit pushing and repeatable randomness were verified, and a detailed plan for bringing movement into OpenEE was prepared."
    },
-   "raport": "RAPORT_ETAP_27.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_27.md"
   },
   {
    "data": "2026-11-08",

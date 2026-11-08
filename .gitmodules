@@ -1,0 +1,4 @@
+# Zależności zewnętrzne OpenEE (przypięte commity, docs/cpp/BUDOWANIE.md)
+[submodule "cpp/thirdparty/godot-cpp"]
+	path = cpp/thirdparty/godot-cpp
+	url = https://github.com/godotengine/godot-cpp.git

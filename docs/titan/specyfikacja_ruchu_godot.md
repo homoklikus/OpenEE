@@ -3,6 +3,14 @@
 Dokument projektowy. Opisuje, jak zbudować w Godocie wierny system ruchu jednostki lądowej Titan na podstawie atlasu
 (etapy 14–27). **To nie jest implementacja.** Kod Godota w etapie 27 nie był zmieniany.
 
+**[Etap 28 – zmiana architektury]** Warstwa symulacji jest przenoszona do natywnego rdzenia **OpenEE Core (C++20)**,
+podłączonego do Godota przez GDExtension. GDScript pozostaje warstwą integracji i prezentacji.
+- Moduły z § 2 powstają jako klasy C++ w `cpp/core/` (`docs/cpp/ARCHITEKTURA_CORE.md`), a nie w
+  `godot/silnik/symulacja/titan/`.
+- Zasady z § 1 (własne obliczenia, f64 + jawne f32, brak fizyki i trygonometrii Godota, `WariantTitan`) obowiązują bez
+  zmian. W C++ dochodzą flagi kompilatora i bariera `f32()` (`docs/cpp/BUDOWANIE.md` § 4).
+- Pierwotny tekst specyfikacji zostaje poniżej jako historia decyzji.
+
 **Oznaczenia:**
 - **[P]** potwierdzone kodem i pomiarem;
 - **[W]** wniosek z kodu;
@@ -164,3 +172,18 @@ flagą „niezweryfikowane”.
 - Shift i aktywacja następnego celu – [W], bez pomiaru w etapie 27;
 - znak drgania ω w EE 500 (max 0,05 pola) – [N];
 - jednostki pływające i latające – poza zakresem.
+
+## 8. Aktualizacja etapu 28 – stan wdrożenia w C++
+
+| Krok § 6 | Moduł C++ | Stan | Testy |
+|---|---|---|---|
+| 1 | `MatematykaTitan`, loader tablic (`tablice_dll`) | wdrożony | `core_trygonometria`, `core_dll` – bitowo |
+| 2 | `GeneratorTitan` | wdrożony (losowania w Idle [N]) | `core_rng` |
+| 3 | `TerenSiatka` | wdrożony (teren syntetyczny) | `core_teren` |
+| 4 | `Jednostka` + `FizykaLadowa` (0/3/4/5, EE/AoC) | wdrożony | `core_ruch` S1–S7 bitowo, Debug = Release |
+| 5 | maszyna stanów (parser podzbioru `.tai`, skrypt `land`) | częściowy (zdarzenia walki → fałsz) | `core_tai`, sekwencje stanów w S1–S7 |
+| 6 | `KolizjeTitan` | tylko wzór 0x549179 | `core_odpychanie` |
+| 7–10 | test kroku, kolejka celów, grupy, nawigacja | niewdrożone – interfejsy w `interfejsy.hpp` | – |
+
+Integracja i scena diagnostyczna: `docs/cpp/INTEGRACJA_GODOT.md`. Testy przez Godota:
+`godot/testy/testy_gdextension.gd`.

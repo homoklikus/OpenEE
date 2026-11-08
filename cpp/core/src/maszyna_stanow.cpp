@@ -1,0 +1,246 @@
+#include "openee/maszyna_stanow.hpp"
+
+#include <cctype>
+
+namespace openee {
+
+namespace {
+struct NazwaNumer { const char* n; int k; };
+// Numery z etapów 25–27 (pomiar stanu +0x1E8 i tablica nazw). Pozostałe nazwy → 0 [H].
+const NazwaNumer NAZWY[] = {
+    {"Idle", 5000},
+    {"ReacquireGoal", 5001},
+    {"PrepareToMove", 8000},
+    {"GetNextAutoWaypoint", 8021},
+    {"LookForEnemies", 2015},
+    {"ShouldIReturnToInitialContactLocation", 2025},
+    {"GetNextMoveWaypoint", 9000},
+    {"RepathAroundObstacle", 9002},
+    {"TurnToUnitFacing", 9006},
+    {"Advance", 10003},
+    {"Dying", 6000},
+    {"UnitRotting", 6002},
+    {"Dead", 6003},
+};
+}  // namespace
+
+int numer_stanu(const std::string& nazwa) {
+    for (const auto& x : NAZWY)
+        if (nazwa == x.n) return x.k;
+    return 0;
+}
+
+const char* nazwa_stanu(int numer) {
+    for (const auto& x : NAZWY)
+        if (numer == x.k) return x.n;
+    return "?";
+}
+
+namespace {
+struct Lekser {
+    const std::string& t;
+    std::size_t i = 0;
+    explicit Lekser(const std::string& s) : t(s) {}
+    void pomin() {
+        for (;;) {
+            while (i < t.size() && std::isspace(static_cast<unsigned char>(t[i]))) ++i;
+            if (i < t.size() && t[i] == '/') {  // komentarz: jeden ukośnik wystarcza
+                while (i < t.size() && t[i] != '\n') ++i;
+                continue;
+            }
+            break;
+        }
+    }
+    // token: identyfikator, "#include", "\"...\"" albo pojedynczy znak
+    std::string nastepny() {
+        pomin();
+        if (i >= t.size()) return {};
+        const char c = t[i];
+        if (std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '#') {
+            const std::size_t p = i++;
+            while (i < t.size() && (std::isalnum(static_cast<unsigned char>(t[i])) || t[i] == '_')) ++i;
+            return t.substr(p, i - p);
+        }
+        if (c == '"') {
+            const std::size_t p = ++i;
+            while (i < t.size() && t[i] != '"') ++i;
+            std::string s = t.substr(p, i - p);
+            if (i < t.size()) ++i;
+            return "\"" + s;
+        }
+        ++i;
+        return std::string(1, c);
+    }
+    std::string podglad() {
+        const std::size_t z = i;
+        std::string s = nastepny();
+        i = z;
+        return s;
+    }
+};
+}  // namespace
+
+void SkryptStanow::dodaj_przejscie(StanSkryptu& s, Przejscie p, bool usun) {
+    // 0x618ED9: przejście z jednym zdarzeniem zastępuje w miejscu wcześniejsze z tym samym zdarzeniem (albo je usuwa)
+    if (p.typ == Przejscie::Typ::pojedyncze) {
+        for (auto it = s.przejscia.begin(); it != s.przejscia.end(); ++it) {
+            if (it->typ == Przejscie::Typ::pojedyncze && it->zdarzenia == p.zdarzenia) {
+                if (usun) s.przejscia.erase(it);
+                else *it = std::move(p);
+                return;
+            }
+        }
+    }
+    if (!usun) s.przejscia.push_back(std::move(p));
+}
+
+bool SkryptStanow::parsuj(const std::string& tekst, const Dolaczanie& dolacz, std::string& blad) {
+    const bool ok = parsuj_rek(tekst, dolacz, blad, 0);
+    if (ok && !stany_.count("Idle")) stany_["Idle"] = StanSkryptu{"Idle", 5000, {}};  // Idle zawsze istnieje [W]
+    return ok;
+}
+
+bool SkryptStanow::parsuj_rek(const std::string& tekst, const Dolaczanie& dolacz, std::string& blad, int gl) {
+    if (gl > 16) {
+        blad = "#include: zbyt głęboka rekurencja";
+        return false;
+    }
+    Lekser L(tekst);
+    for (;;) {
+        std::string tok = L.nastepny();
+        if (tok.empty()) return true;
+        if (tok == "#include") {
+            if (L.nastepny() != "(") { blad = "#include: oczekiwano '('"; return false; }
+            std::string plik = L.nastepny();
+            if (plik.empty() || plik[0] != '"') { blad = "#include: oczekiwano nazwy w cudzysłowie"; return false; }
+            plik = plik.substr(1);
+            if (L.nastepny() != ")") { blad = "#include: oczekiwano ')'"; return false; }
+            auto t = dolacz ? dolacz(plik) : std::nullopt;
+            if (!t) { blad = "#include: nie znaleziono pliku " + plik; return false; }
+            if (!parsuj_rek(*t, dolacz, blad, gl + 1)) return false;
+            continue;
+        }
+        if (!(std::isalpha(static_cast<unsigned char>(tok[0])) || tok[0] == '_')) {
+            blad = "oczekiwano nazwy stanu, jest '" + tok + "'";
+            return false;
+        }
+        StanSkryptu& s = stany_[tok];
+        s.nazwa = tok;
+        s.numer = numer_stanu(tok);
+        if (L.nastepny() != "{") { blad = "stan " + tok + ": oczekiwano '{'"; return false; }
+        for (;;) {
+            std::string z = L.nastepny();
+            if (z == "}") break;
+            if (z.empty()) { blad = "stan " + tok + ": brak '}'"; return false; }
+            Przejscie p;
+            if (z == "allof" || z == "anyof") {
+                p.typ = z == "allof" ? Przejscie::Typ::allof : Przejscie::Typ::anyof;
+                if (L.nastepny() != "(") { blad = z + ": oczekiwano '('"; return false; }
+                for (;;) {
+                    std::string e = L.nastepny();
+                    if (e.empty() || !(std::isalnum(static_cast<unsigned char>(e[0])))) {
+                        blad = z + ": oczekiwano nazwy zdarzenia";
+                        return false;
+                    }
+                    p.zdarzenia.push_back(e);
+                    std::string sep = L.nastepny();
+                    if (sep == ")") break;
+                    if (sep != ",") { blad = z + ": oczekiwano ',' albo ')'"; return false; }
+                }
+            } else if (std::isalpha(static_cast<unsigned char>(z[0]))) {
+                p.zdarzenia.push_back(z);
+                if (L.podglad() == "(") {
+                    blad = "zdarzenie z parametrami (" + z + "(...)) – nieobsługiwane w etapie 28";
+                    return false;
+                }
+            } else {
+                blad = "nieoczekiwany znak '" + z + "' w stanie " + tok;
+                return false;
+            }
+            bool usun = false;
+            for (;;) {
+                const std::string k = L.podglad();
+                if (k != "true" && k != "false" && k != "remove") break;
+                L.nastepny();
+                if (L.nastepny() != "(") { blad = k + ": oczekiwano '('"; return false; }
+                if (k == "remove") {
+                    usun = true;
+                } else {
+                    std::string cel = L.nastepny();
+                    if (cel.empty() || !std::isalpha(static_cast<unsigned char>(cel[0]))) {
+                        blad = k + ": oczekiwano nazwy stanu";
+                        return false;
+                    }
+                    (k == "true" ? p.cel_prawda : p.cel_falsz) = cel;
+                    if (!stany_.count(cel)) stany_[cel] = StanSkryptu{cel, numer_stanu(cel), {}};
+                }
+                if (L.nastepny() != ")") { blad = k + ": oczekiwano ')'"; return false; }
+            }
+            if (usun && p.typ != Przejscie::Typ::pojedyncze) { blad = "remove() tylko dla jednego zdarzenia"; return false; }
+            dodaj_przejscie(stany_[tok], std::move(p), usun);
+        }
+    }
+}
+
+const StanSkryptu* SkryptStanow::stan(int numer) const {
+    for (const auto& [n, s] : stany_)
+        if (s.numer == numer && numer != 0) return &s;
+    return nullptr;
+}
+
+SkryptStanow SkryptStanow::wbudowany_land() {
+    // Odtworzone z tabeli docs/titan/skrypty_stanow.md § 4 (połączony land.tai: najpierw przejścia z części ataku,
+    // potem ruchu). Własny zapis, nie kopia pliku gry. Stany walki, transportu i eksploracji – tylko nazwy celów.
+    static const char* TEKST = R"TAI(
+Idle { CanISeeEnemy true(CheckRange) }
+PrepareToMove {
+  allof(GoalIsLoadContainer,ContainerInRange) true(WaitForTransport)
+  NoMoreWaypoints true(TurnToUnitFacing)
+  MovePreparationComplete true(LookForEnemies)
+}
+LookForEnemies {
+  allof(CanITargetEnemies,GoalIsPatrol,EnemyUnitSpotted) true(CheckRange)
+  allof(GoalIsLocation,AttackMoveEnabled,EnemyUnitSpotted) true(CheckRange)
+  allof(CanITargetEnemies,GoalIsNotPlayerInitiated,GoalIsNotAttack,EnemyUnitSpotted) true(CheckRange) false(Advance)
+}
+Advance {
+  ArrivedAtMoveWaypoint true(GetNextMoveWaypoint)
+  ObstacleDetected true(RepathAroundObstacle)
+  allof(OneWaypointRemaining,GoalIsUnit) true(ReacquireEnemyUnit)
+}
+GetNextMoveWaypoint {
+  anyof(EnemyUnitDestroyed,CeaseFire) true(ShouldIReturnToInitialContactLocation)
+  allof(GoalIsAttackLocation,LocationInWeaponRange) true(FaceLocation)
+  allof(AttackerIsRangedUnit,UnitInWeaponRange) true(FaceEnemyUnit)
+  EnemyUnitMoved true(CheckRange)
+  allof(GoalIsLoadContainer,NextWaypointRetrieved) true(GetContainerProgress)
+  ShouldMoveToNextAutoWaypoint true(GetNextAutoWaypoint)
+  NextWaypointRetrieved true(LookForEnemies) false(TurnToUnitFacing)
+}
+RepathAroundObstacle { MovePreparationComplete true(Advance) false(ShouldIReturnToInitialContactLocation) }
+GetNextAutoWaypoint { UnitHasGoal true(PrepareToMove) false(ShouldIReturnToInitialContactLocation) }
+TurnToUnitFacing {
+  GoalIsLoadContainer true(GetContainerProgress)
+  anyof(UnitFacingNotRequired,CompletedUnitFacing) true(ReacquireGoal)
+  UnitHasGoal false(ReacquireGoal)
+}
+ReacquireGoal {
+  BlockedByWall true(ShouldIReturnToInitialContactLocation)
+  GoalIsUnit true(ReacquireEnemyUnit)
+  GoalIsAttackLocation true(FaceLocation)
+  GoalIsLocation true(Idle)
+  GoalIsExplore true(FindUnexploredArea)
+  GoalIsLoadContainer true(ReacquireLoadContainer)
+  UnitHasGoal false(ShouldIReturnToInitialContactLocation)
+}
+ShouldIReturnToInitialContactLocation {
+  allof(HasValidInitialContactLocation,ReturnsToInitialContactLocation,GoalIsNotPlayerInitiated) true(ReturnToInitialContactLocation) false(Idle)
+}
+)TAI";
+    SkryptStanow s;
+    std::string blad;
+    s.parsuj(TEKST, nullptr, blad);
+    return s;
+}
+
+}  // namespace openee

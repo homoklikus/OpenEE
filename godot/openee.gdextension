@@ -1,0 +1,16 @@
+; OpenEE Core (C++) – GDExtension (etap 28). Biblioteki budowane lokalnie: docs/cpp/BUDOWANIE.md.
+; Brak biblioteki nie blokuje starszych scen – kod GDScript sprawdza ClassDB.class_exists("OpenEESymulacja").
+[configuration]
+
+entry_symbol = "openee_gdextension_init"
+compatibility_minimum = "4.7"
+reloadable = false
+
+[libraries]
+
+linux.debug.x86_64 = "res://bin/libopenee.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "res://bin/libopenee.linux.template_release.x86_64.so"
+linux.debug.arm64 = "res://bin/libopenee.linux.template_debug.arm64.so"
+linux.release.arm64 = "res://bin/libopenee.linux.template_release.arm64.so"
+windows.debug.x86_64 = "res://bin/libopenee.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://bin/libopenee.windows.template_release.x86_64.dll"
