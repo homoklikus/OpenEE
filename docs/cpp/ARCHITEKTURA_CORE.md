@@ -234,3 +234,15 @@ Tablice, prędkość, zapisy f32 i teren są wspólne [P].
   wartość – do testów i do warstwy prezentacji.
 - **Testy:** `core_walka` (wzór, pojedynek z etapu 30 – bez zmian), `core_walka_swiat` (elementy, pojedynek
   syntetyczny ze skrótem zdarzeń, 2 na 1, okna gry 578/580 z danymi lokalnymi).
+
+## 14. Etap 32 – korekty z kodu Titan (obrót, walka)
+
+- `Swiat::ukonczony_obrot` – CompletedUnitFacing 0x614F52 (|Δkurs| ≤ 1° f32, bez warunku v, ω); przy prawdzie
+  macierz ustawiana na kurs celu. Funkcja publiczna (test na taktach 9006 z pomiarów).
+- `FizykaLadowa::obrot` – przycięcie kroku jak 0x548477 (bez przycięcia przy Δ = 0); `tryb_hamowanie` obraca o ω′·dt
+  (0x548920), gdy ω ≠ 0; tryb 5 nie zeruje ω; stan 5001 nie zmienia trybu ruchu.
+- `ModyfikatorWysokosci::z_gry(aoc)` – cfg z odczytu gry (2,0 / 1,0 / 1,5 / 0,8), AoC z rodzajem celu 30.
+- Test `core_walka_swiat` porównuje także kurs i ω (pola `kurs`, `w` z `pomiar_core walka`) i wypisuje
+  PIERWSZY ROZBIEŻNY TAKT okna z rodzajem różnicy. Okno AoC 580 G1 – symulowane na tablicach AoC z gry (588).
+- Przypadki S2, S4, S4b, S5 przeliczone (`testy_referencyjne_ruchu.md`); `core_porownanie_gra`: Core nie gorszy
+  od modelu v4 względem gry.

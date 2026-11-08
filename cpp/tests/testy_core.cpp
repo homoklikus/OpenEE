@@ -846,6 +846,7 @@ ParametryWalki gwardia_ee_pelna() {   // + pola typu z odczytu 575/578 [P]
     ParametryWalki p = gwardia_ee();
     p.luk_ataku = 0.3490658700466156f; p.kat_broni = 0.0f; p.rozmiar = 0.5f; p.punktowy = true; p.szukanie_ms = 2000;
     p.zasieg_min = 0.0f; p.pole_ac = 0.6000000238418579f; p.typ_bazy = 422;
+    p.typ_jednostki = 5;   // typ +0x4B4 [P: odczyt 575/587]
     return p;
 }
 std::array<WagiCelu, 3> wagi_ee_575() {   // [0x8CFA28] → 3 rekordy, odczyt 575/578 [P]
@@ -916,6 +917,7 @@ void stan_jednostki_z_json(Swiat& sw, IdJednostki id, const Wartosc& j, const Wa
     p.luk_ataku = float(pw["luk_ataku"].n); p.kat_broni = float(pw["kat_broni"].n); p.rozmiar = float(pw["rozmiar"].n);
     p.rozmiar_jeden = pw["rozmiar_jeden"].b; p.punktowy = pw["punktowy"].b; p.szukanie_ms = int(pw["szukanie_ms"].n);
     p.zasieg_min = float(pw["zasieg_min"].n); p.pole_ac = float(pw["pole_ac"].n); p.typ_bazy = int(pw["typ_bazy"].n);
+    if (const Wartosc* tj = pw.znajdz("typ_jednostki")) p.typ_jednostki = int(tj->n);   // typ +0x4B4 (etap 32)
     p.reszta_przeladowania_bez_spoczynku = pw["reszta_przeladowania_bez_spoczynku"].b;
     sw.ustaw_walke(id, int(j["gracz"].n), j["czlowiek"].b, p, int(j["hp"].n));
     u.boj->s.przeladowanie_ms = int(j["r"].n);
@@ -992,7 +994,32 @@ int test_walka_swiat() {
         return bledy ? FAIL : PASS;
     }
     const Wartosc jm = json_mini::Parser(tm).parsuj();
-    for (const char* plik : {"walka_578_g1.json", "walka_578_g3.json", "walka_580_g1.json"}) {
+    {   // etap 32: CompletedUnitFacing (0x614F52) na taktach 9006 z pomiarów EE/AoC (e30/e31): reguła |Δ| ≤ 1° f32 bez v, ω
+        const std::string tp = czytaj(kat + "/e32_przejscia_9006.json");
+        if (tp.empty()) {
+            std::printf("  SKIP przejść 9006: brak e32_przejscia_9006.json (pomiar gry)\n");
+        } else {
+            const Wartosc jp = json_mini::Parser(tp).parsuj();
+            MatematykaTitan mat(tab);
+            int n = 0, zg = 0, zg_stara = 0;
+            std::string wyjatki;
+            for (const auto& c : jp["przypadki"].t) {
+                Macierz3 o;
+                o.m = {c["m11"].n, c["m01"].n, 0.0, -c["m01"].n, c["m11"].n, 0.0, 0.0, 0.0, 1.0};
+                const bool nowa = Swiat::ukonczony_obrot(mat, o, c["kat"].n);
+                const bool stara = c["v"].n == 0.0 && c["omega"].n == 0.0 &&
+                                   std::fabs(c["kat"].n - mat.kurs_z_macierzy(o)) < 0.0175;   // reguła modelu v4 (etap 31)
+                ++n;
+                zg += nowa == c["przeszla"].b;
+                zg_stara += stara == c["przeszla"].b;
+                if (nowa != c["przeszla"].b) wyjatki += " " + c["plik"].s + ":" + c["id"].s + "@" + std::to_string(int(c["probka"].n));
+            }
+            std::printf("  CompletedUnitFacing na %d taktach 9006 z gry (EE/AoC): reguła 0x614F52 zgodna %d, reguła modelu v4 %d; wyjątki:%s\n",
+                        n, zg, zg_stara, wyjatki.empty() ? " brak" : wyjatki.c_str());
+            sprawdz(n > 0 && zg >= n - 1, "CompletedUnitFacing = |Δkurs| ≤ 1° (0x614F52) na pomiarach gry (≤ 1 wyjątek z innym przejściem)");
+        }
+    }
+    for (const char* plik : {"walka_578_g1.json", "walka_578_g3.json", "walka_580_g1.json", "walka_590_g1.json"}) {
         const std::string tw = czytaj(kat + "/" + plik);
         if (tw.empty()) {
             std::printf("  SKIP %s: brak pliku\n", plik);
@@ -1049,6 +1076,11 @@ int test_walka_swiat() {
             wg[std::size_t(t)] = WagiCelu::z_rekordu(r);
         }
         sw.ustaw_tablice_walki(to, wg);
+        sw.ustaw_modyfikator_wysokosci(ModyfikatorWysokosci::z_gry(aoc));   // cfg z odczytu 587/588 [P]
+        if (aoc) {   // granice losowania przeładowania [[0x92FCA8]+0x984/0x988] z pomiaru (odczyt 580/588 [P])
+            const Wartosc* pa = j.znajdz("przeladowanie_aoc");
+            sw.ustaw_przeladowanie_aoc(pa ? (*pa)["lo"].n : 0.8, pa ? (*pa)["hi"].n : 1.2);
+        }
         std::map<std::string, IdJednostki> mid;
         for (const auto& u : j["start"].t) {
             const Wartosc& pr = j["parametry_ruchu"][u["typ"].s];
@@ -1060,15 +1092,27 @@ int test_walka_swiat() {
         for (const auto& u : j["start"].t) stan_jednostki_z_json(sw, mid[u["id"].s], u, j["parametry_walki"][u["typ"].s], mid);
         sw.generator().ustaw_ziarno(std::uint32_t(j["probki"][0]["rng"].n));
         const auto& pr = j["probki"].t;
-        int por = 0, r_stan = 0, r_hp = 0, r_r = 0, r_cel = 0;
-        double emax = 0, esum = 0;
+        int por = 0, r_stan = 0, r_hp = 0, r_r = 0, r_cel = 0, r_kurs = 0, r_w = 0, r_poz = 0;
+        double emax = 0, esum = 0, kmax = 0;
         std::string pierwszy;
         std::map<std::string, std::string> pierwsze;
+        std::map<std::string, std::size_t> takt_pierwszej;
+        std::map<std::string, std::pair<double, double>> poprz;   // pozycja Core z poprzedniego taktu
+        int spoznione = 0;
         for (std::size_t k = 1; k < pr.size(); ++k) {
             sw.takt();
             for (const auto& [ids, gid] : mid) {
                 const Wartosc& g2 = pr[k]["j"][ids];
                 const Jednostka& u = *sw.jednostka(gid);
+                // etap 32: próbka spóźniona o takt (zegar gry odczytany po takcie, pola jednostki sprzed taktu – wyścig
+                // odczytu z pamięci; 580 takt 35, 590 takty 8–9): pozycja gry = pozycja Core z poprzedniego taktu
+                const auto pp = poprz.count(ids) ? poprz[ids] : std::make_pair(u.x, u.y);
+                poprz[ids] = {u.x, u.y};
+                if ((u.x != g2["x"].n || u.y != g2["y"].n) && std::fabs(pp.first - g2["x"].n) < 1e-6 &&
+                    std::fabs(pp.second - g2["y"].n) < 1e-6) {
+                    ++spoznione;
+                    continue;
+                }
                 ++por;
                 const double e = std::hypot(u.x - g2["x"].n, u.y - g2["y"].n);
                 emax = std::max(emax, e);
@@ -1086,21 +1130,40 @@ int test_walka_swiat() {
                                       k, ids.c_str(), u.stan, u.boj->s.hp, u.boj->s.przeladowanie_ms, u.boj->szukanie_ms, cel_core.c_str(), u.x, u.y,
                                       int(g2["stan"].n), int(g2["hp"].n), int(g2["r"].n), int(g2["szuk"].n), cel_gry.c_str(), g2["x"].n, g2["y"].n);
                         pierwsze[co] = b2;
+                        takt_pierwszej[co] = k;
                     }
                 };
                 if (const char* dbg = std::getenv("OPENEE_DEBUG_WALKA"); dbg && ids == dbg && k < 400)
-                    std::printf("    D %zu Core %d (%.4f,%.4f) v %.4f tr %zu cel (%.4f,%.4f) | gra %d (%.4f,%.4f) v %.4f\n", k, u.stan, u.x, u.y, u.v,
-                                u.pozostalo_punktow(), u.kolejka_celow.empty() ? 0.0 : u.kolejka_celow.front().x,
-                                u.kolejka_celow.empty() ? 0.0 : u.kolejka_celow.front().y, int(g2["stan"].n), g2["x"].n, g2["y"].n, g2["v"].n);
+                    std::printf("    D %zu Core %d t%d (%.4f,%.4f) v %.4f k %.5f w %.4f tr %zu cel (%.4f,%.4f) | gra %d t%d (%.4f,%.4f) v %.4f k %.5f w %.4f\n", k, u.stan,
+                                int(u.tryb), u.x, u.y, u.v, sw.matematyka().kurs_z_macierzy(u.orientacja), u.omega, u.pozostalo_punktow(),
+                                u.kolejka_celow.empty() ? 0.0 : u.kolejka_celow.front().x,
+                                u.kolejka_celow.empty() ? 0.0 : u.kolejka_celow.front().y, int(g2["stan"].n),
+                                g2.znajdz("tryb") ? int(g2["tryb"].n) : -1, g2["x"].n, g2["y"].n, g2["v"].n,
+                                g2.znajdz("kurs") ? g2["kurs"].n : 0.0, g2.znajdz("w") ? g2["w"].n : 0.0);
                 zap("stan", u.stan != int(g2["stan"].n), r_stan);
                 zap("hp", u.boj->s.hp != int(g2["hp"].n), r_hp);
                 zap("przeladowanie", u.boj->s.przeladowanie_ms != int(g2["r"].n), r_r);
                 zap("cel", cel_core != cel_gry, r_cel);
+                zap("pozycja > 0,001", e > 1e-3, r_poz);
+                if (const Wartosc* gk = g2.znajdz("kurs")) {   // etap 32: orientacja i ω (pomiar_core walka ≥ etap 32)
+                    const double dk = std::fabs(MatematykaTitan::normalizuj_roznice(sw.matematyka().kurs_z_macierzy(u.orientacja) - gk->n));
+                    kmax = std::max(kmax, dk);
+                    zap("kurs > 0,0002", dk > 2e-4, r_kurs);
+                    zap("omega", std::fabs(u.omega - g2["w"].n) > 1e-4, r_w);
+                }
             }
         }
         std::printf("  %s: %d porównań; różne: stan %d, HP %d, +0x2A0 %d, cel %d; pozycja śr. %.4f maks. %.4f; trafień Core %" PRIu64 ", założeń [N] %" PRIu64 " (%s)\n",
                     plik, por, r_stan, r_hp, r_r, r_cel, esum / std::max(1, por), emax, sw.diagnostyka().trafienia,
                     sw.diagnostyka().zalozenia_walki, sw.diagnostyka().ostatnie_zalozenie.c_str());
+        std::printf("    kurs: różnych %d (maks. %.5f rad), ω: różnych %d, pozycja > 0,001: %d; próbek gry spóźnionych o takt (pominięte): %d\n",
+                    r_kurs, kmax, r_w, r_poz, spoznione);
+        std::string naj;
+        std::size_t tnaj = 0;
+        for (const auto& [co, t] : takt_pierwszej)
+            if (naj.empty() || t < tnaj) { naj = co; tnaj = t; }
+        if (!naj.empty()) std::printf("    PIERWSZY ROZBIEŻNY TAKT: %zu (%s)\n", tnaj, naj.c_str());
+        else std::printf("    PIERWSZY ROZBIEŻNY TAKT: brak w oknie\n");
         for (const auto& [co, opis] : pierwsze) std::printf("    pierwsza różnica (%s): %s\n", co.c_str(), opis.c_str());
     }
     return bledy ? FAIL : PASS;
@@ -1361,7 +1424,7 @@ int test_porownanie_gra() {
         z[std::size_t(std::stoi(k.substr(p + 1))) * std::size_t(mx + 2) + std::size_t(std::stoi(k.substr(0, p)))] = float(v.n);
     }
     const TerenSiatka teren(mx + 2, my + 2, z);
-    std::printf("  | Seria | Próbek | Pozycja śr / max | v śr / max | Kąt śr / max | Koniec ruchu | Pierwszy rozbieżny | Inny stan | Inny punkt | Core = model v4 |\n");
+    std::printf("  | Seria | Próbek | Pozycja śr / max | v śr / max | Kąt śr / max | Koniec ruchu | Pierwszy rozbieżny | Inny stan | Inny punkt | Core wobec v4 |\n");
     for (const auto& c : j["serie"].t) {
         Swiat s(tab, teren, WariantTitan::z_nazwy(c["wariant"].s));
         const IdJednostki id = s.dodaj_jednostke(parametry_z_json(c["parametry"]), c["start"]["x"].n, c["start"]["y"].n, 0.0);
@@ -1404,12 +1467,16 @@ int test_porownanie_gra() {
         const bool zgodny = r.n == int(v4["n"].n) && std::fabs(r.ps / r.n - v4["ps"].n) < 1e-12 &&
                             std::fabs(r.pm - v4["pm"].n) < 1e-12 && r.roznica_konca == int(v4["dk"].n) &&
                             r.rozne_punkty == int(v4["rpk"].n);
-        sprawdz(zgodny, c["nazwa"].s + ": metryki Core = metryki modelu v4 (ten sam algorytm)");
+        // etap 32: Core ma korekty z kodu Titan (przycięcie obrotu 0x548477, CompletedUnitFacing 0x614F52, tryb 4
+        // 0x54DE35) – zamiast równości z modelem v4 wymagane: błąd pozycji i prędkości względem gry nie większy niż v4
+        const bool nie_gorszy = r.n == int(v4["n"].n) && r.pm <= v4["pm"].n + 1e-12 && r.ps / r.n <= v4["ps"].n + 1e-12 &&
+                                r.rozne_punkty <= int(v4["rpk"].n);
+        sprawdz(zgodny || nie_gorszy, c["nazwa"].s + ": błąd Core względem gry nie większy niż modelu v4");
         std::printf("  | %s | %d | %.4f / %.4f | %.4f / %.3f | %.2f° / %.1f° | %+d | %s | %s | %d | %s |\n", c["nazwa"].s.c_str(), r.n,
                     r.ps / r.n, r.pm, r.vs / r.n, r.vm, r.ks / r.n, r.km, r.roznica_konca,
                     r.pierwszy < 0 ? "brak" : std::to_string(r.pierwszy).c_str(),
                     r.porownane_stany ? (std::to_string(r.rozne_stany) + "/" + std::to_string(r.porownane_stany)).c_str() : "–",
-                    r.rozne_punkty, zgodny ? "tak" : "NIE");
+                    r.rozne_punkty, zgodny ? "tak" : (nie_gorszy ? "lepszy" : "NIE"));
     }
     if (const Wartosc* wj = j.znajdz("wielojednostkowe")) {
         for (const auto& c : wj->t) {

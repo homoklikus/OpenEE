@@ -99,11 +99,11 @@ double modyfikator_wysokosci(const ModyfikatorWysokosci& m, int ta, int tc, doub
     if (!m.wlaczony) return 1.0;
     const bool a = ta == 5 || ta == 6;
     const bool c = tc == 5 || tc == 2 || tc == 6 || tc == 13 || tc == 19 || tc == 15 || tc == 23 || tc == 16 || tc == 29 ||
-                   tc == 24 || tc == 25;
+                   tc == 24 || tc == 25 || (m.cel_typ_30 && tc == 30);
     if (!a || !c) return 1.0;
-    const double k = f32(0.408248276);   // 0x832088
+    const double k = f32(0.408248276);   // EE 0x832088 / AoC 0x847ADC (ta sama wartość f32)
     const double dz = za - zc;           // fld z_atak; fld z_cel; fsubp (rozszerzona precyzja)
-    if (dz >= double(m.prog_gora) * k) return double(f32(double(premia_gracza) + double(m.premia)));
+    if (dz >= double(m.prog_gora) * k) return double(premia_gracza) + double(m.premia);   // faddp – bez zapisu f32
     if (dz <= -(double(m.prog_dol) * k)) return double(m.kara);
     return 1.0;
 }

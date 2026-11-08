@@ -49,6 +49,11 @@ struct ModyfikatorWysokosci {
     float prog_dol = 0.0f;      // cfg +0x5E8
     float premia = 1.0f;        // cfg +0x604 (+ gracz +0xA3C)
     float kara = 1.0f;          // cfg +0x620
+    bool cel_typ_30 = false;    // AoC 0x631880: lista rodzajów celu zawiera także 30 (0x1E) [W]
+    // Odczyt gry (etap 32, zad. 587/588) [P]: EE cfg = [0x917BB8], AoC cfg = [0x92FCA8] – w obu 2,0 / 1,0 / 1,5 / 0,8,
+    // premia gracza (EE +0xA3C, AoC +0xA34) = 0. Rodzaj jednostki atakującej ∈ {9, 11, 12, 20} → rodzaj i z obiektu
+    // +0x1C0 (+0x210) – w Core nieobsługiwane (piechota) [W].
+    static ModyfikatorWysokosci z_gry(bool aoc) { return {true, 2.0f, 1.0f, 1.5f, 0.8f, aoc}; }
 };
 /// r = 0x61E500(atakujący, cel): 1, gdy rodzaj jednostki atakującej ∉ {5, 6} albo celu ∉ {2,5,6,13,15,16,19,23,24,25,29}.
 double modyfikator_wysokosci(const ModyfikatorWysokosci& m, int typ_atak, int typ_cel, double z_atak, double z_cel,

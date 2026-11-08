@@ -81,6 +81,8 @@ public:
 
     double dt() const { return dt_; }
     std::uint64_t takty() const { return takty_; }
+    // CompletedUnitFacing (EE 0x614F52) – obrót do kursu celu zakończony (|Δ| ≤ 1° f32); używane też w testach
+    static bool ukonczony_obrot(const MatematykaTitan& mat, const Macierz3& orientacja, double kurs_celu);
     std::uint32_t zegar_ms() const { return zegar_ms_; }
 
     /// Nowa jednostka w spoczynku (Idle). Kolejność dodawania = kolejność listy jednostek.

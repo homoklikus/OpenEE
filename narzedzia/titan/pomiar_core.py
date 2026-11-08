@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -149,7 +150,8 @@ WALKA_PARAMETRY = {
             "przeladowanie_ms": 2000, "rodzaj_ataku": 0, "wiersz_celu": 0, "klasa_trafienia": 13, "rodzina_ataku": 48,
             "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156, "kat_broni": 0.0, "rozmiar": 0.5,
             "rozmiar_jeden": False, "punktowy": True, "szukanie_ms": 2000, "zasieg_min": 0.0, "pole_ac": 0.6000000238418579,
-            "typ_bazy": 422, "reszta_przeladowania_bez_spoczynku": False},
+            "typ_bazy": 422, "reszta_przeladowania_bez_spoczynku": False,
+            "typ_jednostki": 5},   # typ +0x4B4 (rodzaj jednostki; modyfikator wysokości 0x61E500) [P: 575/587]
 }
 POLA_WALKI = {"ee": {"hp": 0x3C, "r": 0x2A0, "szuk": 0x2AC, "anim": 0x260},
               "aoc": {"hp": 0x3C, "r": 0x2A4, "szuk": 0x2B0, "anim": 0x264}}
@@ -214,6 +216,7 @@ def walka(d: dict, od: int, do: int, ids: list[str], tabele: dict, nazwa: str) -
     for n, p in enumerate(pr[od:do]):
         probki.append({"takt": n, "t": p["t"], "rng": p["rng"],
                        "j": {i: {"x": p[i]["x"], "y": p[i]["y"], "v": p[i]["v"], "stan": p[i]["stan"],
+                                 "kurs": math.atan2(-p[i]["m01"], p[i]["m11"]), "w": p[i]["w"], "tryb": p[i]["tryb"],
                                  "hp": _i32(p[i], pola["hp"]), "r": _i32(p[i], pola["r"]), "szuk": _i32(p[i], pola["szuk"]),
                                  "cel": _cel_atak(p[i])} for i in ids}})
     # wejścia w AttackEnemyUnit: wartość licznika ustawiona w takcie (odczyt + 34 ms) i stany RNG przed/po takcie –

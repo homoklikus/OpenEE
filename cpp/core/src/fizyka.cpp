@@ -9,7 +9,6 @@ namespace {
 constexpr double PROG_DOJAZDU = 0.05;      // 0x825508
 constexpr double PROG_V_ZERO = 0.005;      // 0x82C65C
 constexpr double PROG_S_ZERO = 1e-4;       // 0x827AC0
-constexpr double PROG_KURSU_KONC = 0.0174533;  // 1° – zatrzymanie obrotu końcowego [W, model v4]
 inline double pi_4() { return f32(3.14159265358979323846 / 4.0); }
 }  // namespace
 
@@ -68,7 +67,9 @@ WynikObrotu FizykaLadowa::obrot(const KontekstFizyki& k, const Jednostka& u, dou
         }
     }
     const double krok_r = w2 * dt;
-    const double krok = (std::fabs(krok_r) > std::fabs(diff) && krok_r * diff >= 0) ? diff : f32(krok_r);
+    // etap 32 [W kod EE 0x548477–0x5484B5, P: 578 G1/G3, 580]: przycięcie do diff tylko przy diff < 0 i kroku < diff
+    // albo diff > 0 i kroku > diff; przy diff == 0 krok ω'·dt bez przycięcia (gra „przestrzeliwuje” kurs docelowy)
+    const double krok = ((diff < 0 && krok_r < diff) || (diff > 0 && krok_r > diff)) ? diff : f32(krok_r);
     return {f32(krok + cur), f32(w2)};
 }
 
@@ -207,8 +208,15 @@ void FizykaLadowa::tryb_hamowanie(const KontekstFizyki& k, Jednostka& u) {
     // tryb 4: v' = max(0, v − a·dt), ω hamowane o α·dt, ruch naprzód po dotychczasowym kursie
     const double v1 = u.v - k.dt * f32(u.param.a);
     u.v = v1 < PROG_V_ZERO ? 0.0 : f32(v1);
+    const double w0 = u.omega;
     if (u.omega > 0) u.omega = f32(std::max(0.0, u.omega - u.param.alfa * k.dt));
     else if (u.omega < 0) u.omega = f32(std::min(0.0, u.omega + u.param.alfa * k.dt));
+    if (w0 != 0.0 && (u.omega != 0.0 || u.v != 0.0)) {
+        // etap 32 [W kod 0x54DE35 → 0x548920, P: 578 – obrót po zakończeniu 9006]: kurs' = f32(ω'·dt + kurs),
+        // macierz z nowego kursu, krok wzdłuż nowego kierunku. Przy ω = 0 ścieżka bez zmian (S1–S7).
+        const double cur = f32(k.mat.kurs_z_macierzy(u.orientacja));
+        u.orientacja = k.mat.set_orientation_ypr(f32(u.omega * k.dt + cur));
+    }
     const double step = f32(u.v * k.dt);
     u.x = f32(u.x + f32(step * u.orientacja.m01()));
     u.y = f32(u.y + f32(step * u.orientacja.m11()));
@@ -249,7 +257,7 @@ void FizykaLadowa::tryb_obrot_w_miejscu(const KontekstFizyki& k, Jednostka& u) {
         const WynikObrotu ob = obrot(k, u, cur, diff);
         u.omega = ob.omega;
         u.orientacja = k.mat.set_orientation_ypr(ob.yaw);
-        if (std::fabs(diff) < PROG_KURSU_KONC) u.omega = 0.0;
+        // etap 32: bez zerowania ω przy |Δ| < 1° (model v4) – w grze ω ≠ 0 w takcie przejścia 9006 → 5001 [P: 189 taktów]
     } else {
         u.omega = 0.0;
     }

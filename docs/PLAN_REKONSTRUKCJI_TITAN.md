@@ -1,4 +1,4 @@
-# Plan rekonstrukcji silnika Titan (EE / AoC) i prognoza – etap 31
+# Plan rekonstrukcji silnika Titan (EE / AoC) i prognoza – etap 32
 
 Dokument roboczy aktualizowany w każdym etapie. Zawiera:
 - mapę rozpoznanych i nierozpoznanych systemów;
@@ -416,3 +416,31 @@ nowe niewiadome.
 
 Liczby to prognoza **pozostałej** pracy; czas zużyty jest w ostatniej kolumnie, nie odejmowany drugi raz.
 Niepewność bez zmian (§ 4.5). Prognoza nadal nie jest obietnicą terminu.
+
+### 4.9. Aktualizacja po etapie 32
+
+**Pomiar etapu 32** (czas lokalny Europe/Warsaw z plików zadań i sesji; [P]):
+
+| Element | Wartość |
+|---|---|
+| początek etapu | ok. 19:43 |
+| zadania MCP | 6 (585–590): 2 diagnostyka pulpitu, 4 pomiary |
+| niepowodzenia startu gry | 0 (od wprowadzenia inhibitora wygaszacza; etap 31: 3 z 3 ostatnich) |
+| nieudane kroki | rozkaz ataku (3 próby), odwrót w złym momencie (589) |
+| 578 G1 bez żadnej różnicy | ok. 20:30 (ok. 45 min od początku) |
+| koniec (commit) | ok. 21:30 |
+
+**Ocena.** Pierwsza rozbieżność walki EE okazała się rozbieżnością ruchu (zakończenie obrotu i przycięcie kroku
+obrotu) – poprawka z kodu Titan usunęła ją i poprawiła też zgodność serii ruchu EE 500. 578 G1 jest zgodny w całym
+oknie; 578 G3 – pierwsza różnica w takcie 102 (obrażenia 13 vs 16, przyczyna [N]); 580 G1 (AoC) – takt 36 (reguła
+obrotu AoC). Nowe niewiadome: mnożnik 0,8 przy trafieniach 857 / AoC / obywatel, permutacja kandydatów 0x40CFC7,
+reguła obrotu AoC przy Δ = 0. Walka wręcz ma dziś dokładny przebieg dla 1:1 EE, co skraca resztę pracy nad walką.
+
+| Cel | Pozostało (J) | Realistyczny (÷1,25) | Realistyczny, 18 h/tydz. | Zużyte od etapu 30 |
+|---|---|---|---|---|
+| A | 5,8 − 0,05 ≈ **5,75 J** | ≈ **115 h** | ≈ **6,4 tyg.** | ≈ 5,5 h |
+| B | 12,7 − 0,05 ≈ **12,65 J** | ≈ **291 h** | ≈ **16 tyg.** | ≈ 5,5 h |
+| C | 20,2 − 0,05 ≈ **20,15 J** | ≈ **524 h** | ≈ **29 tyg.** | ≈ 5,5 h |
+
+Spadek tylko o część zużytego nakładu (~2 h ≈ 0,08 J), bo pojawiły się nowe niewiadome (≈ 0,03 J). Prognoza nie jest
+obietnicą terminu.

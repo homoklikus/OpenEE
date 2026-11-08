@@ -109,7 +109,7 @@ to na RTX 5090, narzędziem `oe_render` z Riverlands_MCP, zawsze przy zamknięte
 * [docs/PLAN_REKONSTRUKCJI_TITAN.md](docs/PLAN_REKONSTRUKCJI_TITAN.md) – mapa systemów Titan, strategia narzędzi badawczych i prognoza rekonstrukcji (etap 30; wcześniej etap 29)
 * [docs/HISTORIA.md](docs/HISTORIA.md) – historia rozwoju, [docs/MAPA_DROGOWA.md](docs/MAPA_DROGOWA.md) – plan
 * [CONTRIBUTING.md](CONTRIBUTING.md) – zasady współpracy
-* Raporty: aktualny `RAPORT_ETAP_31.md` (katalog główny); wcześniejsze w `raporty/archiwum/` – indeks z opisami: [raporty/README.md](raporty/README.md)
+* Raporty: aktualny `RAPORT_ETAP_32.md` (katalog główny); wcześniejsze w `raporty/archiwum/` – indeks z opisami: [raporty/README.md](raporty/README.md)
 
 ## Licencja
 OpenEE jest udostępniany na licencji **GNU General Public License v3.0** – plik [LICENSE](LICENSE). Projekt zawiera

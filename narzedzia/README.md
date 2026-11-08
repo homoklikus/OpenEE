@@ -36,7 +36,7 @@ Binarki gry są czytane tylko do odczytu; wyniki dotyczące binarek (indeks, map
 | `rtti_titan.py` | nazwa klasy dla vtable i vtable dla klasy (RTTI MSVC), lista klas z filtrem |
 | `switch_titan.py` | adres przypadku instrukcji switch MSVC (drzewo porównań + tablice skoków) dla konkretnych wartości – dispatchery stanów i zdarzeń |
 | `eksport_mapy.py` | SCN → neutralny plik dla Core (tylko dekodowanie; interpretacja w `MapaTitan`); opcjonalnie zrzut EEMap z Riverlands_MCP, tablica terenu typu, próbki wysokości |
-| `pomiar_core.py` | pomiar Riverlands_MCP → walidacja → seria `openee_seria_v1` → `cpp/tools/openee_porownaj` → raport (pierwszy rozbieżny takt); `walka` (etap 31): okno walki z zapisu `obs_rejestruj` + tablice/wagi z gry → `openee_walka_v1` dla `core_walka_swiat` (wejścia w atak ze stanem RNG przed/po – sprawdzenie przeładowania AoC) |
+| `pomiar_core.py` | pomiar Riverlands_MCP → walidacja → seria `openee_seria_v1` → `cpp/tools/openee_porownaj` → raport (pierwszy rozbieżny takt); `walka` (etap 31): okno walki z zapisu `obs_rejestruj` + tablice/wagi z gry → `openee_walka_v1` dla `core_walka_swiat` (wejścia w atak ze stanem RNG przed/po – sprawdzenie przeładowania AoC); etap 32: w próbkach także kurs, ω i tryb ruchu, w parametrach rodzaj jednostki (typ +0x4B4) |
 | `test_titan_narzedzia.py` | testy bez danych gry (walidacja pomiaru, schemat) |
 
 Przykłady: `python3 narzedzia/titan/struktury.py dostep EEUnit hp --exe-ee …`; `python3 narzedzia/titan/pomiar_core.py

@@ -6,6 +6,18 @@
   {
    "data": "2026-11-08",
    "tytul": {
+    "pl": "Etap 32: pojedynek co do klatki",
+    "en": "Stage 32: a frame-exact duel"
+   },
+   "tekst": {
+    "pl": "Odczytaliśmy z kodu oryginalnej gry, jak dokładnie wojownik kończy obrót i jak „przestrzeliwuje” kierunek. Po tej poprawce pojedynek dwóch gwardzistów w nowym silniku przebiega identycznie jak w Empire Earth – w każdej klatce. Poznaliśmy też tablice obrażeń dodatku Art of Conquest.",
+    "en": "We read from the original game's code exactly how a warrior finishes turning and how it overshoots its heading. After this fix a duel between two guards in the new engine runs exactly as in Empire Earth – frame by frame. We also decoded the damage tables of the Art of Conquest expansion."
+   },
+   "raport": "RAPORT_ETAP_32.md"
+  },
+  {
+   "data": "2026-11-08",
+   "tytul": {
     "pl": "Etap 31: jednostki same walczą w nowym silniku",
     "en": "Stage 31: units fight on their own in the new engine"
    },
@@ -13,7 +25,7 @@
     "pl": "Wojownicy w nowym silniku C++ sami zauważają wroga, wybierają cel tak jak oryginał, podchodzą, obracają się i atakują aż do śmierci przeciwnika. Odczytaliśmy też losowy czas przeładowania z dodatku Art of Conquest. Zgodność z grą jest już bliska, ale jeszcze nie co do klatki.",
     "en": "Warriors in the new C++ engine now spot enemies, pick a target the way the original does, approach, turn and attack until the enemy dies. We also decoded the random reload time from the Art of Conquest expansion. The match with the game is close, but not yet frame-exact."
    },
-   "raport": "RAPORT_ETAP_31.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_31.md"
   },
   {
    "data": "2026-11-08",

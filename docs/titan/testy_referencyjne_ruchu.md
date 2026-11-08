@@ -138,3 +138,11 @@ nie jest potwierdzony.
 
 Metryki Core kontra gra (`core_porownanie_gra`) są identyczne z metrykami modelu v4 (§ 5), bo Core to bitowy port
 modelu.
+
+## Aktualizacja etapu 32
+
+Przypadki S2, S4, S4b i S5 przeliczono z Core po trzech korektach z kodu Titan (CompletedUnitFacing 0x614F52,
+przycięcie kroku obrotu 0x548477, tryb 4 0x54DE35) – wartości z modelu v4 zawierały jego założenia, które pomiary
+obaliły (`walka.md` § 15). Pole `zmiana_etap32` w pliku przypadków opisuje zmianę; S1, S3, S5a, S6, S7 bez zmian
+bitowo. Skrót zbiorczy: c36721320b3595e4 (etap 27–31) → 13b25b683deb815f (etap 32). Test `core_porownanie_gra`
+wymaga teraz, by błąd Core względem gry nie był większy niż modelu v4 (EE 500: „lepszy”).

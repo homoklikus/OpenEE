@@ -1,6 +1,7 @@
 # Walka w Titan – podstawy: cel ataku, cykl ataku, obrażenia, śmierć (EE / AoC)
 
-Wpis atlasu Titan, etap 30 – **początek** rekonstrukcji walki; etap 31 – wybór celu, podejście, obrót, pełny cykl w Core (§ 8–14). Zakres: pojedynek dwóch zwykłych jednostek lądowych
+Wpis atlasu Titan, etap 30 – **początek** rekonstrukcji walki; etap 31 – wybór celu, podejście, obrót, pełny cykl w Core (§ 8–14);
+etap 32 – zakończenie obrotu, przycięcie kroku obrotu, cfg wysokości, tablice AoC, mgła (§ 15–19). Zakres: pojedynek dwóch zwykłych jednostek lądowych
 walczących wręcz (gwardia królewska, typ 422) oraz gwardia przeciw obywatelowi. Pociski, obrażenia obszarowe,
 jednostki specjalne, budynki, morze i powietrze – poza zakresem.
 
@@ -268,6 +269,8 @@ w 2001, EE – bez losowania.
   dz ≥ cfg+0x5CC·k → r = gracz+0xA3C + cfg+0x604; dz ≤ −cfg+0x5E8·k → r = cfg+0x620; inaczej 1;
   cfg = [0x917BB8] (EE). Pomiar 578 G3: gwardia 857 na zboczu otrzymała 13 zamiast 16 [P skutek]. Wartości cfg nie
   zostały odczytane (zadania 582–584 nie przeszły odprawy) [N] – Core: r = 1 i założenie w diagnostyce.
+  [Etap 32 – zastąpione: cfg odczytane (§ 16); z obu jednostek w 578 G3 różni się o 0,01, więc „13 zamiast 16” nie
+  wynika z modyfikatora wysokości – przyczyna [N], § 16]
 - **AoC**: gwardia komputer → człowiek 15, człowiek → komputer 34, na zboczu 12 [P pomiar 580]. Tablice AoC pod
   0x8E8750 / 0x8E870C / 0x8E8708 / 0x8E8710, trudność 0x931248 [W adresy] – wartości nieodczytane [N].
 - **Niewyjaśnione** [N]: EE 579 – trafienie obywatela 21 przy dz ≈ 0 (oczekiwane 42); AoC obywatel 36/23.
@@ -290,3 +293,92 @@ Porównanie z grą (`core_walka_swiat`, dane lokalne; Debug = Release):
 Wynik: przebieg jakościowy zgodny (te same cele, te same rodzaje zdarzeń, liczba trafień 6/6 w G1), ale **nie
 bitowy** – rozjazd czasowy o 1 takt od ok. 50 taktu, różnica HP w 42 próbkach (G1). Zgodność: wybór celu i
 punkt podejścia – dokładne; obrót i cykl – model; 1:N – częściowe; AoC – brak danych.
+
+---
+
+# Etap 32 – zgodność cyklu z Titanem, komplet odczytów EE/AoC
+
+## 15. Zakończenie obrotu i przycięcie kroku obrotu (pierwsza rozbieżność 578 G1)
+
+Etap 31: w 578 G1 pierwsza różnica w takcie 48 (gra 9006 → 5001 takt wcześniej niż Core). Przyczyny – trzy reguły
+modelu v4 niezgodne z kodem Titan:
+
+1. **CompletedUnitFacing** (zdarzenie 9015) – EEUGLocation vt+0x64 0x6153A3 → **0x614F52** [W kod, P pomiar]:
+   kurs = UMArcTan2(−x, y) wektora M·(0, 1, 0) minus kurs celu (+0x2C, f32), zawinięcie stałymi f32 (−π 0x82ACE0,
+   π 0x828020, 2π 0x828018), |Δ| ≤ f32 0,017453292 (0x831E5C) → **macierz ustawiana dokładnie na kurs celu**
+   (0x5F043B) i prawda. **Bez warunku v = 0 i ω = 0** (model v4 go wymagał). Sprawdzenie na 189 taktach stanu 9006
+   z 11 pomiarów EE/AoC (e30/e31): reguła 0x614F52 – 188 zgodnych, reguła modelu v4 – 171. Jedyny wyjątek
+   (581, 0x1000857, próbka 4290) przechodzi wprost do 5000 – inne przejście [N].
+2. **Przycięcie kroku obrotu** (koniec 0x548266, 0x548477–0x5484B5) [W kod, P pomiar]: krok = f32(ω′·dt); zamiana
+   na Δ tylko gdy Δ < 0 i krok < Δ albo Δ > 0 i krok > Δ. **Przy Δ = 0 krok nie jest przycinany** – jednostka
+   „przestrzeliwuje” kurs o ω′·dt i wraca w kolejnych taktach (oscylacja ±0,4165 rad/s widoczna w pomiarach).
+   Model v4 przycinał także przy Δ = 0.
+3. **Tryb 4 (hamowanie, 0x54DE35 → 0x548920)** [W kod, P pomiar 578]: ω hamowane o α·dt, **kurs′ = f32(ω′·dt + kurs)**
+   i krok wzdłuż nowej macierzy; gdy ω′ = 0 i v′ = 0 – brak zapisu. Model v4 nie obracał w trybie 4. Tryb 3
+   (0x5488D1) przy v ≠ 0 albo ω ≠ 0 wywołuje tryb 4 (vt+0x4C).
+4. **5001 ReacquireGoal nie zmienia trybu ruchu** [P: 578 – tryb 5 w 5001]; Core ustawiał spoczynek.
+5. Tryb 5 nie zeruje ω przy |Δ| < 1° [P: ω ≠ 0 w takcie przejścia 9006 → 5001 we wszystkich 188 przypadkach].
+
+Skutek w Core (dane lokalne, Debug = Release):
+
+| Porównanie | Etap 31 | Etap 32 |
+|---|---|---|
+| 578 G1 (EE 1:1), 986 porównań | pierwsza różnica takt 48; stan 73, HP 42 | **brak różnic**: stan 0, HP 0, +0x2A0 0, cel 0, pozycja maks. 0,0000, ω 0, kurs ≤ 0,00018 rad (odczyt atan2 vs UMArcTan2) |
+| EE 500 (ruch z obrotem końcowym, 813 próbek) | pozycja śr./maks. 0,0082 / 0,0497; v maks. 0,332; inny stan 21 | **0,0072 / 0,0205; v maks. 0,068; inny stan 17**; koniec ruchu +1 takt [N] |
+| AoC 505, EE 517, AoC 525 | – | bez zmian |
+
+Przypadki syntetyczne S2, S4, S4b, S5 (wyniki modelu v4, nie pomiary) przeliczono z Core – pole `zmiana_etap32`
+w `dane/testy_ruchu/ruch_syntetyczne_etap27.json`; S1, S3, S5a, S6, S7 bez zmian bitowo. Skrót zbiorczy
+c36721320b3595e4 → 13b25b683deb815f.
+
+## 16. Modyfikator wysokości – konfiguracja z gry
+
+Odczyt 587 (EE) i 588 (AoC) [P]: EE cfg = [0x917BB8], AoC cfg = [0x92FCA8] (ten sam obiekt co granice przeładowania
+AoC); w obu: +0x5CC = 2,0, +0x5E8 = 1,0, +0x604 = 1,5, +0x620 = 0,8; premia gracza (EE +0xA3C, AoC +0xA34) = 0.
+Progi: dz ≥ 2,0·0,408248 = 0,8165 → r = 1,5; dz ≤ −0,408 → r = 0,8. AoC 0x631880: ta sama budowa, rodzaj typu
++0x1B8, dodatkowo rodzaj celu 30 [W]. Rodzaj atakującego ∈ {9, 11, 12, 20} → rodzaj i z obiektu +0x1C0 / +0x210 [W]
+(w Core nieobsługiwane – piechota). Core: `ModyfikatorWysokosci::z_gry(aoc)`.
+
+**Korekta etapu 31:** „857: 13 zamiast 16” i „AoC 12 zamiast 15” mają stosunek dokładnie kary 0,8
+(min(0,8·d, d − 1)), ale z jednostek w 578 G3 (ad3 0,00; 857 0,01 – pole +0x15C) nie spełnia progu −0,408.
+Przyczyna [N]; to samo dotyczy EE 579 (obywatel 21 zamiast 42). Plan: odczyt argumentów 0x61E500 i 0x61DE61
+w takcie trafienia (rejestracja +0x15C atakującego i celu oraz wyniku r).
+
+## 17. Tablice obrażeń AoC
+
+Odczyt 588 (AoC, trudność 0) [P]: tablica 0x0C taka sama jak w EE; 0x08 = 0x0C · 2/3; 0x10 = 0x0C · 1,5
+(EE: 0x08 = 0x0C · 0,714, 0x10 = 0x0C · 1,4). Gwardia (klasa 13, rodzina 48): 0x08 1,0; 0x0C 1,5; 0x10 2,25 →
+człowiek → komputer 15 · 2,25 = 33,75 → 34, komputer → człowiek 15 [P: pomiar 580]. Adresy AoC: wskaźniki
+0x8E870C / 0x8E8708 / 0x8E8710, mnożniki 0x8E8750, trudność 0x931248 [P odczyt]. Wybór tablicy (człowiek/komputer)
+– jak EE [W, zgodny wynik].
+
+Symulacja okna 580 G1 (AoC) w Core działa już na tablicach z gry: 1138 porównań, trafień 14 (gra 14). Pierwsza
+różnica: takt 35 – **artefakt pomiaru** (powtórzona próbka gry); pierwsza prawdziwa: takt 36 – ω (oscylacja kursu
+AoC przy Δ ≈ 0, reguła AoC 0x554738 nieprzeczytana [N]); przeładowania różne, bo ciąg LCG gry zużywają też inne
+systemy (wzór 0x5FEA22 – 14/14 na prawdziwym ciągu).
+
+## 18. Mgła i przegląd kandydatów (statyka)
+
+- **0x631B64** [W]: gdy brak menedżera mgły [0x9183BC] albo gracz+0x466 == 0 → widoczny. Inaczej (typ+0x58C ≤ 1
+  i rodzaj ≠ 25) pole kandydata (+0x1C/+0x20) → kafel mgły 0x40DD00 → 0x44E46E: licznik widoczności gracza
+  (8 bitów, dwa gracze na słowo) > 1 albo gracz+0x465 ≠ 0. **Warunek wykrycia = pole kandydata obecnie widoczne dla
+  gracza (dowolna jego jednostka)**, nie tylko dla szukającej. Odczyt 587/588: gracz+0x466 = 1 dla gracza 1 i 5 [P].
+  Core: `widoczny_dla` – dowolna jednostka gracza, odległość pól ≤ LOS [H co do kształtu odsłaniania].
+- **0x63969A + 0x40CFC7** [W]: lista stref kandydatów jest permutowana funkcją 0x40CFC7 z kluczem
+  [0x919774]+0xB0 (obiekt EEPhysics; pole +0xB0 – prawdopodobnie licznik czasu [H]): s = k mod n, zamiany
+  a[i] ↔ a[s] i dalsze zamiany z indeksem n − s − 1, s := (2·(n − s − 1) + 1) mod n (szczegóły permutacji [H]);
+  przegląd od końca listy. To jest
+  mechanizm remisów – kolejność kandydatów zależy od czasu gry. Nie wdrożone (brak pomiaru +0xB0) [N].
+- **0x62D696** (osiągalność) – nieprzeczytana [N]; w Core prawda (założenie w diagnostyce).
+
+## 19. Eksperymenty etapu 32
+
+| Zadanie | Cel | Wynik |
+|---|---|---|
+| 585–586 | gotowość pulpitu, inhibitor | KDE Wayland; LockedHint no, wygaszacz nieaktywny; `kde-inhibit` działa [P] |
+| 587 (EE), 588 (AoC) | tablice, wagi, cfg, typy, rozkaz ataku | start przez odprawę bez problemu (inhibitor); cfg, tablice AoC, wagi [P]; rozkaz ataku – nieudany (PPM na wrogu daje EEUGLocation albo nic; wróg prawdopodobnie we mgle) |
+| 589 (EE) | rozkaz ataku na dalszego wroga, odwrót | wybór atakującego nieudany (kadr kamery); odwrót wydany po walce – nie sprawdza LOS |
+| 590 (EE) | odwrót w trakcie walki, rozkaz ataku po odsłonięciu | pojedynek 855–ad0 zakończony śmiercią ad0 przed rozkazem odwrotu (855 wygrał w ok. 14 s) – odwrót z Idle, bez pościgu; rozkaz ataku 856 → ad2: PPM daje EEUGLocation (wróg widoczny na ekranie) [N]; nowe okno testowe 590 G1: stan, HP, przeładowanie i cel bez różnic w 1110 porównaniach |
+
+Wniosek dla etapu 33: odwrót trzeba wyzwalać zdarzeniem (pierwsze trafienie), nie czasem; rozkaz ataku wymaga
+sprawdzenia obiektu pod kursorem z pamięci gry przed PPM.

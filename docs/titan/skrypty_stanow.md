@@ -194,5 +194,14 @@ cel atakowany:  UnderAttack 2018 ──▶ RetaliateAgainstAttacker 2020 / RunFr
   RetaliateAgainstAttacker, RunFromAttacker, ReturnToInitialContactLocation, Dying, ResourcesRotting, UnitRotting.
   Cykl ruchu (S1–S7, skrót c36721320b3595e4) bez zmian [P].
 - [N] CompletedUnitFacing przy przejściu 9006 → 5001: reguła „ω == 0” daje 1 takt różnicy w 578 G1 (takt 48);
-  usunięcie warunku psuje S2/S4b – właściwy warunek nieustalony.
+  usunięcie warunku psuje S2/S4b – właściwy warunek nieustalony. [Etap 32 – zastąpione: § 8]
 - [N] Postawy (+0x208: pościg, powrót, ucieczka) inne niż domyślne – nie mierzone.
+
+## 8. Aktualizacja etapu 32 – CompletedUnitFacing i ReacquireGoal
+
+- **CompletedUnitFacing (9015)** = EEUGLocation vt+0x64 (0x6153A3) → 0x614F52: |kurs − kurs celu| ≤ 1° (f32), bez
+  warunku na v i ω; przy prawdzie macierz jednostki ustawiana dokładnie na kurs celu [W kod; P: 188/189 taktów 9006
+  z pomiarów EE/AoC]. **UnitFacingNotRequired (9014)**: cel+0x31 == 0 albo w poziomie celów > 1 cel (0x6153CA) [W].
+  Ocena przejścia jest na początku taktu, przed fizyką – na orientacji z poprzedniego taktu [P: 578].
+- **5001 ReacquireGoal** nie zmienia trybu ruchu (w pomiarze tryb 5 w stanie 5001, tryb 3 dopiero w 5000) [P].
+- S2/S4b (model v4) wymagały ω = 0 – po korekcie kończą się takt wcześniej (`walka.md` § 15).

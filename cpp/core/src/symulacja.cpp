@@ -136,12 +136,25 @@ std::optional<bool> Swiat::zdarzenie(Jednostka& u, const std::string& n) {
         return false;  // typy celów inne niż miejsce nie istnieją w Core
     if (n == "UnitFacingNotRequired")  // [W, model v4]: jednostka musi stanąć
         return !u.kurs_koncowy && u.v == 0.0 && u.omega == 0.0;
-    if (n == "CompletedUnitFacing")  // [W, model v4; S2/S4b wymagają ω = 0]. 578 G1 takt 48: gra przechodzi przy ω = 0,4165
-        // i |Δkurs| = 0,0077 – sprzeczne z S4b; reguła niepełna [N] (Core: o 1 takt później)
-        return u.kurs_koncowy && u.v == 0.0 && u.omega == 0.0 &&
-               std::fabs(*u.kurs_koncowy - mat_.kurs_z_macierzy(u.orientacja)) < 0.0175;
+    if (n == "CompletedUnitFacing") {
+        // etap 32 [P]: EEUGLocation vt+0x64 (0x6153A3) → 0x614F52; bez warunku na v i ω (189 taktów 9006 z pomiarów
+        // EE/AoC: 188 zgodnych). Przy prawdzie macierz ustawiana dokładnie na kurs celu (0x5F043B).
+        if (!u.kurs_koncowy || !ukonczony_obrot(mat_, u.orientacja, *u.kurs_koncowy)) return false;
+        u.orientacja = mat_.set_orientation_ypr(f32(*u.kurs_koncowy));
+        return true;
+    }
     nieobslugiwane(n);  // walka, transport, mury, ICL…
     return std::nullopt;
+}
+
+bool Swiat::ukonczony_obrot(const MatematykaTitan& mat, const Macierz3& orientacja, double kurs_celu) {
+    // 0x614F52: kurs = UMArcTan2(−x, y) wektora M·(0, 1, 0) minus kurs celu (f32 +0x2C); zawinięcie stałymi f32
+    // −π / π / 2π (0x82ACE0, 0x828020, 0x828018); |Δ| ≤ f32 0,017453292 (0x831E5C), porównania x87 na rozszerzonej
+    const double pi_f = double(3.14159274f), dwa_pi_f = double(6.28318548f), prog_f = double(0.0174532924f);
+    double d = mat.kurs_z_macierzy(orientacja) - f32(kurs_celu);
+    if (d < -pi_f) d += dwa_pi_f;
+    else if (d > pi_f) d -= dwa_pi_f;
+    return -prog_f <= d && d <= prog_f;
 }
 
 bool Swiat::ocen_przejscie(Jednostka& u, const Przejscie& p) {
@@ -207,8 +220,7 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
         case 9006:  // TurnToUnitFacing: tryb 5
             u.tryb = TrybRuchu::obrot_w_miejscu;
             break;
-        case 5001:  // ReacquireGoal: akcja 0x61B241 – [H] brak dalszego ruchu (spoczynek)
-            u.tryb = TrybRuchu::spoczynek;
+        case 5001:  // ReacquireGoal: akcja 0x61B241 – tryb ruchu bez zmian [P: 578, tryb 5 w stanie 5001]
             break;
         case 2015:
             break;
@@ -270,6 +282,8 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
             u.tryb = TrybRuchu::spoczynek;
             u.trasa.clear();
             u.zdjete_punkty = 0;
+            u.kolejka_celow.clear();   // etap 32 [P: 578 G3, 590 – w takcie śmierci kolejka celów pusta]
+            u.cel = TypCelu::brak;
             if (u.boj) u.boj->animacja = 4;
             break;
         case 9002:  // RepathAroundObstacle – objazd A* w oknie ±50 pól: NIEZWERYFIKOWANY dynamicznie [W]

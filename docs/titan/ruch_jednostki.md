@@ -348,3 +348,16 @@ po każdym trybie oprócz 2: kolizje i odpychanie (0x549E61):
 - **„Obliczenia w f32. Tylko sqrt działa w f64”** (§ 5) – zastąpione [Etap 26/27]: obliczenia w rejestrach x87 przy
   PC_53, zapisy f32 w miejscach z `precyzja_numeryczna.md` § 5 [P].
 - Model v4 i jego metryki: `testy_referencyjne_ruchu.md` § 5.
+
+## Aktualizacja etapu 32 – obrót: koniec, przycięcie kroku, tryb 4
+
+Szczegóły i dowody: `walka.md` § 15.
+- Przycięcie kroku obrotu w 0x548266 (0x548477–0x5484B5): krok = f32(ω′·dt); zamiana na Δ tylko przy Δ < 0 i kroku
+  < Δ albo Δ > 0 i kroku > Δ; **przy Δ = 0 bez przycięcia** (przestrzelenie kursu i oscylacja ±1 krok ω) [W kod,
+  P: 578 G1 – 986 porównań bez różnic; EE 500 – maks. błąd pozycji 0,0497 → 0,0205].
+- Tryb 4 (0x54DE35 → 0x548920): obrót o f32(ω′·dt) po hamowaniu ω i krok wzdłuż nowej macierzy; bez zapisu gdy
+  ω′ = 0 i v′ = 0 [W kod, P]. Tryb 3 → tryb 4 przy v ≠ 0 lub ω ≠ 0 (0x5488D1) [W].
+- Tryb 5: bez zerowania ω przy |Δ| < 1° (model v4 zerował) [P].
+- Wpis w tabeli wyżej „tryb 4: … ruch naprzód o v′·dt po dotychczasowym kursie” [Etap 32 – zastąpione: po nowym
+  kursie, gdy ω ≠ 0].
+- [N] Reguła obrotu AoC (0x554738) przy Δ = 0 – w 580 G1 widoczna ta sama oscylacja, Core jeszcze się różni (takt 36).
