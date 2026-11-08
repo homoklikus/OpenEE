@@ -1,4 +1,4 @@
-# Plan rekonstrukcji silnika Titan (EE / AoC) i prognoza – etap 29
+# Plan rekonstrukcji silnika Titan (EE / AoC) i prognoza – etap 30
 
 Dokument roboczy aktualizowany w każdym etapie. Zawiera:
 - mapę rozpoznanych i nierozpoznanych systemów;
@@ -24,17 +24,17 @@ stanów, trudny pomiar, niedeterminizm względem wejść).
 |---|---|---|---|---|---|---|---|
 | Zegar, takty, lockstep (część lokalna) | rozpoznany [P] | `zegar_symulacji.md`, `przydzial_taktow.md` | sieć, opóźnienia, resynchronizacja | 2 | gra sieciowa 2 instancje | odczyt kolejek komunikatów | – |
 | Fizyka jednostki lądowej | rozpoznana i w C++ [P] | etapy 25–29, `precyzja_numeryczna.md` | znak drgania ω (EE 500), tps f32? | 2 | serie EE/AoC (gotowe) | `obs_rejestruj` [jest] | teren |
-| Teren (wysokość, nachylenie, przejezdność) | rozpoznany [P/W] | `fizyka_terenu.md` | import przejezdności z mapy (typy terenu, obiekty) | 2 | odczyt komórek EEMap | odczyt siatki mapy [częściowo] | formaty SCN |
+| Teren (wysokość, nachylenie, przejezdność) | rozpoznany [P/W]; import mapy SCN do Core (etap 30) [P/W] | `fizyka_terenu.md`, `import_mapy.md` | klify (9) [N], reguła rodziny wody 99,64% [W] | 2 | odczyt komórek EEMap (gotowe) | `ee_mapa` [jest] | formaty SCN |
 | A* po polach, Bounded | rozpoznany i w C++ [P] | `astar_pola.md`, `astar_wyniki.md`, etap 29 | kary za jednostki, duże jednostki, przypadek F | 2 | trasy z jednostkami na drodze | odczyt maszyny A* po prośbie | teren, obiekty |
 | Graf podsektorów, kontynenty | rozpoznany częściowo [W] | `architektura_nawigacji.md` | budowa grafu, trasy długie | 3 | długie trasy przez mapę | eksport grafu z pamięci | A* |
 | Kolizje, odpychanie | wzór [P], lista kontaktów [W/H→częściowo P] | `walidacja_kolizji.md`, etap 29 | reguła obrysu, kolejność EE/AoC, duże jednostki | 3 | wiele jednostek, różne rozmiary | rejestracja kontaktów [jest] | fizyka |
-| Objazd 9002 | kod [W], bez pomiaru | `kolizje_objazdy.md` § 6 | warunki wejścia w praktyce, wynik A* ±50 | 3 | ruch przez mur / brzeg | kamera + cel poza kadrem (do zrobienia) | A*, kolizje |
+| Objazd 9002 | kod [W], bez pomiaru (etapy 26–30: 0 z 7 prób) | `kolizje_objazdy.md` § 6, § 13 | próg czasu zablokowania nieosiągnięty (maks. 2011 ms) | 3 | dłuższe zablokowanie, wąskie przejście | kamera „pokaż punkt” [jest] | A*, kolizje |
 | Kolejka celów, Shift | rozpoznana, w C++ [P/W] | `kolejka_rozkazow.md` | punkty +0x32, porzucenie, BO-4 | 2 | rozkazy Shift w ruchu | `obs_rozkaz(modyfikator)` [jest] | stany |
 | Maszyna stanów `.tai` (ruch) | rozpoznana [P] | `skrypty_stanow.md` | – | 2 | – | rejestracja stanów [jest] | – |
 | Maszyna stanów `.tai` (walka, transport, patrol, eksploracja) | składnia [P], zdarzenia [N] | `skrypty_stanow.md` | ~150 zdarzeń, akcje wejścia | 4 | scenariusze walki | rejestracja przejść + celów | walka, transport |
 | Formacje, grupy | rozpoznane [P/W] (etapy 17–20) | `grupy_ruchu.md` … `przydzial_specjalny.md` | 8 rodzajów szyku, „Szybko/Sprytnie” | 3 | grupy 2–50 jednostek | rejestracja wielu jednostek [jest] | kolejka, fizyka |
-| Walka: cele, zasięg, tempo ataku | [N] | – | wybór celu, częstotliwość, kąty | 4 | pojedynki 1:1, 1:N | odczyt HP, celu ataku, czasów | stany, kolizje |
-| Pancerze i obrażenia | [N] (tablice w bazach [P]) | `FORMATY_DB_EE_VS_AOC.md` | wzór, mnożniki, losowość | 3 | serie pojedynków | eksport HP co takt | walka |
+| Walka: cele, zasięg, tempo ataku | pojedynek wręcz 1:1 EE [P], w Core; AoC – losowe przeładowanie [W] | `walka.md` | wybór celu, pościg, dystans, 1:N | 4 | pojedynki 1:N, strzelcy | `ee_walka` [jest] | stany, kolizje |
+| Pancerze i obrażenia | wzór [P] (EE), tablice trafień [P] | `walka.md` | obszarowe, premie, AoC [W] | 3 | serie z ulepszeniami | `walka_tabele` [jest] | walka |
 | Pociski, balistyka | [N] | – | trajektorie, trafienie, rozrzut | 4 | strzelcy, artyleria | śledzenie obiektów pocisków | walka, teren |
 | Lotnictwo | [N] | – | paliwo, lotniska, ruch 3D | 4 | samoloty, śmigłowce | rejestracja obiektów powietrznych | nawigacja (klucz 4?), walka |
 | Marynarka | [N] (klucz A* = 2 [W]) | `astar_pola.md` § 3 | modyfikator morski, transport | 3 | statki, transport | jak lądowe | A*, kolizje |
@@ -110,19 +110,30 @@ podsystem (walka) nie zostanie zbadany z tymi narzędziami.
 | `obs_rejestruj` (+ `_start`/`_stop` w tle) | 1 krok zadania na 1 odczyt, duplikaty, luki, brak trasy i celu | 5 jednostek co takt, 0 luk, 0 niespójnych odczytów, rozkazy w trakcie pomiaru |
 | punkty trasy w odczycie | cel szacowany z serii (etap 27) | pierwszy i ostatni punkt kolejki +0x7C co takt |
 
+### 3.2a. Zrealizowane w etapie 30
+
+| Narzędzie | Koszt | Wynik pomiaru |
+|---|---|---|
+| kamera „pokaż punkt” (`ee_kamera`, `obs_rozkaz(pokaz)`) | ok. 20 min | 0 rozkazów odrzuconych za kadrem w zadaniach 554–570 |
+| pełna kolejka celów i trasa (+0x90, +0x7C, +0x32) | ok. 20 min | rozpoznane cele EE/AoC, bez dereferencji niesprawdzonych wskaźników |
+| `pomiar_core.py` (pomiar → Core) | ok. 25 min | 786 porównań pojedynku 564 bez różnic; walidacja 7 klas błędów |
+| schemat struktur + indeks dostępów PE (`struktury_titan.json`, `indeks_pe.py`) | ok. 40 min | 103 pola; kandydaci odczytu/zapisu dla każdego pola w EE i AoC |
+| `ee_mapa` + `eksport_mapy.py` | ok. 25 min | granice = pamięć, teren 99,64%, wysokości bez błędu |
+| `ee_walka` (rejestrator walki) | ok. 20 min | pierwsza wiarygodna seria walki w 2. zadaniu z rejestratorem (564) |
+
 ### 3.3. Plan dalszych narzędzi (koszt → oszczędność)
 
 Koszt w godzinach pracy agenta. Oszczędność szacowana na podstawie liczby przyszłych eksperymentów danego typu.
 
 | Narzędzie | Koszt | Wielokrotność użycia | Oczekiwana oszczędność | Priorytet |
 |---|---|---|---|---|
-| Konwerter `obs_rejestruj` → seria porównawcza Core (zamiast skryptu jednorazowego) | 1 h | każdy eksperyment ruchu/walki | 10–20 min na serię | 1 |
-| Kamera „pokaż punkt” (cel w kadrze przed rozkazem) | 1–2 h | każdy rozkaz poza kadrem (548) | 1 nieudane zadanie z 3–4 | 1 |
-| Odczyt pełnej kolejki celów i trasy (deque +0x90, +0x7C) | 1–2 h | ruch, Shift, AI | likwiduje szacowanie celu | 1 |
-| Rejestrator zdarzeń: HP, cel ataku, czasy ataku | 3–4 h | cała walka (setki serii) | podstawowe dla walki | 2 |
+| ~~Konwerter `obs_rejestruj` → seria porównawcza Core~~ [etap 30: `pomiar_core.py`] | 1 h | każdy eksperyment ruchu/walki | 10–20 min na serię | 1 |
+| ~~Kamera „pokaż punkt”~~ [etap 30] | 1–2 h | każdy rozkaz poza kadrem (548) | 1 nieudane zadanie z 3–4 | 1 |
+| ~~Odczyt pełnej kolejki celów i trasy~~ [etap 30] | 1–2 h | ruch, Shift, AI | likwiduje szacowanie celu | 1 |
+| ~~Rejestrator zdarzeń: HP, cel ataku, czasy ataku~~ [etap 30: `ee_walka`, ok. 20 min] | 3–4 h | cała walka (setki serii) | podstawowe dla walki | 2 |
 | Liczniki gracza: surowce, populacja, kolejki produkcji | 2–3 h | ekonomia, produkcja, AI | jw. | 2 |
 | Śledzenie obiektów tymczasowych (pociski) | 3–5 h | pociski, artyleria | jw. | 3 |
-| REA/Ghidra: mapa „kto czyta/pisze pole +X typu Y” (skrypt xref na offsetach) | 4–6 h | każdy nowy podsystem | 20–40% czasu statyki | 2 |
+| ~~mapa „kto czyta/pisze pole +X typu Y”~~ [etap 30: `indeks_pe.py` na capstone, REA nie zdążyło dekompilować] | 4–6 h | każdy nowy podsystem | 20–40% czasu statyki | 2 |
 | Automatyczny generator definicji odczytu MCP z opisu struktury w atlasie | 3 h | każdy nowy podsystem | błędy przesunięć EE/AoC | 3 |
 | Licznik losowań RNG z przypisaniem do miejsca (pułapka – wymaga debuggera) | 6–10 h; zgodne z zasadami tylko jako odczyt / breakpoint | lockstep, AI | kluczowe dla AI i multiplayera | 3 |
 | Dwie instancje gry (multiplayer lokalny) + odczyt kolejek sieciowych | 8–15 h | multiplayer | bez tego multiplayer nie jest badany | 4 |
@@ -198,7 +209,7 @@ Są to oceny, nie pomiary – [H]. Ich niepewność opisuje zakres scenariuszy.
 |---|---|---|---|---|
 | reszta ruchu (9002, duże jednostki, formacje, morze, transport) | 0,8 | 0,3 | 0,8 | 0,8 |
 | lotnictwo | 0,6 | 0,2 | 0,6 | 0,6 |
-| walka, pancerze, obrażenia | 1,5 | 0,8 | 1,5 | 1,5 |
+| walka, pancerze, obrażenia [Etap 30 – zastąpione: 1,1 / 0,6, zob. § 4.7] | 1,5 | 0,8 | 1,5 | 1,5 |
 | pociski | 0,6 | 0,3 | 0,6 | 0,6 |
 | ekonomia, zbieranie, produkcja, budynki | 1,2 | 0,8 | 1,2 | 1,2 |
 | technologie, epoki, cywilizacje | 0,6 | 0,4 | 0,6 | 0,6 |
@@ -255,6 +266,8 @@ podsystemach (walka, ekonomia), gdy rejestratory zdarzeń i liczniki gracza (§ 
 Dlatego przyspieszenie powyżej ok. 2× nie jest zakładane.
 
 ### 4.5. Wynik
+
+[Etap 30 – zastąpione: aktualne liczby w § 4.7. Tabele poniżej zostają jako zapis prognozy etapu 29.]
 
 Intensywność pracy przyjęta jako parametr:
 
@@ -331,3 +344,42 @@ Po każdym etapie:
 4. Przelicz przyspieszenie z rzeczywistych udziałów i redukcji. Dla każdego nowego narzędzia zapisz koszt i liczbę
    użyć (metryki `obs_metryki` i rejestr zadań).
 5. Rozbieżność > 30% między prognozą a wykonaniem dla dwóch kolejnych podsystemów oznacza, że wagi trzeba zmienić.
+
+### 4.7. Aktualizacja po etapie 30
+
+**Pomiar etapu 30** (czas UTC z commitów i plików zadań; [P]):
+
+| Element | Wartość |
+|---|---|
+| początek etapu | ok. 12:45 (commit etapu 29: 12:42) |
+| zadania MCP | 23 (549–571), 13:23 → 14:27 |
+| zadania nieudane lub z błędem kroku | 7 (552–554, 556, 559–561: kamera, wybór w tłumie, kolejność startu pojedynku) |
+| pierwsza wiarygodna seria walki | 14:09 (zadanie 564), ok. 1 h 25 min od początku etapu |
+| odtworzenie pojedynku przez Core | 786 porównań w taktach, 0 różnic |
+| koniec (commit) | ok. 14:50 |
+
+Podział czasu agenta (szacunek z przebiegu, [H]): narzędzia ok. 40 min, mapa ok. 25 min, statyka walki ok. 25 min,
+eksperymenty ok. 45 min, implementacja C++ ok. 15 min, reszta – testy i dokumentacja.
+
+**Kula śnieżna (§ 18 zlecenia).** Narzędzia etapów 29–30 skróciły drogę do pierwszego wiarygodnego pomiaru nowego
+podsystemu: walka – pierwszy pomiar po ok. 1 h 25 min i ok. 15 zadaniach, z czego pierwsze 8 dotyczyło jeszcze
+samego ustawienia pojedynku. Dla porównania ruch lądowy (etapy 14–24) wymagał 11 etapów i 129 zadań do pierwszego
+modelu C++. Pojedynek 1:1 to jednak najprostszy przypadek walki – nie wolno tego przenosić wprost na 1:N, pościg
+i pociski. [W]
+
+**Zmiana wag:**
+- walka wręcz 1:1 (wzór obrażeń, tablice trafień, przeładowanie, czas trafienia, śmierć) jest rozpoznana [P] w ok.
+  0,1 J – dużo mniej niż zakładano;
+- pozostaje: wybór celu, pościg, strzelcy, obszarowe, AoC (losowe przeładowanie), 1:N;
+- waga walki: B/C 1,5 → **1,1 J**, A 0,8 → **0,6 J**. Pozostałe wagi bez zmian (za mało danych, § 4.6 pkt 5).
+
+Sumy: A **5,9 J**, B **12,8 J**, C **20,3 J**. J i przyspieszenie bez zmian: zmierzone redukcje są zgodne z modelem
+realistycznym, a jeden etap to za mało, żeby je przeliczyć.
+
+| Cel | Bez rozwoju | Realistyczny (÷1,25) | Silna automatyzacja (÷1,4) | Realistyczny, 18 h/tydz. |
+|---|---|---|---|---|
+| A | ≈ 148 h | ≈ **118 h** | ≈ 105 h | ≈ 6,5 tyg. |
+| B | 12,8 × 1,15 × 25 ≈ 368 h | ≈ **294 h** | ≈ 263 h | ≈ **16 tyg.** (bez rozwoju 20, silna automatyzacja 15) |
+| C | 20,3 × 1,3 × 25 ≈ 660 h | ≈ **528 h** | ≈ 471 h | ≈ **29 tyg.** |
+
+Niepewność bez zmian (§ 4.5). Prognoza nadal nie jest obietnicą terminu.

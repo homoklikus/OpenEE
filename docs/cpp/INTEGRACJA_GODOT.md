@@ -28,6 +28,11 @@ GDScript (core_cpp.gd, sceny) ──► OpenEESymulacja (GDExtension, godot-cpp)
 | `pola_migawki() -> PackedStringArray` | `id, x, y, z, v, omega, kurs, stan, tryb, zdjete_punkty, pozostalo_punktow, licznik_blokady_ms` |
 | `jednostka(id) -> Dictionary` | jak wyżej + `stan_nazwa`, `macierz` (9 wartości) |
 | `diagnostyka() -> Dictionary` | tablice, wariant, takty, zegar, dt, stan i liczba losowań RNG, zdarzenia nieobsługiwane, lista podsystemów ze statusem |
+| `wczytaj_mape_scn(A, B, tekstura, flagi, f10, wysokosc, rodziny) -> Dictionary` | etap 30: surowe tablice kawałka 4 (z `ScenariuszEE.teren`) → `MapaTitan` w Core; `{ok, szerokosc, brzeg_s1/s2/d, skrot}` |
+| `dodaj_obiekt_mapy(obiekt) -> bool` | etap 30: `{id, typ, gracz, X, Y, kwadrat, blokuje}` |
+| `mapa_teren(x, y) -> int` / `mapa_pewnosc(x, y) -> int` | etap 30: teren komórki Titan (−1 poza mapą) / 0 pamięć gry, 1 reguła, 2 niepewne, 3 brak |
+| `utworz_swiat_na_mapie(wariant, teren_dozwolony) -> bool` | etap 30: świat Core na siatce z mapy (16 bajtów tablicy typu +0x5D6) |
+| `pole_przejezdne(x, y) -> bool` | etap 30: przejezdność pola w świecie Core |
 
 - Liczby przechodzą jako `float` GDScript (f64), więc wartości f32 z Core trafiają do Godota bez strat.
   `Vector2` (f32) nie jest używany na granicy.

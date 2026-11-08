@@ -2,6 +2,7 @@
 //   openee_tests <grupa>   grupy: trygonometria rng teren ruch odpychanie dll tai determinizm podsystemy
 // Kody wyjścia: 0 = PASS, 1 = FAIL, 77 = SKIP (brak oryginalnej DLL). SKIP nie jest PASS.
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cinttypes>
 #include <cstring>
@@ -19,6 +20,8 @@
 #include "json_mini.hpp"
 #include "openee/generator.hpp"
 #include "openee/kolizje.hpp"
+#include "openee/mapa.hpp"
+#include "openee/walka.hpp"
 #include "openee/maszyna_stanow.hpp"
 #include "openee/nawigacja.hpp"
 #include "openee/matematyka.hpp"
@@ -563,6 +566,248 @@ int test_astar_gra() {
     return bledy ? FAIL : PASS;
 }
 
+// --------------------------------------------------------------------------------------------- import mapy (etap 30)
+DaneTerenuScn mapa_syntetyczna(int A, int B) {
+    DaneTerenuScn d;
+    d.A = A; d.B = B;
+    const std::size_t T = std::size_t(2 * A * B + A + B), V = std::size_t(2 * A * B + 3 * A + 3 * B + 1);
+    d.tekstura.assign(T, 3); d.flagi.assign(T, 0); d.f10.assign(T, 0.0f);
+    d.wysokosc.resize(V);
+    for (std::size_t i = 0; i < V; ++i) d.wysokosc[i] = float(0.204 * double(i % 7));
+    return d;
+}
+
+int test_mapa() {
+    std::array<std::int16_t, 256> rodz;
+    rodz.fill(-1);
+    rodz[3] = 0; rodz[26] = 0; rodz[31] = 11; rodz[51] = 9;
+    // 1. reguła terenu pola (import_mapy.md § 3)
+    sprawdz(MapaTitan::teren_z_pola(3, 0, 0.0f, rodz) == 0, "ląd → rodzina tekstury");
+    sprawdz(MapaTitan::teren_z_pola(26, 1, -0.408f, rodz) == 1, "woda f10 < −0,3 → 1");
+    sprawdz(MapaTitan::teren_z_pola(26, 1, -0.204f, rodz) == 10, "woda płytka bez bitów → 10");
+    sprawdz(MapaTitan::teren_z_pola(31, 0x0F, -0.204f, rodz) == 11, "płytka z ≥ 3 bitami 1–4 → rodzina (11)");
+    sprawdz(MapaTitan::teren_z_pola(31, 0x0D, -0.204f, rodz) == 10, "płytka z 2 bitami → 10");
+    sprawdz(MapaTitan::teren_z_pola(99, 0, 0.0f, rodz) == -1, "nieznana tekstura → −1");
+    // 2. geometria rombu (A = B = 3 → 6 wierszy) i linie brzegu jak w EEMap (dla 140×140: 139, 419, 140)
+    {
+        auto d = mapa_syntetyczna(3, 3);
+        const auto m = MapaTitan::z_scn(d, rodz);
+        sprawdz(m.szerokosc() == 6 && m.brzeg_s1() == 2 && m.brzeg_s2() == 8 && m.brzeg_d() == 3, "romb 3×3: N 6, s1 2, s2 8, d 3");
+        sprawdz(m.komorka_istnieje(2, 0) && m.komorka_istnieje(3, 0) && !m.komorka_istnieje(1, 0) && !m.komorka_istnieje(4, 0), "wiersz 0: kolumny 2–3");
+        std::array<std::uint8_t, 16> dozw{};
+        dozw.fill(1);
+        m.siatka(dozw);
+        auto& ob = const_cast<MapaTitan&>(m).obiekty();
+        ob.push_back({1, 34, 1, 2, 2, 2.5, 2.5, 0.0, 2, true, true});
+        const TerenSiatka s = m.siatka(dozw);
+        sprawdz(!s.pole_przejezdne(2, 2) && !s.pole_przejezdne(3, 3) && (s.pole_przejezdne(4, 2) || !s.komorka_istnieje(4, 2)), "obiekt 2×2 blokuje pola X..X+1, Y..Y+1");
+        sprawdz(!s.pole_przejezdne(2, 0), "pole na linii brzegu x + y = s1 nieprzejezdne");
+        sprawdz(s.get_mesh_z(0.5, 0.5) == 0.0, "poza rombem: wysokość 0 (kafelek nie istnieje)");
+    }
+    // 3. dane lokalne: scenariusz z gry + zrzut pamięci (Riverlands_MCP mapa_zrzut) – eksport_mapy.py
+    const std::string kat = katalog_lokalny();
+    const std::string t = kat.empty() ? "" : czytaj(kat + "/mapa_troja_ee.json");
+    if (t.empty()) {
+        std::printf("  SKIP części lokalnej: brak OPENEE_DANE_LOKALNE/mapa_troja_ee.json (dane gry – nie publikowane)\n");
+        return bledy ? FAIL : PASS;
+    }
+    const Wartosc j = json_mini::Parser(t).parsuj();
+    DaneTerenuScn d;
+    d.A = int(j["A"].n); d.B = int(j["B"].n);
+    for (const auto& v : j["tekstura"].t) d.tekstura.push_back(std::uint8_t(v.n));
+    for (const auto& v : j["flagi"].t) d.flagi.push_back(std::uint8_t(v.n));
+    for (const auto& v : j["f10"].t) d.f10.push_back(float(v.n));
+    for (const auto& v : j["wysokosc"].t) d.wysokosc.push_back(float(v.n));
+    std::array<std::int16_t, 256> rd;
+    rd.fill(-1);
+    for (const auto& [k, v] : j["rodzina_tekstury"].o) rd[std::size_t(std::stoi(k))] = std::int16_t(v.n);
+    MapaTitan m = MapaTitan::z_scn(d, rd);
+    std::printf("  skrót mapy z SCN (reguła, bez obiektów) %016" PRIx64 " – ten sam musi dać importer GDScript (testy GDExtension)\n", m.skrot());
+    const Wartosc& pm = j["pamiec"];
+    const Wartosc& hd = pm["naglowek"];
+    sprawdz(m.szerokosc() == int(hd["W"].n) && m.brzeg_s1() == int(hd["brzeg_s1"].n) && m.brzeg_s2() == int(hd["brzeg_s2"].n) &&
+                m.brzeg_d() == int(hd["brzeg_d"].n),
+            "szerokość i linie brzegu z SCN = EEMap z pamięci");
+    std::vector<std::array<int, 3>> mt;
+    for (const auto& [k, v] : pm["teren"].o) {
+        const auto p = k.find(',');
+        mt.push_back({std::stoi(k.substr(0, p)), std::stoi(k.substr(p + 1)), int(v.n)});
+    }
+    const auto st = m.porownaj_teren(mt);
+    sprawdz(st.brakujacych == 0 && st.komorek == int(mt.size()), "każda komórka EEMap istnieje w rombie SCN");
+    std::printf("  teren reguła vs pamięć: %d komórek, zgodnych %d (%.2f %%), różnych %d, w tym oznaczonych jako niepewne %d\n",
+                st.komorek, st.zgodnych, 100.0 * st.zgodnych / std::max(1, st.komorek), st.roznych, st.niepewnych_roznych);
+    // obiekty: pola z „Square occupied” (kwadrat od X, Y) vs listy komórek EEMap
+    std::map<std::string, std::vector<std::pair<int, int>>> listy;   // id → pola z pamięci
+    for (const auto& [k, v] : pm["obiekty_komorek"].o) {
+        const auto p = k.find(',');
+        for (const auto& o : v.t) listy[o[0].s].push_back({std::stoi(k.substr(0, p)), std::stoi(k.substr(p + 1))});
+    }
+    int zg = 0, rz = 0, por = 0;
+    for (const auto& o : j["obiekty"].t) {
+        char idb[16];
+        std::snprintf(idb, sizeof idb, "0x%x", unsigned(o["id"].n));
+        auto it = listy.find(idb);
+        if (it == listy.end()) continue;
+        const Wartosc* ty = j["typy"].znajdz(std::to_string(int(o["typ"].n)));
+        if (!ty) continue;
+        const int n = int((*ty)["kwadrat"].n), X = int(o["X"].n), Y = int(o["Y"].n);
+        auto pola = it->second;
+        std::sort(pola.begin(), pola.end());
+        std::vector<std::pair<int, int>> oczek;
+        for (int dx = 0; dx < n; ++dx)
+            for (int dy = 0; dy < n; ++dy) oczek.push_back({X + dx, Y + dy});
+        std::sort(oczek.begin(), oczek.end());
+        ++por;
+        (pola == oczek ? zg : rz)++;
+    }
+    std::printf("  pola obiektów (kwadrat od X, Y) vs listy komórek EEMap: %d porównanych, zgodnych %d, różnych %d (jednostki ruchome mogły zmienić pole)\n", por, zg, rz);
+    sprawdz(por > 1000 && rz * 100 < por, "pola obiektów = listy komórek EEMap (≥ 99 %, różnice: jednostki w ruchu)");
+    // wysokości: GetMeshZ z wierzchołków SCN vs z jednostek z pamięci gry
+    std::array<std::uint8_t, 16> dozw{};
+    for (std::size_t i = 0; i < 16 && i < j["teren_dozwolony"]["422"].t.size(); ++i) dozw[i] = std::uint8_t(j["teren_dozwolony"]["422"][i].n);
+    MapaTitan m_regula = m;                                                 // wariant: teren z reguły [W]
+    for (const auto& [x, y, tv] : mt) m.ustaw_teren_z_pamieci(x, y, tv);   // dane referencyjne dla nawigacji
+    for (const auto& o : j["obiekty"].t) {
+        const Wartosc* ty = j["typy"].znajdz(std::to_string(int(o["typ"].n)));
+        const Wartosc* tp = pm["typy"].znajdz(std::to_string(int(o["typ"].n)));
+        ObiektMapy ob;
+        ob.id = std::uint32_t(o["id"].n); ob.typ_db = int(o["typ"].n); ob.gracz = int(o["gracz"].n);
+        ob.pole_x = int(o["X"].n); ob.pole_y = int(o["Y"].n);
+        ob.kwadrat = ty ? int((*ty)["kwadrat"].n) : 1;
+        ob.blokuje = tp && int((*tp)["blokuje"].n) != 0;
+        m.obiekty().push_back(ob);
+        m_regula.obiekty().push_back(ob);
+    }
+    const TerenSiatka s = m.siatka(dozw);
+    const TerenSiatka s_reg = m_regula.siatka(dozw);
+    int rozne_przej = 0;
+    for (int y = 0; y < m.szerokosc(); ++y)
+        for (int x = 0; x < m.szerokosc(); ++x) rozne_przej += s.pole_przejezdne(x, y) != s_reg.pole_przejezdne(x, y);
+    std::printf("  przejezdność dla typu 422: teren z reguły vs z pamięci – różnych pól %d\n", rozne_przej);
+    double emax = 0;
+    int nz = 0;
+    for (const auto& p : j["probki_z"].t) {
+        emax = std::max(emax, std::fabs(s.get_mesh_z(p[0].n, p[1].n) - p[2].n));
+        ++nz;
+    }
+    std::printf("  wysokość GetMeshZ(SCN) vs z jednostek z gry: %d próbek, błąd max %.6f\n", nz, emax);
+    sprawdz(nz == 0 || emax < 1e-6, "wysokości SCN = siatka gry (GetMeshZ)");
+    // nawigacja: przypadki etapu 24 na mapie zaimportowanej (teren z pamięci + obiekty ze SCN)
+    const std::string t24 = czytaj(kat + "/astar_mapa_e24_lokalne.json");
+    if (!t24.empty()) {
+        const Wartosc j24 = json_mini::Parser(t24).parsuj();
+        for (const auto& c : j24["przypadki"].t) {
+            const Pole s0{int(c["start"][0].n), int(c["start"][1].n)}, g{int(c["cel"][0].n), int(c["cel"][1].n)};
+            ParametryAStar p;
+            p.limit_calkowity = 3000;
+            const auto w = AStarTitan::szukaj(s0, g, [&](int x, int y) { return s.pole_przejezdne(x, y); }, m.szerokosc(), m.szerokosc(), p);
+            const auto wr = AStarTitan::szukaj(s0, g, [&](int x, int y) { return s_reg.pole_przejezdne(x, y); }, m.szerokosc(), m.szerokosc(), p);
+            std::vector<Pole> tr(w.trasa_od_celu.rbegin(), w.trasa_od_celu.rend());
+            const bool ta_sama = wr.trasa_od_celu.size() == w.trasa_od_celu.size() && wr.iteracje == w.iteracje &&
+                                 std::equal(wr.trasa_od_celu.begin(), wr.trasa_od_celu.end(), w.trasa_od_celu.begin(),
+                                            [](const Pole& a, const Pole& b) { return a.x == b.x && a.y == b.y; });
+            const Wartosc& pg = c["pomiar_gry"];
+            std::string opis;
+            if (const Wartosc* tb = pg.znajdz("trasa_bez_startu")) {
+                bool ok = tr.size() == tb->t.size() + 1;
+                for (std::size_t i = 0; ok && i < tb->t.size(); ++i) ok = tr[i + 1].x == int((*tb)[i][0].n) && tr[i + 1].y == int((*tb)[i][1].n);
+                sprawdz(ok, "mapa z SCN: trasa z gry " + c["nazwa"].s);
+                opis += ok ? "trasa = gra; " : "trasa ≠ gra; ";
+            }
+            if (const Wartosc* it = pg.znajdz("iteracje")) {
+                const bool ok = w.iteracje == int(it->n) && w.wywolania == int(pg["wywolania"].n);
+                sprawdz(ok, "mapa z SCN: iteracje/wywołania z gry " + c["nazwa"].s);
+                opis += "iteracje " + std::to_string(w.iteracje) + "/" + std::to_string(w.wywolania) + (ok ? " = gra" : " ≠ gra");
+            }
+            std::printf("  mapa z SCN, przypadek %s: %s (%zu pól); teren z reguły: %s\n", c["nazwa"].s.c_str(), opis.c_str(), tr.size(),
+                        ta_sama ? "ta sama trasa i iteracje" : "INNA trasa");
+        }
+    }
+    std::printf("  skrót mapy %016" PRIx64 "\n", m.skrot());
+    return bledy ? FAIL : PASS;
+}
+
+// --------------------------------------------------------------------------------------------- walka (etap 30)
+ParametryWalki gwardia_ee() {   // EEUnitClassUpgrade gwardii królewskiej Argos (zad. 565) [P]
+    ParametryWalki p;
+    p.hp_max = 215; p.atak = 15.0f; p.pancerz = {0, 6, 0, 0, 0, 0}; p.zasieg_max = 0.5f; p.pole_widzenia = 4.0f;
+    p.przeladowanie_ms = 2000; p.rodzaj_ataku = 0; p.wiersz_celu = 0; p.klasa_trafienia = 13; p.rodzina_ataku = 48;
+    p.opoznienie_trafienia_ms = 1122;   // pomiar 564: trafienie, gdy +0x2A0 = 878 (13/13 trafień)
+    return p;
+}
+
+int test_walka() {
+    const ParametryWalki g = gwardia_ee();
+    // 1. wzór 0x61DE61: m = 2,1 (tablica 0x10, człowiek → komputer), w = 1 → 15·2,1 = 31,4999… (f32) → 31
+    const auto o1 = oblicz_obrazenia(g, g, 2.1, 1.0);
+    std::printf("  obrażenia gwardia→gwardia: m 2,1 → %.7f → %d; m 1,071 → %d\n", o1.przed_zaokragleniem, o1.obrazenia,
+                oblicz_obrazenia(g, g, 1.071, 1.0).obrazenia);
+    sprawdz(o1.obrazenia == 31, "m 2,1: 31 (f32: 2,1f·15 = 31,4999… → fistp 31; jak w grze)");
+    sprawdz(oblicz_obrazenia(g, g, 1.071, 1.0).obrazenia == 16, "m 1,071: 16 (jak w grze)");
+    ParametryWalki pancerna = g;
+    pancerna.pancerz[0] = 40.0f;
+    sprawdz(oblicz_obrazenia(g, pancerna, 1.0, 1.0).obrazenia == 1, "pancerz > atak: minimum 1");
+    sprawdz(oblicz_obrazenia(g, g, 0.0, 1.0).zerowy_mnoznik, "m·w = 0: brak trafienia");
+    sprawdz(oblicz_obrazenia(g, g, 1.0, 1.0, 2.0).obrazenia == 30 && oblicz_obrazenia(g, g, 1.0, 1.0, 0.5).obrazenia == 8,
+            "modyfikator wysokości r: max(r·d, d+1) / min(r·d, d−1) [W]");
+    sprawdz(oblicz_obrazenia(g, g, 1.0, 1.0, 1.02).obrazenia == 16, "r = 1,02: d + 1 = 16 > r·d = 15,3");
+    StanWalki st;
+    st.hp = 20;
+    sprawdz(!przyjmij_obrazenia(st, 15) && st.hp == 5 && przyjmij_obrazenia(st, 31) && st.hp == 0, "TakeDamage: HP ≥ 0, śmierć przy 0");
+    sprawdz(wybor_tablicy_trafien(true, false, 0) == 2 && wybor_tablicy_trafien(false, true, 0) == 0 &&
+                !wybor_tablicy_trafien(false, false, 0).has_value(),
+            "wybór tablicy trafień: rozpoznane tylko człowiek↔komputer przy trudności 0");
+    // 2. cykl: 60 taktów na atak (2000 ms, takty 34/35 ms)
+    {
+        UczestnikPojedynku a{g, {215, 0, 0, 0, false}, 2012, 2.1, 1.0, 0}, b{g, {215, 0, 0, 0, false}, 2012, 1.071, 1.0, 1000000};
+        PojedynekTitan p(a, b);
+        std::vector<std::uint64_t> ataki;
+        for (int k = 0; k < 400; ++k) p.takt(34);
+        for (const auto& e : p.zdarzenia()) if (e.rodzaj == "atak" && e.kto == 0) ataki.push_back(e.takt);
+        sprawdz(ataki.size() >= 3 && ataki[1] - ataki[0] == 60 && ataki[2] - ataki[1] == 60, "cykl ataku 60 taktów (2000 ms + 1 takt na Reloaded → atak)");
+        sprawdz(p.uczestnik(1).s.hp == 0 && p.uczestnik(1).stan == 6000, "7 trafień po 31 → śmierć (215 → 0)");
+    }
+    // 3. dane lokalne: pojedynek EE 564 (pomiar co takt)
+    const std::string kat = katalog_lokalny();
+    const std::string t = kat.empty() ? "" : czytaj(kat + "/pojedynek_564.json");
+    if (t.empty()) {
+        std::printf("  SKIP części lokalnej: brak OPENEE_DANE_LOKALNE/pojedynek_564.json (pomiar gry – nie publikowany)\n");
+        return bledy ? FAIL : PASS;
+    }
+    const Wartosc j = json_mini::Parser(t).parsuj();
+    UczestnikPojedynku a{g, {215, 0, 0, 0, false}, 2012, j["m"][0].n, j["w"][0].n, int(j["takty_do_pierwszego_ataku"][0].n)};
+    UczestnikPojedynku b{g, {215, 0, 0, 0, false}, 2012, j["m"][1].n, j["w"][1].n, int(j["takty_do_pierwszego_ataku"][1].n)};
+    PojedynekTitan p(a, b);
+    const auto& pr = j["probki"].t;
+    int rozne = 0, pierwszy = -1, por = 0;
+    std::string opis;
+    for (std::size_t k = 1; k < pr.size(); ++k) {
+        p.takt(34);   // licznik +0x2A0 maleje o 34 ms na takt (int(1000·1,5/44)), niezależnie od zegara 34/35 ms [P]
+        for (int i = 0; i < 2; ++i) {
+            const Wartosc& g2 = pr[k][i == 0 ? "a" : "b"];
+            const auto& u = p.uczestnik(i);
+            const bool zg = u.s.hp == int(g2["hp"].n) && u.s.przeladowanie_ms == int(g2["r"].n) &&
+                            (u.stan == int(g2["stan"].n) || (int(g2["stan"].n) == 6000 && u.stan == 6000));
+            ++por;
+            if (!zg) {
+                ++rozne;
+                if (pierwszy < 0) {
+                    pierwszy = int(k);
+                    char b2[200];
+                    std::snprintf(b2, sizeof b2, "takt %zu jedn. %d: Core hp %d r %d stan %d | gra hp %d r %d stan %d", k, i, u.s.hp,
+                                  u.s.przeladowanie_ms, u.stan, int(g2["hp"].n), int(g2["r"].n), int(g2["stan"].n));
+                    opis = b2;
+                }
+            }
+        }
+    }
+    std::printf("  pojedynek EE 564: %d porównań (HP, +0x2A0, stan), różnych %d%s%s\n", por, rozne, pierwszy < 0 ? "" : "; pierwszy: ",
+                opis.c_str());
+    sprawdz(rozne == 0, "pojedynek EE 564: HP, licznik przeładowania i stan co takt = gra");
+    return bledy ? FAIL : PASS;
+}
+
 // --------------------------------------------------------------------------------------------- test kroku (izolowane gałęzie)
 int test_krok() {
     auto tab = tablice_lub_skip();
@@ -938,7 +1183,7 @@ int test_podsystemy() {
 int main(int argc, char** argv) {
     const std::map<std::string, std::function<int()>> grupy = {
         {"trygonometria", test_trygonometria}, {"rng", test_rng}, {"teren", test_teren}, {"ruch", test_ruch},
-        {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra},
+        {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka},
         {"podsystemy", test_podsystemy}};
     std::vector<std::string> wybrane;
     for (int i = 1; i < argc; ++i) wybrane.push_back(argv[i]);

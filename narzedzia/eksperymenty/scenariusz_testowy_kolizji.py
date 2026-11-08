@@ -11,7 +11,8 @@ Riverlands – import bez zmian w jego plikach; jak narzedzia/eksperymenty/scena
 Użycie:
   python3 narzedzia/eksperymenty/scenariusz_testowy_kolizji.py zbadaj <wejście.scn>
   python3 narzedzia/eksperymenty/scenariusz_testowy_kolizji.py zbuduj <wejście.scn> <wyjście.scn> <uklad.json> [--riverlands=<.py>]
-uklad.json: {"grupy": {"A": {"wzor": "0x100011a", "zrodlo": <opcjonalnie inny plik .scn tej wersji>,
+uklad.json: {"grupy": {"A": {"wzor": "0x100011a", "gracz": <numer gracza, domyślnie 1 – etap 30>,
+             "zrodlo": <opcjonalnie inny plik .scn tej wersji>,
              "z": <opcjonalna wysokość>, "pozycje": [[x, y], ...]}, ...}} – pozycje mapy (x = kolumna, y = wiersz).
 Wynik: plik .scn i <wyjście>.uklad.json z identyfikatorami jednostek każdej grupy. Pliki wynikowe zostają lokalnie
 (dane scenariusza z gry nie są publikowane).
@@ -160,42 +161,55 @@ def zbuduj(wej, wyj, uklad_plik, riverlands):
     blob = Path(wej).read_bytes()
     if struct.unpack_from("<I", blob, 0)[0] != len(blob) - 4:
         raise SystemExit("nagłówek: pierwsze słowo ≠ długość pliku − 4 (nieznany wariant zapisu)")
-    k5, wersja, d5b, g = _rekordy_gracza1(blob)
-    d5 = bytearray(d5b)
-    nast = g["nast"]
-    wstawki: dict[int, list[bytes]] = {}
+    k5 = _kawalek(blob, 5)
+    wersja = k5["minor"]
+    d5 = bytearray(maybe_unpack(k5["surowe"]))
     wynik_grup = {}
+    # etap 30: grupa może należeć do innego gracza ("gracz": N, domyślnie 1) – np. przeciwnik w pojedynku.
+    # Wzór jednostki zawsze z gracza 1 (kopia bajt w bajt); identyfikator = (N << 24) | następna instancja gracza N.
+    # Graczy przetwarzamy od ostatniego: wstawki u gracza N nie przesuwają offsetów graczy wcześniejszych.
+    po_graczach: dict[int, list] = {}
     for nazwa, grp in uklad["grupy"].items():
-        zr = Path(grp["zrodlo"]).read_bytes() if grp.get("zrodlo") else blob
-        rek_wzor, off, w_wzoru, u = _wzor(zr, int(grp["wzor"], 16))
-        if w_wzoru != wersja:
-            raise SystemExit(f"wzór {grp['wzor']} z wersji {w_wzoru}, scenariusz {wersja}")
-        ids = []
-        for (x, y) in grp["pozycje"]:
-            rec = bytearray(rek_wzor)
-            nid = (1 << 24) | nast
-            struct.pack_into("<I", rec, off["id"], nid)
-            struct.pack_into("<i", rec, off["X"], int(x)); struct.pack_into("<i", rec, off["Y"], int(y))
-            t = off["transform"]                    # macierz 4×4 f32 wierszami: translacja = elementy 3, 7, 11
-            struct.pack_into("<f", rec, t + 12, float(x)); struct.pack_into("<f", rec, t + 28, float(y))
-            if "z" in grp:
-                struct.pack_into("<f", rec, t + 44, float(grp["z"]))
-            wstawki.setdefault(nast % G.KUBELKI, []).append(bytes(rec))
-            ids.append(hex(nid))
-            nast += 1
-        wynik_grup[nazwa] = {"typ": u.get("type"), "wzor": grp["wzor"], "id": ids, "pozycje": grp["pozycje"]}
-    n_nowych = sum(len(v) for v in wstawki.values())
-    for kb_nr in sorted(wstawki, reverse=True):          # od końca – wcześniejsze offsety bez zmian
-        kb = g["kubelki"][kb_nr]
-        d5[kb["koniec"]:kb["koniec"]] = b"".join(wstawki[kb_nr])
-        struct.pack_into("<I", d5, kb["offset"], kb["liczba"] + len(wstawki[kb_nr]))
-    struct.pack_into("<I", d5, g["off_liczba"], g["liczba"] + n_nowych)
-    struct.pack_into("<I", d5, g["off_nast"], nast)
+        po_graczach.setdefault(int(grp.get("gracz", 1)), []).append((nazwa, grp))
+    nowe_ids = {}
+    for nr in sorted(po_graczach, reverse=True):
+        g = _gracz_z_offsetami(bytes(d5), _start_gracza(bytes(d5), nr, wersja), wersja)
+        nast = g["nast"]
+        wstawki: dict[int, list[bytes]] = {}
+        for nazwa, grp in po_graczach[nr]:
+            zr = Path(grp["zrodlo"]).read_bytes() if grp.get("zrodlo") else blob
+            rek_wzor, off, w_wzoru, u = _wzor(zr, int(grp["wzor"], 16))
+            if w_wzoru != wersja:
+                raise SystemExit(f"wzór {grp['wzor']} z wersji {w_wzoru}, scenariusz {wersja}")
+            ids = []
+            for (x, y) in grp["pozycje"]:
+                rec = bytearray(rek_wzor)
+                nid = (nr << 24) | nast
+                struct.pack_into("<I", rec, off["id"], nid)
+                struct.pack_into("<i", rec, off["X"], int(x)); struct.pack_into("<i", rec, off["Y"], int(y))
+                t = off["transform"]                    # macierz 4×4 f32 wierszami: translacja = elementy 3, 7, 11
+                struct.pack_into("<f", rec, t + 12, float(x)); struct.pack_into("<f", rec, t + 28, float(y))
+                if "z" in grp:
+                    struct.pack_into("<f", rec, t + 44, float(grp["z"]))
+                wstawki.setdefault(nast % G.KUBELKI, []).append(bytes(rec))
+                ids.append(hex(nid))
+                nast += 1
+            wynik_grup[nazwa] = {"typ": u.get("type"), "wzor": grp["wzor"], "gracz": nr, "id": ids,
+                                 "pozycje": grp["pozycje"]}
+            nowe_ids.setdefault(nr, set()).update(int(i, 16) for i in ids)
+        n_nowych = sum(len(v) for v in wstawki.values())
+        for kb_nr in sorted(wstawki, reverse=True):          # od końca – wcześniejsze offsety bez zmian
+            kb = g["kubelki"][kb_nr]
+            d5[kb["koniec"]:kb["koniec"]] = b"".join(wstawki[kb_nr])
+            struct.pack_into("<I", d5, kb["offset"], kb["liczba"] + len(wstawki[kb_nr]))
+        struct.pack_into("<I", d5, g["off_liczba"], g["liczba"] + n_nowych)
+        struct.pack_into("<I", d5, g["off_nast"], nast)
     gr = G.czytaj(bytes(d5), wersja)                     # kontrola odczytu całego kawałka
-    nowe = {int(i, 16) for v in wynik_grup.values() for i in v["id"]}
-    znal = [x for x in gr[1]["jednostki"] if x.get("id") in nowe]
-    if len(znal) != len(nowe):
-        raise SystemExit(f"kontrola: odczytano {len(znal)} z {len(nowe)} nowych jednostek")
+    for nr, nowe in nowe_ids.items():
+        znal = [x for x in gr[nr]["jednostki"] if x.get("id") in nowe]
+        if len(znal) != len(nowe):
+            raise SystemExit(f"kontrola: gracz {nr}: odczytano {len(znal)} z {len(nowe)} nowych jednostek")
+    n_nowych = sum(len(v) for v in nowe_ids.values())
     spec = importlib.util.spec_from_file_location("riverlands_bib", riverlands)
     rl = importlib.util.module_from_spec(spec); spec.loader.exec_module(rl)
     spak = rl.pack_pk01(bytes(d5))
@@ -207,8 +221,7 @@ def zbuduj(wej, wyj, uklad_plik, riverlands):
     S.kawalki(nowy)                                       # kontrola ramek do końca pliku
     Path(wyj).write_bytes(nowy)
     Path(wyj).with_suffix(".uklad.json").write_text(json.dumps({"grupy": wynik_grup}, indent=1))
-    print(json.dumps({"plik": str(wyj), "dodano": n_nowych, "grupy": {k: len(v["id"]) for k, v in wynik_grup.items()},
-                      "nastepna_instancja": nast}))
+    print(json.dumps({"plik": str(wyj), "dodano": n_nowych, "grupy": {k: len(v["id"]) for k, v in wynik_grup.items()}}))
 
 
 def main():

@@ -167,5 +167,9 @@ zaznaczyły 55c – to dokładnie przeszkoda z etapów 26–27, teraz wykrywana 
 2. Kontakty powstają już przy odległości ok. 0,6 między środkami. Lista oparta wyłącznie na środkach pól (§ 2) nie
    wyjaśnia tego, a obrys obiektu (jednostka na listach pól, na które zachodzi jej promień) wyjaśnia – [H]
    wspierana pomiarem 547 i liczbą kontaktów 18d = 2 w 546.
+   **[Etap 30 – zastąpione]** Zrzut list komórek EEMap (zad. 552): każda jednostka jest na liście **jednego** pola
+   (+0x1C/+0x20) [P]. Kontakty wynikają z okna przeglądanych pól przy odbudowie (0x5E8F0E):
+   [floor(x − R), floor(x + R)] × [floor(y − R), floor(y + R)], R = max(0,5; 0,5·s) [W] – `import_mapy.md` § 4. Core
+   (etap 30) stosuje tę regułę; porównanie 547 bez zmian (0,0003 / 0,021, obecność kontaktu zgodna w każdym takcie).
 3. Różnica EE/AoC w odbudowie kontaktów nadal bez testu dynamicznego AoC [W].
 4. Objazd 9002: próba 548 nieudana (cel poza kadrem kamery). Wejście w 9002 nie zostało zarejestrowane [N].

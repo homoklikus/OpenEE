@@ -107,7 +107,9 @@ static func _wiersze(n: int, lo: int, hi: int, gorna: int, postoj: int) -> Array
 	return out
 
 
-## Kawałek 4 → teren: A, B, wiersze pól/punktów, PackedByteArray teren/flagi/klasa, PackedFloat32Array wysokość.
+## Kawałek 4 → teren: A, B, wiersze pól/punktów, PackedByteArray teren/flagi/klasa, PackedFloat32Array wysokość i f10.
+## Etap 30: interpretacja Titan (teren komórek, przejezdność) wyłącznie w OpenEE Core – OpenEESymulacja.wczytaj_mape_scn
+## dostaje te surowe tablice (jedna interpretacja mapy dla Core i Godota).
 func czytaj_teren() -> bool:
 	var d := kawalek(4)
 	if d.is_empty():
@@ -117,7 +119,9 @@ func czytaj_teren() -> bool:
 	var V := 2 * A * B + 3 * A + 3 * B + 1
 	var blk := ((K + 1) / 2) * 4
 	var p := 12
+	var f10 := PackedFloat32Array(); f10.resize(T)   # etap 30: pierwszy f32 rekordu pola (MapaTitan::z_scn)
 	for i in range(T):
+		f10[i] = d.decode_float(p)
 		p += 4 + blk
 		if d.decode_u32(p) != 0:
 			blad = "EEMap: obiekty przypięte do pól – nieobsługiwane"; return false
@@ -152,7 +156,7 @@ func czytaj_teren() -> bool:
 	if acc != V:
 		blad = "EEMap: liczba punktów ≠ geometria"; return false
 	teren = {"A": A, "B": B, "N": N, "rp": rp, "rv": rv, "bt": bt, "bv": bv, "teren": ter, "flagi": fl,
-		"wysokosc": wys, "klasa": kl}
+		"wysokosc": wys, "klasa": kl, "f10": f10}
 	return true
 
 

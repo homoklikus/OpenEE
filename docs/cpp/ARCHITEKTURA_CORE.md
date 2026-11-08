@@ -54,6 +54,8 @@ C++ wystarcza – brak innych zależności.
 | kolizje | `kolizje.hpp/.cpp` | wzór odpychania 0x549179 | `walidacja_kolizji.md` § 2 |
 | świat | `symulacja.hpp/.cpp` | `Swiat`: jednostki, takt, zdarzenia, akcje wejścia, migawka, diagnostyka | `specyfikacja_ruchu_godot.md` § 3 |
 | interfejsy | `interfejsy.hpp` | `INawigacja`, `IKolejkaCelow`, `IGrupy`, `IKolizje`, status podsystemów | – |
+| mapa (etap 30) | `mapa.hpp/.cpp` | `MapaTitan`: romb z SCN, linie brzegu, wysokości z maską istnienia, teren komórek (reguła + nadpisanie z pamięci gry, pewność pola), obiekty n×n, siatka dla typu | `import_mapy.md` |
+| walka (etap 30) | `walka.hpp/.cpp` | `ParametryWalki`, `StanWalki`, `oblicz_obrazenia` (0x61DE61), `przyjmij_obrazenia` (0x6172BC), wybór tablicy trafień (część rozpoznana), `PojedynekTitan` (cykl 2012→2001→2021, licznik +0x2A0, moment trafienia) | `walka.md` |
 | nawigacja (etap 29) | `nawigacja.hpp/.cpp` | `AStarTitan`: lista otwarta (lista + 53 kubełki, uzupełnianie po 15), zamknięta, sąsiedzi, reguła narożników, koszty 10/14 + kary, limity, wybór najbliższego, Bounded (koniec bez testu dostępności), przebieg rozwijania | `astar_pola.md`, `astar_wyniki.md` |
 
 ## 3. Arytmetyka i determinizm
@@ -195,3 +197,16 @@ Tablice, prędkość, zapisy f32 i teren są wspólne [P].
   - wejście w Idle zdejmuje cel i aktywuje następny;
   - punkty +0x32, porzucenie i BO-4 – niewdrożone.
 - **9002:** A* w oknie ±50 pól – **niezweryfikowany dynamicznie**, liczony w `Diagnostyka::objazdy_niezweryfikowane`.
+
+## 12. Etap 30 – mapa SCN, kontakty z okna pól, walka
+
+- **Mapa:** `MapaTitan::z_scn` jest jedyną interpretacją danych SCN w projekcie (Godot przekazuje surowe tablice
+  przez GDExtension, narzędzia Python tylko dekodują). `MapaTitan::siatka(teren_dozwolony)` buduje `TerenSiatka`
+  z maską istnienia wierzchołków (romb) i przejezdnością: teren dozwolony dla typu, linie brzegu, obiekty
+  blokujące n×n. `TerenSiatka::get_mesh_z` zwraca 0 poza rombem (jak 0x4C0201).
+- **Kontakty:** okno pól wokół jednostki (R = max(0,5; 0,5·s)), kandydaci po polu obiektu (+0x1C/+0x20) – zamiast
+  hipotezy obrysu z etapu 29 (`import_mapy.md` § 4).
+- **Walka:** moduł niezależny od `Swiat` – wzór obrażeń, HP, przeładowanie i model pojedynku. Integracja z maszyną
+  stanów `Swiat` (zdarzenia CanISeeEnemy, UnitInWeaponRange, FacingEnemyUnit…) – następny etap; do tego czasu
+  zdarzenia walki w `Swiat` zostają fałszem z licznikiem (diagnostyka).
+- **Narzędzie** `cpp/tools/openee_porownaj` – porównanie serii pomiarowej z Core (§ BUDOWANIE 5).

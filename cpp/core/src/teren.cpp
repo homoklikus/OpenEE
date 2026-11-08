@@ -43,6 +43,7 @@ double TerenSiatka::get_mesh_z(double x, double y) const {
     x = f32(x);
     y = f32(y);
     const std::int64_t ix = podloga(x), iy = podloga(y);
+    if (!istnieje_.empty() && !komorka_istnieje(ix, iy)) return 0.0;
     const double fx = x - double(ix), fy = y - double(iy);  // rejestr
     const double a = f32(1.0 - fx);                         // zapis f32
     const double h00 = h(ix, iy), h10 = h(ix + 1, iy), h01 = h(ix, iy + 1), h11 = h(ix + 1, iy + 1);

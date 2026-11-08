@@ -11,6 +11,10 @@
 #include <godot_cpp/variant/packed_string_array.hpp>
 #include <godot_cpp/variant/string.hpp>
 
+#include <godot_cpp/variant/packed_byte_array.hpp>
+#include <godot_cpp/variant/packed_float32_array.hpp>
+
+#include "openee/mapa.hpp"
 #include "openee/symulacja.hpp"
 
 class OpenEESymulacja : public godot::RefCounted {
@@ -34,6 +38,15 @@ public:
     godot::PackedStringArray pola_migawki() const;
     godot::Dictionary jednostka(int64_t id) const;
     godot::Dictionary diagnostyka() const;
+    // etap 30: mapa scenariusza w reprezentacji Titan (interpretacja wyłącznie w Core – MapaTitan::z_scn)
+    godot::Dictionary wczytaj_mape_scn(int64_t A, int64_t B, const godot::PackedByteArray& tekstura,
+                                       const godot::PackedByteArray& flagi, const godot::PackedFloat32Array& f10,
+                                       const godot::PackedFloat32Array& wysokosc, const godot::Dictionary& rodziny);
+    bool dodaj_obiekt_mapy(const godot::Dictionary& obiekt);
+    int64_t mapa_teren(int64_t x, int64_t y) const;
+    int64_t mapa_pewnosc(int64_t x, int64_t y) const;
+    bool utworz_swiat_na_mapie(const godot::String& wariant, const godot::PackedByteArray& teren_dozwolony);
+    bool pole_przejezdne(int64_t x, int64_t y) const;
 
 protected:
     static void _bind_methods();
@@ -41,5 +54,6 @@ protected:
 private:
     std::shared_ptr<const openee::TabliceTrig> tablice_;
     std::unique_ptr<openee::Swiat> swiat_;
+    std::unique_ptr<openee::MapaTitan> mapa_;
     godot::String ostatni_blad_;
 };

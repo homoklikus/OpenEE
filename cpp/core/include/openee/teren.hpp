@@ -25,8 +25,11 @@ public:
     int wysokosc() const { return wys_; }
     bool pusty() const { return z_.empty(); }
     bool wierzcholek_istnieje(std::int64_t ix, std::int64_t iy) const {
-        return ix >= 0 && iy >= 0 && ix < szer_ && iy < wys_;
+        return ix >= 0 && iy >= 0 && ix < szer_ && iy < wys_ &&
+               (istnieje_.empty() || istnieje_[std::size_t(iy) * std::size_t(szer_) + std::size_t(ix)] != 0);
     }
+    /// Maska istnienia wierzchołków (mapa rombowa z SCN – etap 30); pusta = wszystkie istnieją.
+    void ustaw_istnienie(std::vector<std::uint8_t> m) { istnieje_ = std::move(m); }
     double h(std::int64_t ix, std::int64_t iy) const;  // poza siatką: 0 i licznik poza_mapa
     /// Komórka (pole) istnieje, gdy istnieją jej 4 wierzchołki.
     bool komorka_istnieje(std::int64_t ix, std::int64_t iy) const {
@@ -34,6 +37,7 @@ public:
     }
 
     /// GetMeshZ: interpolacja na dwóch trójkątach pola (przekątna (ix,iy)–(ix+1,iy+1)), zapisy f32 jak w DLL.
+    /// Pole poza siatką (mapa rombowa): 0 – 0x4C0201 nie woła GetMeshZ, gdy kafelka nie ma (fizyka_terenu.md § 1).
     double get_mesh_z(double x, double y) const;
 
     /// Nachylenie 0x51216A: punkty P ± 0,65·(m01, m11), asin(Δz/1,3) przez tablicowe UMArcCos.
@@ -56,6 +60,7 @@ private:
     int szer_ = 0, wys_ = 0;
     std::vector<float> z_;
     std::vector<std::uint8_t> przejezdne_;
+    std::vector<std::uint8_t> istnieje_;
     std::array<int, 3> romb_{0, 0, 0};
     bool romb_aktywny_ = false;
     mutable std::uint64_t poza_mapa_ = 0;

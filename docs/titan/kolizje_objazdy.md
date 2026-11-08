@@ -309,3 +309,22 @@ Pomiary i ponowna analiza: `walidacja_kolizji.md`. Zmiany względem tego dokumen
 - **Dwie jednostki w ruchu:** zmierzone (EE 547) i odtworzone przez Core [P]. § 9 jest nieaktualny w części
   „Pomiaru … nie wykonano”. **[Etap 29 – zastąpione]**
 - **9002:** nadal bez pomiaru. W Core zaimplementowany jako A* ±50 i oznaczony jako niezweryfikowany.
+
+## 13. Aktualizacja etapu 30 – próby wywołania RepathAroundObstacle
+
+Nowe narzędzia (kamera „pokaż punkt”, pełna kolejka celów i trasy co takt) usunęły przeszkodę z etapu 29 (cel poza
+kadrem). Wynik:
+- **Brak wejścia w 9002 w 13 seriach** (etapy 29–30: 543–548, 554, 557, 561, 564, 567–569; ok. 30 000 próbek
+  jednostek). Rozróżnienie z zadania etapu: we wszystkich przypadkach **brak zdarzenia ObstacleDetected** – nie
+  zarejestrowano ani +0x20C ≠ 0, ani +0x248 > T.
+- Maksymalny ciągły czas odpychania +0x248: 2011 ms (pościg w walce, 561), 716 ms (przejście przez bramę między
+  jednostkami, 567), 375 ms (cel zajęty przy wieży, 569). Próg T = los[0,75; 1,25]·4000 ms nie został osiągnięty [P].
+- **Cel zajęty** (569): dwie jednostki skierowane w punkt stojącej gwardii przy wieży zatrzymały się 0,5 pola od
+  niej z +0x330 = 8 („punkt osiągnięty”, reguła (a)) po 273–375 ms odpychania – reguła (a) kończy podejście, zanim
+  licznik dojdzie do progu [P]. To główna przyczyna rzadkości 9002 w zwykłym ruchu.
+- Próba blokady bramy (567/568) nie powstała: punkty w bramie leżą na rzutach segmentów bramy (obiekty typu 473 na
+  liście jednostek) i narzędzie odmówiło kliknięcia zgodnie z założeniem; ustawienie przed bramą przesunęło
+  blokujących poza tor przejścia.
+- Status 9002 bez zmian: **[W] kod, [N] pomiar**. Następna próba: ruch przeciwny dwóch grup przez przesmyk o
+  szerokości 1 pola (`narzedzia/eksperymenty/scenariusz_testowy_kolizji.py`, układ „przesmyk” z etapu 13) – jedyna
+  zwykła sytuacja, w której reguła (a) nie działa (cel daleko) i odpychanie trwa sekundami.

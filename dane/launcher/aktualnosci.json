@@ -6,6 +6,18 @@
   {
    "data": "2026-11-08",
    "tytul": {
+    "pl": "Etap 30: prawdziwe mapy i pierwsza walka w nowym silniku",
+    "en": "Stage 30: real maps and the first fight in the new engine"
+   },
+   "tekst": {
+    "pl": "Nowy silnik C++ wczytuje teraz prawdziwe mapy scenariuszy z ich terenem, wodą i przeszkodami. Zmierzyliśmy też w oryginalnej grze pojedynek dwóch wojowników – OpenEE odtwarza każdy cios i każdą utratę zdrowia dokładnie jak oryginał.",
+    "en": "The new C++ engine now loads real scenario maps with their terrain, water and obstacles. We also measured a duel between two warriors in the original game – OpenEE reproduces every blow and every loss of health exactly like the original."
+   },
+   "raport": "RAPORT_ETAP_30.md"
+  },
+  {
+   "data": "2026-11-08",
+   "tytul": {
     "pl": "Etap 29: szukanie drogi i zderzenia w nowym silniku",
     "en": "Stage 29: pathfinding and collisions in the new engine"
    },
@@ -13,7 +25,7 @@
     "pl": "Nowy silnik C++ sam wyznacza drogę jak oryginał, omija przeszkody, wykonuje kolejne rozkazy z Shift i rozpycha jednostki. Zarejestrowaliśmy w oryginalnej grze zderzenie dwóch jadących jednostek – OpenEE odtwarza je z dokładnością do tysięcznych części pola.",
     "en": "The new C++ engine now finds paths like the original, avoids obstacles, carries out Shift-queued orders and pushes units apart. We recorded two moving units colliding in the original game – OpenEE reproduces it to within thousandths of a tile."
    },
-   "raport": "RAPORT_ETAP_29.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_29.md"
   },
   {
    "data": "2026-11-08",

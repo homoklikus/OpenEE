@@ -1,0 +1,1455 @@
+{
+ "wersja": 1,
+ "opis": "Wspólny opis struktur Titan (EE i AoC) – jedno źródło prawdy dla atlasu, Riverlands_MCP i diagnostyki OpenEE Core. Przesunięcia jako napisy szesnastkowe; null = nieustalone dla wariantu. Pola 'odczyt'/'zapis' zawierają tylko funkcje potwierdzone; kandydatów generuje narzedzia/titan/struktury.py dostep (wynik lokalny).",
+ "pewnosc": {
+  "P": "potwierdzone kodem i pomiarem",
+  "W": "wniosek z kodu",
+  "H": "hipoteza",
+  "N": "nieustalone"
+ },
+ "binarki": {
+  "ee": {
+   "plik": "Empire Earth.exe",
+   "sha256": "e352d7ae5ebc91f8d2f9c4363e41e990d7be8b063b1ee9e686a0d2a5f9bea2b5"
+  },
+  "aoc": {
+   "plik": "EE-AOC.exe",
+   "sha256": "db8fc5ceb85dbb9bb7e47804e15f1a025373efe995948cddc5b3d05605797f52"
+  }
+ },
+ "pary_funkcji": [
+  {
+   "ee": "0x549A08",
+   "aoc": "0x556213",
+   "opis": "zastosowanie kolizji / odpychania"
+  },
+  {
+   "ee": "0x549E61",
+   "aoc": "0x556710",
+   "opis": "kolizje po trybie ruchu"
+  },
+  {
+   "ee": "0x5EC69D",
+   "aoc": "0x5FA229",
+   "opis": "bieżący punkt trasy"
+  },
+  {
+   "ee": "0x5EDCF4",
+   "aoc": "0x5FBDD1",
+   "opis": "zdjęcie punktu trasy"
+  },
+  {
+   "ee": "0x5F0F7E",
+   "aoc": "0x5FF2E8",
+   "opis": "krok maszyny stanów"
+  },
+  {
+   "ee": "0x61AD41",
+   "aoc": "0x62DB0F",
+   "opis": "dispatcher wejścia w stan"
+  },
+  {
+   "ee": "0x54E275",
+   "aoc": "0x55ABE8",
+   "opis": "test pojedynczego kroku"
+  },
+  {
+   "ee": "0x5F043B",
+   "aoc": "0x5FE7A8",
+   "opis": "zapis transformacji i pola mapy"
+  },
+  {
+   "ee": "0x614D47",
+   "aoc": "0x627742",
+   "opis": "konstruktor EEUGLocation"
+  },
+  {
+   "ee": "0x638CBF",
+   "aoc": "0x64F18D",
+   "opis": "EEHitPointUpgrader – zastosowanie do jednostki"
+  },
+  {
+   "ee": "0x60B26F",
+   "aoc": "0x61D8DC",
+   "opis": "EEUGAttackUnit vt+0x40 – wejście w stany ataku"
+  }
+ ],
+ "struktury": {
+  "EEUnit": {
+   "opis": "Jednostka (EEUnit / EEComplexUnit). Wspólne pola obiektów mapy i pola ruchu jednostki lądowej.",
+   "rtti": [
+    "EEUnit",
+    "EEComplexUnit"
+   ],
+   "pola": [
+    {
+     "nazwa": "nast",
+     "typ": "ptr",
+     "ee": "0x0C",
+     "aoc": "0x0C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ee_warianty J_NAST, etapy 12-29",
+     "opis": "następny obiekt na liście gracza",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "wlasciciel",
+     "typ": "ptr",
+     "ee": "0x18",
+     "aoc": "0x18",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ee_warianty J_WLASC; 0x60AD87 (gracz→vt+0x74)",
+     "opis": "gracz-właściciel",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "pole_x",
+     "typ": "i32",
+     "ee": "0x1C",
+     "aoc": "0x1C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3; 0x5F043B porównuje nowe pole z +0x1C/+0x20 i zapisuje je przez funkcję wołaną (etap 30: struktury.py waliduj)",
+     "opis": "pole mapy floor(x)",
+     "odczyt": [
+      "0x5F043B"
+     ],
+     "zapis": []
+    },
+    {
+     "nazwa": "pole_y",
+     "typ": "i32",
+     "ee": "0x20",
+     "aoc": "0x20",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3; 0x5F043B porównuje nowe pole z +0x1C/+0x20 i zapisuje je przez funkcję wołaną (etap 30: struktury.py waliduj)",
+     "opis": "pole mapy floor(y)",
+     "odczyt": [
+      "0x5F043B"
+     ],
+     "zapis": []
+    },
+    {
+     "nazwa": "id",
+     "typ": "u32",
+     "ee": "0x24",
+     "aoc": "0x24",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ee_warianty J_ID",
+     "opis": "identyfikator obiektu (0x01xxxxxx)",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "typ",
+     "typ": "ptr",
+     "ee": "0x2C",
+     "aoc": "0x2C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ee_warianty J_KLASA",
+     "opis": "EEUnitClass – typ jednostki",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "parametry",
+     "typ": "ptr",
+     "ee": "0x34",
+     "aoc": "0x34",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "EEUnitClassUpgrade – parametry ruchu i (etap 30) walki gracza",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "flagi",
+     "typ": "u32",
+     "ee": "0x44",
+     "aoc": "0x44",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "ee_warianty J_FLAGI",
+     "opis": "flagi obiektu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "trasa_mapa",
+     "typ": "ptr",
+     "ee": "0x80",
+     "aoc": "0x80",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_wyniki.md §5",
+     "opis": "kolejka trasy (deque +0x7C): mapa bloków",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "trasa_bloki",
+     "typ": "u32",
+     "ee": "0x84",
+     "aoc": "0x84",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_wyniki.md §5",
+     "opis": "liczba bloków mapy",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "trasa_start",
+     "typ": "u32",
+     "ee": "0x88",
+     "aoc": "0x88",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_wyniki.md §5",
+     "opis": "indeks pierwszego punktu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "trasa_n",
+     "typ": "u32",
+     "ee": "0x8C",
+     "aoc": "0x8C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_wyniki.md §5",
+     "opis": "liczba punktów trasy",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "poziomy_celow_pocz",
+     "typ": "ptr",
+     "ee": "0x94",
+     "aoc": "0x94",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "wektor poziomów celów (+0x90): początek; element 0x28 B",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "poziomy_celow_kon",
+     "typ": "ptr",
+     "ee": "0x98",
+     "aoc": "0x98",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "wektor poziomów celów: koniec",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "kontakty",
+     "typ": "u32",
+     "ee": "0xC8",
+     "aoc": "0xC8",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 29 (ee_obserwacja)",
+     "opis": "liczba kontaktów kolizyjnych",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "poz_rozkazu",
+     "typ": "f32[2]",
+     "ee": "0x118",
+     "aoc": "0x118",
+     "rozmiar": 8,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "pozycja w chwili rozkazu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "macierz",
+     "typ": "f32[16]",
+     "ee": "0x130",
+     "aoc": "0x130",
+     "rozmiar": 64,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "orientacja; x +0x13C, y +0x14C, z +0x15C",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "omega",
+     "typ": "f32",
+     "ee": "0x17C",
+     "aoc": "0x17C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "prędkość kątowa [rad/s]",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "grupa",
+     "typ": "ptr",
+     "ee": "0x1C8",
+     "aoc": "0x1C8",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "grupa ruchu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "stan",
+     "typ": "ptr",
+     "ee": "0x1E8",
+     "aoc": "0x1E8",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "EEUnitAction; numer stanu +0x24",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "cel_rozkazu",
+     "typ": "ptr",
+     "ee": "0x1EC",
+     "aoc": "0x1EC",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "pierwszy cel bez flagi punktu trasy",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "cel",
+     "typ": "ptr",
+     "ee": "0x1F0",
+     "aoc": "0x1F0",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "cel bieżący (początek poziomu 0)",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "blokujacy",
+     "typ": "ptr",
+     "ee": "0x20C",
+     "aoc": "0x20C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "fizyka_terenu.md §4, walidacja_kolizji.md §10",
+     "opis": "obiekt blokujący krok",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "kurs_docelowy",
+     "typ": "f32",
+     "ee": "0x214",
+     "aoc": "0x214",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "−10000 = brak",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "k21C",
+     "typ": "f32",
+     "ee": "0x21C",
+     "aoc": "0x21C",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "max(v′, par+0xBC)",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "push",
+     "typ": "f32[2]",
+     "ee": "0x230",
+     "aoc": "0x230",
+     "rozmiar": 8,
+     "pewnosc": "W",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "wektor odpychania",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "v",
+     "typ": "f32",
+     "ee": "0x238",
+     "aoc": "0x238",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "prędkość liniowa",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "skala",
+     "typ": "f32",
+     "ee": "0x240",
+     "aoc": "0x240",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "skala",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "promien",
+     "typ": "f32",
+     "ee": "0x244",
+     "aoc": "0x244",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "promień kolizji",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "k248",
+     "typ": "f32",
+     "ee": "0x248",
+     "aoc": "0x248",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "indeks_pe (fadd/fstp), fizyka_terenu.md §4",
+     "opis": "czas ślizgu/odpychania [ms] (float)",
+     "odczyt": [],
+     "zapis": [
+      "0x549A08",
+      "0x54F05E"
+     ]
+    },
+    {
+     "nazwa": "termin_idle",
+     "typ": "u32",
+     "ee": "0x254",
+     "aoc": "0x258",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "skrypty_stanow.md §3",
+     "opis": "termin oceny Idle (BO-8)",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "animacja",
+     "typ": "i32",
+     "ee": "0x260",
+     "aoc": "0x264",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x5EFD6D (EE) – etap 30; pomiar 561/564 (EE) i 570 (AoC): 13 w ruchu → 0 w AttackEnemyUnit, 4/5 przy śmierci",
+     "opis": "bieżąca animacja (indeks), ustawiana przy wejściu w stany ataku",
+     "odczyt": [],
+     "zapis": [
+      "0x5EFD6D"
+     ],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "tryb",
+     "typ": "u32",
+     "ee": "0x264",
+     "aoc": "0x268",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "tryb ruchu 0/1/3/4/5",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "przeladowanie",
+     "typ": "i32",
+     "ee": "0x2A0",
+     "aoc": "0x2A4",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: wejście w AttackEnemyUnit EE 0x60B343 (:= parametry+0x138), AoC 0x5FEA22 (:= fistp(los[a,b]·parametry+0x138)); zdarzenie Reloaded = 0 (EE 0x61B746); pomiar 561/564/570",
+     "opis": "licznik przeładowania [ms]: −34 co takt (także po śmierci), 0 = Reloaded",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "k330",
+     "typ": "u16",
+     "ee": "0x330",
+     "aoc": "0x33C",
+     "rozmiar": 2,
+     "pewnosc": "P",
+     "zrodlo": "fizyka_terenu.md §4",
+     "opis": "znacznik blokady kroku (2 = zablokowany)",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "osiagniety_punkt",
+     "typ": "u8",
+     "ee": "0x33F",
+     "aoc": "0x34B",
+     "rozmiar": 1,
+     "pewnosc": "W",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "osiągnięto bieżący punkt",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "hp",
+     "typ": "i32",
+     "ee": "0x3C",
+     "aoc": "0x3C",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "etap 30: setter EE 0x616F30, TakeDamage EE 0x6172BC (vt+0x70), EEHitPointUpgrader EE 0x638CBF / AoC 0x64F18D",
+     "opis": "bieżące punkty życia (int); ≤ 0 = martwy",
+     "odczyt": [
+      "0x638CBF",
+      "0x5E8F0E"
+     ],
+     "zapis": [
+      "0x616F30",
+      "0x6172BC"
+     ],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "regeneracja_termin",
+     "typ": "i32",
+     "ee": "0x290",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "etap 30: EE 0x625B47 (co 1000 ms + typ+0x578)",
+     "opis": "termin następnej regeneracji HP",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "zabicia",
+     "typ": "u16",
+     "ee": "0x332",
+     "aoc": null,
+     "rozmiar": 2,
+     "pewnosc": "W",
+     "zrodlo": "etap 30: EE 0x61DDC7 (inc, gdy cel ma HP ≤ 0 po trafieniu)",
+     "opis": "licznik zabitych celów",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "k2AC",
+     "typ": "i32",
+     "ee": "0x2AC",
+     "aoc": "0x2B0",
+     "rozmiar": 4,
+     "pewnosc": "H",
+     "zrodlo": "etap 30: zerowane w 0x60B35C i 0x6176C6; AoC +0x2B0 zerowane w 0x61D9AE",
+     "opis": "pole stanu ataku – znaczenie [N]",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    }
+   ]
+  },
+  "EEUnitClass": {
+   "opis": "Typ jednostki (jeden obiekt na typ).",
+   "rtti": [
+    "EEUnitClass"
+   ],
+   "pola": [
+    {
+     "nazwa": "rozmiar_kolizji",
+     "typ": "f32",
+     "ee": "0x474",
+     "aoc": "0x178",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "rozmiar kolizji / próg zaliczenia punktu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "nachylenie",
+     "typ": "f32",
+     "ee": "0x488",
+     "aoc": "0x18C",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "czułość na nachylenie",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "ogien_bratobojczy",
+     "typ": "f32",
+     "ee": "0x494",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "etap 30: EE 0x61DD85",
+     "opis": "mnożnik obrażeń dla celu tego samego gracza",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "rodzaj_jednostki",
+     "typ": "u32",
+     "ee": "0x4B4",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: = dbobjects „Unit type” (71/71 typów, zad. 552)",
+     "opis": "1 zasoby, 2 budynki, 5 piechota…",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "typ_db",
+     "typ": "u32",
+     "ee": "0x4B8",
+     "aoc": "0x1BC",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ee_warianty K_TYP",
+     "opis": "numer typu w dbobjects",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "klasa_trafienia",
+     "typ": "i32",
+     "ee": "0x4C0",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: DealDamage EE 0x61DE61; odczyt 565: 0 (gwardia – atak „shock”)",
+     "opis": "atakujący: rodzaj ataku (indeks pancerza 0–5); cel: wiersz tablicy mnożników 0x8D2050 (×6)",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "klasa_tablicy_trafien",
+     "typ": "i32",
+     "ee": "0x4C4",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: EE 0x4D5F2C; odczyt 565: 13 (gwardia)",
+     "opis": "wiersz tablicy trafień (cel)",
+     "odczyt": [
+      "0x4D5F2C"
+     ],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "rodzina_ataku",
+     "typ": "i32",
+     "ee": "0x4C8",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: EE 0x61DE61 → 0x4D5F2C",
+     "opis": "rodzina ataku = dbobjects „Family attack type” (odczyt 565: 48 dla gwardii); kolumna tablicy trafień 0x4D5F2C",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "regeneracja",
+     "typ": "i32",
+     "ee": "0x578",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "etap 30: EE 0x625B73",
+     "opis": "HP dodawane co 1000 ms",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "flagi_ruchu",
+     "typ": "u8",
+     "ee": "0x5D4",
+     "aoc": null,
+     "rozmiar": 1,
+     "pewnosc": "W",
+     "zrodlo": "nawigacja_wejscie.md (AoC testuje +0x2D0 & 0xC)",
+     "opis": "flagi ruchu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "teren_dozwolony",
+     "typ": "u8[]",
+     "ee": "0x5D6",
+     "aoc": null,
+     "rozmiar": 1,
+     "pewnosc": "W",
+     "zrodlo": "astar_pola.md §7",
+     "opis": "bajt na typ terenu komórki; AoC – metoda typu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "blokuje",
+     "typ": "u8",
+     "ee": "0x600",
+     "aoc": null,
+     "rozmiar": 1,
+     "pewnosc": "W",
+     "zrodlo": "astar_pola.md §7",
+     "opis": "obiekt blokuje pole",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  },
+  "EEUnitClassUpgrade": {
+   "opis": "Parametry jednostki dla gracza (ruch; etap 30: kandydaci pól walki).",
+   "rtti": [
+    "EEUnitClassUpgrade"
+   ],
+   "pola": [
+    {
+     "nazwa": "zasieg_max",
+     "typ": "f32",
+     "ee": "0x9C",
+     "aoc": "0x9C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: UnitInWeaponRange EE 0x5F0CE8; odczyt 565/570 = 0,5 (dbobjects Max range)",
+     "opis": "maksymalny zasięg ataku",
+     "odczyt": [
+      "0x5F0CE8"
+     ],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "zasieg_obszaru",
+     "typ": "f32",
+     "ee": "0xA0",
+     "aoc": "0xA0",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: EE 0x61DEF3; odczyt EE 565 i AoC 570: atak 15, pancerz 0/6/0/0/0/0, HP 215 (gwardia)",
+     "opis": "promień obrażeń obszarowych (0 = brak)",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "pole_widzenia",
+     "typ": "f32",
+     "ee": "0xA4",
+     "aoc": "0xA4",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: odczyt 565/570 = 4,0 (dbobjects Line of sight)",
+     "opis": "zasięg widzenia",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "przyspieszenie",
+     "typ": "f32",
+     "ee": "0xA8",
+     "aoc": "0xA8",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "a",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "vmax",
+     "typ": "f32",
+     "ee": "0xAC",
+     "aoc": "0xAC",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "prędkość maksymalna",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "alfa",
+     "typ": "f32",
+     "ee": "0xB0",
+     "aoc": "0xB0",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "przyspieszenie kątowe",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "omega_max",
+     "typ": "f32",
+     "ee": "0xB4",
+     "aoc": "0xB4",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §3",
+     "opis": "ωmax",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "atak",
+     "typ": "f32",
+     "ee": "0xD8",
+     "aoc": "0xD8",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: EE 0x61DEF9 (fld) – wartość ataku z ulepszeniami gracza; odczyt EE 565 i AoC 570: atak 15, pancerz 0/6/0/0/0/0, HP 215 (gwardia)",
+     "opis": "atak",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "pancerz",
+     "typ": "f32[6]",
+     "ee": "0xE0",
+     "aoc": "0xE0",
+     "rozmiar": 24,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: EE 0x61DFC0 – indeks = klasa_trafienia atakującego; odczyt EE 565 i AoC 570: atak 15, pancerz 0/6/0/0/0/0, HP 215 (gwardia)",
+     "opis": "pancerz dla 6 rodzajów ataku",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "przeladowanie_ms",
+     "typ": "i32",
+     "ee": "0x138",
+     "aoc": "0x138",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: odczyt 565/570 = 2000 (gwardia, reload 2,0 s)",
+     "opis": "czas przeładowania [ms] (dbobjects „Attack reload time” · 1000)",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    },
+    {
+     "nazwa": "hp_max",
+     "typ": "i32",
+     "ee": "0x144",
+     "aoc": "0x144",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 30: EE 0x60D7CF, 0x625B7C, 0x617437; odczyt EE 565 i AoC 570: atak 15, pancerz 0/6/0/0/0/0, HP 215 (gwardia)",
+     "opis": "maksymalne HP",
+     "odczyt": [],
+     "zapis": [],
+     "grupa": "walka"
+    }
+   ]
+  },
+  "EEUnitAction": {
+   "opis": "Obiekt stanu maszyny .tai.",
+   "rtti": [
+    "EEUnitAction"
+   ],
+   "pola": [
+    {
+     "nazwa": "numer",
+     "typ": "u32",
+     "ee": "0x24",
+     "aoc": "0x24",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "ruch_jednostki.md §4",
+     "opis": "numer stanu (np. 5000 Idle, 2001 AttackEnemyUnit)",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  },
+  "EEUnitGoal": {
+   "opis": "Cel jednostki – klasa bazowa (konstruktor EE 0x6283AB).",
+   "rtti": [
+    "EEUnitGoal"
+   ],
+   "pola": [
+    {
+     "nazwa": "vtable",
+     "typ": "ptr",
+     "ee": "0x00",
+     "aoc": "0x00",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "RTTI",
+     "opis": "klasa celu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "rodzaj",
+     "typ": "u8",
+     "ee": "0x05",
+     "aoc": "0x05",
+     "rozmiar": 1,
+     "pewnosc": "W",
+     "zrodlo": "0x6283AB (EE)",
+     "opis": "1 Location, 2 AttackUnit, 3 AttackGround, 8 UnloadTransport, 9 Patrol, 10 Explore, 11 CastCalamity",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "k08",
+     "typ": "u32",
+     "ee": "0x08",
+     "aoc": "0x08",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "0x6283AB (EE)",
+     "opis": "5000 przy utworzeniu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "czas_utworzenia",
+     "typ": "u32",
+     "ee": "0x10",
+     "aoc": "0x10",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "0x6283AB (EE): EEPhysics+0xD0",
+     "opis": "czas gry utworzenia [ms]",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "numer_seryjny",
+     "typ": "u32",
+     "ee": "0x14",
+     "aoc": "0x14",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "0x6283AB (EE): licznik globalny 0x9424D8",
+     "opis": "kolejny numer celu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "proby",
+     "typ": "u32",
+     "ee": "0x18",
+     "aoc": "0x18",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "ruch_jednostki.md §4",
+     "opis": "licznik prób trasy (limit vtable +0x2C)",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "pochodzenie",
+     "typ": "u8",
+     "ee": "0x1C",
+     "aoc": "0x1C",
+     "rozmiar": 1,
+     "pewnosc": "H",
+     "zrodlo": "0x6283AB (EE), argument konstruktora",
+     "opis": "pochodzenie rozkazu (gracz/AI) – do potwierdzenia",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "aktywowany",
+     "typ": "u8",
+     "ee": "0x1D",
+     "aoc": "0x1D",
+     "rozmiar": 1,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "1 dla celu bieżącego",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  },
+  "EEUGLocation": {
+   "opis": "Cel-punkt (0x38 B).",
+   "rtti": [
+    "EEUGLocation"
+   ],
+   "pola": [
+    {
+     "nazwa": "punkt",
+     "typ": "f32[3]",
+     "ee": "0x20",
+     "aoc": "0x20",
+     "rozmiar": 12,
+     "pewnosc": "W",
+     "zrodlo": "0x614D47 (EE)",
+     "opis": "x, y, z",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "kat",
+     "typ": "f32",
+     "ee": "0x2C",
+     "aoc": "0x2C",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "0x614D47 (EE)",
+     "opis": "kąt szyku",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "obrot",
+     "typ": "u8",
+     "ee": "0x31",
+     "aoc": "0x31",
+     "rozmiar": 1,
+     "pewnosc": "W",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "obrót do kąta celu po dojściu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "punkt_trasy",
+     "typ": "u8",
+     "ee": "0x32",
+     "aoc": "0x32",
+     "rozmiar": 1,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "punkt pośredni trasy",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "k34",
+     "typ": "u8",
+     "ee": "0x34",
+     "aoc": "0x34",
+     "rozmiar": 1,
+     "pewnosc": "P",
+     "zrodlo": "nawigacja_wejscie.md",
+     "opis": "1 świeży rozkaz, 2 prośba, 3/4 trasa grupowa",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  },
+  "EEUGAttackUnit": {
+   "opis": "Cel-atak na jednostkę (konstruktor EE 0x60AD45).",
+   "rtti": [
+    "EEUGAttackUnit"
+   ],
+   "pola": [
+    {
+     "nazwa": "punkt",
+     "typ": "f32[3]",
+     "ee": "0x20",
+     "aoc": "0x20",
+     "rozmiar": 12,
+     "pewnosc": "W",
+     "zrodlo": "0x60AD45 (EE)",
+     "opis": "środek pola celu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "wlasciciel",
+     "typ": "ptr",
+     "ee": "0x2C",
+     "aoc": "0x2C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x60AD45 (EE); pomiar 561: id = atakujący",
+     "opis": "jednostka atakująca",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "cel",
+     "typ": "ptr",
+     "ee": "0x30",
+     "aoc": "0x30",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x60ADEC (EE); pomiar 561/564/570: vtable EEComplexUnit, id celu +0x24",
+     "opis": "atakowana jednostka",
+     "odczyt": [
+      "0x60B60F"
+     ],
+     "zapis": []
+    },
+    {
+     "nazwa": "cel_pole",
+     "typ": "i32[2]",
+     "ee": "0x34",
+     "aoc": "0x34",
+     "rozmiar": 8,
+     "pewnosc": "W",
+     "zrodlo": "0x60ADFF (EE)",
+     "opis": "pole celu przy utworzeniu (−10000 = brak)",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  },
+  "EEGoalLevel": {
+   "opis": "Poziom kolejki celów (0x28 B), element wektora jednostka+0x90.",
+   "rtti": [
+    "EEGoalQueueContainer"
+   ],
+   "pola": [
+    {
+     "nazwa": "mapa",
+     "typ": "ptr",
+     "ee": "0x08",
+     "aoc": "0x08",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "mapa bloków (1024 wskaźniki)",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "bloki",
+     "typ": "u32",
+     "ee": "0x0C",
+     "aoc": "0x0C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "liczba bloków",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "pierwszy",
+     "typ": "u32",
+     "ee": "0x10",
+     "aoc": "0x10",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "indeks pierwszego elementu",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "liczba",
+     "typ": "u32",
+     "ee": "0x14",
+     "aoc": "0x14",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "liczba celów",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "wlasciciel",
+     "typ": "ptr",
+     "ee": "0x18",
+     "aoc": "0x18",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "kolejka_rozkazow.md",
+     "opis": "jednostka",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  },
+  "PunktTrasy": {
+   "opis": "Element kolejki trasy (20 B, blok 204 elementy).",
+   "rtti": [],
+   "pola": [
+    {
+     "nazwa": "x",
+     "typ": "f32",
+     "ee": "0x00",
+     "aoc": "0x00",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_wyniki.md §5",
+     "opis": "",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "y",
+     "typ": "f32",
+     "ee": "0x04",
+     "aoc": "0x04",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_wyniki.md §5",
+     "opis": "",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "z",
+     "typ": "f32",
+     "ee": "0x08",
+     "aoc": "0x08",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_wyniki.md §5",
+     "opis": "",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "dl",
+     "typ": "f32",
+     "ee": "0x0C",
+     "aoc": "0x0C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_wyniki.md §5",
+     "opis": "długość narastająca",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "dl_poprz",
+     "typ": "f32",
+     "ee": "0x10",
+     "aoc": "0x10",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_wyniki.md §5",
+     "opis": "długość narastająca poprzedniego",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  },
+  "EEMap": {
+   "opis": "Mapa pól. Wskaźnik globalny: GRA_STAT+0xBC (EE 0x9183BC, AoC 0x930DFC).",
+   "rtti": [
+    "EEMap"
+   ],
+   "pola": [
+    {
+     "nazwa": "mesh",
+     "typ": "obj",
+     "ee": "0x1C",
+     "aoc": "0x1C",
+     "rozmiar": 4,
+     "pewnosc": "W",
+     "zrodlo": "fizyka_terenu.md §1",
+     "opis": "GETerrainMesh",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "komorki",
+     "typ": "ptr",
+     "ee": "0x1816D4",
+     "aoc": "0x1955F0",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x4039AC (EE); AoC = EE + 0x13F1C (etap 30: rozkład dostępów indeks_pe – 270/279, 373/386 odwołań); odczyt AoC 570: W 280, brzegi 139/419/140",
+     "opis": "tablica wskaźników komórek, indeks y·W + x",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "brzeg_s1",
+     "typ": "i32",
+     "ee": "0x1816EC",
+     "aoc": "0x195608",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_pola.md §7; AoC = EE + 0x13F1C (etap 30: rozkład dostępów indeks_pe – 270/279, 373/386 odwołań); odczyt AoC 570: W 280, brzegi 139/419/140",
+     "opis": "linia brzegu x + y = s1",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "brzeg_s2",
+     "typ": "i32",
+     "ee": "0x1816F0",
+     "aoc": "0x19560C",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_pola.md §7; AoC = EE + 0x13F1C (etap 30: rozkład dostępów indeks_pe – 270/279, 373/386 odwołań); odczyt AoC 570: W 280, brzegi 139/419/140",
+     "opis": "linia brzegu x + y = s2",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "brzeg_d",
+     "typ": "i32",
+     "ee": "0x1816F4",
+     "aoc": "0x195610",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "astar_pola.md §7; AoC = EE + 0x13F1C (etap 30: rozkład dostępów indeks_pe – 270/279, 373/386 odwołań); odczyt AoC 570: W 280, brzegi 139/419/140",
+     "opis": "linia brzegu |y − x| = d",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "szerokosc",
+     "typ": "i32",
+     "ee": "0x1816FC",
+     "aoc": "0x195618",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x4039AC (EE); AoC = EE + 0x13F1C (etap 30: rozkład dostępów indeks_pe – 270/279, 373/386 odwołań); odczyt AoC 570: W 280, brzegi 139/419/140",
+     "opis": "W (wymiar porównywany dla x i y)",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  },
+  "EEMapKomorka": {
+   "opis": "Komórka mapy – obiekt EETile (RTTI, vtable EE 0x82C674), wskaźniki w tablicy EEMap+komorki.",
+   "rtti": [
+    "EETile"
+   ],
+   "pola": [
+    {
+     "nazwa": "teren",
+     "typ": "u32",
+     "ee": "0x04",
+     "aoc": "0x04",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x41D3AB (EE); AoC – ta sama logika A* (astar_pola.md §1), do potwierdzenia odczytem; etap 30 (zad. 550): wartości 0,1,2,5,6,9,10,11 = rodzina terenu tekstury (dbterrain „Terrain family”), 1 woda głęboka, 10 płytka – tekstura_titan.md; zrzut AoC 570: 39 480 komórek, histogram terenu = EE",
+     "opis": "indeks terenu dla tablicy typ+0x5D6",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "lista",
+     "typ": "ptr",
+     "ee": "0x08",
+     "aoc": "0x08",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x41D3BB (EE); AoC – ta sama logika A* (astar_pola.md §1), do potwierdzenia odczytem; zrzut AoC 570: 39 480 komórek, histogram terenu = EE",
+     "opis": "pierwszy węzeł listy obiektów",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  },
+  "WezelObiektu": {
+   "opis": "Węzeł listy obiektów komórki.",
+   "rtti": [],
+   "pola": [
+    {
+     "nazwa": "obiekt",
+     "typ": "ptr",
+     "ee": "0x04",
+     "aoc": "0x04",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x41D3C4 (EE); AoC – ta sama logika A* (astar_pola.md §1), do potwierdzenia odczytem; zrzut AoC 570: 39 480 komórek, histogram terenu = EE",
+     "opis": "",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "nast",
+     "typ": "ptr",
+     "ee": "0x08",
+     "aoc": "0x08",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "0x41D3D6 (EE); AoC – ta sama logika A* (astar_pola.md §1), do potwierdzenia odczytem; zrzut AoC 570: 39 480 komórek, histogram terenu = EE",
+     "opis": "",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  },
+  "EEPhysics": {
+   "opis": "Zegar i RNG symulacji. Wskaźnik: A_GRA (EE 0x919774, AoC 0x9318F0).",
+   "rtti": [
+    "EEPhysics"
+   ],
+   "pola": [
+    {
+     "nazwa": "rng",
+     "typ": "u32",
+     "ee": "0x18",
+     "aoc": "0x18",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "etap 27-29",
+     "opis": "stan LCG 214013/2531011",
+     "odczyt": [],
+     "zapis": []
+    },
+    {
+     "nazwa": "czas",
+     "typ": "u32",
+     "ee": "0xD0",
+     "aoc": "0xD0",
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "zegar_symulacji.md",
+     "opis": "czas gry [ms]",
+     "odczyt": [],
+     "zapis": []
+    }
+   ]
+  }
+ }
+}

@@ -4,6 +4,9 @@
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+#include <array>
+#include <cstdio>
+
 using namespace godot;
 
 namespace {
@@ -30,9 +33,16 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("pola_migawki"), &OpenEESymulacja::pola_migawki);
     ClassDB::bind_method(D_METHOD("jednostka", "id"), &OpenEESymulacja::jednostka);
     ClassDB::bind_method(D_METHOD("diagnostyka"), &OpenEESymulacja::diagnostyka);
+    ClassDB::bind_method(D_METHOD("wczytaj_mape_scn", "A", "B", "tekstura", "flagi", "f10", "wysokosc", "rodziny"),
+                         &OpenEESymulacja::wczytaj_mape_scn);
+    ClassDB::bind_method(D_METHOD("dodaj_obiekt_mapy", "obiekt"), &OpenEESymulacja::dodaj_obiekt_mapy);
+    ClassDB::bind_method(D_METHOD("mapa_teren", "x", "y"), &OpenEESymulacja::mapa_teren);
+    ClassDB::bind_method(D_METHOD("mapa_pewnosc", "x", "y"), &OpenEESymulacja::mapa_pewnosc);
+    ClassDB::bind_method(D_METHOD("utworz_swiat_na_mapie", "wariant", "teren_dozwolony"), &OpenEESymulacja::utworz_swiat_na_mapie);
+    ClassDB::bind_method(D_METHOD("pole_przejezdne", "x", "y"), &OpenEESymulacja::pole_przejezdne);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.7.0 (etap 29, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.8.0 (etap 30, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -197,3 +207,77 @@ Dictionary OpenEESymulacja::diagnostyka() const {
     d["podsystemy"] = ps;
     return d;
 }
+
+// ------------------------------------------------------------------------------------------- mapa (etap 30)
+Dictionary OpenEESymulacja::wczytaj_mape_scn(int64_t A, int64_t B, const PackedByteArray& tekstura, const PackedByteArray& flagi,
+                                             const PackedFloat32Array& f10, const PackedFloat32Array& wysokosc,
+                                             const Dictionary& rodziny) {
+    Dictionary w;
+    openee::DaneTerenuScn d;
+    d.A = int(A);
+    d.B = int(B);
+    d.tekstura.assign(tekstura.ptr(), tekstura.ptr() + tekstura.size());
+    d.flagi.assign(flagi.ptr(), flagi.ptr() + flagi.size());
+    d.f10.assign(f10.ptr(), f10.ptr() + f10.size());
+    d.wysokosc.assign(wysokosc.ptr(), wysokosc.ptr() + wysokosc.size());
+    std::array<std::int16_t, 256> rd;
+    rd.fill(-1);
+    const Array k = rodziny.keys();
+    for (int64_t i = 0; i < k.size(); ++i) {
+        const int64_t id = int64_t(k[i]);
+        if (id >= 0 && id < 256) rd[std::size_t(id)] = std::int16_t(int64_t(rodziny[k[i]]));
+    }
+    try {
+        mapa_ = std::make_unique<openee::MapaTitan>(openee::MapaTitan::z_scn(d, rd));
+    } catch (const std::exception& e) {
+        ostatni_blad_ = gtekst(e.what());
+        UtilityFunctions::push_error("OpenEE: ", ostatni_blad_);
+        w["ok"] = false;
+        w["blad"] = ostatni_blad_;
+        return w;
+    }
+    w["ok"] = true;
+    w["szerokosc"] = mapa_->szerokosc();
+    w["brzeg_s1"] = mapa_->brzeg_s1();
+    w["brzeg_s2"] = mapa_->brzeg_s2();
+    w["brzeg_d"] = mapa_->brzeg_d();
+    w["skrot"] = gtekst([&] { char b[20]; std::snprintf(b, sizeof b, "%016llx", (unsigned long long)mapa_->skrot()); return std::string(b); }());
+    return w;
+}
+
+bool OpenEESymulacja::dodaj_obiekt_mapy(const Dictionary& o) {
+    if (!mapa_) return false;
+    openee::ObiektMapy ob;
+    ob.id = std::uint32_t(int64_t(o.get("id", 0)));
+    ob.typ_db = int(int64_t(o.get("typ", -1)));
+    ob.gracz = int(int64_t(o.get("gracz", 0)));
+    ob.pole_x = int(int64_t(o.get("X", 0)));
+    ob.pole_y = int(int64_t(o.get("Y", 0)));
+    ob.kwadrat = int(int64_t(o.get("kwadrat", 1)));
+    ob.blokuje = bool(o.get("blokuje", false));
+    mapa_->obiekty().push_back(ob);
+    return true;
+}
+
+int64_t OpenEESymulacja::mapa_teren(int64_t x, int64_t y) const { return mapa_ ? mapa_->teren(int(x), int(y)) : -1; }
+int64_t OpenEESymulacja::mapa_pewnosc(int64_t x, int64_t y) const { return mapa_ ? int64_t(mapa_->pewnosc(int(x), int(y))) : 3; }
+
+bool OpenEESymulacja::utworz_swiat_na_mapie(const String& wariant, const PackedByteArray& teren_dozwolony) {
+    if (!tablice_ || !mapa_) {
+        ostatni_blad_ = "Potrzebne tablice (zaladuj_tablice / tryb przybliżony) i mapa (wczytaj_mape_scn).";
+        UtilityFunctions::push_error("OpenEE: ", ostatni_blad_);
+        return false;
+    }
+    std::array<std::uint8_t, 16> dz{};
+    for (int64_t i = 0; i < teren_dozwolony.size() && i < 16; ++i) dz[std::size_t(i)] = teren_dozwolony[i];
+    try {
+        swiat_ = std::make_unique<openee::Swiat>(tablice_, mapa_->siatka(dz), openee::WariantTitan::z_nazwy(tekst(wariant)));
+    } catch (const std::exception& e) {
+        ostatni_blad_ = gtekst(e.what());
+        UtilityFunctions::push_error("OpenEE: ", ostatni_blad_);
+        return false;
+    }
+    return true;
+}
+
+bool OpenEESymulacja::pole_przejezdne(int64_t x, int64_t y) const { return swiat_ && swiat_->teren().pole_przejezdne(x, y); }

@@ -13,7 +13,9 @@ const std::vector<OpisPodsystemu>& podsystemy() {
         {"matematyka Titan (UMCos/UMSin/UMArcCos/UMArcTan2, SetOrientationYPR)", StatusPodsystemu::wdrozony, ""},
         {"tablice z Low-Level Engine.dll (PE jako dane)", StatusPodsystemu::wdrozony, "2 warianty GOG+NeoEE"},
         {"generator LCG", StatusPodsystemu::wdrozony, "miejsca losowań: 2/takt + ObstacleDetected; Idle [N]"},
-        {"teren: GetMeshZ, nachylenie, reguła stoku", StatusPodsystemu::wdrozony, "siatka własna; import mapy – nie"},
+        {"teren: GetMeshZ, nachylenie, reguła stoku", StatusPodsystemu::wdrozony, "siatka z mapy SCN (MapaTitan, etap 30)"},
+        {"import mapy SCN (MapaTitan): romb, wysokości, teren komórek, obiekty", StatusPodsystemu::czesciowy,
+         "teren z reguły 99,6 % pól (klify [N]); blokada obiektu z pamięci gry"},
         {"fizyka EEPMLand tryby 0/3/4/5, EE i AoC", StatusPodsystemu::wdrozony, ""},
         {"test pojedynczego kroku", StatusPodsystemu::wdrozony, "kolejność z kodu [W]; bez pomiaru izolowanego"},
         {"maszyna stanów (.tai, podzbiór ruchu)", StatusPodsystemu::czesciowy,
@@ -23,7 +25,9 @@ const std::vector<OpisPodsystemu>& podsystemy() {
         {"graf podsektorów", StatusPodsystemu::niewdrozony, ""},
         {"objazd 9002", StatusPodsystemu::czesciowy, "A* ±50 – NIEZWERYFIKOWANY dynamicznie"},
         {"kolizje w takcie (kontakty, 0x549179, 0x549A08, reguła (a))", StatusPodsystemu::czesciowy,
-         "wzór [P]; lista kontaktów i kolejność EE/AoC [W]"},
+         "wzór [P]; okno kontaktów 0x5E8F0E [W, etap 30]; kolejność EE/AoC [W]"},
+        {"walka: wzór obrażeń, HP, przeładowanie, cykl ataku pojedynku", StatusPodsystemu::czesciowy,
+         "pojedynek EE 564 co takt = gra; .tai walki w Swiat, obrót, pościg, obszar – nie"},
         {"grupy i szyk", StatusPodsystemu::niewdrozony, ""},
     };
     return l;
@@ -373,14 +377,16 @@ void Swiat::odbuduj_kontakty(Jednostka& u, double cx, double cy) {
         o.kontakty = std::uint32_t(l.size());
     }
     u.lista_kontaktow.clear();
-    const double R = std::max(u.param.rozmiar, 0.5);
-    const std::int64_t xa = podloga(cx - R), xb = podloga(cx + R), ya = podloga(cy - R), yb = podloga(cy + R);
+    // Etap 30 [W: kod 0x5E8F0E; P: zrzut list komórek EEMap, zad. 552 – każda jednostka jest na liście jednego pola]:
+    // R = max(0,5; 0,5·s), s = rozmiar kolizji typu (×2 gdy ≥ 1,0); kandydaci = obiekty, których POLE (+0x1C/+0x20,
+    // komorka_x/y) leży w oknie [floor(x−R), floor(x+R)] × [floor(y−R), floor(y+R)].
+    // [Etap 29 – zastąpione: obiekt na listach wszystkich pól pod obrysem (promień kolizji) – hipoteza obalona.]
+    const double s = u.param.rozmiar >= 1.0 ? u.param.rozmiar + u.param.rozmiar : u.param.rozmiar;
+    const double R = std::max(f32(s * 0.5), 0.5);
+    const std::int64_t xa = podloga(f32(cx - R)), xb = podloga(f32(cx + R)), ya = podloga(f32(cy - R)), yb = podloga(f32(cy + R));
     for (auto& o : jednostki_) {
         if (o.id == u.id) continue;
-        // obiekt jest na listach wszystkich pól, na które zachodzi jego obrys (promień kolizji) [H – etap 29:
-        // wyjaśnia 2 kontakty 18d w pomiarze 546 i brak nakładania się jednostek; sam środek pola dawał 1]
-        const double ro = o.param.promien_kolizji;
-        if (podloga(o.x + ro) < xa || podloga(o.x - ro) > xb || podloga(o.y + ro) < ya || podloga(o.y - ro) > yb) continue;
+        if (o.komorka_x < xa || o.komorka_x > xb || o.komorka_y < ya || o.komorka_y > yb) continue;
         u.lista_kontaktow.push_back(o.id);
         o.lista_kontaktow.push_back(u.id);
         o.kontakty = std::uint32_t(o.lista_kontaktow.size());

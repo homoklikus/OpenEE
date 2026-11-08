@@ -24,6 +24,24 @@ Porządek od etapu 13.5:
 | `test_wizualny_051.sh`, `metryki_zrzutu.py`, `porownaj_renderery.sh` | test wizualny modeli i porównanie rendererów (**GPU**) | ręcznie (README: „Testy”) |
 | `baner_launchera.py` | własna grafika nagłówka launchera | ręcznie (`dane/launcher/grafika/ZRODLO.md`) |
 
+## `narzedzia/titan/` – warsztat reverse engineeringu Titan (etap 30)
+
+Binarki gry są czytane tylko do odczytu; wyniki dotyczące binarek (indeks, mapy dostępu) trafiają do
+`~/.cache/openee_re` albo do `Testy_MCP` – nie do repozytorium.
+
+| Plik | Do czego |
+|---|---|
+| `indeks_pe.py` | indeks instrukcji z operandem `[rej + przesunięcie]` (capstone), rodzaj dostępu O/Z/OZ, kandydaci początków funkcji (cele `call` i wskaźniki vtable) |
+| `struktury.py` | wspólny opis struktur `dane/titan/struktury_titan.json`: `waliduj` (schemat i dostęp w funkcjach z pól `odczyt`/`zapis`), `dostep STRUKTURA POLE` (kandydaci odczytu i zapisu w EE i AoC), `przesuniecie`, `porownaj` (spójność EE/AoC w parach funkcji), `markdown` (tabela atlasu `docs/titan/struktury_titan.md`) |
+| `rtti_titan.py` | nazwa klasy dla vtable i vtable dla klasy (RTTI MSVC), lista klas z filtrem |
+| `switch_titan.py` | adres przypadku instrukcji switch MSVC (drzewo porównań + tablice skoków) dla konkretnych wartości – dispatchery stanów i zdarzeń |
+| `eksport_mapy.py` | SCN → neutralny plik dla Core (tylko dekodowanie; interpretacja w `MapaTitan`); opcjonalnie zrzut EEMap z Riverlands_MCP, tablica terenu typu, próbki wysokości |
+| `pomiar_core.py` | pomiar Riverlands_MCP → walidacja → seria `openee_seria_v1` → `cpp/tools/openee_porownaj` → raport (pierwszy rozbieżny takt) |
+| `test_titan_narzedzia.py` | testy bez danych gry (walidacja pomiaru, schemat) |
+
+Przykłady: `python3 narzedzia/titan/struktury.py dostep EEUnit hp --exe-ee …`; `python3 narzedzia/titan/pomiar_core.py
+porownaj POMIAR.json --instalacja KATALOG_GRY --mapa MAPA.json --jednostki 0x100018c`.
+
 ## `narzedzia/eksperymenty/` – pomiary do odtworzenia
 
 | Plik | Etap | Dokument |

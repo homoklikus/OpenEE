@@ -112,13 +112,20 @@ Wynik GDExtension: `godot/bin/libopenee.linux.template_debug.x86_64.so`.
 | `core_kolejka` | zwykły rozkaz, Shift ×2, kolejność A → B → C, czyszczenie, Shift bez celu | SKIP |
 | `core_scenariusze` | prosta trasa, objazd ściany, zakręty, cel nieosiągalny, wspólny cel | SKIP |
 | `core_porownanie_gra` | Core kontra pomiary EE/AoC (6 serii jednej jednostki, 2 serie dwóch jednostek), metryki | SKIP bez danych lokalnych |
+| `core_mapa` | reguła terenu, geometria rombu, obiekty n×n, wysokość poza rombem; lokalnie: SCN „Wojna trojańska” kontra zrzut EEMap (brzegi, teren 99,64 %, pola obiektów, wysokości, trasy A/C/E etapu 24 na mapie z SCN) | lokalna część SKIP bez danych |
+| `core_walka` | wzór obrażeń (f32, zaokrąglenie, minimum 1, r), TakeDamage, wybór tablicy, cykl 60 taktów; lokalnie: pojedynek EE 564 co takt | lokalna część SKIP bez danych |
 | `core_podsystemy` | wypis stanu wdrożenia | działa |
 
 - Kod 77 oznacza SKIP. CTest wyświetla go jako „Skipped” i **nie liczy jako zaliczonego**.
 - Ścieżki DLL: `OPENEE_INSTALACJA` (CMake albo zmienna środowiskowa), `OPENEE_DLL_EE`, `OPENEE_DLL_AOC`.
-- Dane lokalne (etap 29, nie publikowane): `OPENEE_DANE_LOKALNE=…/Testy_MCP/e29`:
+- Dane lokalne (nie publikowane): `OPENEE_DANE_LOKALNE=…/Testy_MCP/e30` (od etapu 30; katalog `e29` nadal działa dla
+  grup etapu 29):
   - `astar_mapa_e24_lokalne.json` – dostępność pól mapy z gry;
-  - `serie_porownawcze.json` – serie pomiarowe, teren i serie wielojednostkowe z Riverlands_MCP.
+  - `serie_porownawcze.json` – serie pomiarowe, teren i serie wielojednostkowe z Riverlands_MCP;
+  - `mapa_troja_ee.json` – `narzedzia/titan/eksport_mapy.py` (SCN + zrzut EEMap + tablica terenu typu 422);
+  - `pojedynek_564.json` – HP, licznik przeładowania i stany obu jednostek pojedynku EE 564.
+- `cpp/tools/openee_porownaj` (etap 30): porównanie serii `openee_seria_v1` z Core; wywoływane przez
+  `narzedzia/titan/pomiar_core.py porownaj … --bin <build>/cpp/tools/openee_porownaj`.
 - `OPENEE_TAI` – katalog z wypakowanymi `.tai` (porównanie parsera).
 - `OPENEE_DEBUG_POROWNANIE=1` – wypis taktów po pierwszej rozbieżności.
 
@@ -127,7 +134,7 @@ Wynik GDExtension: `godot/bin/libopenee.linux.template_debug.x86_64.so`.
 ```bash
 G=/ścieżka/Godot_v4.7.2-stable_linux.x86_64
 $G --headless --path godot --import                                        # rejestracja rozszerzenia
-$G --headless --path godot --script res://testy/testy_gdextension.gd       # testy integracji (17)
+$G --headless --path godot --script res://testy/testy_gdextension.gd       # testy integracji (22; mapa SCN: OPENEE_SCN_TEST, OPENEE_RODZINY_TEST, OPENEE_SKROT_MAPY_TEST)
 $G --headless --path godot --script res://testy/uruchom_testy.gd           # dotychczasowe testy (324)
 ./uruchom_openee.sh core [--gra=aoc] [--dll=…] [--przypadek=N]            # scena diagnostyczna
 ```

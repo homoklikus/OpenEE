@@ -25,6 +25,7 @@ add_subdirectory(cpp/core)
 if(OPENEE_TESTY)
   enable_testing()
   add_subdirectory(cpp/tests)
+  add_subdirectory(cpp/tools)   # etap 30: openee_porownaj (pomiar oryginału → Core)
 endif()
 
 if(OPENEE_GDEXTENSION)

@@ -50,6 +50,7 @@ func _testy() -> void:
 	# tryb przybliżony: działa, ale jest oznaczony jako niezgodny
 	sym.uzyj_tablic_przyblizonych()
 	_wynik("tryb przybliżony oznaczony jako niezgodny", sym.utworz_swiat("ee") and not sym.diagnostyka()["tablice_zgodne"])
+	_test_mapy(sym)
 	var przypadki := CoreCpp.wczytaj_przypadki(katalog)
 	_wynik("przypadki syntetyczne wczytane", przypadki.size() == 9, str(przypadki.size()))
 	var dll := CoreCpp.znajdz_dll("ee", root.get_node_or_null("Konfiguracja"))
@@ -126,6 +127,47 @@ func _testy() -> void:
 	_wynik("diagnostyka: tablice zgodne, RNG liczy losowania", d["tablice_zgodne"] and int(d["rng_losowania"]) > 0,
 		"rng %d, losowań %d, nieobsługiwanych zdarzeń %d" % [d["rng_stan"], d["rng_losowania"], d["zdarzenia_nieobslugiwane"]])
 	_koniec()
+
+
+# etap 30: mapa SCN → Core (MapaTitan). Interpretacja wyłącznie w Core; GDScript przekazuje surowe tablice.
+func _test_mapy(sym: Object) -> void:
+	var A := 3
+	var B := 3
+	var T := 2 * A * B + A + B
+	var V := 2 * A * B + 3 * A + 3 * B + 1
+	var tex := PackedByteArray(); tex.resize(T); tex.fill(3)
+	var fl := PackedByteArray(); fl.resize(T)
+	var f10 := PackedFloat32Array(); f10.resize(T)
+	var wys := PackedFloat32Array(); wys.resize(V)
+	tex[5] = 26; fl[5] = 1; f10[5] = -0.6      # pole nr 5 w kolejności rombu: woda głęboka
+	var info: Dictionary = sym.wczytaj_mape_scn(A, B, tex, fl, f10, wys, {3: 0, 26: 0})
+	_wynik("mapa SCN → Core: romb i linie brzegu", info["ok"] and info["szerokosc"] == 6 and info["brzeg_s1"] == 2 and info["brzeg_s2"] == 8 and info["brzeg_d"] == 3, str(info))
+	# pole nr 5: wiersze 0: (2..3), 1: (1..4) → indeksy 0–1, 2–5 → pole 5 = (4, 1)
+	_wynik("mapa SCN → Core: teren komórek (reguła Titan w Core)", sym.mapa_teren(4, 1) == 1 and sym.mapa_teren(2, 1) == 0 and sym.mapa_teren(0, 0) == -1,
+		"(4,1)=%d (2,1)=%d (0,0)=%d" % [sym.mapa_teren(4, 1), sym.mapa_teren(2, 1), sym.mapa_teren(0, 0)])
+	sym.dodaj_obiekt_mapy({"id": 0x1000001, "typ": 34, "gracz": 1, "X": 2, "Y": 2, "kwadrat": 2, "blokuje": true})
+	var dozw := PackedByteArray([1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0])
+	var ok: bool = sym.utworz_swiat_na_mapie("ee", dozw)
+	_wynik("świat Core na mapie: woda, obiekt 2×2 i brzeg nieprzejezdne", ok and not sym.pole_przejezdne(4, 1) and not sym.pole_przejezdne(3, 3) and not sym.pole_przejezdne(2, 0) and sym.pole_przejezdne(3, 1),
+		"(4,1) %s (3,3) %s (2,0) %s (3,1) %s" % [sym.pole_przejezdne(4, 1), sym.pole_przejezdne(3, 3), sym.pole_przejezdne(2, 0), sym.pole_przejezdne(3, 1)])
+	var scn := OS.get_environment("OPENEE_SCN_TEST")
+	if scn == "":
+		_skip("mapa prawdziwego scenariusza przez importer GDScript → Core", "OPENEE_SCN_TEST nie ustawione (plik gry – lokalnie)")
+		return
+	var s := ScenariuszEE.new()
+	var bajty := FileAccess.get_file_as_bytes(scn)
+	if not s.wczytaj(bajty) or not s.czytaj_teren():
+		_wynik("mapa prawdziwego scenariusza: odczyt SCN", false, s.blad)
+		return
+	var rodz := {}
+	var rj = JSON.parse_string(OS.get_environment("OPENEE_RODZINY_TEST")) if OS.get_environment("OPENEE_RODZINY_TEST") != "" else {}
+	for k in rj:
+		rodz[int(k)] = int(rj[k])
+	var t: Dictionary = s.teren
+	var i2: Dictionary = sym.wczytaj_mape_scn(t["A"], t["B"], t["teren"], t["flagi"], t["f10"], t["wysokosc"], rodz)
+	var oczek := OS.get_environment("OPENEE_SKROT_MAPY_TEST")
+	_wynik("mapa prawdziwego scenariusza: GDScript → Core = ten sam skrót co ścieżka CTest", i2["ok"] and (oczek == "" or i2["skrot"] == oczek),
+		"%s, skrót %s, oczekiwany %s" % [str(i2.get("szerokosc", -1)), i2.get("skrot", "?"), oczek])
 
 
 func _koniec() -> void:

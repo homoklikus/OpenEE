@@ -260,6 +260,9 @@ jest którykolwiek z warunków:
 
 **Woda i ląd.**
 - Jednostka lądowa: woda (teren 1) i teren 10 są niedostępne według tablicy typu `EEUCLand` (pomiar tablicy).
+  **[Etap 30 – zastąpione]** Odczyt tablicy +0x5D6 gwardii i Aleksandra (zad. 552): `1,0,1,1,1,1,1,1,1,0,1,1,…` –
+  niedostępne są **1 (woda głęboka) i 9 (klif)**; 10 to woda płytka i jest dostępna [P]. Wartości terenu komórek
+  (EETile+4) i reguła ich wyprowadzenia z SCN: `import_mapy.md` § 3.
 - Jednostka morska używa klucza 2 i modyfikatora morskiego.
 
 **Test celu (0x41CCA8).**
