@@ -148,7 +148,7 @@ Gwardia 0x100018B, scenariusz „Wojna trojańska”, tylko odczyt pamięci. Odc
 | EE 444 | PPM za przeszkodę (A) | 1 cel przez cały ruch (+0x34 = 4), obejście bez celów +0x32 [P] |
 | EE 445 | PPM daleko, ok. 20 pól | 1 cel, +0x34 = 4 już 0,3 s po rozkazie [P] |
 | EE 448, 451 | PPM A, Shift B; dojście do A | w chwili zdjęcia A: 2 cele +0x32 przed B, indeks 0x1FFE; B ma +0x34 = 0, +0x1D = 1; mapa oczekujących grupy pusta przez cały czas [P] |
-| EE 451 | po wstawieniu | pierwszy punkt (179,5; 118,5) zdjęty po ok. 4 s, choć jednostka stała ok. 15 pól od niego; dalej (178,5; 123,5) [P] |
+| EE 451 | po wstawieniu | pierwszy punkt (179,5; 118,5) zdjęty po ok. 4 s, choć jednostka stała ok. 15 pól od niego; dalej (178,5; 123,5) [P] [Etap 25: zamierzone przełączenie z wyprzedzeniem – 9016, ≤ N punktów, `ruch_trasa_przeszkody.md` § 6] |
 | AoC 453, 454 | to samo | te same dwa punkty w tej samej chwili; po zwykłym PPM tylko nowy cel (+0x34 = 4), nowa grupa (+0xB5 = 0) [P] |
 | EE 435 (etap 21) | zwykły PPM przy punktach | punkty usunięte z kolejką [P] |
 
@@ -183,6 +183,9 @@ nie błąd w kodzie. Mechanizm należy do podsystemu ruchu [N]. BO-1–BO-4 bez 
 4. Gdzie trasa jednostki przechowuje punkty ruchu i kiedy zdejmowane są punkty +0x32 z przodu kolejki [N].
    *[Etap 23]* Trasa po polach trafia do jednostki przez 0x5EE4E6 jako wektor punktów po 12 B. Miejsce przechowywania
    nadal [N].
+   *[Etap 24–25 – rozpoznane]* Kolejka +0x7C (`astar_wyniki.md`). Cel +0x32 jest zdejmowany zdarzeniem 9016
+   ShouldMoveToNextAutoWaypoint, gdy do celu zostało ≤ N punktów trasy (N = 8…18 wg rozmiaru mapy, 14 dla 280 × 280) –
+   `ruch_trasa_przeszkody.md` § 6.
 5. Warunek „CannotPathToTarget” i limit prób (cel vtable +0x2C) [N].
 
 ## Konsekwencje dla OpenEE (bez zmian w kodzie)

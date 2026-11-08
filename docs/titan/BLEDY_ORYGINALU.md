@@ -160,3 +160,32 @@ Zachowanie, które tylko wygląda na błąd, wpisujemy jako **podejrzenie** z pe
 - **Pewność:** pomiar zachowania [P]; mechanizm i to, czy jest to błąd – [H].
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona; wymaga dalszych pomiarów.
 - **Źródło:** etap 24, `docs/titan/astar_wyniki.md` § 7.
+- **[Etap 25 – uzupełnienie]** Powtórka z innego punktu startu (EE 509–510, gwardia z (178,6; 125,2) na (156,5; 143,5))
+  nie odtworzyła zachowania.
+  - Jednostka przejechała m.in. przez (147,5; 145–148), obeszła jezioro i stanęła w najbliższym dostępnym polu
+    (155,5; 151,5) bez utraty celu.
+  - Możliwy mechanizm z kodu ruchu, nadal [H]:
+    1. Pole niedostępne przy przejeździe blokuje krok (0x54E275) albo daje ciągłe odpychanie, więc +0x248 rośnie.
+    2. Po 3–5 s następuje „ObstacleDetected” → 9002 RepathAroundObstacle.
+    3. Po wyczerpaniu limitu prób celu (wejście w 8000) następuje Idle z porzuceniem celu.
+  - Szczegóły: `docs/titan/ruch_trasa_przeszkody.md` § 4–5.
+
+### BO-7 (obserwacja): docisk ostatniego kroku porównuje prędkość z odległością i nie działa przy vmax
+
+- **Zachowanie.** W fazie przyspieszania przy jednym punkcie trasy (+0x8C == 1) nowa prędkość v′ = v + a·dt jest
+  obcinana do d (odległość do punktu), gdy v′ > d.
+  - Jednostki się nie zgadzają: v′ jest w polach/s, d w polach. Wymiarowo poprawne byłoby v′·dt > d.
+  - Gałąź jest pomijana, gdy v′ zostało wcześniej obcięte do vmax.
+- **Lokalizacja.** `Empire Earth.exe` 0x54858E (gałąź 0x54860F–0x548639, argument d z 0x54D886); `EE-AOC.exe` 0x554BDE
+  (logika identyczna według porównania stałych i struktury).
+- **Przyczyna.** Porównanie z argumentem d bez mnożenia przez dt, sprawdzane dopiero w gałęzi „bez obcięcia do vmax”
+  [W: kod].
+- **Skutki.**
+  - Przy jeździe z vmax docisk nic nie robi. Dojazd do celu zapewnia wtedy dokładna dyskretna droga hamowania S, a
+    zatrzymanie w celu jest i tak dokładne [P: EE 500, AoC 505].
+  - Przy krótkich rozkazach (d < ok. 0,6 pola) i przy ponownym przyspieszaniu tuż przed celem v′ = d. Krok na takt
+    wynosi wtedy d·dt, a dojazd staje się wykładniczy (stała czasowa ok. 1 s gry), dopóki d ≥ 0,05 [W; skutek
+    niezmierzony].
+- **Pewność:** kod [W]; zgodność z pomiarem przy vmax [P]; skutek dla krótkich rozkazów niezmierzony.
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona.
+- **Źródło:** etap 25, `docs/titan/ruch_jednostki.md` § 5–6.

@@ -55,7 +55,7 @@ Jeden plik na podsystem, np. `docs/titan/ruch_jednostek.md`. W pliku jedna sekcj
 
 ## Już ustalone miejsca w kodzie
 
-Wpisy atlasu: `zegar_symulacji.md` (etap 14), `przydzial_taktow.md` (etap 15), `rozkazy_gracza.md` (etap 16), `grupy_ruchu.md` (etap 17), `cele_jednostek.md` (etap 18), `przydzial_bliski.md` (etap 19), `przydzial_specjalny.md` (etap 20), `kolejka_rozkazow.md` (etap 21), `nawigacja_wejscie.md` (etap 22), `architektura_nawigacji.md` (etap 23), `astar_pola.md` i `astar_wyniki.md` (etap 24).
+Wpisy atlasu: `zegar_symulacji.md` (etap 14), `przydzial_taktow.md` (etap 15), `rozkazy_gracza.md` (etap 16), `grupy_ruchu.md` (etap 17), `cele_jednostek.md` (etap 18), `przydzial_bliski.md` (etap 19), `przydzial_specjalny.md` (etap 20), `kolejka_rozkazow.md` (etap 21), `nawigacja_wejscie.md` (etap 22), `architektura_nawigacji.md` (etap 23), `astar_pola.md` i `astar_wyniki.md` (etap 24), `ruch_jednostki.md` i `ruch_trasa_przeszkody.md` (etap 25).
 Rejestr błędów oryginału (odtwarzanych wiernie, zasada w `CLAUDE.md`): `BLEDY_ORYGINALU.md`. Pozostałe miejsca są opisane w innych dokumentach i przy następnej
 analizie zostaną przeniesione do atlasu:
 
@@ -75,6 +75,7 @@ analizie zostaną przeniesione do atlasu:
 | Wejście do nawigacji: prośba grupy o trasę, `EEPathManager`, zastosowanie trasy, punkty +0x32, „PrepareToMove” jednostki | 0x5DB4B8, 0x5F670A, 0x4A15E7, 0x5F6809, 0x5EDF6B, 0x6222A8, 0x4A1AFF | 0x5EBDFC, 0x606581, 0x4A6948, 0x606680, 0x5FC0A8, 0x63674B, 0x4A6E88 | `docs/titan/nawigacja_wejscie.md` |
 | Architektura tras: `EEPathManager` (uruchomienie maszyny, wybór maszyny grafu, zakończenie, prośba po polach, takt i kolejki), `EEAIContinentManager`, maszyny A* (graf, pola, `Bounded`), budżety | 0x4A1681, 0x4A1351, 0x4A26E3, 0x4A13EE, 0x4A396B, 0x917BC8, 0x4A5428, 0x4A0CE8, 0x4A0E2F | 0x4A69E2, 0x4A6687, 0x4A7B03, 0x4A6724, 0x4A8DB8, –, 0x4AA98D, 0x4A6010, 0x4A6157 | `docs/titan/architektura_nawigacji.md` |
 | A* po polach: pętla, dodanie sąsiada, koszt, test celu, lista otwarta (wstaw, zdejmij), koniec trasy, odtworzenie trasy, przekazanie (łączenie, zapis), `Bounded` | 0x4A5428, 0x4A5E13, 0x41CFFF, 0x41CCA8, 0x41F876, 0x420030, 0x4A5D16, 0x41CE5F, 0x4A2B29, 0x5EE4E6, 0x4A24E1 | 0x4AA98D, 0x4AB504, 0x40EE51, 0x4191D1, 0x41BAAE, 0x41C268, 0x4AB407, 0x419388, 0x4A7F4A, 0x5FC61B, 0x4A78C1 | `docs/titan/astar_pola.md`, `docs/titan/astar_wyniki.md` |
+| Ruch jednostki: krok jednostki, maszyna stanów (krok, przejście, wejście w stan, zdarzenia), switch trybu ruchu, tryb 0 / 4 / 5, obrót, prędkość (wartość, decyzja), gettery z grupą, kolizje i odpychanie, punkt trasy (odczyt, pozostała długość, zdjęcie), test osiągnięcia, 9016 | 0x547E0E, 0x5F0F7E, 0x618CCB, 0x61AD41, 0x61B677, 0x549F82, 0x54D7AE, 0x54DE35, 0x54E0F1, 0x548266, 0x54858E, 0x548645, 0x5DD355, 0x549E61, 0x5EC69D, 0x5EC655, 0x5EDCF4, 0x6213D8, 0x5F0844 | 0x5540DC, 0x5FF2E8, 0x62B9A0, 0x62DB0F, 0x62E47A, 0x556897, 0x55A0DB, 0x55A791, 0x55AA64, 0x554738, 0x554BDE, 0x554CB2, 0x5EDC93 (grupa), 0x556710, 0x5FA229, 0x5FA1E1, 0x5FBDD1, 0x6353BB, 0x5FEB61 | `docs/titan/ruch_jednostki.md`, `docs/titan/ruch_trasa_przeszkody.md` |
 | Struktury pamięci (kamera, gra, gracze, jednostki, ekrany) | `ee_warianty.KOMPILACJE` | `ee_warianty.KOMPILACJE` | `Riverlands_MCP/riverlands_mcp/ee_warianty.py` |
 
 ## Narzędzia

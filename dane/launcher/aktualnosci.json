@@ -4,6 +4,18 @@
  "wiecej_url": "https://github.com/homoklikus/OpenEE/blob/main/raporty/README.md",
  "wpisy": [
   {
+   "data": "2026-11-08",
+   "tytul": {
+    "pl": "Etap 25: jak jednostka jedzie po trasie",
+    "en": "Stage 25: how a unit drives along its route"
+   },
+   "tekst": {
+    "pl": "Odtworzone, jak jednostka przyspiesza, skręca, mija kolejne punkty trasy, hamuje i staje dokładnie w celu – z liczbami z kodu oryginału, sprawdzonymi pomiarami w obu wersjach gry.",
+    "en": "Reconstructed how a unit accelerates, turns, passes route points, brakes and stops exactly at its goal – with numbers taken from the original code and checked by measurements in both game versions."
+   },
+   "raport": "RAPORT_ETAP_25.md"
+  },
+  {
    "data": "2026-11-07",
    "tytul": {
     "pl": "Etap 24: algorytm szukania drogi",
@@ -13,7 +25,7 @@
     "pl": "Odtworzony krok po kroku algorytm, którym oryginał wyznacza drogę jednostki po polach mapy – koszty, omijanie przeszkód, remisy i gotowa trasa – sprawdzony na trasach z gry.",
     "en": "Reconstructed step by step the algorithm the original uses to route a unit across map tiles – costs, obstacle avoidance, ties and the final path – checked against routes from the game."
    },
-   "raport": "RAPORT_ETAP_24.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_24.md"
   },
   {
    "data": "2026-11-07",

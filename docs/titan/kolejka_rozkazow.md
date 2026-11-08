@@ -133,6 +133,8 @@ Licznik jednostek bez celu (+0x1F0 = 0) jest liczony wcześniej, przy nadawaniu 
 ruch: 8000 PrepareToMove → 10002 Accelerate → 10003 Advance → … → 10001 PrepareToStop
       → (opcjonalnie 9006 TurnToUnitFacing) → 5000 Idle                          ; nazwy z tablic EXE
       [kolejność H – z nazw stanów; zmierzono tylko 10003 w ruchu i 5000 po dojściu]
+      [Etap 25 – zastąpione: zmierzona kolejność to 2015 → 10003 → (9000 → 2015 → 10003 przy każdym punkcie)
+       → 9000 → 9006 → 5001 → 5000; 10002 i 10001 nie występują – `ruch_jednostki.md` § 4]
 wejście w Idle (EEUnitClass vt+0x74, 0x61B17E):
     [wyjątek: obywatele (Unit type 6) i typ 22 przy +0x1D8 ≠ 0 i dodatkowym warunku – bez zdjęcia; N]
     0x5EAE25(J, 0): zdejmij cel bieżący; gdy następny istnieje – aktywuj (vt+0x54):

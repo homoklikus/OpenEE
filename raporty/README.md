@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_24.md`](../RAPORT_ETAP_24.md) – etap 24: pełna rekonstrukcja A* po polach mapy i przetwarzania wyników w Titan (EE i AoC).
+[`RAPORT_ETAP_25.md`](../RAPORT_ETAP_25.md) – etap 25: wykonywanie trasy, dynamika ruchu (prędkość, obrót, hamowanie) i stany jednostki lądowej w Titan (EE i AoC), z niezależnym modelem ruchu.
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -54,3 +54,4 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_21.md`](archiwum/RAPORT_ETAP_21.md) | etap 21 | kolejka celów jednostki: dopisywanie z Shift, zastępowanie zwykłym rozkazem, przejście do następnego celu w stanie „Idle”, BO-4 |
 | [`RAPORT_ETAP_22.md`](archiwum/RAPORT_ETAP_22.md) | etap 22 | wejście do nawigacji: prośby o trasę grupy i jednostki, `EEPathManager`, punkty pośrednie +0x32, znaczniki celu +0x34 |
 | [`RAPORT_ETAP_23.md`](archiwum/RAPORT_ETAP_23.md) | etap 23 | architektura tras: `EEPathManager`, `EEAIContinentManager`, sektory, podsektory, obszary, maszyny A*, budżety, kolejki odroczeń |
+| [`RAPORT_ETAP_24.md`](archiwum/RAPORT_ETAP_24.md) | etap 24 | A* po polach: koszt 10/14, heurystyka 10·Manhattan, kolejność sąsiadów i reguła narożników, lista otwarta z kubełkami, koniec trasy w najbliższym dostępnym węźle, kolejka +0x7C jednostki, `Bounded`; model zgodny z pomiarami; BO-5, BO-6 |
