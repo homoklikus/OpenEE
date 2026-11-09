@@ -256,3 +256,20 @@ Tablice, prędkość, zapisy f32 i teren są wspólne [P].
 - `core_porownanie_gra`: kryterium – pierwszy rozbieżny takt względem gry nie wcześniejszy niż w modelu v4.
 - `core_walka_swiat`: okna 578 G1/G3, 580 G1, 590 G1, 589 G3; poziomy morale z pola `morale` w oknie
   (`pomiar_core walka --morale`).
+
+## 16. Etap 34 – efekty obszarowe i morale z budynków
+
+- `efekty_obszaru.hpp/.cpp`: `SzablonEfektu` (rekord dbareaeffect w układzie pamięci gry), `EfektObszaru`
+  (egzemplarz: źródło, gracz z chwili utworzenia, pozycja, +0x20/+0x24, flaga przeliczenia), `Budynek` (typ, gracz,
+  kotwica, rozmiar, środek, HP, +0x340, mnożnik obszaru), funkcje: prostokąt zliczania (0x664214), test obszaru
+  (0x664BE9), poziom (vt+0x4C), klasa równoważności (0x664E0B).
+- `Swiat`: szablony, efekty i budynki w tym samym świecie; identyfikatory budynków z puli jednostek. Akumulator
+  +0x9C (f32) i przebieg `przebieg_efektow` w `takt()` – po losowaniach, przed pętlą jednostek, co 2000 ms:
+  czyszczenie list → przypisanie (zestaw, relacja, kształt) → usunięcie nadmiarowych → pozycja i przeliczenie domów.
+  `dodaj_budynek` tworzy efekty typów 2 i 5. Dodanie, usunięcie i zmiana właściciela domu oznaczają efekty gracza do
+  przeliczenia (`EEPlayer` vt[47]). `odtworz_efekty_obszaru` – jeden przebieg przy starcie z migawki.
+- Trafienie: `obrazenia_po_modyfikatorach(o, poziomy_morale(cel))` – efekty z listy jednostki (+0xF8) i ewentualne
+  poziomy ustawione ręcznie (`ustaw_morale`, odczyty etapu 33).
+- Budynki nie mają maszyny stanów, fizyki ani kolizji – w Core są wyłącznie źródłami efektów i domami [W].
+- Nieodwzorowane: typy 1, 3, 4, 6, 7, 8 (licznik `efekty_nieodwzorowane`), wieże jako odbiorcy, ulepszenia typ+0x428.
+- Testy: `core_morale` (21 sprawdzeń) oraz porównanie morale Core z odczytem gry w oknach `core_walka_swiat`.

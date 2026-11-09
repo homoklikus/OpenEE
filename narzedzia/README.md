@@ -37,6 +37,7 @@ Binarki gry są czytane tylko do odczytu; wyniki dotyczące binarek (indeks, map
 | `switch_titan.py` | adres przypadku instrukcji switch MSVC (drzewo porównań + tablice skoków) dla konkretnych wartości – dispatchery stanów i zdarzeń |
 | `eksport_mapy.py` | SCN → neutralny plik dla Core (tylko dekodowanie; interpretacja w `MapaTitan`); opcjonalnie zrzut EEMap z Riverlands_MCP, tablica terenu typu, próbki wysokości |
 | `pomiar_core.py` | pomiar Riverlands_MCP → walidacja → seria `openee_seria_v1` → `cpp/tools/openee_porownaj` → raport (pierwszy rozbieżny takt); `walka` (etap 31): okno walki z zapisu `obs_rejestruj` + tablice/wagi z gry → `openee_walka_v1` dla `core_walka_swiat` (wejścia w atak ze stanem RNG przed/po – sprawdzenie przeładowania AoC); etap 32: w próbkach także kurs, ω i tryb ruchu, w parametrach rodzaj jednostki (typ +0x4B4); etap 33: `--morale id=poziom,…` (poziomy EEAEMoraleFromBuildings z `walka_modyfikatory`) |
+| `efekty_obszaru.py` | etap 34: szablony `dbareaeffect` w układzie pamięci gry, zestawy jednostek `dbunitset` rozwiązane algorytmem EE 0x52BFA4, „Alter max morale” wariantów (`dbgamevariant`) i budynki z efektami/domy z kawałka 5 SCN → `openee_efekty_v1` (dane wejściowe efektów obszarowych Core, np. `dane/testy_walki/efekty_e31_a_ee.json`) |
 | `test_titan_narzedzia.py` | testy bez danych gry (walidacja pomiaru, schemat) |
 
 Przykłady: `python3 narzedzia/titan/struktury.py dostep EEUnit hp --exe-ee …`; `python3 narzedzia/titan/pomiar_core.py

@@ -4,6 +4,18 @@
  "wiecej_url": "https://github.com/homoklikus/OpenEE/blob/main/raporty/README.md",
  "wpisy": [
   {
+   "data": "2026-11-09",
+   "tytul": {
+    "pl": "Etap 34: morale z domów liczone jak w oryginale",
+    "en": "Stage 34: morale from houses calculated like the original"
+   },
+   "tekst": {
+    "pl": "Odczytaliśmy z kodu gry, skąd dokładnie bierze się morale: Centrum Miasta i Kapitol dodają je wojownikom w pobliżu, a jego siła zależy od liczby domów obok. Nowy silnik liczy to teraz sam i w naszych testach daje te same wartości co Empire Earth. Poznaliśmy też, jak gra rozpoznaje jednostkę wskazaną myszą.",
+    "en": "We read from the game's code exactly where morale comes from: the Town Center and the Capitol give it to nearby warriors, and its strength depends on how many houses stand around them. The new engine now calculates this on its own and in our tests matches Empire Earth. We also learned how the game recognises the unit under the mouse cursor."
+   },
+   "raport": "RAPORT_ETAP_34.md"
+  },
+  {
    "data": "2026-11-08",
    "tytul": {
     "pl": "Etap 33: morale z budynków i obrót w Art of Conquest",
@@ -13,7 +25,7 @@
     "pl": "Wyjaśniliśmy, czemu niektórzy wojownicy otrzymywali mniejsze obrażenia: chroni ich morale od pobliskich budynków. Nowy silnik liczy to dokładnie jak oryginał. Poprawiliśmy też obrót jednostek w dodatku Art of Conquest – teraz zgadza się z grą przez kilkaset klatek dłużej.",
     "en": "We found out why some warriors took less damage: morale from nearby buildings protects them. The new engine now calculates this exactly like the original. We also corrected how units turn in the Art of Conquest expansion – it now matches the game for hundreds of frames longer."
    },
-   "raport": "RAPORT_ETAP_33.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_33.md"
   },
   {
    "data": "2026-11-08",

@@ -925,6 +925,167 @@ void stan_jednostki_z_json(Swiat& sw, IdJednostki id, const Wartosc& j, const Wa
     u.boj->animacja = int(j["anim"].n);
 }
 
+// Etap 34: szablony efektów i budynki z pliku narzędzia narzedzia/titan/efekty_obszaru.py (dane/testy_walki).
+static void wczytaj_efekty(Swiat& sw, const Wartosc& j, int przesuniecie_x = 0, int przesuniecie_y = 0,
+                           int tylko_gracz = -1) {
+    for (const auto& t : j["szablony"].t) {
+        SzablonEfektu s;
+        s.id = int(t["id"].n); s.typ = int(t["typ"].n); s.ksztalt = int(t["ksztalt"].n); s.relacja = int(t["relacja"].n);
+        s.rozmiar = float(t["rozmiar"].n); s.maks_morale = int(t["maks_morale"].n); s.wartosc_40 = int(t["wartosc_40"].n);
+        for (const auto& z : t["zestaw"].t) s.zestaw.push_back(int(z.n));
+        sw.dodaj_szablon_efektu(std::move(s));
+    }
+    if (const Wartosc* bud = j.znajdz("budynki"))
+        for (const auto& b : bud->t) {
+            if (tylko_gracz >= 0 && int(b["gracz"].n) != tylko_gracz) continue;
+            Budynek x;
+            x.typ_db = int(b["typ"].n); x.gracz = int(b["gracz"].n);
+            x.pole_x = int(b["pole"][0].n) + przesuniecie_x; x.pole_y = int(b["pole"][1].n) + przesuniecie_y;
+            x.rozmiar_pol = int(b["rozmiar"].n);
+            x.x = float(b["srodek"][0].n + przesuniecie_x); x.y = float(b["srodek"][1].n + przesuniecie_y);
+            std::vector<int> ef;
+            for (const auto& e : b["efekty"].t) ef.push_back(int(e.n));
+            sw.dodaj_budynek(x, ef);
+        }
+}
+
+int test_morale() {
+    // 1. elementy z kodu (EE 0x664214, 0x664BE9, 0x664E0B) – bez danych gry
+    const ProstokatPol p0 = prostokat_zliczania(185.0f, 110.0f, 10.0f);
+    const ProstokatPol p1 = prostokat_zliczania(185.5f, 110.5f, 10.0f);
+    const ProstokatPol p2 = prostokat_zliczania(185.5f, 110.0f, 10.0f);
+    const ProstokatPol p3 = prostokat_zliczania(185.25f, 110.5f, 10.0f);
+    std::printf("  prostokąt domów: (185,110) x %d…%d y %d…%d; (185,5;110,5) x %d…%d; (185,5;110) x %d…%d; (185,25;110,5) x %d…%d\n",
+                p0.x0, p0.x1, p0.y0, p0.y1, p1.x0, p1.x1, p2.x0, p2.x1, p3.x0, p3.x1);
+    sprawdz(p0.x0 == 175 && p0.x1 == 194 && p0.y0 == 100 && p0.y1 == 119, "środek na rogu pola: [i − r, i + r − 1] (20 pól)");
+    sprawdz(p1.x0 == 175 && p1.x1 == 195 && p1.y1 == 120, "środek w połowie pola (0,25 < u < 0,75 obu osi): [i − r, i + r] (21 pól)");
+    sprawdz(p2.x1 == 194 && p3.x1 == 194, "warunek obu osi i ostre nierówności 0,25/0,75 (0x66429B…0x6642C8)");
+    sprawdz(w_obszarze(1, 10.0f, 185.0f, 110.0f, 175.0f, 100.0f) && !w_obszarze(1, 10.0f, 185.0f, 110.0f, 174.99f, 110.0f) &&
+                !w_obszarze(1, 10.0f, 185.0f, 110.0f, 185.0f, 120.01f) && w_obszarze(1, 10.0f, 185.0f, 110.0f, 194.0f, 119.0f),
+            "kwadrat 0x664C00: |dx| ≤ r i |dy| ≤ r (granica włącznie)");
+    sprawdz(efekty_rownowazne(5, 2) && efekty_rownowazne(6, 5) && efekty_rownowazne(5, 5) && !efekty_rownowazne(5, 1) &&
+                !efekty_rownowazne(1, 3), "równoważne przy usuwaniu nadmiarowych: {2, 5, 6} i ten sam typ");
+
+    auto tab = tablice_lub_skip();
+    if (!tab) return bledy ? FAIL : SKIP;
+    const Wartosc je = json_z_pliku("dane/testy_walki/efekty_e31_a_ee.json");
+    const Wartosc ja = json_z_pliku("dane/testy_walki/efekty_e31_a_aoc.json");
+    if (je.typ != Wartosc::Typ::obiekt || ja.typ != Wartosc::Typ::obiekt) {
+        std::printf("  FAIL: brak dane/testy_walki/efekty_e31_a_*.json\n");
+        return FAIL;
+    }
+    // 2. świat: budynki gracza 1 ze scenariusza e31_a (przesunięte o (−150, −90) na teren syntetyczny 60 × 60).
+    //    Town Center (184,109) 2 × 2 → środek (185,110) = odczyt EEAEMoraleFromBuildings +0x08/+0x0C [P]; domy
+    //    (182,113), (182,111), (181,112) w kwadracie TC; Capitol (177,127) z 4 domami (180–183, 128–129).
+    const int DX = -150, DY = -90;
+    const ParametryWalki g = gwardia_ee_pelna();   // typ 422 (Royal Guard) – w zestawie „People Morale 1”
+    struct Swiatek {
+        std::unique_ptr<Swiat> sw;
+        IdJednostki w, poza, wrog, kap, granica;
+    };
+    auto zbuduj = [&](const Wartosc& j, int premia) {
+        Swiatek s{std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27()), 0, 0, 0, 0, 0};
+        s.sw->ustaw_premie_morale_wariantu(premia);
+        wczytaj_efekty(*s.sw, j, DX, DY, 1);
+        ParametryRuchu pr;
+        UstawieniaAI ai;
+        ai.szuka_wrogow = false;
+        auto dodaj = [&](double x, double y, int gracz) {
+            const IdJednostki id = s.sw->dodaj_jednostke(pr, x + DX, y + DY, 0.0);
+            s.sw->ustaw_walke(id, gracz, gracz == 1, g, 215, ai);
+            return id;
+        };
+        s.w = dodaj(176.4, 107.6, 1);        // 857 z 578: |dx| = 8,6 → w kwadracie TC
+        s.poza = dodaj(164.5, 107.5, 1);     // 855: |dx| = 20,5 → poza
+        s.wrog = dodaj(176.8, 106.1, 5);     // wróg w kwadracie TC – relacja 2 (sojusznik) → bez morale
+        s.kap = dodaj(179.0, 119.5, 1);      // w kwadracie TC (|dy| = 9,5) i Capitolu (|dy| = 8,5 od 128)
+        s.granica = dodaj(175.0, 110.0, 1);  // |dx| = 10 – granica włącznie
+        return s;
+    };
+    {
+        Swiatek s = zbuduj(je, 0);
+        Swiat& sw = *s.sw;
+        int pierwszy = -1;
+        bool wczesniej_brak = true;
+        for (int k = 1; k <= 60 && pierwszy < 0; ++k) {
+            sw.takt();
+            if (sw.diagnostyka().przebiegi_efektow > 0) pierwszy = k;
+            if (pierwszy < 0) wczesniej_brak &= sw.poziomy_morale(*sw.jednostka(s.w)).empty();
+        }
+        std::printf("  pierwszy przebieg menedżera efektów: takt %d (akumulator f32 +0x9C += 34,0909 ≥ 2000)\n", pierwszy);
+        sprawdz(pierwszy == 59 && wczesniej_brak, "przebieg efektów co 2000 ms: pierwszy w takcie 59 (58,67 taktu), przed nim brak morale");
+        const auto pw = sw.poziomy_morale(*sw.jednostka(s.w));
+        const auto pk = sw.poziomy_morale(*sw.jednostka(s.kap));
+        const auto pg = sw.poziomy_morale(*sw.jednostka(s.granica));
+        std::printf("  poziomy: 857 %s, 855 %zu efektów, wróg %zu, TC∩Capitol %s, granica %s\n",
+                    pw.empty() ? "-" : std::to_string(pw[0]).c_str(), sw.poziomy_morale(*sw.jednostka(s.poza)).size(),
+                    sw.poziomy_morale(*sw.jednostka(s.wrog)).size(), pk.empty() ? "-" : std::to_string(pk[0]).c_str(),
+                    pg.empty() ? "-" : std::to_string(pg[0]).c_str());
+        sprawdz(pw == std::vector<int>{2}, "TC: 3 domy w prostokącie, Max morale 2 (Scenarios +0) → poziom 2 = odczyt 857/858 [P]");
+        sprawdz(sw.poziomy_morale(*sw.jednostka(s.poza)).empty(), "poza kwadratem TC (855, |dx| 20,5) – brak efektu = odczyt [P]");
+        sprawdz(sw.poziomy_morale(*sw.jednostka(s.wrog)).empty(), "wróg w obszarze – relacja 2 (IsAlly) → brak = odczyt 0x5000ad3 [P]");
+        // Capitol: w pierwszym przebiegu poziomy przed zliczeniem = 0 → zostaje pierwszy (TC); od drugiego – max(2, 4)
+        sprawdz(pk.size() == 1, "dwa źródła morale → jeden efekt po usunięciu nadmiarowych (poziomy się nie sumują)");
+        sprawdz(pg == std::vector<int>{2}, "granica kwadratu |dx| = 10 – w obszarze");
+        for (int k = 0; k < 59; ++k) sw.takt();
+        const auto pk2 = sw.poziomy_morale(*sw.jednostka(s.kap));
+        std::printf("  drugi przebieg (przebiegi %" PRIu64 "): TC∩Capitol %s\n", sw.diagnostyka().przebiegi_efektow,
+                    pk2.empty() ? "-" : std::to_string(pk2[0]).c_str());
+        sprawdz(sw.diagnostyka().przebiegi_efektow == 2 && pk2 == std::vector<int>{4},
+                "drugi przebieg: Capitol (4 domy, max 4) silniejszy od TC (2) → zostaje poziom 4");
+        sprawdz(obrazenia_po_modyfikatorach(16, pw) == 13 && obrazenia_po_modyfikatorach(16, pk2) == 10,
+                "obrażenia 16: poziom 2 → 13, poziom 4 → 16 − fistp(6,4) = 10");
+        // przekroczenie granicy: jednostka wychodzi z obszaru – efekt zostaje do następnego przebiegu
+        Jednostka* u = sw.jednostka(s.granica);
+        u->x = f32(174.5 + DX);
+        sw.takt();
+        const bool nadal = sw.poziomy_morale(*u).size() == 1;
+        while (sw.diagnostyka().przebiegi_efektow < 3) sw.takt();
+        sprawdz(nadal && sw.poziomy_morale(*u).empty(), "wyjście z obszaru: efekt do najbliższego przebiegu, potem brak");
+        // zniszczenie domów: przeliczenie gracza (vt[47]) przy usunięciu domu, nowy poziom po przebiegu
+        std::vector<IdJednostki> domy;
+        for (const auto& b : sw.budynki())
+            if (b.typ_db == 37 && b.pole_y + 90 < 120) domy.push_back(b.id);
+        sprawdz(domy.size() == 3, "3 domy przy TC");
+        sw.usun_budynek(domy[0]);
+        sw.usun_budynek(domy[1]);
+        sprawdz(sw.poziomy_morale(*sw.jednostka(s.w)) == std::vector<int>{2}, "po zniszczeniu domów poziom bez zmian do przebiegu");
+        while (sw.diagnostyka().przebiegi_efektow < 4) sw.takt();
+        const auto pz = sw.poziomy_morale(*sw.jednostka(s.w));
+        sprawdz(pz == std::vector<int>{1} && obrazenia_po_modyfikatorach(16, pz) == 14,
+                "po przebiegu: 1 dom → poziom 1, obrażenia 16 → 14");
+        // zmiana właściciela ostatniego domu → 0 domów gracza 1
+        sw.zmien_wlasciciela_budynku(domy[2], 5);
+        while (sw.diagnostyka().przebiegi_efektow < 5) sw.takt();
+        const auto pzero = sw.poziomy_morale(*sw.jednostka(s.w));
+        sprawdz(pzero == std::vector<int>{0} && obrazenia_po_modyfikatorach(16, pzero) == 16,
+                "dom przejęty przez gracza 5: TC liczy domy swojego gracza (+0x18) → poziom 0 (efekt zostaje, bez redukcji)");
+    }
+    {   // 3. wariant gry Standard (+2): Max morale TC 2 + 2 = 4, 3 domy → 3
+        Swiatek s = zbuduj(je, 2);
+        for (int k = 0; k < 59; ++k) s.sw->takt();
+        sprawdz(s.sw->poziomy_morale(*s.sw->jednostka(s.w)) == std::vector<int>{3},
+                "„Alter max morale” wariantu Standard: max 4, 3 domy → poziom 3");
+    }
+    {   // 4. AoC: te same szablony i reguły (zestawy jednostek AoC zawierają dodatkowe typy) – ten sam wynik
+        Swiatek s = zbuduj(ja, 0);
+        for (int k = 0; k < 59; ++k) s.sw->takt();
+        sprawdz(s.sw->poziomy_morale(*s.sw->jednostka(s.w)) == std::vector<int>{2} &&
+                    s.sw->poziomy_morale(*s.sw->jednostka(s.poza)).empty(),
+                "AoC (0x67B95B, 0x67C651, 0x553C59 – kod jak w EE): poziom 2 dla 857, brak dla 855 = odczyt 580 [P]");
+    }
+    {   // 5. świat bez budynków: brak efektów, przebiegi nie zmieniają stanu (regresja przypadków bez morale)
+        Swiat sw(tab, TerenSiatka::syntetyczny_etap27());
+        ParametryRuchu pr;
+        const IdJednostki a = sw.dodaj_jednostke(pr, 10.5, 10.5, 0.0);
+        sw.ustaw_walke(a, 1, true, g, 215);
+        for (int k = 0; k < 200; ++k) sw.takt();
+        sprawdz(sw.diagnostyka().przebiegi_efektow == 3 && sw.poziomy_morale(*sw.jednostka(a)).empty(),
+                "bez budynków: 3 przebiegi w 200 taktach, żadnego efektu");
+    }
+    return bledy ? FAIL : PASS;
+}
+
 int test_walka_swiat() {
     // etap 33: morale z budynków w TakeDamage (0x6640BA) – wartości z gry [P]
     sprawdz(obrazenia_po_modyfikatorach(16, {2}) == 13 && obrazenia_po_modyfikatorach(15, {2}) == 12 &&
@@ -1096,12 +1257,26 @@ int test_walka_swiat() {
             mid[u["id"].s] = sw.dodaj_jednostke(p, u["x"].n, u["y"].n, 0.0);
         }
         for (const auto& u : j["start"].t) stan_jednostki_z_json(sw, mid[u["id"].s], u, j["parametry_walki"][u["typ"].s], mid);
-        for (const auto& u : j["start"].t)   // etap 33: poziomy morale z odczytu modyfikatorów (591/593) [P]
-            if (const Wartosc* mo = u.znajdz("morale")) {
-                std::vector<int> pz;
-                for (const auto& x : mo->t) pz.push_back(int(x.n));
-                sw.ustaw_morale(mid[u["id"].s], pz);
+        // etap 34: morale liczone w Core z budynków scenariusza e31_a (TC, Capitol, domy – narzędzie
+        // efekty_obszaru.py); wynik porównany z odczytem modyfikatorów (591/593, pole „morale” startu) [P]
+        {
+            wczytaj_efekty(sw, json_z_pliku(aoc ? "dane/testy_walki/efekty_e31_a_aoc.json" : "dane/testy_walki/efekty_e31_a_ee.json"));
+            sw.odtworz_efekty_obszaru();
+            int zg = 0, n = 0;
+            std::string opis;
+            for (const auto& u : j["start"].t) {
+                std::vector<int> odczyt;
+                if (const Wartosc* mo = u.znajdz("morale"))
+                    for (const auto& x : mo->t) odczyt.push_back(int(x.n));
+                const auto core = sw.poziomy_morale(*sw.jednostka(mid[u["id"].s]));
+                ++n;
+                zg += core == odczyt;
+                opis += " " + u["id"].s + ":" + (core.empty() ? std::string("-") : std::to_string(core[0])) + "/" +
+                        (odczyt.empty() ? std::string("-") : std::to_string(odczyt[0]));
             }
+            std::printf("  %s: morale Core/gra%s\n", plik, opis.c_str());
+            sprawdz(zg == n, std::string("morale z budynków w Core = odczyt modyfikatorów gry (") + plik + ")");
+        }
         sw.generator().ustaw_ziarno(std::uint32_t(j["probki"][0]["rng"].n));
         const auto& pr = j["probki"].t;
         int por = 0, r_stan = 0, r_hp = 0, r_r = 0, r_cel = 0, r_kurs = 0, r_w = 0, r_poz = 0;
@@ -1566,7 +1741,7 @@ int test_podsystemy() {
 int main(int argc, char** argv) {
     const std::map<std::string, std::function<int()>> grupy = {
         {"trygonometria", test_trygonometria}, {"rng", test_rng}, {"teren", test_teren}, {"ruch", test_ruch},
-        {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka}, {"walka_swiat", test_walka_swiat},
+        {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka}, {"walka_swiat", test_walka_swiat}, {"morale", test_morale},
         {"podsystemy", test_podsystemy}};
     std::vector<std::string> wybrane;
     for (int i = 1; i < argc; ++i) wybrane.push_back(argv[i]);

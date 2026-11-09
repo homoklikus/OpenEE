@@ -463,3 +463,17 @@ zużyte ok. 1,8 h ≈ 0,07 J, nowe niewiadome ≈ 0,05 J.
 | C | ≈ **20,13 J** | ≈ **523 h** | ≈ **29 tyg.** | ≈ 7,3 h |
 
 Prognoza nie jest obietnicą terminu.
+
+### 4.11. Aktualizacja po etapie 34
+
+- **Morale z budynków – zamknięte w zakresie TC/Capitol** [P: kod EE i AoC, dane, odczyt]: reguły źródła, poziomu,
+  obszaru, relacji, wielu źródeł i chwili aktualizacji (`walka.md` § 25). Core liczy morale sam (5/5 okien = gra).
+  Otwarte: bohaterowie (typ 6, BO-11), wieże (typ 2), fundamenty, przejęcie źródła.
+- **Efekty obszarowe** jako podsystem: menedżer co 2000 ms jest wspólny dla leczenia (szpital, port, medyk), ochrony
+  przed klęskami/konwersją (świątynia, uniwersytet), ekonomii TC i maskowania. Szkielet w Core przyjmuje te typy, ale
+  ich działania nie odtwarza. Szacunek: 1 etap na leczenie i regenerację z pomiarem.
+- **Wybór obiektu pod kursorem** [P/W]: 0x50EC37 – lista renderu kamery + `GEPhysicalModel::Intersects` (DLL).
+  Odtworzenie przecięcia z siatką wymaga modeli (poza zakresem Core). Dla automatyzacji wystarcza warunek listy renderu
+  i potwierdzenie kolejką celów.
+- Priorytety etapu 35: rozkaz ataku przez MCP z widocznym celem i scenariusze C; 578 G3 takt 169 i 590 takt 97
+  (tryb 1 z ruchomym celem); konsumenci RNG 580; dopiero potem jednostki dystansowe.

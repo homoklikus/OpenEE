@@ -251,3 +251,27 @@ Obecnie OpenEE robi to inaczej:
 - rozkaz wykonuje się na początku następnego taktu, czyli po 0,05 s.
 
 Różnice wobec oryginału: brak komunikatu zaznaczenia i wersji, brak porcji co 350 ms, czas reakcji krótszy o do 0,3 s.
+
+## 7. Obiekt pod kursorem i rozkaz ataku (etap 34)
+
+| Element | EE | AoC | Pewność |
+|---|---|---|---|
+| Wybór obiektu w punkcie ekranu | 0x50EC37 (`this` = kamera 0x9125D8) | kamera 0x928D78 (0x4031E7) | [P: kod] |
+| Punkt kursora (f32 piksele okna) | [0x9197A8]+4 / +8 | [0x931924]+4 / +8 | [P: kod i odczyt 602–604] |
+| Lista renderu kamery: tablica +0x2A0, liczba +0x2A8, wpis 0x50 B (+0x40 transformacja, +0x44 promień, +0x48 model, +0x4C obiekt) | kamera EE | kamera AoC | [P: kod; odczyt EE 602–604] |
+| Test promienia | `GEPhysicalModel::Intersects` (import [0xB2FEC0]) | – | [P: import] |
+| Kategoria kandydata (mnożnik promienia przy wyniku 2) | 0x50E34B | – | [W] |
+| Wywołanie przy PPM | `EEAMouseClick` +0x0C 0x403E45 (punkt z [0x9197A8]+4) | 0x403350 | [P] |
+| Komunikat ataku na wroga (cel = id obiektu +0x24, punkt +0x10/+0x14) | typ 0x66 (0x403F9D) | – | [W] |
+
+**Przebieg.** Przy kliknięciu `EEAMouseClick` buduje promień z punktu kursora i parametrów kamery
+(`GEViewport::DenormalizePerspectivePoint`, `GE3DLine::ComputeDirection`). Następnie przegląda listę renderu kamery od
+końca i dla każdego wpisu z obiektem woła `GEPhysicalModel::Intersects`. Trafienia trafiają na listę roboczą, potem
+wybierany jest jeden obiekt (kolejność i kategorie – [N]). Wynik jest wskaźnikiem z licznikiem referencji, zwalnianym
+po użyciu (0x4FCAD3). Trwałego pola „obiekt pod kursorem” między klatkami nie znaleziono (22 wywołania 0x50EC37) [W].
+
+**Konsekwencja dla pomiarów** [P: 602–604]. Obiekt we mgle wojny nie jest na liście renderu, więc kliknięcie go nie
+wybierze, nawet jeżeli jego rzut leży w kadrze. Tak było z 0x5000ad0 w 602 (w etapach 32–33 PPM trafiał w teren).
+Riverlands_MCP (`walka_atak_potwierdzony`) przed PPM sprawdza obecność celu na liście renderu i pozycję kursora w
+pamięci gry. Trafienie potwierdza kolejka celów: EEUGAttackUnit z id celu. Przecięcia z siatką MCP nie odtwarza – to
+jedyny nieustalony etap łańcucha [N].

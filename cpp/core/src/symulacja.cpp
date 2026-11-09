@@ -28,6 +28,8 @@ const std::vector<OpisPodsystemu>& podsystemy() {
          "wzór [P]; okno kontaktów 0x5E8F0E [W, etap 30]; kolejność EE/AoC [W]"},
         {"walka: wzór obrażeń, HP, przeładowanie, cykl ataku pojedynku", StatusPodsystemu::czesciowy,
          "pojedynek EE 564 co takt = gra; .tai walki w Swiat, obrót, pościg, obszar – nie"},
+        {"efekty obszarowe: morale z budynków (EEAEMoraleFromBuildings, EEAEMorale)", StatusPodsystemu::czesciowy,
+         "przebieg co 2000 ms, zliczanie domów, max z równoważnych [P: kod]; leczenie, bohaterowie, budowa [N]"},
         {"grupy i szyk", StatusPodsystemu::niewdrozony, ""},
     };
     return l;
@@ -325,6 +327,16 @@ void Swiat::takt() {
     zegar_ms_ = std::uint32_t(czas_ms_);
     rng_.krok();
     rng_.krok();
+    // Efekty obszarowe 0x547742 (AoC 0x553C59) – po menedżerze tras (0x4A396B), przed pętlą jednostek (0x547AAD):
+    // +0x9C += +0x98 (f32, porównanie na stosie x87); ≥ 2000 → przebieg menedżera 0x663DBD i +0x9C −= 2000 [P: kod]
+    {
+        const long double suma = (long double)f32(1000.0 * 1.5 / 44.0) + (long double)akumulator_efektow_ms_;
+        akumulator_efektow_ms_ = float(suma);
+        if (suma >= 2000.0L) {
+            przebieg_efektow();
+            akumulator_efektow_ms_ = float((long double)akumulator_efektow_ms_ - 2000.0L);
+        }
+    }
     KontekstFizyki k{mat_, teren_, dt_, tps_};
     // Zwykłe jednostki NIE blokują pola w teście kroku [P – etap 29, pomiary 546/547: jednostka w ruchu weszła na
     // pole ze środkiem innej jednostki, +0x20C pozostało 0]. Blokują tylko obiekty z typem blokującym (drzewa, mury,
@@ -614,6 +626,177 @@ bool Swiat::wrogowie(int g1, int g2) const {
     if (g1 == g2) return false;
     auto it = dyplomacja_.find({g1, g2});
     return it == dyplomacja_.end() ? true : it->second;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Efekty obszarowe (etap 34) – docs/titan/walka.md § 25.
+
+std::size_t Swiat::dodaj_szablon_efektu(SzablonEfektu s) {
+    szablony_.push_back(std::move(s));
+    return szablony_.size() - 1;
+}
+
+IdJednostki Swiat::dodaj_budynek(Budynek b, const std::vector<int>& szablony) {
+    b.id = nastepny_id_++;
+    b.efekty.clear();
+    for (int sid : szablony) {
+        if (sid <= 0) continue;
+        std::size_t i = 0;
+        while (i < szablony_.size() && szablony_[i].id != sid) ++i;
+        if (i == szablony_.size()) {
+            ++diag_.efekty_nieodwzorowane;
+            continue;
+        }
+        const SzablonEfektu& s = szablony_[i];
+        if (s.typ != 5 && s.typ != 2) {  // fabryka 0x663A70: typy 1, 3, 4, 6, 7, 8 – nieodwzorowane w Core [N]
+            ++diag_.efekty_nieodwzorowane;
+            continue;
+        }
+        EfektObszaru e;
+        e.szablon = i;
+        e.zrodlo = b.id;
+        e.gracz = b.gracz;                                 // 0x663B95: [źródło+0x18]+0x45C
+        if (s.typ == 5) e.poziom_max = s.maks_morale + premia_morale_wariantu_;  // 0x6641E2…0x6641F4
+        e.brudny = true;                                   // 0x6641F8
+        efekty_.push_back(e);
+        b.efekty.push_back(efekty_.size() - 1);
+    }
+    budynki_.push_back(std::move(b));
+    // dodanie obiektu do gracza (gracz vt[26], EE 0x555CE7): dom (typ 37) → SuggestRecomputeAllAreaEffects (0x555D98)
+    if (budynki_.back().typ_db == 37) przelicz_efekty_gracza(budynki_.back().gracz);
+    return budynki_.back().id;
+}
+
+bool Swiat::usun_budynek(IdJednostki id) {
+    for (std::size_t i = 0; i < budynki_.size(); ++i) {
+        if (budynki_[i].id != id) continue;
+        const Budynek b = budynki_[i];
+        budynki_.erase(budynki_.begin() + std::ptrdiff_t(i));
+        if (b.typ_db == 37) przelicz_efekty_gracza(b.gracz);  // gracz vt[49] (EE 0x55C397) → 0x55C4FD
+        return true;
+    }
+    return false;
+}
+
+bool Swiat::zmien_wlasciciela_budynku(IdJednostki id, int gracz) {
+    for (Budynek& b : budynki_) {
+        if (b.id != id) continue;
+        const int stary = b.gracz;
+        b.gracz = gracz;
+        if (b.typ_db == 37) {
+            przelicz_efekty_gracza(stary);
+            przelicz_efekty_gracza(gracz);
+        }
+        return true;
+    }
+    return false;
+}
+
+void Swiat::przelicz_efekty_gracza(int gracz) {
+    // EEPSuggestRecomputeAllAreaEffects (0x55C00E → 0x55C02A → 0x664F22): obiekty gracza – vt+0x3C (+0x1C = 1)
+    for (const Budynek& b : budynki_)
+        if (b.gracz == gracz)
+            for (std::size_t e : b.efekty) efekty_[e].brudny = true;
+}
+
+bool Swiat::relacja_efektu(int relacja, int wlasciciel, int gracz) const {
+    // 0x664A89: 1 – ten sam gracz; 2 – IsAlly 0x513B62 (ten sam albo +0x9E4 = 0 w obu kierunkach); 3 – inny gracz,
+    // którego właściciel uważa za wroga; 4 – każdy
+    switch (relacja) {
+        case 1: return wlasciciel == gracz;
+        case 2: return wlasciciel == gracz || (!wrogowie(wlasciciel, gracz) && !wrogowie(gracz, wlasciciel));
+        case 3: return wlasciciel != gracz && wrogowie(wlasciciel, gracz);
+        case 4: return true;
+        default: return false;
+    }
+}
+
+void Swiat::zlicz_domy(EfektObszaru& e, const SzablonEfektu& s, float mnoznik) {
+    // 0x664214: domy (typ+0x4B8 == 0x25) gracza efektu (+0x18, równość), HP > 0, +0x340, kotwica w prostokącie;
+    // kształt 2 – dodatkowo odległość² kotwicy od (ftol x, ftol y) ≤ r² (0x66478E). Duplikaty usuwane (0x411BD1).
+    const float r = promien_efektu(s, mnoznik);
+    const ProstokatPol p = prostokat_zliczania(e.x, e.y, r);
+    const float r2 = float((long double)r * (long double)r);
+    const std::int32_t cx = std::int32_t(e.x), cy = std::int32_t(e.y);
+    int n = 0;
+    for (const Budynek& h : budynki_) {
+        if (h.typ_db != 37 || h.gracz != e.gracz || h.hp <= 0 || !h.na_mapie) continue;
+        if (h.pole_x < p.x0 || h.pole_x > p.x1 || h.pole_y < p.y0 || h.pole_y > p.y1) continue;
+        if (s.ksztalt != 1) {
+            const std::int32_t dx = cx - h.pole_x, dy = cy - h.pole_y;
+            if ((long double)(dx * dx) + (long double)(dy * dy) > (long double)r2) continue;
+        }
+        ++n;
+    }
+    // 0x66436F: m = min(+0x20, n); m < 0 → 0; inaczej min(n, +0x20)
+    const int m = e.poziom_max < n ? e.poziom_max : n;
+    e.licznik = m < 0 ? 0 : (n > e.poziom_max ? e.poziom_max : n);
+    e.brudny = false;
+}
+
+void Swiat::przebieg_efektow() {
+    // Menedżer 0x663DBD (AoC 0x67B634), kolejność [P: kod]:
+    ++diag_.przebiegi_efektow;
+    // 1. ClearAreaEffects (0x5E948A): wyczyszczenie list +0xF8 wszystkich jednostek
+    for (Jednostka& u : jednostki_) u.efekty_obszaru.clear();
+    // 2. 0x5EC018 → 0x6637B3: każdy obiekt z efektami (+0x340) – jednostki w obszarze dostają efekt (vt+0x08 =
+    //    0x664B52: zestaw typów, relacja graczy, +0x340, kształt). Kolejność kandydatów: siatka regionów [H] – tu
+    //    kolejność listy jednostek (ma znaczenie tylko przy remisie poziomów).
+    for (const Budynek& b : budynki_) {
+        if (!b.na_mapie || b.efekty.empty()) continue;
+        for (std::size_t ei : b.efekty) {
+            const SzablonEfektu& s = szablony_[efekty_[ei].szablon];
+            const float r = promien_efektu(s, b.mnoznik_obszaru);
+            for (Jednostka& u : jednostki_) {
+                if (!u.boj) continue;  // typ jednostki (typ+0x4B8) znany tylko dla jednostek ze stanem bojowym
+                bool w_zestawie = false;
+                for (int t : s.zestaw) w_zestawie |= (t == u.boj->p.typ_bazy);
+                if (!w_zestawie || !relacja_efektu(s.relacja, b.gracz, u.gracz)) continue;
+                if (!w_obszarze(s.ksztalt, r, b.x, b.y, float(u.x), float(u.y))) continue;
+                u.efekty_obszaru.push_back(ei);
+            }
+        }
+    }
+    // 3. RemoveRedundantAreaEffects (0x664EDB → 0x664E0B): z efektów równoważnych zostaje najsilniejszy (vt+0x18,
+    //    porównanie bez znaku, przy remisie pierwszy). Poziomy z poprzedniego przebiegu (krok 4 jest później).
+    for (Jednostka& u : jednostki_) {
+        if (u.efekty_obszaru.size() < 2) continue;
+        std::vector<std::size_t> nowa;
+        for (std::size_t ei : u.efekty_obszaru) {
+            const SzablonEfektu& s = szablony_[efekty_[ei].szablon];
+            std::size_t j = 0;
+            while (j < nowa.size() && !efekty_rownowazne(s.typ, szablony_[efekty_[nowa[j]].szablon].typ)) ++j;
+            if (j < nowa.size()) {
+                const auto pn = std::uint32_t(poziom_efektu(efekty_[ei], s));
+                const auto ps = std::uint32_t(poziom_efektu(efekty_[nowa[j]], szablony_[efekty_[nowa[j]].szablon]));
+                if (pn <= ps) continue;
+                nowa.erase(nowa.begin() + std::ptrdiff_t(j));
+            }
+            nowa.push_back(ei);
+        }
+        u.efekty_obszaru = std::move(nowa);
+    }
+    // 4. UpdateGeneratedAreaEffects (0x5F133D → 0x664F3D): pozycja źródła → +0x08/+0x0C, vt+0x44 (typ 5: 0x664214,
+    //    przeliczenie tylko przy +0x1C). Wszystkie obiekty z efektami (bez warunku +0x340).
+    for (const Budynek& b : budynki_)
+        for (std::size_t ei : b.efekty) {
+            EfektObszaru& e = efekty_[ei];
+            e.x = b.x;
+            e.y = b.y;
+            const SzablonEfektu& s = szablony_[e.szablon];
+            if (s.typ == 5 && e.brudny) zlicz_domy(e, s, b.mnoznik_obszaru);
+        }
+    // 5./6. RebuildAreaEffectRegionList, UpdateAffectedByAreaEffects (vt+0x48 – dla morale bez działania 0x605652)
+}
+
+std::vector<int> Swiat::poziomy_morale(const Jednostka& u) const {
+    std::vector<int> w;
+    for (std::size_t ei : u.efekty_obszaru) {
+        const SzablonEfektu& s = szablony_[efekty_[ei].szablon];
+        if (s.typ == 2 || s.typ == 5) w.push_back(poziom_efektu(efekty_[ei], s));
+    }
+    if (u.boj) w.insert(w.end(), u.boj->morale.begin(), u.boj->morale.end());
+    return w;
 }
 
 void Swiat::ustaw_tablice_walki(TabliceObrazen t, std::array<WagiCelu, 3> wagi) {
@@ -968,10 +1151,11 @@ void Swiat::liczniki_walki(Jednostka& u) {
                                            pw == premia_wys_.end() ? 0.0 : double(pw->second));
     const auto o = oblicz_obrazenia(b.p, t->boj->p, *m, w_mnoznik(u, *t), r, u.gracz == t->gracz);
     ++diag_.trafienia;
-    zdarzenia_walki_.push_back({takty_, u.id, t->id, "trafienie", obrazenia_po_modyfikatorach(o.obrazenia, t->boj->morale)});
+    // TakeDamage 0x6172BC → 0x664EA1: vt+0x30 każdego efektu z listy +0xF8 celu (morale: 0x6640BA) [P]
+    const int obr = obrazenia_po_modyfikatorach(o.obrazenia, poziomy_morale(*t));
+    zdarzenia_walki_.push_back({takty_, u.id, t->id, "trafienie", obr});
     t->boj->szukanie_ms = 0;   // TakeDamage 0x6172BC zeruje +0x2AC [W]
-    // TakeDamage 0x6172BC: modyfikatory celu (morale z budynków); liczniki +0x2C4/+0x2C8 (0x5EDCA4) – w Core 0 [N]
-    const int obr = obrazenia_po_modyfikatorach(o.obrazenia, t->boj->morale);
+    // liczniki +0x2C4/+0x2C8 (0x5EDCA4) – w Core 0 [N]
     if (przyjmij_obrazenia(t->boj->s, obr)) {
         ++b.s.zabicia;
         ++diag_.zgony;

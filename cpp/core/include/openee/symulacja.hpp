@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "openee/efekty_obszaru.hpp"
 #include "openee/fizyka.hpp"
 #include "openee/generator.hpp"
 #include "openee/interfejsy.hpp"
@@ -40,6 +41,9 @@ struct Diagnostyka {
     std::uint64_t trafienia = 0, zgony = 0;
     std::uint64_t zalozenia_walki = 0;           // ocenione mechanizmy [N] z założeniem (osiągalność, mgła, …)
     std::string ostatnie_zalozenie;
+    // --- efekty obszarowe (etap 34) ---
+    std::uint64_t przebiegi_efektow = 0;         // przebiegi menedżera 0x663DBD (co 2000 ms czasu gry)
+    std::uint64_t efekty_nieodwzorowane = 0;     // szablony typów innych niż 2 i 5 (leczenie, bohaterowie …) [N]
 };
 
 /// Zdarzenie walki w świecie (diagnostyka i porównania z grą).
@@ -99,6 +103,28 @@ public:
     // --- walka (etap 31): stan bojowy w tej samej liście jednostek, ten sam zegar, RNG i maszyna stanów ---
     /// Nadaje jednostce stan bojowy (HP, parametry typu i gracza, ustawienia AI).
     bool ustaw_walke(IdJednostki id, int gracz, bool czlowiek, const ParametryWalki& p, int hp, UstawieniaAI ai = {});
+    // --- efekty obszarowe i budynki (etap 34): morale z budynków liczone w Core ---
+    /// Szablon efektu (rekord dbareaeffect). Zwraca indeks.
+    std::size_t dodaj_szablon_efektu(SzablonEfektu s);
+    /// „Alter max morale (dynamic)” wariantu gry (dbgamevariant: Scenarios 0, Tournament 0, Standard 2).
+    void ustaw_premie_morale_wariantu(int p) { premia_morale_wariantu_ = p; }
+    /// Budynek z efektami (identyfikatory szablonów z dbobjects „Area Effect ID” 1–4). Tworzy efekty typów 2 i 5
+    /// (fabryka 0x663A70); inne typy – licznik efekty_nieodwzorowane. Dom (typ 37) wywołuje przeliczenie gracza.
+    IdJednostki dodaj_budynek(Budynek b, const std::vector<int>& szablony = {});
+    /// Zniszczenie/usunięcie budynku (gracz vt[49] – EE 0x55C397): efekty zostają przy jednostkach do następnego
+    /// przebiegu (wyczyszczenie list 0x5E948A), dom wywołuje przeliczenie gracza (vt[47] 0x55C00E).
+    bool usun_budynek(IdJednostki id);
+    /// Zmiana właściciela: usunięcie u starego gracza i dodanie u nowego (przeliczenie obu, gdy dom).
+    /// Numer gracza w istniejących efektach (+0x18) się nie zmienia [N – brak dowodu na ponowne utworzenie].
+    bool zmien_wlasciciela_budynku(IdJednostki id, int gracz);
+    const std::vector<Budynek>& budynki() const { return budynki_; }
+    const std::vector<EfektObszaru>& efekty_obszaru() const { return efekty_; }
+    const std::vector<SzablonEfektu>& szablony_efektow() const { return szablony_; }
+    /// Odtworzenie stanu efektów przy starcie z migawki gry (gra miała je już przypisane): jeden przebieg menedżera
+    /// poza rytmem 2000 ms; akumulator +0x9C bez zmian (faza z migawki nieznana – [N]).
+    void odtworz_efekty_obszaru() { przebieg_efektow(); }
+    /// Poziomy morale działające na jednostkę teraz (lista +0xF8 po usunięciu nadmiarowych + ustawione ręcznie).
+    std::vector<int> poziomy_morale(const Jednostka& u) const;
     /// Poziomy morale (EEAEMoraleFromBuildings) jednostki – źródło w budynkach poza Core (etap 33).
     bool ustaw_morale(IdJednostki id, std::vector<int> poziomy) {
         Jednostka* u = jednostka(id);
@@ -161,6 +187,15 @@ private:
     double w_mnoznik(const Jednostka& a, const Jednostka& c) const;
     void liczniki_walki(Jednostka& u);
     void zalozenie(const char* opis);
+    void przebieg_efektow();
+    void przelicz_efekty_gracza(int gracz);
+    void zlicz_domy(EfektObszaru& e, const SzablonEfektu& s, float mnoznik);
+    bool relacja_efektu(int relacja, int wlasciciel, int gracz) const;
+    std::vector<SzablonEfektu> szablony_;
+    std::vector<EfektObszaru> efekty_;
+    std::vector<Budynek> budynki_;
+    int premia_morale_wariantu_ = 0;
+    float akumulator_efektow_ms_ = 0.0f;   // EEPhysics +0x9C (reset 0x54656E: 0)
     bool kolizje_wlaczone_ = true;
     std::map<std::pair<int, int>, bool> dyplomacja_;
     TabliceObrazen tablice_walki_;

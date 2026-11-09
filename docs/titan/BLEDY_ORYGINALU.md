@@ -278,3 +278,18 @@ czyli murów. Dla zwykłych jednostek wynik testu zgodności nie jest nadpisywan
 - **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. Core odtwarza wzór z błędami
   (`Swiat::punkt_podejscia`).
 - **Źródło:** etap 31, `docs/titan/walka.md` § 10.
+
+### BO-11 (podejrzenie): poziom morale bohatera bez HP zwraca wskaźnik zamiast poziomu
+
+- **Zachowanie.** `EEAEMoraleFromMilitaryHeroes` vt+0x4C (EE 0x6647DB) przy HP bohatera > 0 zwraca
+  fistp(UCU+0xDC). Przy HP ≤ 0 skacze do epilogu z rejestrem eax równym wskaźnikowi bohatera (+0x14 efektu).
+  Wynik trafia do usuwania nadmiarowych (porównanie bez znaku – wygrywa z każdym innym morale) i do redukcji
+  obrażeń 0x6640BA, gdzie poziom > 10 daje 10, czyli obrażenia 0.
+- **Lokalizacja.** `Empire Earth.exe` 0x6647DB–0x6647FF; AoC – nieporównane [N].
+- **Przyczyna.** Brak przypisania wartości zwracanej w gałęzi HP ≤ 0 [W co do kodu].
+- **Skutki.** Jednostki w obszarze martwego bohatera byłyby nietykalne do najbliższego przebiegu efektów, o ile
+  efekt martwego bohatera jest wtedy jeszcze przypisany. Nie zmierzono, czy obiekt generujący bez HP przydziela
+  efekty (0x5EC018 sprawdza tylko +0x340) [H].
+- **Pewność:** kod [W]; skutek [H].
+- **Status:** zachować zgodność – decyzja o ewentualnej naprawie odłożona. W Core typ 6 nieodwzorowany.
+- **Źródło:** etap 34, `docs/titan/walka.md` § 25.8.

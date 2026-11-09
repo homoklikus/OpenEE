@@ -406,6 +406,8 @@ TakeDamage:
   (cel+0x30)+0x1CC ≠ 0 → przekazanie dalej; flaga [0x918EA0] / +0x33B → bez obrażeń
   arg4 ≠ 2 → 0x664EA1: wektor modyfikatorów celu (+0xF8: +0x100…+0x104); każdy: vt+0x30(1, obr, &wynik) –
       wynik liczony z TYCH SAMYCH obr i nadpisywany (modyfikatory się nie kumulują – ostatni wygrywa) [W]
+      [Etap 34 – doprecyzowane] vt+0x30 zapisuje wynik tylko dla efektów morale; po usuwaniu nadmiarowych (§ 25.5)
+      na liście zostaje co najwyżej jeden efekt morale, więc „ostatni wygrywa” nie występuje w grze [P: kod]
   0x5EDCA4: wynik −= fistp(obr·0,8) gdy +0x2C4 > 0; wynik += fistp(obr·0,6) gdy +0x2C8 > 0 [W]
 EEAEMoraleFromBuildings vt+0x30 (0x6640BA):
   n = min(+0x24, +0x20) (vt+0x4C 0x664202), obcięte do 0…10
@@ -484,3 +486,122 @@ automatycznie z zapisem powodu (`proby_startu`).
 | 580 G1 (AoC) | 57 (spóźniona próbka stanu) / 146 przeładowanie | ciąg LCG gry [N – inne systemy losujące] |
 | 590 G1 | 97 (kurs w trybie 1) | Core obraca o jeden krok ω przy ruchomym celu, gra nie [N]; kolejność jednostek odwrócona daje gorszy wynik (64) |
 | 589 G3 (nowe) | 1 | start okna w trakcie trasy (odtworzenie trasy z próbki) [N] |
+
+## 25. Morale z budynków – pełne reguły (etap 34)
+
+Źródło: statyka EE i AoC (dezasemblacja Capstone), dane `dbareaeffect`, `dbunitset`, `dbobjects`, `dbgamevariant`,
+odczyty modyfikatorów z etapu 33 (591/593). Implementacja: `cpp/core/include/openee/efekty_obszaru.hpp`,
+`Swiat::przebieg_efektow` (`cpp/core/src/symulacja.cpp`); dane wejściowe z narzędzia
+`narzedzia/titan/efekty_obszaru.py`.
+
+### 25.1. Funkcje
+
+| Funkcja | EE | AoC | Pewność |
+|---|---|---|---|
+| Fabryka efektów obszaru (switch po typie szablonu +0x20 − 1, 8 przypadków) | 0x663A73 | – | [P] |
+| Konstruktor `EEAreaEffect` (+0x04 = 1, +0x08/+0x0C = 0, +0x10 = szablon) | 0x664826 | 0x67BF4B | [P] |
+| Konstruktor `EEAEMoraleFromBuildings` (vtable EE 0x835CA8, AoC 0x84BD6C) | 0x6641CA | 0x67B911 | [P] |
+| Poziom: min(+0x24, +0x20) (vt+0x4C) | 0x664202 | 0x67B949 | [P] |
+| Oznacz do przeliczenia: +0x1C = 1 (vt+0x3C) | 0x66420F | 0x67B956 | [P] |
+| Zliczanie domów (vt+0x44) | 0x664214 | 0x67B95B | [P] |
+| Filtr domu – prostokąt / koło | 0x66453F / 0x664753 | 0x67BC86 / – | [P] |
+| Redukcja obrażeń (vt+0x30) – etap 33 | 0x6640BA | – | [P] |
+| Test jednostki w obszarze (szablon) | 0x664B52 → 0x664BE9 | – | [P] |
+| Relacja graczy (szablon +0x28) | 0x664A89 | – | [P] |
+| Zestaw jednostek (`dbunitset`) | 0x4A7618 → 0x52BFA4 | – | [P] |
+| Loader szablonu z pliku | 0x664C71 | – | [P] |
+| Menedżer – jeden przebieg | 0x663DBD | 0x67B634 | [P] |
+| Wywołanie co 2000 ms w takcie `EEPhysics` | 0x547742 (z 0x546D5D) | 0x553C59 (z 0x553211) | [P] |
+| Przypisanie efektów jednostkom (obiekt generujący) | 0x5EC018 → 0x6637B3 | – | [P] |
+| Usuwanie nadmiarowych | 0x664EDB → 0x664E0B | 0x67C721 → 0x67C651 | [P] |
+| Przeliczenie wszystkich efektów gracza (`EEPlayer` vt[47]) | 0x55C00E → 0x55C02A | – | [P] |
+| Gracz: dodanie / usunięcie obiektu – dla domu przeliczenie | 0x555CE7 (0x555D98) / 0x55C397 (0x55C4FD) | – | [P] kod, [W] nazwy |
+
+### 25.2. Kto daje morale
+
+`dbobjects` „Area Effect ID” 1–4 → szablony `dbareaeffect`. Morale dają szablony typów 2, 5 i 6 [P: dane i fabryka]:
+
+| Szablon | Typ | Kształt | Relacja | Obszar | Max morale | Zestaw | Obiekty |
+|---|---|---|---|---|---|---|---|
+| 4 TC Morale Bonus Rng 10 | 5 `MoraleFromBuildings` | 1 kwadrat | 2 sojusznik | 10 | 2 | 1 People Morale 1 | Town Center (35) |
+| 14 Capitol Morale Bonus Rng 10 | 5 | 1 | 2 | 10 | 4 | 1 | Capitol (41) |
+| 7 / 44 Tower Morale (Capitol / TC) | 2 `EEAEMorale` | 1 | 1 ten sam gracz | 10 | poziom = +0x40 = 5 | 108 Towers | Capitol, Town Center |
+| 6 / 37 Hero Morale, 3, 34, 39 | 6 `MoraleFromMilitaryHeroes` | 2 koło | 2 | 7 / 12 / 4 / 6 | – | różne | bohaterowie, Golden Hind |
+
+Szablony i reguły są w EE i AoC identyczne; różnią się tylko zestawy jednostek (AoC zawiera dodatkowe typy) [P: dane].
+
+### 25.3. Poziom (EEAEMoraleFromBuildings)
+
+- Konstruktor: +0x20 = Max morale (+0x3C szablonu) + „Alter max morale (dynamic)” bieżącego wariantu gry
+  (`dbgamevariant`, indeks [0x918300+0x4F8]: Scenarios 0, Tournament 0, Standard 2); +0x24 = 0; +0x1C = 1 [P].
+- Po każdym przeliczeniu +0x24 = min(n, +0x20), a przy ujemnym minimum 0 [P]. Poziom = min(+0x24, +0x20).
+- n = liczba **domów** (typ+0x4B8 == 37, czyli `b  House`) [P], które:
+  - należą do gracza zapisanego w efekcie przy jego utworzeniu (+0x18; równość numeru, sojusznicy się nie liczą);
+  - mają HP > 0 i ustawione +0x340 (obiekt na mapie [W]);
+  - mają kotwicę (pole +0x1C/+0x20) w prostokącie: ix = ftol(x), iy = ftol(y) środka źródła, r = fistp(promień);
+    gdy ułamki obu współrzędnych środka leżą w (0,25; 0,75) – [i − r, i + r], w przeciwnym razie [i − r, i + r − 1].
+    Town Center 2 × 2 o kotwicy (184, 109) ma środek (185, 110), więc liczy domy z [175, 194] × [100, 119];
+  - dla kształtu 2: dodatkowo odległość² kotwicy od (ix, iy) ≤ r² (f32).
+  Duplikaty (obiekty wielopolowe) są usuwane. Obiekt `x House - Copper` (412) **nie** jest liczony [P: typ].
+- Promień = rozmiar szablonu (+0x2C) · typ+0x428 źródła (1,0 z loadera 0x61C72C; zmiany ulepszeniami [N]).
+- Przeliczenie wykonuje się tylko przy fladze +0x1C, ustawianej przez konstruktor i przez
+  `SuggestRecomputeAllAreaEffects` gracza. To wywołanie występuje przy dodaniu i usunięciu **domu** u gracza.
+  Zmiana HP, budowa domu i przejęcie budynku z efektem nie mają osobnej ścieżki [N].
+
+### 25.4. Kto otrzymuje efekt (0x664B52)
+
+Kolejno: typ jednostki należy do zestawu „Apply on unit set” (+0x38); relacja (+0x28) między **bieżącym**
+właścicielem źródła a graczem jednostki (1 ten sam, 2 IsAlly = ten sam albo +0x9E4 = 0 w obu kierunkach,
+3 wróg, 4 każdy); +0x340 jednostki; położenie w obszarze. Kształt 1: |cx − px| ≤ r i |cy − py| ≤ r, pozycje
+f32 (granica włącznie). Kształt 2: odległość przez funkcję DLL ≤ r [W]. HP odbiorcy nie jest sprawdzane.
+Źródło otrzymuje własny efekt (wyjątek: typ 1, leczenie).
+
+Zestaw jednostek (0x52BFA4): gdy ma rodziny (1…0x38), należy typ z rodziną z listy i bez ID na liście obiektów;
+gdy nie ma rodzin – typ z ID z listy obiektów; jeżeli to nie zachodzi, decyduje „Include unit set”; na końcu
+„Exclude unit set” wyklucza [P: kod; przypisanie pól pliku 19/20 do +0x30/+0x34 – W]. Royal Guard (422) należy do
+zestawu 1 [P: dane].
+
+### 25.5. Wiele źródeł
+
+Poziomy się **nie sumują**. Usuwanie nadmiarowych (0x664E0B) traktuje typy 2, 5 i 6 jako jedną klasę. Z efektów tej
+klasy na liście jednostki zostaje ten o największym poziomie (vt+0x18, porównanie bez znaku). Przy remisie zostaje
+pierwszy [P]. Zatem TC (2) i Capitol (4) w jednym miejscu dają poziom 4, ale dopiero od drugiego przebiegu: w pierwszym
+oba mają jeszcze licznik 0 i zostaje pierwszy. TakeDamage (etap 33) przechodzi całą listę; vt+0x30 innych efektów
+zwraca fałsz bez zapisu, więc działa jedyny pozostały efekt morale [P].
+
+### 25.6. Kiedy
+
+Takt `EEPhysics`: losowania → menedżer tras (0x4A396B) → **efekty obszaru** (0x547742) → pętla jednostek (0x547AAD).
+Akumulator +0x9C (f32, reset 0) dostaje +0x98 = 34,0909 ms; porównanie ≥ 2000 na stosie x87; po przebiegu
++0x9C −= 2000. Jeden przebieg na takt, pierwszy w takcie 59 od startu gry, potem co 58 lub 59 taktów [P: kod].
+Przebieg (0x663DBD):
+1. czyszczenie list efektów wszystkich jednostek (0x5E948A);
+2. przypisanie: każdy obiekt z efektami i +0x340, dla każdego jego efektu, każda jednostka z regionu
+   (kolejność kandydatów z siatki regionów – [H]);
+3. usuwanie nadmiarowych (poziomy z poprzedniego przebiegu);
+4. aktualizacja wygenerowanych: pozycja źródła → +0x08/+0x0C i przeliczenie domów przy +0x1C;
+5. przebudowa listy regionów i 6. `UpdateAffectedBy` (dla morale bez działania).
+
+Wnioski: jednostka, która weszła w obszar, dostaje morale dopiero przy najbliższym przebiegu, a po wyjściu zachowuje
+je do następnego. Zniszczony dom zmienia poziom dopiero w kroku 4 najbliższego przebiegu. Zniszczony budynek-źródło
+przestaje przydzielać efekt przy najbliższym przebiegu (lista jest wtedy czyszczona) [W: licznik referencji].
+
+### 25.7. Zgodność z pomiarem
+
+Scenariusz `e31_a`, gracz 1:
+- 3 domy (182, 113), (182, 111), (181, 112) w prostokącie TC; wariant gry Scenarios (+0) → poziom 2;
+- odczyt +0x20 = +0x24 = 2 dla 857 i 858, +0x08/+0x0C = (185, 110) [P: etap 33];
+- 855 i 856 (|dx| > 10) bez efektu, wróg 0x5000ad3 w kwadracie bez efektu (relacja 2) [P].
+
+Core odtwarza te poziomy samodzielnie dla wszystkich 5 okien (578 G1/G3, 580 G1 AoC, 589 G3, 590 G1). Wyniki
+okien są takie same jak przy poziomach wpisanych ręcznie (etap 33).
+
+### 25.8. Otwarte [N]
+
+- Bohaterowie (typ 6): poziom = fistp(UCU+0xDC) bohatera (EE 0x6647DB), przy HP ≤ 0 funkcja zwraca wskaźnik
+  bohatera zamiast poziomu (rejestr eax). Potencjalny błąd oryginału, zob. BLEDY_ORYGINALU BO-11 [H]. W Core
+  nieodwzorowane.
+- Wieże jako odbiorcy (typ 2, zestaw 108) – wieże nie są obiektami Core.
+- Budowa domu (fundament a +0x340), przejęcie budynku-źródła (czy efekt +0x18 jest tworzony od nowa).
+- Faza akumulatora +0x9C przy starcie z migawki gry (okna testowe) – Core wykonuje wtedy jeden przebieg odtworzeniowy.
+- Kolejność kandydatów z siatki regionów (ma znaczenie tylko przy remisie poziomów).

@@ -126,6 +126,9 @@ struct Jednostka {
     bool czlowiek = false;                 // gracz vt+0x74 (wybór tablicy trafień 0x4D5F2C)
     std::optional<BojJednostki> boj;       // brak = jednostka bez walki (dotychczasowe testy ruchu)
     double cel_walki_x = 0, cel_walki_y = 0;  // pozycja celu dla trybu 1 (ustawiana przed fizyką)
+    // efekty obszarowe działające na jednostkę (EEUnitAreaEffectList +0xF8, wektor +0x100…+0x104), etap 34:
+    // indeksy w Swiat::efekty_obszaru(); odbudowa co przebieg menedżera (0x663DBD)
+    std::vector<std::size_t> efekty_obszaru;
 
     std::size_t pozostalo_punktow() const { return trasa.size() - zdjete_punkty; }
     bool ma_cel() const { return !kolejka_celow.empty() || cel != TypCelu::brak; }

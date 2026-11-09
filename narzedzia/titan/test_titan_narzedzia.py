@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Testy narzędzi etapów 30–31 bez danych gry: pomiar_core (walidacja, konwersja ruchu i walki), struktury (schemat), switch_titan.
+"""Testy narzędzi etapów 30–34 bez danych gry: pomiar_core (walidacja, konwersja ruchu i walki), struktury (schemat), switch_titan,
+efekty_obszaru (zestawy jednostek, etap 34).
 Uruchomienie: python3 narzedzia/titan/test_titan_narzedzia.py"""
 import copy
 import json
@@ -10,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pomiar_core as P  # noqa: E402
 import struktury as S  # noqa: E402
+import efekty_obszaru as EF  # noqa: E402
 
 
 def jedn(x, stan=5000, typ=422, **kw):
@@ -117,6 +119,29 @@ class TestWalka(unittest.TestCase):
         with self.assertRaises(P.BladPomiaru) as k:
             P.walka(d, 0, 5, ["0x1000001"], {}, "x")
         self.assertIn("nieobsługiwany", str(k.exception))
+
+
+class TZestawyJednostek(unittest.TestCase):
+    """Etap 34: zestaw jednostek dbunitset jak EE 0x52BFA4 (rodziny z wyjątkami-obiektami, obiekty, włącz/wyłącz)."""
+    def setUp(self):
+        def zest(i, rodz=(), obj=(), inc=0, exc=0):
+            d = {"ID": i, "Include unit set...": inc, "Exclude unit set": exc}
+            for k in range(8):
+                d["Family ID" + ("" if k == 0 else f"#{k + 1}")] = rodz[k] if k < len(rodz) else 0
+                d["Object ID" + ("" if k == 0 else f"#{k + 1}")] = obj[k] if k < len(obj) else -1
+            return d
+        self.ob = {1: {"Family ID": 4}, 2: {"Family ID": 4}, 3: {"Family ID": 7}, 4: {"Family ID": 9}}
+        self.us = [zest(1, rodz=(4,), obj=(2,)), zest(2, obj=(3,)), zest(3, rodz=(4,), inc=2, exc=4), zest(4, obj=(1,))]
+        self.n = EF.zestawy(self.us, self.ob)
+
+    def test_rodziny_z_wyjatkiem(self):
+        self.assertEqual([t for t in self.ob if self.n(1, t)], [1])        # rodzina 4 bez obiektu 2
+
+    def test_tylko_obiekty(self):
+        self.assertEqual([t for t in self.ob if self.n(2, t)], [3])
+
+    def test_wlacz_wylacz(self):
+        self.assertEqual([t for t in self.ob if self.n(3, t)], [2, 3])     # 1 wyłączony zestawem 4, 3 z zestawu 2
 
 
 if __name__ == "__main__":
