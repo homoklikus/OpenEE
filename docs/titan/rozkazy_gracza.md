@@ -281,3 +281,24 @@ równa jego pozycji logicznej. Kursor gry stał w 2–4 px od punktu, a 12 PPM w
 EEUGLocation. Przyczyna [N]; hipotezy [H]: zasłonięcie modelem własnej jednostki (wybór obiektu bliższego kamerze),
 kategoria 0x50E34B, błąd rzutu MCP. Następny krok: rzut z pól kamery gry (+0x278…+0x2A8, `GEViewport`) i odczyt
 0x50E34B.
+
+## 8. Rozkaz ataku gracza – przyczyna i warunki (etap 35)
+
+Warunki ścieżki ataku w `EEAMouseClick` +0x0C (EE 0x403CF1) [W: kod]:
+- wybrany obiekt (0x50EC37) należy do gracza, którego **lokalny gracz** ma we wierszu +0x9E4 ≠ 0 (0x404395);
+- obiekt nie jest surowcem gracza świata (+0x38 / +0x45C, 0x4043A8);
+- HP obiektu > 0 (0x4044CD) → EEMAttackUnit (0x4C). Przy HP ≤ 0 powstaje EEMPathTo, czyli ruch.
+
+Kategorie wyboru 0x50E34B [W]: 6 wróg, 4 własny/sojusznik, 1 budynek albo typ z +0x612, 2/3 surowce.
+
+Pomiar [P]:
+- dyplomacja e31_a: gracz 1 → 5 = 1 (wróg), więc nie ona blokowała atak;
+- w 605–610 cele były martwe;
+- w 602–604 cele były we mgle;
+- w czystej scenie e35_a stary rzut MCP chybiał.
+
+Rzut z pól kamery gry (`walka_kamera_gry`, `walka_atak_rzut_gry`):
+- macierz świat→kamera +0x104, ogniskowa = +0x280 / +0x274, środek +0x288 / +0x28C;
+- daje EEUGAttackUnit (616, 617) i poprawne zaznaczenie LPM (617).
+
+Szczegóły i dziennik: `docs/titan/dziennik_eksperymentow.md`.

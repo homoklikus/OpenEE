@@ -1,0 +1,10 @@
+{"grupy": {
+ "OBS": {"wzor": "0x100055d", "pozycje": [[164.5, 111.5]]},
+ "A_GRD": {"wzor": "0x100018b", "pozycje": [[164.5, 118.5]]},
+ "A_CIT": {"wzor": "0x100011a", "pozycje": [[166.5, 118.5]]},
+ "K_GRD": {"wzor": "0x100018b", "pozycje": [[162.5, 118.5]]},
+ "T_CIT": {"wzor": "0x100011a", "gracz": 5, "pozycje": [[160.5, 105.5]]},
+ "T_GRD": {"wzor": "0x100018b", "gracz": 5, "pozycje": [[168.5, 104.5]]},
+ "T_HERO": {"wzor": "0x100055c", "gracz": 5, "pozycje": [[164.5, 104.5]]},
+ "T_BLD": {"wzor": "0x1000039", "gracz": 5, "pozycje": [[158.5, 112.5]]}
+}}

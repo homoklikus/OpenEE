@@ -6,6 +6,18 @@
   {
    "data": "2026-11-09",
    "tytul": {
+    "pl": "Etap 35: rozkaz ataku w oryginalnej grze działa",
+    "en": "Stage 35: attack orders in the original game now work"
+   },
+   "tekst": {
+    "pl": "Przez kilka etapów nasze narzędzie nie potrafiło kazać jednostce zaatakować wroga w oryginalnym Empire Earth. Zmieniliśmy metodę: zbudowaliśmy prosty scenariusz testowy i sprawdzaliśmy po kolei każdą hipotezę. Przyczyny były trzy: wróg we mgle wojny, klikanie w już poległego wroga i niedokładne przeliczanie pozycji na ekranie. Teraz rozkaz ataku działa, co otwiera drogę do kolejnych pomiarów walki.",
+    "en": "For several stages our tool could not order a unit to attack an enemy in the original Empire Earth. We changed the approach: we built a simple test scenario and checked each hypothesis in turn. There were three causes: the enemy hidden in the fog of war, clicking an enemy that had already fallen, and an inaccurate conversion of positions to the screen. Attack orders now work, which opens the way to further combat measurements."
+   },
+   "raport": "RAPORT_ETAP_35.md"
+  },
+  {
+   "data": "2026-11-09",
+   "tytul": {
     "pl": "Etap 34: morale z domów liczone jak w oryginale",
     "en": "Stage 34: morale from houses calculated like the original"
    },
@@ -13,7 +25,7 @@
     "pl": "Odczytaliśmy z kodu gry, skąd dokładnie bierze się morale: Centrum Miasta i Kapitol dodają je wojownikom w pobliżu, a jego siła zależy od liczby domów obok. Nowy silnik liczy to teraz sam i w naszych testach daje te same wartości co Empire Earth. Poznaliśmy też, jak gra rozpoznaje jednostkę wskazaną myszą.",
     "en": "We read from the game's code exactly where morale comes from: the Town Center and the Capitol give it to nearby warriors, and its strength depends on how many houses stand around them. The new engine now calculates this on its own and in our tests matches Empire Earth. We also learned how the game recognises the unit under the mouse cursor."
    },
-   "raport": "RAPORT_ETAP_34.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_34.md"
   },
   {
    "data": "2026-11-08",

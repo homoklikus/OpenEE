@@ -477,3 +477,12 @@ Prognoza nie jest obietnicą terminu.
   i potwierdzenie kolejką celów.
 - Priorytety etapu 35: rozkaz ataku przez MCP z widocznym celem i scenariusze C; 578 G3 takt 169 i 590 takt 97
   (tryb 1 z ruchomym celem); konsumenci RNG 580; dopiero potem jednostki dystansowe.
+
+### 4.12. Aktualizacja po etapie 35
+
+- **Pomiary z oryginału odblokowane** [P]: rozkaz ataku gracza przez MCP działa (rzut z pól kamery gry). Scenariusze
+  walki zależne od wejścia gracza są teraz wykonalne. Metoda bez klikania (układ scenariusza + AI + wyzwalacz stanem)
+  pozostaje drugim, niezależnym torem.
+- Rozpoznane warunki `EEAMouseClick` (dyplomacja, kategoria 0x50E34B, HP > 0) – materiał do sterowania w OpenEE.
+- Kolejność prac: scenariusze C na `e35_a` → rozbieżności 578 G3 / 590 → AoC → strzelcy. Równolegle scena potyczki w
+  Godocie (lista braków: `RAPORT_ETAP_35.md` § 12).
