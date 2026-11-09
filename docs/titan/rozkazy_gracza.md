@@ -275,3 +275,9 @@ wybierze, nawet jeżeli jego rzut leży w kadrze. Tak było z 0x5000ad0 w 602 (w
 Riverlands_MCP (`walka_atak_potwierdzony`) przed PPM sprawdza obecność celu na liście renderu i pozycję kursora w
 pamięci gry. Trafienie potwierdza kolejka celów: EEUGAttackUnit z id celu. Przecięcia z siatką MCP nie odtwarza – to
 jedyny nieustalony etap łańcucha [N].
+
+**Pomiary 605–610** [P]. Wróg w walce wręcz z własną jednostką jest na liście renderu, a transformacja wpisu jest
+równa jego pozycji logicznej. Kursor gry stał w 2–4 px od punktu, a 12 PPM w różnych punktach modelu dało
+EEUGLocation. Przyczyna [N]; hipotezy [H]: zasłonięcie modelem własnej jednostki (wybór obiektu bliższego kamerze),
+kategoria 0x50E34B, błąd rzutu MCP. Następny krok: rzut z pól kamery gry (+0x278…+0x2A8, `GEViewport`) i odczyt
+0x50E34B.

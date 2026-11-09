@@ -5,7 +5,9 @@ co dzieje się przy kilku źródłach i kiedy następuje aktualizacja. OpenEE Co
 budynków. Dla wszystkich 5 okien referencyjnych wynik zgadza się z odczytem gry. Ustalono też mechanizm wyboru
 obiektu pod kursorem: wybór odbywa się przy kliknięciu i używa listy renderu kamery oraz przecięcia promienia z
 siatką w DLL. Na tej podstawie Riverlands_MCP dostał warunek konieczny z kodu, sprawdzany przed PPM. Udanego,
-potwierdzonego rozkazu ataku przez MCP w tym etapie nie uzyskano: we wszystkich próbach cel był we mgle wojny.
+potwierdzonego rozkazu ataku przez MCP w tym etapie nie uzyskano. W 602–604 cel był we mgle wojny. W 605–610 cel był
+rysowany, a kursor stał w punkcie, ale 12 PPM dało EEUGLocation, czyli promień nie wskazał celu [N]. Uzupełnienie
+etapu: śmierć celu i kolejka rozkazów zmierzone (Core = gra), mapa statyczna strzelców i pocisków.
 
 Szczegóły: `docs/titan/walka.md` § 25, `docs/titan/rozkazy_gracza.md` § 7, `docs/cpp/ARCHITEKTURA_CORE.md` § 16,
 `docs/PLAN_REKONSTRUKCJI_TITAN.md` § 4.11, `docs/titan/BLEDY_ORYGINALU.md` BO-11.
@@ -22,7 +24,7 @@ zakresem.
 | CTest Release / Debug | 19/19 / 19/19 | **20/20 / 20/20** (nowa grupa `core_morale`) |
 | GDExtension | 23/23 | 23/23 |
 | Godot | 324/324 | 324/324 |
-| Riverlands_MCP | 14 plików | 15 plików (`test_ee_etap34.py`) |
+| Riverlands_MCP | 14 plików | 15 plików (`test_ee_etap34.py`); nowe kroki: lista renderu, atak potwierdzony, kalibracja rzutu |
 | narzędzia Titan | 17/17 | 20/20 (zestawy jednostek) |
 | S1–S7 | 9/9, 68b0c69ecb8b0cbc | 9/9, 68b0c69ecb8b0cbc (bez zmian) |
 | pojedynek syntetyczny | 9ddaf83720646edb | bez zmian |
@@ -120,19 +122,36 @@ identyczne jak przy wartościach wpisanych ręcznie.
     niepowodzenia etapów 32–33: stary `walka_atak` klikał 6 razy i trafiał w teren (EEUGLocation);
   - **603**: 0x5000ad1 i **604**: 0x5000ad3 były poza listą renderu. Przy każdej z 4 prób funkcja odmówiła PPM.
 
-  Udanego rozkazu ataku nie uzyskano [N]. Kolejny krok: cel widoczny dla gracza bez automatycznego ataku, np.
-  własna jednostka obserwująca z „Stand Ground”.
+  - **605–610** (856 → 0x5000ad0 w walce z 855; cel na liście renderu – wpis listy ma transformację równą
+    pozycji logicznej, czyli rysowanie bez interpolacji [P: 606]): kursor gry potwierdzony w 2–4 px. Mimo to
+    12 PPM w różnych punktach modelu (wysokość 0,3–1,2, odsunięcie od sąsiada 40–100 px, kalibracja na własnej
+    jednostce) dało **EEUGLocation**.
+  - `walka_atak_kalibrowany` i `walka_kalibracja_rzutu` (609, 610): kalibracja LPM na własnej jednostce. Przy zoomie
+    0,5 model piechoty ma około 200 px, więc błąd rzutu MCP (około 33 px) go nie tłumaczy. Kalibracja jest jednak
+    niepewna: LPM w teren może nie czyścić zaznaczenia [H].
+  - Hipotezy dla PPM [H]: (1) zasłonięcie przez model własnej jednostki – walka wręcz, wybór obiektu bliższego
+    kamerze; (2) kategoria 0x50E34B lub filtr kandydatów pomija wroga w części stanów; (3) błąd rzutu MCP poza
+    środkiem kadru.
+
+  Udanego rozkazu ataku nie uzyskano [N]. Kolejny krok to dokładny rzut z obiektu kamery gry (pola +0x278…+0x2A8,
+  `GEViewport`) zamiast zmierzonego modelu MCP i odczyt 0x50E34B. Alternatywnie: cel stojący samotnie w polu
+  widzenia własnego obserwatora.
 
 ## 6. AI, pościg i LOS – eksperymenty
 
-Wykonano 3 z 10 scenariuszy. Nagrania lokalne: `ee_obserwacja/e34_60{2,3,4}_*.json`.
+Zmierzono scenariusze 2 i 10. Scenariusze 1, 3 i 8 wymagają rozkazu ataku gracza, którego nie uzyskano; pozostałe nie
+zostały wykonane. Nagrania lokalne: `ee_obserwacja/e34_602…610_*.json`.
 
 | Scenariusz | Wynik |
 |---|---|
 | 1 rozkaz ataku gracza | niewykonalny w tym etapie – cel we mgle (§ 5) [N] |
 | 2 automatyczny wybór celu AI | 602: 0x5000ad0 wykrył 855 przy odległości 3,96 (pole widzenia 4,0); sekwencja 2013 → 2024 → 8000 → 2015/10003. 855 po dojściu (5001 → 5000) w następnym takcie wszedł w 2013 [P] |
 | 8 zmiana celu w walce | 603: cel zmiany niewidoczny – rozkaz niewysłany [N] |
-| 3–7, 9, 10 | niewykonane w tym etapie [N] |
+| 10 śmierć celu i kolejka | 605, 607: cel ginie w takcie t (2021 → 6000), atakujący w t+1 przechodzi 2021 → 2025 `ShouldIReturnToInitialContactLocation`, w t+2 jest w Idle 5000 z pustą kolejką celów [P]. Core w pojedynku syntetycznym: ta sama sekwencja t+1 2025, t+2 5000, kolejka 0 [P: model = gra] |
+| 2 (cd.) wykrycie | 605: obie jednostki wykryły się w tym samym takcie przy d = 3,53, w takcie po wejściu 855 w Idle (5001 → 5000) [P] |
+| 2 (cd.) wybór po ruchu | 605: 856 po zakończeniu ruchu (5000) w następnym takcie wybrała 0x5000ad1 [P] |
+| 3 przerwanie ataku ruchem | niewykonalne bez rozkazu ataku gracza – w 605–610 856 nie weszła w atak [N] |
+| 4–7, 9 | niewykonane w tym etapie [N] |
 
 Nowych zachowań AI do Core nie dodano.
 
@@ -169,16 +188,26 @@ Tolerancji ani wartości oczekiwanych nie zmieniano.
   regionów (remisy).
 - Faza akumulatora 2000 ms przy starcie z migawki gry.
 - Scenariusze 1 i 3–10 z priorytetu C; rozbieżności z priorytetu D (§ 8).
-- Priorytet E (mapa jednostek dystansowych i pocisków) – nie rozpoczęty, bo A–D nie są zamknięte.
+- Pociski: atakujący w DealDamage przy trafieniu pocisku (pocisk czy strzelec), tor lotu, ścieżki AoC.
+- PPM na widocznym wrogu w MCP – przyczyna EEUGLocation (§ 5).
 
-## 11. Jednostki dystansowe
+## 11. Jednostki dystansowe (mapa statyczna, `walka.md` § 26)
 
-Nie rozpoczęto (priorytet E zależy od zamknięcia A–D).
+Mapę statyczną przygotowano mimo niezamkniętych A–D. Nie zmienia ona Core.
+- **Klasy**: typy `EEUCProjectile`, `EEUCMissile`, `EEUCBomb`; modele ruchu `EEPMProjectile`, `EEPMMissile`;
+  efekt `EEE3DLinearProjectile` [P: RTTI].
+- **Wykonanie ataku** 0x61E11C wybiera jedną z trzech ścieżek [W]:
+  - wręcz – DealDamage, gdy typ+0x3FC = 0 i zasięg maks. ≤ 1,0;
+  - strzał bez pocisku – test linii 0x637F5A, a potem DealDamage;
+  - pocisk – wystrzał 0x62028B / 0x623A53.
+- **Trafienie pocisku** (vt+0x74 typu pocisku) woła znów 0x61E11C, a więc ten sam wzór obrażeń [W].
+- **EE ↔ AoC**: AoC ma wspólną vt+0xA8 dla pocisku, rakiety i bomby, EE – trzy różne [W].
+- Lista 7 eksperymentów referencyjnych – w `walka.md` § 26.
 
 ## 12. Prognoza i rekomendacja na etap 35
 
-1. Rozkaz ataku przez MCP: cel widoczny bez automatycznego ataku, warunek listy renderu, potem scenariusze C 1, 3–10
-   z tym samym wyzwalaczem stanem co 601.
+1. Rozkaz ataku przez MCP: dokładny rzut z kamery gry (pola kamery i `GEViewport`) i kategorie 0x50E34B, cel samotny
+   w polu widzenia; potem scenariusze C 1, 3–9 z wyzwalaczem stanem jak w 601.
 2. 578 G3 takt 169 i 590 takt 97: kolejność fizyki i kolizji przy ruchomym celu w trybie 1.
 3. 580: konsumenci RNG od taktu 146 (przeładowanie AoC i losowania Idle).
 4. Morale bohaterów (typ 6) i fundamenty domów – po pomiarze.

@@ -605,3 +605,35 @@ okien są takie same jak przy poziomach wpisanych ręcznie (etap 33).
 - Budowa domu (fundament a +0x340), przejęcie budynku-źródła (czy efekt +0x18 jest tworzony od nowa).
 - Faza akumulatora +0x9C przy starcie z migawki gry (okna testowe) – Core wykonuje wtedy jeden przebieg odtworzeniowy.
 - Kolejność kandydatów z siatki regionów (ma znaczenie tylko przy remisie poziomów).
+
+## 26. Jednostki dystansowe i pociski – mapa statyczna (etap 34, przygotowanie)
+
+Rozpoznanie wstępne, bez implementacji w Core. Klasy z RTTI:
+- typy obiektów (`EEUnitClass`) – `EEUCProjectile`, `EEUCMissile`, `EEUCBomb`;
+- modele ruchu (`EEPhysicsModel`, odpowiedniki `EEPMLand`) – `EEPMProjectile`, `EEPMMissile`;
+- efekt graficzny – `EEE3DLinearProjectile`.
+
+| Element | EE | AoC | Pewność |
+|---|---|---|---|
+| Wykonanie ataku w cyklu (0x61E11C): typ atakującego +0x3FC (typ pocisku) = 0 i zasięg maks. UCU+0x9C ≤ 1,0 → DealDamage 0x61DE61 (wręcz) | 0x61E1E2–0x61E208 | – | [W] |
+| jw., +0x3FC = 0 i zasięg > 1,0 → test linii 0x637F5A, potem DealDamage (strzał bez pocisku) albo cel pośredni (obiekt na linii – inny gracz niż sojusznik) | 0x61E212–0x61E300 | – | [W] |
+| jw., +0x3FC ≠ 0 → wystrzał: 0x62028B (pojedynczy; typ pocisku vt+0x30) albo 0x623A53 (gdy lista +0xE4 typu niepusta; vt+0x34, tworzy EEUGAttackUnit 0x60AD45 – pocisk jako obiekt z celem) | 0x61E305–0x61E322 | – | [W] |
+| Wywołujący 0x61E11C: cykl ataku (stany walki) i trafienie pocisku | 0x6240CD, 0x60ABB0, 0x60B33C; pocisk 0x607D79 (`EEUCProjectile`/`Bomb` vt+0x74 = 0x607B11), rakieta 0x606067 (`EEUCMissile` vt+0x74 = 0x605E9B) | `EEUCProjectile` vt+0x74 = 0x619388, `EEUCMissile` 0x61765D | [W] |
+| Typ pocisku vt+0x30 / +0x34 (wystrzał) | 0x61ED60 / 0x61EB9D | 0x6329F7 / 0x6327FF | [W] |
+| Typ pocisku vt+0xA8 | pocisk 0x607E2B, rakieta 0x606109, bomba 0x600888 | wszystkie trzy 0x6355E3 (różnica EE/AoC) | [W] |
+| Model ruchu pocisku – takt (vt+4) | `EEPMProjectile` 0x550695, `EEPMMissile` 0x54E67D | 0x55D015, 0x55AFF0 | [W] |
+| Ustawienie pozycji obiektu (z taktu pocisku) | 0x63854F → 0x5F043B | – | [W] |
+| Dane: dbobjects „Projectile ID”, „Initial projectile angle”, „Parabolic projectile”, „Ammo amount”, „Min range”, „Max range”, „Attack angle”, „Area of effect” | – | – | [P: schemat] |
+
+Wniosek [W]: obrażenia pocisku liczy ta sama funkcja wykonania ataku (0x61E11C → DealDamage), wołana z obsługi
+zderzenia pocisku (vt+0x74). Nie liczy ich osobny wzór. Moment trafienia pocisku zależy więc od lotu, a nie od
+klatki animacji. Do sprawdzenia [N]: czy atakującym w DealDamage jest pocisk, czy strzelec (kontekst +0x1C0).
+
+Eksperymenty referencyjne do etapu 35+:
+1. łucznik vs nieruchomy cel – takt wystrzału, takt trafienia, tor (pozycje pocisku co takt), HP;
+2. cel ruchomy – punkt celowania i chybienia;
+3. minimalny zasięg („EnemyWithinMinimumRange”, stan 2035) i odwrót strzelca;
+4. łuk ostrzału (`Attack angle`, InsideFiringArch 0x61FCAF) z obrotem;
+5. pocisk paraboliczny i zależność od wysokości (modyfikator 0x61E500);
+6. obszar rażenia (0x61DAE6) i ogień do sojusznika;
+7. te same przypadki w AoC (inne vt+0xA8).
