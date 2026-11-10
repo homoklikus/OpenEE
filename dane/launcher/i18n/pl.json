@@ -37,7 +37,7 @@
  "uruchom": "Uruchom Empire Earth",
  "uruchom_podpowiedz_openee": "Uruchamia OpenEE – tryb demonstracyjny: scenariusz z instalacji (bez rozgrywki)",
  "uruchom_podpowiedz_oryginal": "Uruchomienie oryginalnej gry nie jest jeszcze podpięte",
- "tryb_scenariusz": "Scenariusz testowy (Soldiers for Rome)", "tryb_teren": "Test terenu (etap 1)", "tryb_diagnostyka": "Ekran diagnostyki",
+ "tryb_potyczka": "Potyczka (etap 36: walka w OpenEE Core)", "tryb_scenariusz": "Scenariusz testowy (Soldiers for Rome)", "tryb_teren": "Test terenu (etap 1)", "tryb_diagnostyka": "Ekran diagnostyki",
  "tryb_oryginal": "Oryginalna gra (niepodpięte)",
  "oryginal_niepodpiety": "Uruchamianie oryginalnego Empire Earth nie jest jeszcze podpięte w launcherze. Zaznacz „Używaj silnika OpenEE”, aby uruchomić tryb demonstracyjny OpenEE.",
  "brak_instalacji_start": "Nie znaleziono instalacji Empire Earth – wskaż ścieżkę na karcie gry.",

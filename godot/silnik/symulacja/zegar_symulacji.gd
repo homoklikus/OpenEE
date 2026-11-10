@@ -5,7 +5,7 @@ extends Node
 
 signal po_takcie(zdarzenia: Array)
 
-var sym: Symulacja
+var sym          # Symulacja (GDScript, etap 5) albo SymulacjaCore (OpenEE Core, etap 36) – stała KROK, krok(), zdarzenia
 var akumulator := 0.0
 var predkosc := 1.0
 var pauza := false
@@ -14,7 +14,7 @@ var alfa := 0.0
 var czas_klatki_sym_us := 0
 
 
-func _init(s: Symulacja = null) -> void:
+func _init(s = null) -> void:
 	sym = s
 
 
@@ -29,13 +29,13 @@ func przesun(delta: float) -> int:
 	var t0 := Time.get_ticks_usec()
 	akumulator += delta * predkosc
 	var n := 0
-	while akumulator >= Symulacja.KROK and n < maks_taktow_na_klatke:
+	while akumulator >= sym.KROK and n < maks_taktow_na_klatke:
 		sym.krok()
-		akumulator -= Symulacja.KROK
+		akumulator -= sym.KROK
 		n += 1
 		po_takcie.emit(sym.zdarzenia.duplicate())
 	if n == maks_taktow_na_klatke:
-		akumulator = minf(akumulator, Symulacja.KROK)
-	alfa = clampf(akumulator / Symulacja.KROK, 0.0, 1.0)
+		akumulator = minf(akumulator, sym.KROK)
+	alfa = clampf(akumulator / sym.KROK, 0.0, 1.0)
 	czas_klatki_sym_us = Time.get_ticks_usec() - t0
 	return n

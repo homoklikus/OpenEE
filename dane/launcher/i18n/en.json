@@ -37,7 +37,7 @@
  "uruchom": "Launch Empire Earth",
  "uruchom_podpowiedz_openee": "Launches OpenEE – demo mode: a scenario from the installation (no gameplay)",
  "uruchom_podpowiedz_oryginal": "Launching the original game is not connected yet",
- "tryb_scenariusz": "Test scenario (Soldiers for Rome)", "tryb_teren": "Terrain test (stage 1)", "tryb_diagnostyka": "Diagnostics screen",
+ "tryb_potyczka": "Skirmish (stage 36: combat in OpenEE Core)", "tryb_scenariusz": "Test scenario (Soldiers for Rome)", "tryb_teren": "Terrain test (stage 1)", "tryb_diagnostyka": "Diagnostics screen",
  "tryb_oryginal": "Original game (not connected)",
  "oryginal_niepodpiety": "Launching the original Empire Earth is not connected in the launcher yet. Tick “Use the OpenEE engine” to start the OpenEE demo mode.",
  "brak_instalacji_start": "No Empire Earth installation found – set the path on the game card.",

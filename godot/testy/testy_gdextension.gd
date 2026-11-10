@@ -127,6 +127,7 @@ func _testy() -> void:
 	_wynik("diagnostyka: tablice zgodne, RNG liczy losowania", d["tablice_zgodne"] and int(d["rng_losowania"]) > 0,
 		"rng %d, losowań %d, nieobsługiwanych zdarzeń %d" % [d["rng_stan"], d["rng_losowania"], d["zdarzenia_nieobslugiwane"]])
 	_test_walki(sym)
+	_test_potyczki(dll)
 	_koniec()
 
 
@@ -200,6 +201,88 @@ func _test_walki(sym: Object) -> void:
 	var wb: Dictionary = sym.walka(b)
 	_wynik("walka w Core przez GDExtension: wybór celu, podejście, ataki, śmierć (jak core_walka_swiat)", ok and wybory == 2 and smierci == 1 and wb["hp"] == 0 and wa["hp"] == 103,
 		"wybory %d, śmierci %d, HP %d / %d" % [wybory, smierci, wa.get("hp", -1), wb.get("hp", -1)])
+
+
+# etap 36: warstwa potyczki (SymulacjaCore) – model widoku nad Core, bez własnej symulacji. Te same rozkazy w tych samych
+# taktach → ten sam przebieg (skrót stanu, kolejność zdarzeń); rozkaz ruchu przerywa atak; zwłoki niewybieralne.
+func _potyczka_core(dll: String) -> SymulacjaCore:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	var tr := {}
+	for i in 3:
+		var f := PackedFloat32Array(); f.resize(64); f[48] = [1.071, 1.5, 2.1][i]
+		tr[["08", "0C", "10"][i]] = {13: f}
+	var mn := []
+	for i in 16: mn.append([1, 1, 1, 1, 1, 1])
+	c.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
+		[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
+	c.ustaw_wrogow(1, 5, true); c.ustaw_wrogow(5, 1, true)
+	var g := {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,
+		"klasa_trafienia": 13, "rodzina_ataku": 48, "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156,
+		"rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000, "pole_ac": 0.6000000238418579, "typ_bazy": 422, "typ_jednostki": 5}
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var s := SymulacjaCore.new(c, null)
+	for gr in [1, 5]:
+		for i in 3:
+			var id: int = c.dodaj_jednostke(p, 10.5 + 2 * i, 16.5 if gr == 1 else 10.5, PI if gr == 1 else 0.0)
+			c.ustaw_walke(id, gr, gr == 1, g, 215)
+			s.zarejestruj(id, gr, 422, 0.3)
+	return s
+
+
+func _przebieg_potyczki(dll: String) -> Dictionary:
+	var s := _potyczka_core(dll)
+	var wlasne: Array = []; var wrogie: Array = []
+	for id in s.jednostki: (wlasne if s.gracz_jednostki[id] == 1 else wrogie).append(id)
+	var zd := PackedStringArray()
+	var wynik := ""
+	var przyjete := 0
+	for t in 5000:
+		if t == 1: s.rozkaz_grupy(wlasne, Vector2(12.5, 13.5))
+		if t == 60: przyjete = s.rozkaz_ataku_grupy(wlasne, wrogie[0])
+		s.krok()
+		for e in s.zdarzenia:
+			if e.typ == "walka": zd.append("%d:%s:%d:%d:%d" % [e.takt, e.rodzaj, e.kto, e.cel, e.wartosc])
+		if s.liczba_zywych(5) == 0: wynik = "wygrana"
+		elif s.liczba_zywych(1) == 0: wynik = "przegrana"
+		if wynik != "": break
+	return {"wynik": wynik, "takt": s.takt, "skrot": s.skrot_stanu(), "zd": zd, "przyjete": przyjete, "sym": s, "wrogie": wrogie, "wlasne": wlasne}
+
+
+func _test_potyczki(dll: String) -> void:
+	var a := _przebieg_potyczki(dll)
+	var b := _przebieg_potyczki(dll)
+	var smierci := 0
+	var porzadek := true
+	var ostatnie_trafienie := {}
+	for z in a.zd:
+		var c: PackedStringArray = String(z).split(":")
+		if c[1] == "smierc":
+			smierci += 1
+			if int(ostatnie_trafienie.get(c[2], 1 << 30)) > int(c[0]): porzadek = false   # śmierć nie przed trafieniem
+		if c[1] == "trafienie": ostatnie_trafienie[c[3]] = int(c[0])
+	_wynik("potyczka przez SymulacjaCore: rozkazy gracza → Core, walka do rozstrzygnięcia", a.wynik != "" and a.przyjete == 3 and smierci >= 3 and porzadek,
+		"wynik %s w takcie %d, przyjęte rozkazy ataku %d, śmierci %d, zdarzeń %d" % [a.wynik, a.takt, a.przyjete, smierci, a.zd.size()])
+	_wynik("potyczka deterministyczna: dwa przebiegi – ten sam skrót stanu i ta sama kolejność zdarzeń", a.skrot == b.skrot and a.zd == b.zd and a.takt == b.takt,
+		"%s / %s, takt %d / %d" % [a.skrot, b.skrot, a.takt, b.takt])
+	var s: SymulacjaCore = a.sym
+	var martwe := s.jednostki.keys().filter(func(i): return not s.zywa(i))
+	var lista_bez_martwych := true
+	for j in s.lista(): lista_bez_martwych = lista_bez_martwych and s.zywa(j.id)
+	_wynik("zwłoki: poza listą wyboru, nie są celem PPM, rozkazy do nich odrzucane", not martwe.is_empty() and lista_bez_martwych
+		and not s.czy_wrog(1, martwe[0]) and s.rozkaz_ataku_grupy(s.jednostki.keys(), martwe[0]) == 0,
+		"martwych %d" % martwe.size())
+	# rozkaz ruchu przerywa atak (zwykły PPM: kolejka celów czyszczona – Swiat::rozkaz_ruchu, 0x5EAE25)
+	var s2 := _potyczka_core(dll)
+	var w2: Array = []; var e2: Array = []
+	for id in s2.jednostki: (w2 if s2.gracz_jednostki[id] == 1 else e2).append(id)
+	s2.rozkaz_ataku_grupy([w2[0]], e2[0]); s2.krok(); s2.krok()
+	var mial_cel: int = s2.cel_walki[w2[0]]
+	s2.rozkaz_grupy([w2[0]], Vector2(10.5, 18.5)); s2.krok()
+	var obcy := s2.rozkaz_ataku_grupy([e2[1]], w2[0])   # jednostki wroga nie przyjmują rozkazów gracza lokalnego
+	_wynik("rozkaz ruchu przerywa atak; rozkazy tylko dla jednostek gracza lokalnego", mial_cel == e2[0] and s2.cel_walki[w2[0]] == 0 and obcy == 0,
+		"cel przed %d, po %d, rozkaz dla wroga przyjęty %d" % [mial_cel, s2.cel_walki[w2[0]], obcy])
 
 
 func _koniec() -> void:

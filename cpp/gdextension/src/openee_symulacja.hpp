@@ -54,6 +54,12 @@ public:
     bool rozkaz_ataku(int64_t id, int64_t cel);
     godot::Dictionary walka(int64_t id) const;
     godot::Array zdarzenia_walki() const;
+    // etap 36: potyczka w Godocie – stan wszystkich jednostek jednym wywołaniem, przyrostowe zdarzenia walki,
+    // dyplomacja i liczba taktów (bez logiki: tylko odczyt Core)
+    godot::Array stan_jednostek() const;
+    godot::Array zdarzenia_walki_od(int64_t od) const;
+    void ustaw_wrogow(int64_t g1, int64_t g2, bool wrog);
+    int64_t takty() const;
 
 protected:
     static void _bind_methods();

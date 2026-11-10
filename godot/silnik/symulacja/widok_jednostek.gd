@@ -7,7 +7,7 @@ extends Node3D
 ## * stan animacji z symulacji → sekwencja z dbgraphics (SekwencjeAnimacji: „ruch”, bezczynność gniazdo 2/3);
 ##   brak sekwencji → jednostka porusza się dalej, wpis w `brakujace_animacje`.
 
-var sym: Symulacja
+var sym          # Symulacja albo SymulacjaCore (etap 36): jednostki, mapa, lista()
 var zegar: ZegarSymulacji
 var odtw: OdtwarzaczAnimacji
 var _jedn := {}          # id → {model, kolor, skala, sek, mm, i, kanal}
@@ -22,7 +22,7 @@ var _linie: MeshInstance3D
 var _mat_pierscienia: StandardMaterial3D
 
 
-func _init(s: Symulacja, z: ZegarSymulacji) -> void:
+func _init(s, z: ZegarSymulacji) -> void:
 	sym = s; zegar = z
 	name = "WidokJednostek"
 
@@ -139,6 +139,17 @@ func zbuduj(zasoby) -> Dictionary:
 	return {"modele": nmod, "jednostki": _jedn.size(), "czas_ms": (Time.get_ticks_usec() - t0) / 1000.0}
 
 
+## Etap 36: ukrycie egzemplarza (zwłoki po animacji śmierci – stan nadal w symulacji, tylko prezentacja).
+func ukryj(id: int, ukryta := true) -> void:
+	var e: Dictionary = _jedn.get(id, {})
+	if e.is_empty(): return
+	e["ukryta"] = ukryta; e["ukryta_zapisana"] = false
+
+
+func ukryta(id: int) -> bool:
+	return bool(_jedn.get(id, {}).get("ukryta", false))
+
+
 func _po_takcie(zd: Array) -> void:
 	var t0 := Time.get_ticks_usec()
 	for e in zd:
@@ -188,6 +199,11 @@ func _aktualizuj_transformacje(wszystkie: bool) -> void:
 		if e.mm == null: continue
 		var j: JednostkaSym = sym.jednostki.get(id)
 		if j == null: continue
+		if e.get("ukryta", false):
+			if not e.get("ukryta_zapisana", false):
+				(e.mm as MultiMesh).set_instance_transform(e.i, Transform3D(Basis().scaled(Vector3.ZERO), Vector3.ZERO))
+				e["ukryta_zapisana"] = true
+			continue
 		if not wszystkie and j.pozycja == j.pozycja_poprz and j.kurs == j.kurs_poprz:
 			continue
 		(e.mm as MultiMesh).set_instance_transform(e.i, transformacja(j, alfa))

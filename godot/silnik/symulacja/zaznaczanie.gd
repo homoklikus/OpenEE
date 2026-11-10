@@ -35,11 +35,11 @@ static func teren(mapa: MapaNawigacji, origin: Vector3, dir: Vector3, maks: floa
 
 
 ## Jednostka trafiona promieniem: [id, odległość] albo [-1, INF]. jednostki: Array[JednostkaSym].
-static func jednostka(sym: Symulacja, origin: Vector3, dir: Vector3) -> Array:
+static func jednostka(sym, origin: Vector3, dir: Vector3) -> Array:
 	var d := dir.normalized()
 	var najl := -1; var odl := INF
 	for j in sym.lista():
-		var h := sym.wysokosc(j)
+		var h: float = sym.wysokosc(j)
 		var t := _walec(origin, d, UkladEE.godot(j.pozycja, h), j.promien, WYS_JEDNOSTKI)
 		if t >= 0.0 and t < odl:
 			odl = t; najl = j.id
@@ -47,7 +47,7 @@ static func jednostka(sym: Symulacja, origin: Vector3, dir: Vector3) -> Array:
 
 
 ## Wynik kliknięcia: {"jednostka": id|-1, "teren": punkt mapy|null}.
-static func klik(sym: Symulacja, origin: Vector3, dir: Vector3) -> Dictionary:
+static func klik(sym, origin: Vector3, dir: Vector3) -> Dictionary:
 	var u := jednostka(sym, origin, dir)
 	var te := teren(sym.mapa, origin, dir)
 	var odl_t: float = te.get("odleglosc", INF)

@@ -9,14 +9,14 @@ extends Node
 ## * przewijanie krawędzią ekranu nieaktywne podczas przeciągania ramki (jak w EE),
 ## * P – podgląd tras, spacja – pauza symulacji (rozkazy wydane w pauzie czekają w kolejce na następny takt).
 ## Rozkazy inne niż ruch (PPM na budynku, wrogu, zasobie) nie są odtwarzane – PPM zawsze wskazuje punkt terenu
-## pod kursorem [N: etap 9 obejmuje tylko ruch].
+## pod kursorem [N: etap 9 obejmuje tylko ruch]. Etap 36: z SymulacjaCore PPM na wrogu daje rozkaz ataku (Core).
 
 signal zmiana_zaznaczenia(id: int)
 signal rozkaz(id: int, cel: Vector2)
 
 const PROG_RAMKI := 6.0            # px – mniejsze przesunięcie traktowane jako kliknięcie [H]
 
-var sym: Symulacja
+var sym          # Symulacja albo SymulacjaCore (etap 36)
 var widok: WidokJednostek
 var zegar: ZegarSymulacji
 var kamera: Camera3D
@@ -27,7 +27,7 @@ var _start_ramki := Vector2.INF
 var _ramka: ReferenceRect
 
 
-func _init(s: Symulacja, w: WidokJednostek, z: ZegarSymulacji, k: Camera3D) -> void:
+func _init(s, w: WidokJednostek, z: ZegarSymulacji, k: Camera3D) -> void:
 	sym = s; widok = w; zegar = z; kamera = k
 	name = "SterowanieRTS"
 
@@ -114,6 +114,15 @@ func klik_prawy(ekran: Vector2, dolacz := false) -> bool:
 	if widok.zaznaczone.is_empty():
 		komunikat = "najpierw zaznacz jednostki (LPM lub ramka)"; return false
 	var r := _promien(ekran)
+	# etap 36: PPM na wrogiej jednostce → rozkaz ataku (tylko symulacje, które go obsługują – SymulacjaCore;
+	# reguły EEAMouseClick: wróg lokalnego gracza, żywy – sprawdza sama symulacja)
+	if sym.has_method("rozkaz_ataku_grupy"):
+		var w := Zaznaczanie.klik(sym, r[0], r[1])
+		var cel := int(w.jednostka)
+		if cel >= 0 and sym.czy_wrog(gracz, cel):
+			var n: int = sym.rozkaz_ataku_grupy(widok.zaznaczone.duplicate(), cel, dolacz)
+			komunikat = "rozkaz ataku (%d jedn.) na %d" % [n, cel]
+			return n > 0
 	var te := Zaznaczanie.teren(sym.mapa, r[0], r[1])
 	if te.is_empty():
 		komunikat = "kliknięcie poza terenem"; return false

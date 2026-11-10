@@ -45,9 +45,13 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("rozkaz_ataku", "id", "cel"), &OpenEESymulacja::rozkaz_ataku);
     ClassDB::bind_method(D_METHOD("walka", "id"), &OpenEESymulacja::walka);
     ClassDB::bind_method(D_METHOD("zdarzenia_walki"), &OpenEESymulacja::zdarzenia_walki);
+    ClassDB::bind_method(D_METHOD("stan_jednostek"), &OpenEESymulacja::stan_jednostek);
+    ClassDB::bind_method(D_METHOD("zdarzenia_walki_od", "od"), &OpenEESymulacja::zdarzenia_walki_od);
+    ClassDB::bind_method(D_METHOD("ustaw_wrogow", "g1", "g2", "wrog"), &OpenEESymulacja::ustaw_wrogow);
+    ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.9.0 (etap 31, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.10.0 (etap 36, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -394,3 +398,57 @@ Array OpenEESymulacja::zdarzenia_walki() const {
     }
     return a;
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// Etap 36 – odczyty dla sceny potyczki (Godot tylko prezentuje stan Core).
+
+Array OpenEESymulacja::stan_jednostek() const {
+    Array a;
+    if (!swiat_) return a;
+    for (const auto& u : swiat_->jednostki()) {
+        Dictionary d;
+        d["id"] = int64_t(u.id);
+        d["x"] = u.x;
+        d["y"] = u.y;
+        d["z"] = u.z;
+        d["v"] = u.v;
+        d["kurs"] = swiat_->matematyka().kurs_z_macierzy(u.orientacja);
+        d["stan"] = u.stan;
+        d["tryb"] = int(u.tryb);
+        d["gracz"] = u.gracz;
+        if (u.boj) {
+            d["hp"] = u.boj->s.hp;
+            d["hp_max"] = u.boj->p.hp_max;
+            d["animacja"] = u.boj->animacja;
+            int64_t cel = 0;
+            if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == openee::TypCelu::jednostka)
+                cel = int64_t(u.kolejka_celow.front().cel_jednostka);
+            d["cel"] = cel;
+        }
+        a.push_back(d);
+    }
+    return a;
+}
+
+Array OpenEESymulacja::zdarzenia_walki_od(int64_t od) const {
+    Array a;
+    if (!swiat_) return a;
+    const auto& z = swiat_->zdarzenia_walki();
+    for (std::size_t i = std::size_t(od < 0 ? 0 : od); i < z.size(); ++i) {
+        Dictionary d;
+        d["indeks"] = int64_t(i);
+        d["takt"] = int64_t(z[i].takt);
+        d["kto"] = int64_t(z[i].kto);
+        d["cel"] = int64_t(z[i].cel);
+        d["rodzaj"] = String(z[i].rodzaj.c_str());
+        d["wartosc"] = z[i].wartosc;
+        a.push_back(d);
+    }
+    return a;
+}
+
+void OpenEESymulacja::ustaw_wrogow(int64_t g1, int64_t g2, bool wrog) {
+    if (swiat_) swiat_->ustaw_wrogow(int(g1), int(g2), wrog);
+}
+
+int64_t OpenEESymulacja::takty() const { return swiat_ ? int64_t(swiat_->takty()) : 0; }

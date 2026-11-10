@@ -312,6 +312,16 @@ func _testy_launchera(K, Z) -> void:
 		and String(akt[1].get("raport", "")).begins_with("raporty/archiwum/") and String(akt[2].get("raport", "")).begins_with("raporty/archiwum/"), [raporty_glowne, glowne])
 	_ok("L aktualności: „Więcej…” → indeks raportów na GitHubie; adres spoza repozytorium odrzucany",
 		st.url_wiecej() == "https://github.com/homoklikus/OpenEE/blob/main/raporty/README.md" and st.url_aktualnosci({"raport": "../x.md"}) == "")
+	# etap 36: potyczka w launcherze; plik układu kompletny (bez obliczeń – walka i ruch wyłącznie w Core)
+	var pt = _json(K, "dane/potyczka/potyczka_troja.json")
+	var pt_ok: bool = pt is Dictionary and pt.get("format", "") == "openee_potyczka_v1" and (pt.jednostki as Array).size() >= 4
+	var strony := {}
+	if pt_ok:
+		for j in pt.jednostki:
+			strony[int(j.gracz)] = true
+			pt_ok = pt_ok and pt.typy.has(str(int(j.typ))) and pt.typy[str(int(j.typ))].has("walka") and pt.typy[str(int(j.typ))].has("ruch")
+	_ok("L potyczka: tryb 4 w launcherze, scena istnieje, plik układu – dwie strony, typy z parametrami ruchu i walki",
+		pt_ok and strony.size() == 2 and ResourceLoader.exists("res://sceny/potyczka.tscn") and kod.contains("4: \"res://sceny/potyczka.tscn\""), strony.keys())
 	var inst := st.info_instalacji()
 	if not K.instalacje.has("referencyjna"):
 		_pomin(["L karta gry: wykryta instalacja bieżącego źródła"], "brak instalacji EE")

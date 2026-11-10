@@ -50,7 +50,7 @@ func ramka(w_ramce: Array, mod: String = "") -> void:
 
 
 ## Id jednostek, których punkt ekranowy leży w prostokącie `r` (piksele) – `rzut` mapuje Vector3 świata na ekran.
-static func w_prostokacie(sym: Symulacja, r: Rect2, rzut: Callable, gracz: int = -1) -> Array:
+static func w_prostokacie(sym, r: Rect2, rzut: Callable, gracz: int = -1) -> Array:
 	var out: Array = []
 	var rr := r.abs()
 	for j in sym.lista():

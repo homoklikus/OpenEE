@@ -869,6 +869,7 @@ func _pasek_startu() -> Control:
 	sep.add_theme_constant_override("separation", 1)
 	grupa.add_child(sep)
 	_menu_startu = strz.get_popup()
+	_menu_startu.add_item(tx.t("tryb_potyczka"), 4)
 	_menu_startu.add_item(tx.t("tryb_scenariusz"), 0)
 	_menu_startu.add_item(tx.t("tryb_teren"), 1)
 	_menu_startu.add_item(tx.t("tryb_diagnostyka"), 2)
@@ -1133,6 +1134,7 @@ func _strona_narzedzia() -> Control:
 	g.columns = 3
 	g.add_theme_constant_override("h_separation", 10)
 	g.add_theme_constant_override("v_separation", 10)
+	g.add_child(_przycisk(tx.t("tryb_potyczka"), "graj", uruchom_tryb.bind(4)))
 	g.add_child(_przycisk(tx.t("tryb_scenariusz"), "graj", uruchom_tryb.bind(0)))
 	g.add_child(_przycisk(tx.t("tryb_teren"), "graj", uruchom_tryb.bind(1)))
 	g.add_child(_przycisk(tx.t("tryb_diagnostyka"), "graj", uruchom_tryb.bind(2)))
@@ -1323,7 +1325,8 @@ func uruchom() -> void:
 
 
 func uruchom_tryb(id: int) -> void:
-	var sceny := {0: "res://sceny/test_scenariusz.tscn", 1: "res://sceny/test_teren.tscn", 2: "res://sceny/diagnostyka.tscn"}
+	var sceny := {0: "res://sceny/test_scenariusz.tscn", 1: "res://sceny/test_teren.tscn", 2: "res://sceny/diagnostyka.tscn",
+		4: "res://sceny/potyczka.tscn"}   # etap 36: potyczka – ruch i walka w OpenEE Core (GDExtension)
 	if id == 3:
 		_uruchom_oryginalna_gre()
 		return
