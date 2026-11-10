@@ -108,6 +108,14 @@ func _start() -> void:
 		if _arg("wysokosc", "1") == "1": c.ustaw_modyfikator_wysokosci(true)
 		var pg := _arg("graf", "")   # etap 40: graf podsektorów odczytany z gry (Riverlands_MCP `podsektory`) – tryb diagnostyczny
 		if pg != "": wynik_graf = c.ustaw_graf_podsektorow(JSON.parse_string(FileAccess.get_file_as_string(pg)))
+		var pp := _arg("graf-przydzial", "")   # etap 41: tylko przydział pól z odczytu; punkty i sąsiedzi liczone w Core
+		if pp != "":
+			var dane: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(pp))
+			var przydzial := PackedInt32Array(); przydzial.resize(280 * 280)
+			for e in dane["podsektory"]:
+				for r in e["pola"]:
+					for yy in range(int(r[1]), int(r[2]) + 1): przydzial[int(r[0]) * 280 + yy] = int(e["id"])
+			wynik_graf = c.zbuduj_graf_z_przydzialu(przydzial, 280, 280, 19)
 		var pe := _arg("efekty", "")
 		if pe != "":
 			wynik_efekty = c.ustaw_efekty_obszaru(JSON.parse_string(FileAccess.get_file_as_string(pe)))

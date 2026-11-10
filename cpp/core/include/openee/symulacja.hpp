@@ -86,6 +86,7 @@ struct Podsektor {
 };
 struct GrafPodsektorow {
     bool z_gry = false;         // dane odczytane z pamięci gry (nie zbudowane w Core)
+    std::string zrodlo = "brak";   // etap 41: „gra (odczyt)”, „Core z przydziału pól”
     std::map<int, Podsektor> podsektory;
     std::map<std::int64_t, int> pole_podsektor;   // (x << 32 | y) → id (pola z U2DSparseArrayPointContainer +0x10)
     int podsektor_pola(std::int64_t x, std::int64_t y) const {
@@ -98,6 +99,15 @@ struct GrafPodsektorow {
 /// cel albo sektor w odległości ≤ 1 i cel na liście sąsiadów węzła). Wynik: identyfikatory od celu do startu
 /// (z celem na początku). Remisy F – LIFO [H, jak lista otwarta pól].
 std::vector<int> szukaj_w_grafie(const GrafPodsektorow& g, int start, int cel);
+
+/// Etap 41 – część budowy grafu z kodu Titan [P: odczyt 1857 podsektorów e35_a]: z przydziału pól do podsektorów
+/// (siatka id, układ x·H + y, 0 = pole poza grafem) Core wyznacza sektory (komórka siatki), punkty reprezentatywne
+/// U2DSparseArrayPointContainer::ComputeCenterPoint(true) (0x42C2D5; 1851/1857 zgodnych) i listy sąsiadów 0x4246E8
+/// (skan x↑, y↑; pola (x−1, y), (x, y−1), (x−1, y−1), (x+1, y−1); dopisanie wzajemne na koniec listy; 1857/1857
+/// zgodnych co do zbioru i kolejności). Przydział pól (flood 0x42434F po siatce regionów 0x423E3F) – [N]: wejście.
+GrafPodsektorow zbuduj_graf_z_przydzialu(const std::vector<int>& id_xH, int W, int H, int komorka);
+/// Punkt reprezentatywny 0x42C2D5 dla listy pól w kolejności kontenera (kolumny od ostatniej, przedziały y rosnąco).
+std::pair<int, int> punkt_reprezentatywny(const std::vector<std::pair<int, int>>& pola);
 
 class Swiat {
 public:

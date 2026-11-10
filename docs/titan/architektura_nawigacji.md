@@ -440,3 +440,26 @@ Test celu 0x41E3C0: węzeł = cel albo sektor węzła w odległości ≤ 1 od se
 EEUGLocation +0x32 na czoło kolejki. W e35_a: gwardia 0x1000858 z pola (162,118) (podsektor 523, rodzaj 4) do pola
 (163,105)/(164,105) (podsektor 472, punkt (163,103)) – ścieżka 472 ← 469 ← 523 (523 nie jest sąsiadem 472) → jeden
 punkt (163,5; 103,5). Gwardia 0x1000856 z (164,118) (podsektor 469, sąsiad 472) – ścieżka 2 podsektorów, bez punktu.
+
+## Etap 41 – budowa podsektorów (0x42434F) – część potwierdzona
+
+Dane referencyjne [P]: zad. 625 – pełny odczyt e35_a (1858 podsektorów, 1857 z polami; 39 480 z 78 400 pól ma
+podsektor), siatka obszarów +0xF4 (u16, układ x·H + y – każdy podsektor leży w jednym obszarze; 44 obszary).
+
+| Krok | Funkcja | Ustalenie | Pewność |
+|---|---|---|---|
+| sektory | 0x42434F → 0x42E4C5 | siatka sektorów, komórka z rozmiaru mapy (0x4243A0…: 7/10/12/15/19/21 – e35_a: 19), prostokąt przycięty do W − 1; id sektora od 1 | [W]; [P] 19 |
+| kolejność | 0x424565 | pola od (W − 1, H − 1): x malejąco (zewnętrznie), y malejąco; start tylko na polu bez podsektora z obiektem pola ([map+0x1816D4]) | [W]; [P] pierwsze 62–94 podsektory (id i pola) |
+| flood | 0x429B6D → 0x42AA10, cel 0x41EAE7 | maszyna A* w prostokącie sektora; pole dostępne, gdy ta sama wartość siatki regionów (goal+0xAC = odczyt `w4c[1]`) jak pole startowe; po przekątnej przy co najmniej jednym boku dostępnym (0x42AB38); wszystkie węzły list otwartej i zamkniętej trafiają do podsektora (0x41E8EC) | [W]; reguła przekątnej – sprzeczne przypadki (podsektory 95 i 63) [N] |
+| id i rodzaj | 0x41E8EC, 0x41E990 | id = kolejny licznik managera (0x425E8D); +0x4C = obszar (+0xF4), +0x4E = region (goal+0xAC), +0x54 = rodzaj regionu (obiekt regionu +0x7C) | [W]; [P] w odczycie |
+| punkt | 0x42C2D5 → U2DSparseArrayPointContainer::ComputeCenterPoint(true) | średnia f32 Σ x/n od końca listy pól (kolumny od ostatniej), obcięcie; spoza zbioru – najbliższe pole (d² całkowite, start od ostatniego, remis → mniejszy indeks) | [P] 1851/1857 |
+| sąsiedzi | 0x4246E8 → 0x423255 | skan x↑, y↑; pola (x−1, y), (x, y−1), (x−1, y−1), (x+1, y−1) innego podsektora (≠ 0); wzajemne dopisanie na koniec +0x2C, jeśli brak; tryb przekątnej (dwa różne boki) tylko dodatkowo zapisuje mapę +0x04 | [P] 1857/1857 (zbiór i kolejność) |
+| regiony | 0x423E3F / 0x4240D3 (PathAreaStorage) | siatka regionów (wartości do ~400; rodzaje 1, 4, 12, 13, 14 …) z obiektów pól (0x4039AC, +0x04) i klas (0x42301D) – nieodtworzona | [N] |
+
+Dlatego podsektor może mieć rozłączne fragmenty w jednej kolumnie (połączenie przez inne kolumny lub przekątną),
+a sąsiedztwo łączy podsektory z sąsiednich sektorów przy każdym styku pól. Graf nie zależy od kategorii jednostki
+(jeden zbiór; rodzaj regionu filtruje A* grafu) [W].
+
+**Core (etap 41)**: `zbuduj_graf_z_przydzialu` – z przydziału pól liczy sektory, punkty 0x42C2D5 i sąsiadów 0x4246E8.
+Z przydziałem odczytanym z gry (punkty i sąsiedzi z Core) 619 i 620 są zgodne co takt (obie gwardie, kolejki). Pełna
+autonomia wymaga siatki regionów i reguły floodu – [N]. Narzędzie: `narzedzia/titan/podsektory_porownanie.py`.

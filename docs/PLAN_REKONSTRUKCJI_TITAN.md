@@ -481,6 +481,8 @@ Prognoza nie jest obietnicą terminu.
   EEUGLocation) i 0x62D696 (A* Bounded w EnemyUnitReachable). Szacunek: 1–2 etapy (odczyt grafu z pamięci, potem budowa).
   Etap 40: graf podsektorów (A* 0x4A5807, punkty 0x4A26E3, 9016/8021) i 0x62D696 w Core; graf odczytany z gry –
   budowa podsektorów (0x42434F/0x41E990) to następny krok (1–2 etapy; test referencyjny: odczyt e35_a).
+  Etap 41: sąsiedzi i punkty reprezentatywne z kodu w Core [P]; brak siatki regionów (0x423E3F) i reguły floodu –
+  graf nadal z przydziału pól odczytanego z gry.
 - **Wybór obiektu pod kursorem** [P/W]: 0x50EC37 – lista renderu kamery + `GEPhysicalModel::Intersects` (DLL).
   Odtworzenie przecięcia z siatką wymaga modeli (poza zakresem Core). Dla automatyzacji wystarcza warunek listy renderu
   i potwierdzenie kolejką celów.

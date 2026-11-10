@@ -132,6 +132,7 @@ func _testy() -> void:
 	_test_etapu38(dll)
 	_test_etapu39(dll)
 	_test_etapu40(dll)
+	_test_etapu41(dll)
 	_koniec()
 
 
@@ -458,3 +459,19 @@ func _test_etapu40(dll: String) -> void:
 		if stany.is_empty() or stany[-1] != st: stany.append(st)
 	_wynik("0x62D696: atakujący otoczony przeszkodami – 9006 → 5001 → 5002 → 2025 → 5000 (cel porzucony)",
 		stany.slice(stany.find(9006), stany.find(9006) + 5) == [9006, 5001, 5002, 2025, 5000] and c2.walka(k2).get("kolejka", []).is_empty(), str(stany))
+
+
+# etap 41: graf z przydziału pól – punkty reprezentatywne (0x42C2D5) i sąsiedzi (0x4246E8) liczone w Core.
+# Przydział syntetyczny: 1 = kolumny 0–4, 2 = kolumny 5–9 (wiersze 0–9), 3 = pole (10, 0) styczne po przekątnej z 2.
+func _test_etapu41(dll: String) -> void:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	var W := 12
+	var H := 12
+	var a := PackedInt32Array(); a.resize(W * H)
+	for x in 10:
+		for y in 10: a[x * H + y] = 1 if x < 5 else 2
+	a[10 * H + 10] = 3   # (10, 10) – styk po przekątnej z (9, 9)
+	_wynik("graf z przydziału pól: 3 podsektory, źródło jawne", c.zbuduj_graf_z_przydzialu(a, W, H, 19) == 3 and str(c.diagnostyka()["graf_zrodlo"]) == "Core z przydziału pól", str(c.diagnostyka()["graf_zrodlo"]))
+	_wynik("sąsiedzi 0x4246E8 (także po przekątnej) i ścieżka grafu", c.sciezka_grafu(1, 1, 10, 10) == [3, 2, 1], str(c.sciezka_grafu(1, 1, 10, 10)))

@@ -50,6 +50,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("morale", "id"), &OpenEESymulacja::morale);
     ClassDB::bind_method(D_METHOD("ustaw_graf_podsektorow", "dane"), &OpenEESymulacja::ustaw_graf_podsektorow);
     ClassDB::bind_method(D_METHOD("sciezka_grafu", "x0", "y0", "x1", "y1"), &OpenEESymulacja::sciezka_grafu);
+    ClassDB::bind_method(D_METHOD("zbuduj_graf_z_przydzialu", "id_xH", "W", "H", "komorka"), &OpenEESymulacja::zbuduj_graf_z_przydzialu);
     ClassDB::bind_method(D_METHOD("walka", "id"), &OpenEESymulacja::walka);
     ClassDB::bind_method(D_METHOD("zdarzenia_walki"), &OpenEESymulacja::zdarzenia_walki);
     ClassDB::bind_method(D_METHOD("stan_jednostek"), &OpenEESymulacja::stan_jednostek);
@@ -58,7 +59,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.14.0 (etap 40, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.15.0 (etap 41, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -211,6 +212,7 @@ Dictionary OpenEESymulacja::diagnostyka() const {
         d["objazdy_niezweryfikowane"] = int64_t(g.objazdy_niezweryfikowane);
         d["astar_iteracje"] = int64_t(g.ostatnia_trasa.iteracje);
         d["graf_z_gry"] = swiat_->graf_podsektorow().z_gry;       // etap 40: tryb diagnostyczny
+        d["graf_zrodlo"] = gtekst(swiat_->graf_podsektorow().zrodlo);
         d["graf_prosby"] = int64_t(g.graf_prosby);
         d["graf_punkty"] = int64_t(g.graf_punkty);
         Array gs;
@@ -430,6 +432,7 @@ int64_t OpenEESymulacja::ustaw_graf_podsektorow(const Dictionary& d) {
     if (!swiat_) return -1;
     openee::GrafPodsektorow g;
     g.z_gry = true;
+    g.zrodlo = "gra (odczyt)";
     const Array lst = d.get("podsektory", Array());
     for (int64_t i = 0; i < lst.size(); ++i) {
         const Dictionary e = lst[i];
@@ -453,6 +456,17 @@ int64_t OpenEESymulacja::ustaw_graf_podsektorow(const Dictionary& d) {
     }
     const int64_t n = int64_t(g.podsektory.size());
     swiat_->ustaw_graf_podsektorow(std::move(g));
+    return n;
+}
+
+// etap 41: graf z przydziału pól (punkty 0x42C2D5 i sąsiedzi 0x4246E8 liczone w Core); przydział – wejście [N]
+int64_t OpenEESymulacja::zbuduj_graf_z_przydzialu(const PackedInt32Array& a, int64_t W, int64_t H, int64_t komorka) {
+    if (!swiat_ || a.size() != W * H) return -1;
+    std::vector<int> g(a.size());
+    for (int64_t i = 0; i < a.size(); ++i) g[std::size_t(i)] = a[i];
+    auto G = openee::zbuduj_graf_z_przydzialu(g, int(W), int(H), int(komorka));
+    const int64_t n = int64_t(G.podsektory.size());
+    swiat_->ustaw_graf_podsektorow(std::move(G));
     return n;
 }
 

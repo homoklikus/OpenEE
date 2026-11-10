@@ -144,3 +144,8 @@ Testy GDExtension: 30 (+2: kąt z pomiaru 616, ponowny wybór celu nieosiągalne
   `podsektory` (tryb diagnostyczny „graf z gry”; budowa podsektorów w Core nieodtworzona).
 - `sciezka_grafu(x0, y0, x1, y1) -> Array` – ścieżka A* grafu (od celu do startu).
 - `diagnostyka()`: `graf_z_gry`, `graf_prosby`, `graf_punkty`, `graf_ostatnia`.
+
+## 22. Etap 41 – OpenEE Core 0.15.0 (testy GDExtension: 40)
+
+- `zbuduj_graf_z_przydzialu(id_xH: PackedInt32Array, W, H, komorka) -> int` – graf z przydziału pól (punkty
+  0x42C2D5 i sąsiedzi 0x4246E8 liczone w Core); `diagnostyka()["graf_zrodlo"]` – jawne źródło grafu.

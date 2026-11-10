@@ -1366,6 +1366,68 @@ int Swiat::prog_punktu_auto(int r) {
     return 14;
 }
 
+std::pair<int, int> punkt_reprezentatywny(const std::vector<std::pair<int, int>>& L) {
+    // ComputeCenterPoint(true) (Low-Level Engine 0x1005FD31 → 0x100609AB): średnia f32 (Σ x/n od końca listy),
+    // obcięcie (_ftol); punkt spoza zbioru → najbliższy (d² całkowite), start od ostatniego, przy remisie mniejszy indeks
+    if (L.empty()) return {0, 0};
+    const float n = float(L.size());
+    float cx = 0.0f, cy = 0.0f;
+    for (std::size_t i = L.size(); i-- > 0;) {
+        cx = cx + float(L[i].first) / n;
+        cy = cy + float(L[i].second) / n;
+    }
+    const std::pair<int, int> c{int(cx), int(cy)};
+    for (const auto& p : L) if (p == c) return c;
+    std::pair<int, int> best = L.back();
+    auto d2 = [&](const std::pair<int, int>& p) { return (c.first - p.first) * (c.first - p.first) + (c.second - p.second) * (c.second - p.second); };
+    int bd = d2(best);
+    for (std::size_t i = L.size() - 1; i-- > 0;) {
+        const int d = d2(L[i]);
+        if (d <= bd) { best = L[i]; bd = d; }
+    }
+    return best;
+}
+
+GrafPodsektorow zbuduj_graf_z_przydzialu(const std::vector<int>& g, int W, int H, int komorka) {
+    GrafPodsektorow G;
+    G.zrodlo = "Core z przydziału pól";
+    auto id = [&](int x, int y) { return (x < 0 || y < 0 || x >= W || y >= H) ? 0 : g[std::size_t(x) * H + y]; };
+    std::map<int, std::vector<std::pair<int, int>>> pola;
+    for (int x = W - 1; x >= 0; --x)          // kolejność kontenera: kolumny od ostatniej, y rosnąco
+        for (int y = 0; y < H; ++y)
+            if (const int c = id(x, y)) {
+                pola[c].push_back({x, y});
+                G.pole_podsektor[(std::int64_t(x) << 32) | std::uint32_t(y)] = c;
+            }
+    for (auto& [c, L] : pola) {
+        Podsektor p;
+        p.id = c;
+        p.sektor_i = komorka > 0 ? L.front().first / komorka : 0;
+        p.sektor_j = komorka > 0 ? L.front().second / komorka : 0;
+        const auto r = punkt_reprezentatywny(L);
+        p.punkt_x = r.first;
+        p.punkt_y = r.second;
+        G.podsektory[c] = std::move(p);
+    }
+    auto lacz = [&](int a, int b) {
+        auto& la = G.podsektory[a].sasiedzi;
+        if (std::find(la.begin(), la.end(), b) == la.end()) la.push_back(b);
+        auto& lb = G.podsektory[b].sasiedzi;
+        if (std::find(lb.begin(), lb.end(), a) == lb.end()) lb.push_back(a);
+    };
+    for (int x = 0; x < W; ++x)                // 0x4246E8
+        for (int y = 0; y < H; ++y) {
+            const int c = id(x, y);
+            if (!c) continue;
+            const int s[4][2] = {{x - 1, y}, {x, y - 1}, {x - 1, y - 1}, {x + 1, y - 1}};
+            for (const auto& q : s) {
+                const int d = id(q[0], q[1]);
+                if (d && d != c) lacz(c, d);
+            }
+        }
+    return G;
+}
+
 std::vector<int> szukaj_w_grafie(const GrafPodsektorow& g, int start, int cel) {
     auto pc = g.podsektory.find(cel), ps = g.podsektory.find(start);
     if (pc == g.podsektory.end() || ps == g.podsektory.end()) return {};

@@ -6,6 +6,18 @@
   {
    "data": "2026-11-10",
    "tytul": {
+    "pl": "Etap 41: jak gra dzieli mapę na podsektory",
+    "en": "Stage 41: how the game splits the map into subsectors"
+   },
+   "tekst": {
+    "pl": "Odczytano z kodu gry, jak Titan łączy podsektory w graf i wybiera ich punkty reprezentatywne. OpenEE liczy to już sam, zgodnie z oryginałem. Pełne samodzielne dzielenie mapy wymaga jeszcze odtworzenia regionów terenu.",
+    "en": "The game code revealed how Titan links subsectors into a graph and picks their representative points. OpenEE now computes this itself, matching the original. Fully independent map splitting still needs the terrain regions to be reconstructed."
+   },
+   "raport": "RAPORT_ETAP_41.md"
+  },
+  {
+   "data": "2026-11-10",
+   "tytul": {
     "pl": "Etap 40: graf podsektorów i pełna zgodność dwóch gwardii",
     "en": "Stage 40: subsector graph and full agreement for two guards"
    },
@@ -13,7 +25,7 @@
     "pl": "OpenEE odczytuje graf podsektorów z oryginalnej gry i planuje na nim trasy jak Titan: wstawia punkty pośrednie i porzuca cele, do których jednostka nie dojdzie. Obie gwardie w nagraniach testowych zachowują się jak w oryginale w każdym takcie.",
     "en": "OpenEE reads the subsector graph from the original game and plans routes on it like Titan: it inserts intermediate points and drops targets a unit cannot reach. Both guards in the test recordings behave like the original on every tick."
    },
-   "raport": "RAPORT_ETAP_40.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_40.md"
   },
   {
    "data": "2026-11-10",

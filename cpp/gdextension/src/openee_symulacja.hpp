@@ -55,6 +55,7 @@ public:
     double kat_rozkazu(const godot::Array& ids, double x, double y) const;
     void ustaw_modyfikator_wysokosci(bool wlaczony);
     int64_t ustaw_graf_podsektorow(const godot::Dictionary& d);
+    int64_t zbuduj_graf_z_przydzialu(const godot::PackedInt32Array& id_xH, int64_t W, int64_t H, int64_t komorka);
     godot::Array sciezka_grafu(int64_t x0, int64_t y0, int64_t x1, int64_t y1) const;
     int64_t ustaw_efekty_obszaru(const godot::Dictionary& d);
     void odtworz_efekty_obszaru();
