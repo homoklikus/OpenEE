@@ -89,3 +89,31 @@ Metody `OpenEESymulacja` (tylko przekazanie danych; decyzje w Core):
 
 Godot nie liczy celu, zasięgu, obrotu ani obrażeń. Test: `godot/testy/testy_gdextension.gd` – „walka w Core przez
 GDExtension” (ten sam pojedynek co `core_walka_swiat`: wybory 2, śmierci 1, HP 103 / 0).
+
+## 17. Etap 36 – pierwsza grywalna potyczka (Core jako jedyna symulacja)
+
+Nowe metody `OpenEESymulacja` (OpenEE Core 0.10.0):
+- `stan_jednostek() -> Array` – migawka wszystkich jednostek po takcie: `{id, x, y, z, v, kurs, stan, tryb, gracz}`
+  oraz dla jednostek z walką `{hp, hp_max, animacja, cel}` (cel = id jednostki z celu EEUGAttackUnit, 0 – brak);
+- `zdarzenia_walki_od(od) -> Array` – zdarzenia walki od indeksu `od` (`indeks, takt, kto, cel, rodzaj, wartosc`;
+  rodzaje: `wybor_celu`, `atak`, `trafienie`, `smierc`) – odczyt przyrostowy bez kopiowania całej historii;
+- `ustaw_wrogow(g1, g2, wrog)` – dyplomacja par graczy; `takty() -> int`.
+
+Warstwy po stronie Godota (bez logiki gry):
+
+| Warstwa | Plik | Rola |
+|---|---|---|
+| model widoku | `godot/silnik/symulacja/symulacja_core.gd` (`SymulacjaCore`) | `krok()` = `takt(1)` + odczyt `stan_jednostek` i nowych zdarzeń; przepisuje pozycje/kursy do `JednostkaSym` (te same obiekty co stara symulacja GDScript), stan animacji z numeru stanu `.tai` (2001/2021 atak, 6000–6003 śmierć, v > 0 ruch); rozkazy gracza → `rozkaz_ruchu` / `rozkaz_ataku` tylko dla jednostek gracza lokalnego i tylko na żywe cele |
+| stały krok | `zegar_symulacji.gd` | akumulator czasu, `KROK` = 0,35 s / 15 (takty EE 42,857/s), interpolacja `alfa` – render niezależny od tempa logiki |
+| render | `widok_jednostek.gd` | modele CEM/MultiMesh, animacje VAT, synchronizacja po stabilnym id Core; `ukryj(id)` dla zwłok (prezentacja) |
+| wejście | `sterowanie_rts.gd`, `zaznaczanie.gd`, `zaznaczenie_ee.gd` | LPM, ramka, PPM w teren (Shift – kolejka Core), PPM na wrogu – atak |
+| scena | `godot/sceny/potyczka.gd`, `potyczka.tscn` (launcher: tryb 4) | mapa SCN → `wczytaj_mape_scn` + obiekty blokujące, jednostki z `dane/potyczka/*.json`, paski HP, zdarzenia, wynik, restart (nowy świat Core) |
+
+Zasady: jeden autorytatywny `Swiat`; GDScript nie liczy ruchu, kolizji, tras ani walki; parametry ruchu i walki są
+wyłącznie w pliku danych potyczki (pomiary) i trafiają do Core bez przeliczeń. Restart tworzy nowy obiekt
+`OpenEESymulacja` i nowe warstwy widoku (węzły zdejmowane przez `remove_child` + `queue_free`).
+
+Testy: `testy_gdextension.gd` – potyczka przez `SymulacjaCore` (rozkazy → wynik), determinizm (te same rozkazy w tych
+samych taktach → ten sam skrót i kolejność zdarzeń), przerwanie ataku ruchem, zwłoki, sekwencja stanów rozkazu ataku
+(619/620); rzeczywisty przebieg sceny z renderem: `xvfb-run … res://sceny/potyczka.tscn -- --potyczka-demo=70
+--potyczka-restart --potyczka-zrzuty=… --potyczka-raport=…` (zdarzenia wejścia przez `Input.parse_input_event`).

@@ -273,3 +273,12 @@ Tablice, prędkość, zapisy f32 i teren są wspólne [P].
 - Budynki nie mają maszyny stanów, fizyki ani kolizji – w Core są wyłącznie źródłami efektów i domami [W].
 - Nieodwzorowane: typy 1, 3, 4, 6, 7, 8 (licznik `efekty_nieodwzorowane`), wieże jako odbiorcy, ulepszenia typ+0x428.
 - Testy: `core_morale` (21 sprawdzeń) oraz porównanie morale Core z odczytem gry w oknach `core_walka_swiat`.
+
+## 17. Etap 36 – rozkaz ataku gracza z pomiaru
+
+`Swiat::rozkaz_ataku` wchodzi w InitialAttackState (2016); krok maszyny w tym samym takcie przechodzi do
+FaceEnemyUnit (2012, tryb fizyki 1). Pomiary 619/620 co takt [P]: 2012 → 2013 → 2024 → 8000 → 2015 → 10003.
+Odtworzenie 619 w Core (mapa e35_a z SCN): 116 przejść zgodnych z grą (pozycje do 0,001 pola), 620 (atak przerwany
+PPM w teren): 37 przejść. *[Etap 36 – zastąpione: wejście w CheckRange [H] z etapu 31.]* Pierwsza różnica w obu
+przypadkach – czas trwania 9006 TurnToUnitFacing na końcu trasy [N]. GDExtension: `stan_jednostek`,
+`zdarzenia_walki_od`, `ustaw_wrogow`, `takty` (INTEGRACJA_GODOT.md § 17).

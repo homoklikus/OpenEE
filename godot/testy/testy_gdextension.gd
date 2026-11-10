@@ -277,7 +277,12 @@ func _test_potyczki(dll: String) -> void:
 	var s2 := _potyczka_core(dll)
 	var w2: Array = []; var e2: Array = []
 	for id in s2.jednostki: (w2 if s2.gracz_jednostki[id] == 1 else e2).append(id)
-	s2.rozkaz_ataku_grupy([w2[0]], e2[0]); s2.krok(); s2.krok()
+	s2.rozkaz_ataku_grupy([w2[0]], e2[0])
+	var sekw: Array = []
+	for i in 5:
+		s2.krok(); sekw.append(s2.stan[w2[0]])
+	# etap 36 [P: 619/620]: rozkaz ataku → 2016 InitialAttackState, w tym samym takcie 2012; dalej 2013, 2024, 8000, 2015
+	_wynik("rozkaz ataku gracza: sekwencja stanów jak w grze (619/620): 2012, 2013, 2024, 8000, 2015", sekw == [2012, 2013, 2024, 8000, 2015], str(sekw))
 	var mial_cel: int = s2.cel_walki[w2[0]]
 	s2.rozkaz_grupy([w2[0]], Vector2(10.5, 18.5)); s2.krok()
 	var obcy := s2.rozkaz_ataku_grupy([e2[1]], w2[0])   # jednostki wroga nie przyjmują rozkazów gracza lokalnego

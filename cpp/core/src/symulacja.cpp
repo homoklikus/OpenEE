@@ -263,6 +263,7 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
                 u.boj->animacja = 7;
             }
             break;
+        case 2016:  // InitialAttackState – akcja wejścia 0x61ADD7 (ICL zapisywane w Core przy 2013) [W]; etap 36
         case 2024:
         case 2025:
         case 5002:
@@ -824,8 +825,12 @@ bool Swiat::rozkaz_ataku(IdJednostki id, IdJednostki cel) {
     u->trasa.clear();
     u->zdjete_punkty = 0;
     u->trasa_gotowa = false;
-    zalozenie("rozkaz ataku gracza: wejście w CheckRange [H]");
-    auto it = skrypt_.stany().find("CheckRange");
+    // Etap 36 [P: 619 – próbki co takt; W: wejście]: rozkaz ataku gracza wchodzi w InitialAttackState (2016), a krok
+    // maszyny w tym samym takcie przechodzi GoalIsUnit → FaceEnemyUnit (2012: tryb 1 – obrót do celu już w takcie
+    // rozkazu). Dalej skrypt: 2013 → 2024 → 8000 → 2015 → 10003, jak w grze (619: zgodne czasy przejść i kurs co takt;
+    // to samo 9000 → 2016 → 2012 przy aktywacji celu ataku z kolejki gwardii 0x1000858).
+    // *[Etap 36 – zastąpione: „wejście w CheckRange [H]” (etap 31) – kurs o 1 takt za grą, przejścia o 1 takt za wcześnie.]*
+    auto it = skrypt_.stany().find("InitialAttackState");
     if (it != skrypt_.stany().end()) wejdz_w_stan(*u, it->second);
     return true;
 }

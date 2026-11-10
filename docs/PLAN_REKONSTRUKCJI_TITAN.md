@@ -485,4 +485,15 @@ Prognoza nie jest obietnicą terminu.
   pozostaje drugim, niezależnym torem.
 - Rozpoznane warunki `EEAMouseClick` (dyplomacja, kategoria 0x50E34B, HP > 0) – materiał do sterowania w OpenEE.
 - Kolejność prac: scenariusze C na `e35_a` → rozbieżności 578 G3 / 590 → AoC → strzelcy. Równolegle scena potyczki w
-  Godocie (lista braków: `RAPORT_ETAP_35.md` § 12).
+  Godocie (lista braków: `raporty/archiwum/RAPORT_ETAP_35.md` § 12).
+
+### 4.13. Aktualizacja po etapie 36
+
+- **Pierwsza grywalna potyczka** [P: rzeczywisty przebieg sceny]: scena Godota na mapie SCN, 5 × 5 gwardii, ruch,
+  kolizje, trasy i walka wręcz wyłącznie w Core (GDExtension), sterowanie EE (LPM/ramka/PPM/Shift/atak), wynik
+  i restart. Godot nie ma już drugiej symulacji dla tej sceny (stara `Symulacja` GDScript zostaje dla `rts_test`).
+- **Rozkaz ataku gracza zgodny co takt** z pomiarami 619/620 (wejście InitialAttackState); przerwanie ataku zwykłym
+  PPM – Core = gra. Pierwsze różnice: czas 9006 na końcu trasy, ponowny wybór celu nieosiągalnego przez AI [N].
+- Zmiana wniosku etapu 35: w 616 nie było pościgu – obywatel stał na polu z drzewami (cel nieosiągalny).
+- Kolejność prac: 9006/CompletedUnitFacing przy celu ataku i rozkazie PPM → ponowny wybór celu (osiągalność
+  0x62D696) → 578 G3 / 590 → AoC RNG → strzelcy (pomiar pocisku). Potyczka: szyk grupy w Core, mgła wojny, więcej typów.

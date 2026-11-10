@@ -302,3 +302,22 @@ Rzut z pól kamery gry (`walka_kamera_gry`, `walka_atak_rzut_gry`):
 - daje EEUGAttackUnit (616, 617) i poprawne zaznaczenie LPM (617).
 
 Szczegóły i dziennik: `docs/titan/dziennik_eksperymentow.md`.
+
+## 9. Przebieg rozkazu ataku i jego przerwanie (etap 36)
+
+Pomiary co takt 619 i 620 (EE, e35_a, gwardia → obywatel na polu z drzewami) [P]:
+- **Wejście rozkazu ataku**: InitialAttackState 2016 (`GoalIsUnit` → FaceEnemyUnit); krok maszyny w tym samym takcie
+  daje 2012 (tryb fizyki 1 – obrót do celu już w takcie rozkazu). Próbka po rozkazie pokazuje 2016 albo 2012
+  zależnie od tego, czy rozkaz trafił przed czy po kroku maszyny jednostki (oba warianty w 620).
+- Dalej: 2012 → 2013 CheckRange → 2024 ShouldIFollowEnemyUnit → 8000 PrepareToMove (punkt podejścia, trasa) →
+  2015 → 10003. Cel w kolejce: EEUGAttackUnit, `pochodzenie_1C` = 1 (od gracza), licznik prób 0 → 1 przy 8000.
+- **Przerwanie ruchem**: zwykły PPM w teren zastępuje cel ataku jedynym celem EEUGLocation (kolejka wyczyszczona),
+  w tym samym takcie 2015 → 10003 z nową trasą [P: 620].
+- Cel nieosiągalny (obywatel na polu z drzewami): podejście do najbliższego punktu trasy, potem cykl
+  10003 → 5002 → 2013 → 2024 na ostatnim punkcie (`OneWaypointRemaining`, `GoalIsUnit`), 9000 → 9006 → 5001 → 5002 →
+  … aż do porzucenia (2025 → 5000). AI wybiera ten sam cel ponownie co 8–30 s [P: 616, 619]; warunki ponownego wyboru [N].
+- Wrogi bohater (858 → 0x5000ad2, 620): przed celem ataku pojawia się EEUGLocation (163,5; 103,5) z trasą 1 punkt,
+  jednostka nie rusza się i porzuca cel (2025 → 5000) [P]; przyczyna nieosiągalności [N].
+
+Core (etap 36): `Swiat::rozkaz_ataku` wchodzi w InitialAttackState – odtworzenie 619 zgodne co takt w 116 przejściach,
+620 (z przerwaniem ruchem) w 37 przejściach; różnice zaczynają się na 9006 (dziennik eksperymentów).

@@ -4,6 +4,18 @@
  "wiecej_url": "https://github.com/homoklikus/OpenEE/blob/main/raporty/README.md",
  "wpisy": [
   {
+   "data": "2026-11-10",
+   "tytul": {
+    "pl": "Etap 36: pierwsza potyczka w OpenEE",
+    "en": "Stage 36: the first OpenEE skirmish"
+   },
+   "tekst": {
+    "pl": "Po raz pierwszy można zagrać krótką potyczkę w OpenEE: dwie grupy gwardzistów na mapie z kampanii Empire Earth. Jednostki zaznacza się myszą jak w oryginale, wydaje rozkazy ruchu i ataku, a ruch i walkę liczy odtworzony silnik gry, nie osobna uproszczona symulacja. Bitwa kończy się zwycięstwem albo porażką i można ją zacząć od nowa klawiszem R. Przy okazji porównaliśmy z oryginałem rozkaz ataku i jego przerwanie – zgadzają się takt po takcie.",
+    "en": "For the first time you can play a short skirmish in OpenEE: two groups of royal guards on a map from the Empire Earth campaign. You select units with the mouse as in the original and give move and attack orders, while movement and combat are computed by the reconstructed game engine, not by a separate simplified simulation. The battle ends in victory or defeat and can be restarted with R. We also compared the attack order and its interruption with the original game – they match tick by tick."
+   },
+   "raport": "RAPORT_ETAP_36.md"
+  },
+  {
    "data": "2026-11-09",
    "tytul": {
     "pl": "Etap 35: rozkaz ataku w oryginalnej grze działa",
@@ -13,7 +25,7 @@
     "pl": "Przez kilka etapów nasze narzędzie nie potrafiło kazać jednostce zaatakować wroga w oryginalnym Empire Earth. Zmieniliśmy metodę: zbudowaliśmy prosty scenariusz testowy i sprawdzaliśmy po kolei każdą hipotezę. Przyczyny były trzy: wróg we mgle wojny, klikanie w już poległego wroga i niedokładne przeliczanie pozycji na ekranie. Teraz rozkaz ataku działa, co otwiera drogę do kolejnych pomiarów walki.",
     "en": "For several stages our tool could not order a unit to attack an enemy in the original Empire Earth. We changed the approach: we built a simple test scenario and checked each hypothesis in turn. There were three causes: the enemy hidden in the fog of war, clicking an enemy that had already fallen, and an inaccurate conversion of positions to the screen. Attack orders now work, which opens the way to further combat measurements."
    },
-   "raport": "RAPORT_ETAP_35.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_35.md"
   },
   {
    "data": "2026-11-09",
