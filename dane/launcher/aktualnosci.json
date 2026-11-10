@@ -6,6 +6,18 @@
   {
    "data": "2026-11-10",
    "tytul": {
+    "pl": "Etap 39: kilka jednostek atakuje jeden cel jak w oryginale",
+    "en": "Stage 39: several units attack one target like the original"
+   },
+   "tekst": {
+    "pl": "Jednostki atakujące wspólny cel wybierają wolne miejsca wokół niego według reguły odczytanej z kodu gry, więc walka dwóch na jednego jest dużo bliższa oryginałowi. Wyjaśniono też, skąd biorą się dodatkowe punkty ruchu przed atakiem.",
+    "en": "Units attacking a shared target pick free spots around it using the rule read from the game code, so two-on-one fights are much closer to the original. The extra move points before an attack were also explained."
+   },
+   "raport": "RAPORT_ETAP_39.md"
+  },
+  {
+   "data": "2026-11-10",
+   "tytul": {
     "pl": "Etap 38: bohater, regeneracja i pełne odtworzenie walki",
     "en": "Stage 38: hero, regeneration and a full battle replay"
    },
@@ -13,7 +25,7 @@
     "pl": "OpenEE odtwarza scenariusz testowy z bohaterem takt po takcie: gwardia zachowuje się jak w oryginale przez całe nagrania, a bohater traci i odzyskuje życie w tych samych chwilach. Dodano regenerację zdrowia i obrót do punktu ruchu wydanego w trakcie walki.",
     "en": "OpenEE replays the test scenario with the hero tick by tick: the guard behaves like the original for whole recordings, and the hero loses and regains health at the same moments. Health regeneration and turning towards a move point given during combat were added."
    },
-   "raport": "RAPORT_ETAP_38.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_38.md"
   },
   {
    "data": "2026-11-10",

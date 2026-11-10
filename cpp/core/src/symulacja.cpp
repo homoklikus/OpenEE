@@ -941,9 +941,31 @@ Punkt2 Swiat::punkt_podejscia(Jednostka& u, const Jednostka& t) {
                 return (a.x - u.x) * (a.x - u.x) + (a.y - u.y) * (a.y - u.y) <
                        (b.x - u.x) * (b.x - u.x) + (b.y - u.y) * (b.y - u.y);
             });
-            zalozenie("miejsce podejścia 0x63234D: porządek przy równych odległościach i test obiektów blokujących [W]");
-            for (const auto& p : k)
-                if (teren_.pole_przejezdne(podloga(p.x), podloga(p.y))) return p;
+            zalozenie("miejsce podejścia 0x63234D: porządek przy równych odległościach [W]");
+            // etap 39 – zajętość miejsca (0x63234D, pętla 0x63267C) [W: kod; P: 619/620 – druga gwardia omija miejsce
+            // zajęte przez pierwszą]: obiekty w promieniu R + 2,0 od celu (0x63603B, d² ≤ r²); miejsce zajęte, gdy dla
+            // żywej jednostki (HP > 0) A² > d² + 0,1·s_ja, A = 0,5·(s_obiektu + s_ja), d² – kwadrat odległości miejsca od
+            // pozycji obiektu (GE2DPoint::DistanceToSquared). Obiekty z typ+0x619 (zajmujące pole) – przez przejezdność
+            // terenu Core [W]. Flagi typu +0x600/+0x606 nieodczytane – przyjęte dla każdej jednostki bojowej [H].
+            const double rr = f32(R + 2.0);
+            std::vector<const Jednostka*> blisko;
+            for (const auto& o : jednostki_) {
+                const double dx = f32(o.x - tx), dy = f32(o.y - ty);
+                if (f32(dx * dx + dy * dy) <= f32(rr * rr)) blisko.push_back(&o);
+            }
+            const double s_ja = f32(double(u.boj->p.rozmiar));
+            for (const auto& p : k) {
+                if (!teren_.pole_przejezdne(podloga(p.x), podloga(p.y))) continue;   // 0x62C7C8
+                bool wolne = true;
+                for (const Jednostka* o : blisko) {
+                    if (!o->boj || o->boj->s.hp <= 0) continue;
+                    const double A = f32(f32(double(o->boj->p.rozmiar) + s_ja) * 0.5);
+                    const double dx = f32(o->x - p.x), dy = f32(o->y - p.y);
+                    const double d2 = f32(dx * dx + dy * dy);
+                    if (f32(A * A) > f32(f32(0.1f * float(s_ja)) + d2)) { wolne = false; break; }
+                }
+                if (wolne) return p;
+            }
             // brak przejezdnego miejsca → 0x632CF4 fałsz → 0x62CD76: cel wpisany (albo odświeżony) w mapie
             // nieosiągalnych (0x5E8651, termin + 30 s) przy każdym PrepareToMove; dalej obsługa garnizonu (brak w Core)
             // [P: kod 0x62D1F2–0x62D207, 0x62CD88; W: warunek „brak miejsca” jako jedyna przyczyna fałszu 0x632CF4;

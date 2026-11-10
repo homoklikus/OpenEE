@@ -477,6 +477,8 @@ Prognoza nie jest obietnicą terminu.
 - **Wielu atakujących na jeden cel** (etap 38, [P] pomiar 619/620): druga gwardia omija zajęte miejsce podejścia,
   wstawia EEUGLocation przed celem ataku i po drugim 9006 usuwa cel gracza. Kod testu zajętości (0x632CF4/0x63234D) –
   następny krok; szacunek 1 etap z pomiarem.
+  Etap 39: test zajętości 0x63234D wdrożony [W/P: 619, 578 G3]; pozostaje graf podsektorów (0x4A26E3 – pośrednie
+  EEUGLocation) i 0x62D696 (A* Bounded w EnemyUnitReachable). Szacunek: 1–2 etapy (odczyt grafu z pamięci, potem budowa).
 - **Wybór obiektu pod kursorem** [P/W]: 0x50EC37 – lista renderu kamery + `GEPhysicalModel::Intersects` (DLL).
   Odtworzenie przecięcia z siatką wymaga modeli (poza zakresem Core). Dla automatyzacji wystarcza warunek listy renderu
   i potwierdzenie kolejką celów.

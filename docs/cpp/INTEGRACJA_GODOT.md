@@ -132,3 +132,8 @@ Testy GDExtension: 30 (+2: kąt z pomiaru 616, ponowny wybór celu nieosiągalne
   narzędzia `narzedzia/titan/efekty_obszaru.py` (jak `wczytaj_efekty` w testach Core); `morale(id) -> Array`.
 - `ustaw_walke`: nowe klucze `regeneracja` (typ+0x578), `regeneracja_ms` (stan licznika +0x290 na starcie),
   `ai_szuka_wrogow`, `ai_poscig_poza_icl`, `ai_wraca_do_icl`, `ai_moze_swobodnie` (domyślne jak dotąd).
+
+## 20. Etap 39 – OpenEE Core 0.13.0 (testy GDExtension: 34)
+
+- `walka(id)["kolejka"]` – pełna kolejka celów jednostki: `rodzaj` (EEUGAttackUnit / EEUGLocation), `x`, `y`, `cel`,
+  `od_gracza`, `proby`. Godot tylko odczytuje; wybór miejsca podejścia (0x63234D) liczy Core.

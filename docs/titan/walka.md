@@ -731,3 +731,59 @@ bezpośredni; inaczej identyfikatory regionów (+0xDA obiektów pól z 0x42C49A)
 regionów [0x917CC4][i·[0x917CEC] + j]. To nie A* – spójność regionów mapy. **0x622776 / 0x623717** [W]: miejsca
 wywołania wpisu do mapy nieosiągalnych 0x5E8651 – w PrepareToMove (potem funktor 0x6233D2/0x630013 i dalsze
 przygotowanie trasy) i w drugiej akcji stanu (powrót do 0x6236DD). Reguł nie wdrożono – brak pomiaru rozróżniającego.
+
+## 29. Miejsca podejścia, pośrednie EEUGLocation i osiągalność (etap 39)
+
+**Łańcuch wywołań** [W: kod]: PrepareToMove 0x6222A8 → cel vt+0x08 (EEUGAttackUnit 0x60AF05) → cel ruchomy
+(v > 0): przechwycenie 0x62C963; cel stojący: 0x62CF6A → (atakujący +0x61A) w zasięgu 0x631935 → własna pozycja;
+inaczej 0x632CF4 → (ulepszenie celu +0xAC > 0) 0x63234D, w przeciwnym razie 0x62C315/0x632A8B/0x62C697; porażka
+0x632CF4 → 0x62CD76 (wpis do mapy nieosiągalnych). Po wyborze 0x60AF05 zapisuje punkt w mapie grupy atakującego
+(+0x1C8 → 0x5DF33D, klucz = id jednostki).
+
+**0x63234D – wybór miejsca** [W: kod; P: 619/620 i 578 G3]:
+1. Pozycja celu: cel w ruchu z trasą – pozycja przewidziana (+0x164 · +0x174); inaczej vt+0x5C (pozycja).
+2. R = 0,5·s_ja + 0,5·s_cel (typ +0x474). Osiem miejsc w kolejności wstawiania: N, E, S, W, NE, SE, SW, NW
+   (jak w Core od etapu 31), sortowanie wg odległości od atakującego (0x63A48B).
+3. Obiekty w promieniu R + 2,0 od celu (0x63603B: siatka obiektów 0x635288/0x635861, filtr d² ≤ r²,
+   obiekt bez jednostki – środek pola).
+4. Dla kolejnych miejsc: (a) gdy atakujący ma grupę (+0x1C8) – 0x5DF185 (punkty innych członków grupy w
+   odległości < (0,5·s)²) – **wynik ignorowany** (al nieużywane, 0x632625) [W]; (b) pole miejsca przejezdne dla
+   atakującego (0x62C7C8); (c) dla każdego obiektu z listy: typ+0x619 ≠ 0 i to samo pole → zajęte; inaczej żywa
+   jednostka (HP > 0) z flagą typu +0x600 albo +0x606 → zajęte, gdy **(0,5·(s_obiektu + s_ja))² > d² + 0,1·s_ja**
+   (d² – GE2DPoint::DistanceToSquared miejsca i pozycji obiektu). Pierwszy wolny kandydat wygrywa; brak – pozycja
+   celu i fałsz.
+5. Sprawdzenie zajętości jest geometryczne (punkt i promienie), nie po polach i nie rezerwacją; jednostka w ruchu
+   blokuje tak samo jak stojąca (warunek nie patrzy na v) [W]. Flag +0x600/+0x606 nie odczytano – Core przyjmuje je
+   dla każdej jednostki bojowej [H].
+
+Pomiar [P]: 619 – gwardia 0x1000858 wybiera (164,5; 105,025) zamiast bliższego (163,975; 105,025), na którym stoi
+gwardia 0x1000856 (d² = 0,0034; próg 0,25 > 0,0034 + 0,05). Core z tą regułą: punkt celu ataku 0x1000858 równy
+grze (kolejka w 124113). 578 G3 (dwie gwardie na jeden cel): różnice stanu 75 → 5, HP 59 → 1, celu 8 → 0,
+maks. pozycji 0,449 → 0,003; 589 G3: stan 84 → 65, HP 17 → 6, maks. pozycji 0,438 → 0,029. Pomiar 623 (e39_a):
+cztery gwardie (dwa układy) wybrały miejsca zgodne z sortowaniem – w tym układzie zajętość nie rozstrzygała [P].
+
+**Pośrednie EEUGLocation – 0x4A26E3** [W: kod; P: 619/620]: prośba o trasę jednostki 0x4A1AFF uruchamia etap grafu
+podsektorów (EEAIAStarGraphMachine), gdy bajt prośby +0x1C = 1. PrepareToMove ustawia go dla celu położenia bez
++0x32/+0x1D **oraz dla każdego innego celu z +0x1D = 0** (0x622431). Po zakończeniu grafu 0x4A26E3 ustawia na
+bieżącym celu +0x1D = 1 (0x4A2764) i – gdy ścieżka grafu ma > 1 podsektor – dla podsektorów 0 … n − 3 tworzy
+EEUGLocation w punkcie reprezentatywnym podsektora (+0x3C/+0x40, pole + 0,5; z = 0, kurs 0, pochodzenie z celu
++0x1C) i wstawia je na czoło kolejki (0x5F05BD). Konstruktor 0x614C86 (vtable 0x831E64). Dlatego:
+- drugi PrepareToMove tego samego celu pomija graf (+0x1D = 1) – w 619 drugie przejście bez EEUGLocation;
+- po zdjęciu EEUGLocation (9000, koniec trasy) cel ataku wraca na czoło → InitialAttackState 2016.
+Punkt (163,5; 103,5) w 619/620 = punkt reprezentatywny podsektora na ścieżce [H – wymaga odczytu podsektorów].
+**Core nie ma grafu podsektorów** (status „niewdrożony”) – to pierwszy brakujący warunek Titan dla 0x1000858.
+
+**Usunięcie celu gracza po drugim 9006** [W, częściowo]: 9006 → 5001 ReacquireGoal → 5002 ReacquireEnemyUnit →
+`EnemyUnitReachable` fałsz → 2025 ShouldIReturnToInitialContactLocation → 5000 (zdjęcie celu). EnemyUnitReachable =
+licznik ≤ 25 i 0x62D696. **0x62D696** (EE): pole celu −10000 → fałsz; T = max(zasięg², 2,0); prawda, gdy typ+0x430
+= 0, gdy (typ+0x5D4 & 6) = 0 albo gdy odległość (0x406D5E) ≤ T; jednostki w garnizonie/transporcie (+0x1D8) –
+fałsz; inaczej A* Bounded 0x4A189C (klucz 0xB) w prostokącie = obwiednia pól obu jednostek powiększona o
+2·⌈max(LOS, T)⌉, budżet 2·max(2·⌈…⌉, odległość pól 0x409914) ≤ 0x23; prawda, gdy pierwszy punkt wyniku jest w
+odległości pól ≤ T od pola celu. W Core nadal prawda [N] – brak rozpoznania 0x4A189C i 0x409914 (metryka).
+
+**Rozkazy MCP drugiej gwardii** [P: 623]: cel EEUGAttackUnit powstaje 650–850 ms czasu gry po PPM (4 rozkazy).
+W 619/620 rozkazy 0x1000858 najpewniej były przyjęte – trzy próby MCP ↔ trzy cele, każdy porzucony po ~680 ms
+(2016 … 9006 → 5000), więc odczyt kolejki 0,8 s czasu rzeczywistego po PPM widział pustą kolejkę [H: liczba i
+kolejność się zgadzają; czasów kroków MCP w czasie gry nie zapisano]. `walka_atak_rzut_gry` (etap 39) czyta kolejkę
+w każdym takcie do 1000 ms czasu gry po PPM i zapisuje zaznaczenie +0x9B0/+0x9AC, czas PPM, czas utworzenia celu
+i porzucenie w oknie.

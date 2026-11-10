@@ -56,7 +56,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.12.0 (etap 38, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.13.0 (etap 39, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -453,6 +453,19 @@ Dictionary OpenEESymulacja::walka(int64_t id) const {
     if (!u->kolejka_celow.empty() && u->kolejka_celow.front().typ == openee::TypCelu::jednostka)
         cel = int64_t(u->kolejka_celow.front().cel_jednostka);
     d["cel"] = cel;
+    // etap 39: pełna kolejka celów (rodzaj, punkt, cel-jednostka, od gracza, próby) – porównanie z kolejką gry
+    Array q;
+    for (const auto& c : u->kolejka_celow) {
+        Dictionary e;
+        e["rodzaj"] = c.typ == openee::TypCelu::jednostka ? String("EEUGAttackUnit") : String("EEUGLocation");
+        e["x"] = c.x;
+        e["y"] = c.y;
+        e["cel"] = int64_t(c.cel_jednostka);
+        e["od_gracza"] = c.od_gracza;
+        e["proby"] = int64_t(c.proby);
+        q.push_back(e);
+    }
+    d["kolejka"] = q;
     return d;
 }
 

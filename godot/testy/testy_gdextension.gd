@@ -130,6 +130,7 @@ func _testy() -> void:
 	_test_potyczki(dll)
 	_test_etapu37(dll)
 	_test_etapu38(dll)
+	_test_etapu39(dll)
 	_koniec()
 
 
@@ -374,3 +375,31 @@ func _test_etapu38(dll: String) -> void:
 		"budynki": [{"typ": 37, "gracz": 5, "pole": [12, 12], "rozmiar": 1, "srodek": [12.5, 12.5], "efekty": [1]}]})
 	c.odtworz_efekty_obszaru()
 	_wynik("efekty obszarowe ze słownika (format narzędzia efekty_obszaru.py)", e == 1, str(e))
+
+
+# etap 39: zajętość miejsca podejścia 0x63234D – druga gwardia omija miejsce zajęte przez pierwszą
+# [W: kod; P: 619 – wybór (164,5; 105,025) zamiast (163,975; 105,025) przy gwardii w (163,918; 105,037)]
+func _test_etapu39(dll: String) -> void:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	c.ustaw_wrogow(1, 5, true); c.ustaw_wrogow(5, 1, true)
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var gw := {"atak": 15.0, "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000, "klasa_trafienia": 13,
+		"rodzina_ataku": 48, "luk_ataku": 0.3490658700466156, "rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000,
+		"pole_ac": 0.6000000238418579, "typ_jednostki": 5, "ai_szuka_wrogow": 0}
+	var ph := p.duplicate(); ph.rozmiar = 0.55
+	var h: int = c.dodaj_jednostke(ph, 14.5, 14.5, 0.0)
+	c.ustaw_walke(h, 5, false, {"rozmiar": 0.55, "pole_ac": 0.8, "hp_max": 1235, "ai_szuka_wrogow": 0}, 1235)
+	var a: int = c.dodaj_jednostke(p, 13.918, 15.037, 0.0)   # stoi na miejscu (13,975; 15,025)
+	c.ustaw_walke(a, 1, true, gw, 215)
+	var k: int = c.dodaj_jednostke(p, 12.5, 28.5, 0.0)
+	c.ustaw_walke(k, 1, true, gw, 215)
+	c.rozkaz_ataku(k, h)
+	var punkt := Vector2.ZERO
+	for t in 6:
+		c.takt(1)
+		for e in c.walka(k).get("kolejka", []):
+			if str(e.rodzaj) == "EEUGAttackUnit": punkt = Vector2(float(e.x), float(e.y))
+	_wynik("zajętość miejsca podejścia (0x63234D): zajęte (13,975; 15,025) pominięte → (14,5; 15,025)",
+		absf(punkt.x - 14.5) < 1e-4 and absf(punkt.y - 15.025) < 1e-4, str(punkt))

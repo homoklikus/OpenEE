@@ -108,6 +108,14 @@ func _start() -> void:
 		if pe != "":
 			wynik_efekty = c.ustaw_efekty_obszaru(JSON.parse_string(FileAccess.get_file_as_string(pe)))
 			c.odtworz_efekty_obszaru()
+	if _arg("mapa-pol", "") != "":
+		var w := ""
+		var ok: PackedStringArray = _arg("mapa-pol", "").split(",")   # x0,x1,y0,y1
+		for yy in range(int(ok[3]), int(ok[2]) - 1, -1):
+			var r := "%3d " % yy
+			for xx in range(int(ok[0]), int(ok[1]) + 1): r += "." if c.pole_przejezdne(xx, yy) else "#"
+			w += r + "\n"
+		print("POLA\n" + w)
 	var wynik := {"mapa": im.get("skrot", ""), "pole_celu_przejezdne": c.pole_przejezdne(160, 105), "przejscia": [],
 		"ids": ids, "budynki_efektow": wynik_efekty, "jednostki": {}}
 	var T0 := float(_arg("t0", "9909"))
@@ -140,6 +148,12 @@ func _start() -> void:
 				var jd: Dictionary = c.jednostka(int(d.id))
 				var kl := "%d|%d|%d" % [int(d.stan), int(d.get("cel", 0)), int(d.get("hp", -1))]
 				if not wynik.jednostki.has(nm): wynik.jednostki[nm] = [["", 0]]
+				var kq := ""   # etap 39: kolejka celów (rodzaj, punkt, cel)
+				for e in c.walka(int(d.id)).get("kolejka", []):
+					kq += "%s(%.4f,%.4f,%d);" % [str(e.rodzaj).substr(4, 3), float(e.x), float(e.y), int(e.cel)]
+				if not wynik.has("kolejki"): wynik["kolejki"] = {}
+				if not wynik.kolejki.has(nm): wynik.kolejki[nm] = [["", 0]]
+				if wynik.kolejki[nm][-1][0] != kq: wynik.kolejki[nm].append([kq, snappedf(T0 + TAKT_MS * (k + 1), 0.1)])
 				if wynik.jednostki[nm][-1][0] != kl:
 					wynik.jednostki[nm].append([kl, snappedf(T0 + TAKT_MS * (k + 1), 0.1), snappedf(float(d.x), 0.001), snappedf(float(d.y), 0.001)])
 		var ja: Dictionary = {}

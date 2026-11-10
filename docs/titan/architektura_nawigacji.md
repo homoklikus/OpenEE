@@ -219,6 +219,10 @@ Przypadek: zwykły PPM, jednostka lądowa, cel położenia.
      +0x1D = 1 („etap grafu wykonany”);
    - przy 1–2 podsektorach na trasie punkty nie powstają. Pomiar A i B: graf przeszedł 1 i 2 iteracje, kolejka bez
      punktów [P];
+   - etap 39: etap grafu działa także dla celu ataku (PrepareToMove 0x622431: bajt +0x1C = cel+0x1D == 0). Pomiar
+     619/620: druga gwardia dostaje EEUGLocation (163,5; 103,5) przed EEUGAttackUnit w takcie pierwszego
+     PrepareToMove; drugi PrepareToMove tego celu już bez punktu (+0x1D = 1) [P pomiar; W kod]. Core: graf
+     podsektorów niewdrożony – brak tych punktów (`walka.md` § 29);
    - dla grupy: punkty w kolejności od startu trafiają do `EEAutoPathRequest`+0x08, długość +0x48 (suma
      |Δx| + |Δy|), gotowość +0x4C = 1;
    - wartość zwracana: czy ostatni podsektor ma identyfikator celu.
