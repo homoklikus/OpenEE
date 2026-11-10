@@ -485,6 +485,9 @@ Prognoza nie jest obietnicą terminu.
   graf nadal z przydziału pól odczytanego z gry.
   Etap 42: regiony 0x4240D3 i flood podsektorów odtworzone [P 39 480/39 480]; graf Core z wejścia mapy; brakująca
   część autonomii – klasyfikacja obiektów pól (+0x04, +0x14) i kod budowy obszarów +0xF4 [N].
+  Etap 43: reguła rodzaju pola z kodu (Tile::SetKind 0x516E8C) i +0x14 wody w Core [P 39 341/39 480; znak 19 595/19 610];
+  graf z SCN eksperymentalny (619/620 jak gra). Brakuje: 139 pól klifów (ślad dynamiczny), obiektów pól w Core
+  (rejestracja z dbobjects, flaga +0x612), +0x14 lądu i kodu obszarów +0xF4. Szacunek: 1–2 etapy do grafu z samego SCN.
 - **Wybór obiektu pod kursorem** [P/W]: 0x50EC37 – lista renderu kamery + `GEPhysicalModel::Intersects` (DLL).
   Odtworzenie przecięcia z siatką wymaga modeli (poza zakresem Core). Dla automatyzacji wystarcza warunek listy renderu
   i potwierdzenie kolejką celów.

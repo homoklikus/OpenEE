@@ -77,11 +77,25 @@ public:
 
     std::uint64_t skrot() const;  // FNV-1a terenu, wysokości i obiektów (regresja)
 
+    /// Etap 43 – rodzaj obiektu pola (+0x04) z kodu Titan: Map::UpdateTiles 0x51183B → Tile::SetKind 0x516E8C [W, P]:
+    /// f10 ≥ 0 → rodzina tekstury (dbterrain „Terrain family”, rekord +0x5C); f10 < −0,75·G → 1; inaczej, gdy mniej niż
+    /// 3 narożniki pola mają wysokość ≥ 0 → 10, w przeciwnym razie rodzina. G = [0x9130E4] = 0,408248 (odczyt w grze).
+    /// Układ wyniku x·N + y, −1 = brak pola. Niezależne od teren() (reguła etapu 30 – przejezdność, skrót bez zmian).
+    std::vector<int> rodzaj_pol_titan(double g = 0.40824827551841736) const;
+    /// Etap 43 – bajt +0x14 pól wody (rodzaj 1 i 10) z 0x4282B8 + 0x426577 (tryb 1) [W; P – znak]: S1 = pola wody
+    /// z sąsiadem lądowym (rodzaj ∉ {1, 10, 9}) wśród 8 sąsiadów, S2 = pola wody bez lądu, z sąsiadem rodzaju 9;
+    /// h = 10·(sąsiedzi ∈ S1 + sąsiedzi ∈ S2), dla pola ∈ S1: −10 − h; przycięcie ±120. Pola lądu: 0 (ich +0x14
+    /// liczy 0x426577 tryb 0 po budowie regionów – z obiektów klasy 3; nieużywane przez regiony).
+    std::vector<int> bajt14_wody(const std::vector<int>& rodzaj_xN) const;
+
 private:
     int n_ = 0, s1_ = 0, s2_ = 0, d_ = 0;
     std::vector<std::int8_t> teren_;     // n × n, −1 = brak pola
     std::vector<PewnoscPola> pewnosc_;   // n × n
     std::vector<float> z_;               // (n + 1)², NaN = brak punktu
+    std::vector<std::uint8_t> tekstura_; // n × n (etap 43 – klasyfikacja 0x516E8C)
+    std::vector<float> f10_;             // n × n
+    std::array<std::int16_t, 256> rodzina_{};
     std::vector<ObiektMapy> obiekty_;
 };
 

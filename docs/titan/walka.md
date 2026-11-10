@@ -815,3 +815,18 @@ grafu (+0x1D = 1) [H: kto ustawia flagę]; cel z Shift przechodzi etap grafu prz
 kolejki wszystkich jednostek bez różnicy; 620 – 6418/6419 i 6419/6419, kolejki bez różnicy; 616 (z rozkazem
 220637 dla 0x1000858) – 6420/6423 i 6423/6423; 622 – bez różnicy. Pozycja, macierz, v i ω gwardii A bez rzeczywistych
 różnic we wszystkich czterech nagraniach.
+
+## 31. Etap 43 – czyste scenariusze 631/633/634 (odtwarzanie w Core)
+
+- **Wysokość z zapisu scenariusza** [P 631]: jednostka bez aktualizacji fizyki zachowuje z z rekordu SCN (translacja
+  macierzy +44) – np. 1,837 przy terenie 0,408; dosadzenie do terenu dopiero przy pierwszej aktualizacji fizyki.
+  Przechwycenie 0x62C963 liczy odległość 3D z tą wartością: punkt (164,5001; 110,184) zamiast 109,8895.
+  Core: `Swiat::ustaw_z`.
+- **Faza liczników od startu scenariusza** [P 629/631]: pierwsze szukanie celu w 34 ms; odtworzenie od czasu gry 0.
+- **Kolejność jednostek w takcie (czysta mapa)** [P 631/633/634]: jednostki o mniejszym id przetwarzane wcześniej
+  (gwardia gracza 1 przed celem gracza 5 – w takcie 62419 CheckRange widzi poprzednią pozycję celu). Dla scen
+  z kampanią (578 G3) ta reguła nie obowiązuje – kolejność listy gry zależy od całego scenariusza [N].
+- **Umieranie gwardii** [P]: 6000 trwa 2455 ms (72 takty), 6001 – 1 takt, 6002 – 40 129 ms, potem 6003;
+  w Core DyingAnimationFinished nie jest zamodelowane [N] (jedyna różnica 631/633/634).
+- Wyniki: 631 – gwardia i obserwator 2808/2808 próbek (stan, HP, pozycja, kurs), cel do śmierci; 633 (2v1) – obie gwardie
+  3695 + 2 spóźnione / 3697; 634 (3v1, z kontaktem) – trzy gwardie 6413/6413.

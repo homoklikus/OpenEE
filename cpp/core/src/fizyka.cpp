@@ -157,6 +157,13 @@ bool FizykaLadowa::tryb_jazda(const KontekstFizyki& k, Jednostka& u) {
     } else {
         u.osiagnieto_punkt = dreg < PROG_DOJAZDU;
     }
+    // etap 43: reguła (a) „cel zajęty” (0x549179: v = 0, +0x330 = 8) zalicza punkt dopiero w NASTĘPNEJ aktualizacji
+    // fizyki – po zwykłym kroku z v = 0 (przyspieszenie a·dt) [P: 634 – takt 113219: krok 0,0023 pola, 9000 takt
+    // później; wcześniej Core zaliczał punkt w takcie reguły – założenie H etapów 29–42]
+    if (u.flaga_330 == 8) {
+        u.osiagnieto_punkt = true;
+        u.flaga_330 = 0;
+    }
     return true;
 }
 

@@ -42,6 +42,12 @@ Swiat::Swiat(std::shared_ptr<const TabliceTrig> tablice, TerenSiatka teren, Wari
     tps_ = 1.0 / dt_;
 }
 
+bool Swiat::ustaw_z(IdJednostki id, double z) {
+    for (auto& u : jednostki_)
+        if (u.id == id) { u.z = f32(z); return true; }
+    return false;
+}
+
 IdJednostki Swiat::dodaj_jednostke(const ParametryRuchu& p, double x, double y, double kurs) {
     Jednostka u;
     u.id = nastepny_id_++;
@@ -610,12 +616,11 @@ void Swiat::krok_koncowy(Jednostka& u) {
                                        o->param.vmax);
         if (!r.kolizja) continue;
         ++diag_.kolizje;
-        if (u.pozostalo_punktow() == 1) {  // reguła (a) „cel zajęty” [P: EE 528]; zaliczenie punktu [H]
+        if (u.pozostalo_punktow() == 1) {  // reguła (a) „cel zajęty” [P: EE 528]; zaliczenie w następnej fizyce [P: 634]
             const Punkt2& W = u.trasa[u.zdjete_punkty];
             if (std::hypot(W.x - o->x, W.y - o->y) <= o->param.promien_kolizji * 0.5) {
                 u.v = 0.0;
                 u.flaga_330 = 8;
-                u.osiagnieto_punkt = true;
                 ++diag_.cele_zajete;
             }
         }
@@ -1371,11 +1376,13 @@ std::pair<int, int> punkt_reprezentatywny(const std::vector<std::pair<int, int>>
     // ComputeCenterPoint(true) (Low-Level Engine 0x1005FD31 → 0x100609AB): średnia f32 (Σ x/n od końca listy),
     // obcięcie (_ftol); punkt spoza zbioru → najbliższy (d² całkowite), start od ostatniego, przy remisie mniejszy indeks
     if (L.empty()) return {0, 0};
-    const float n = float(L.size());
+    // etap 43: iloraz x/n w precyzji rozszerzonej x87 (bez zaokrąglenia do f32), suma zapisywana do f32 po każdym
+    // dodaniu (fstp dword) [P: 1857/1857 punktów e35_a; wcześniej iloraz w f32 – 1851/1857]
+    const double n = double(L.size());
     float cx = 0.0f, cy = 0.0f;
     for (std::size_t i = L.size(); i-- > 0;) {
-        cx = cx + float(L[i].first) / n;
-        cy = cy + float(L[i].second) / n;
+        cx = float(double(cx) + double(L[i].first) / n);
+        cy = float(double(cy) + double(L[i].second) / n);
     }
     const std::pair<int, int> c{int(cx), int(cy)};
     for (const auto& p : L) if (p == c) return c;

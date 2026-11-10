@@ -119,6 +119,12 @@ func _start() -> void:
 		var pw := _arg("graf-wejscie", "")   # etap 42: graf z wejścia mapy (regiony 0x4240D3 i podsektory 0x42434F w Core)
 		if pw != "":
 			wynik_graf = c.zbuduj_graf_z_wejscia(JSON.parse_string(FileAccess.get_file_as_string(pw)), 19).get("podsektorow", -1)
+		var ps := _arg("graf-scn", "")   # etap 43: rodzaj pola i +0x14 wody z mapy SCN w Core; z pliku – tylko obiekty pól
+		if ps != "":
+			var ob_g: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ps))
+			var m: Dictionary = c.wejscie_regionow_z_mapy()
+			m["jednostki"] = ob_g.get("jednostki", {}); m["typy"] = ob_g.get("typy", {})
+			wynik_graf = c.zbuduj_graf_z_wejscia(m, 19).get("podsektorow", -1)
 		var pe := _arg("efekty", "")
 		if pe != "":
 			wynik_efekty = c.ustaw_efekty_obszaru(JSON.parse_string(FileAccess.get_file_as_string(pe)))

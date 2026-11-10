@@ -328,3 +328,11 @@ kadrem). Wynik:
 - Status 9002 bez zmian: **[W] kod, [N] pomiar**. Następna próba: ruch przeciwny dwóch grup przez przesmyk o
   szerokości 1 pola (`narzedzia/eksperymenty/scenariusz_testowy_kolizji.py`, układ „przesmyk” z etapu 13) – jedyna
   zwykła sytuacja, w której reguła (a) nie działa (cel daleko) i odpychanie trwa sekundami.
+
+## Etap 43 – reguła (a) i zaliczenie punktu (pomiar 634)
+
+Kontakt gwardii 0x1000857 z gwardią stojącą w punkcie celu ruchu (czysta mapa, 3v1): takt 113185 – reguła (a)
+(v = 0); takt 113219 – zwykły krok fizyki z v = 0 (przyspieszenie a·dt, przesunięcie 0,0023 pola), dopiero potem
+punkt zaliczony; 9000 w takcie 113253 [P]. Kod: 0x6213D8 (test osiągnięcia punktu) zwraca „osiągnięty”, gdy +0x330 = 8
+[W]. Core (etapy 29–42) zaliczał punkt w takcie reguły (założenie [H]) – poprawione: +0x330 = 8 zalicza punkt w
+następnej aktualizacji fizyki. Po poprawce 634 – 6413/6413 próbek wszystkich trzech gwardii zgodnych.

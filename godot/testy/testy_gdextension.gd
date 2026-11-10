@@ -134,6 +134,7 @@ func _testy() -> void:
 	_test_etapu40(dll)
 	_test_etapu41(dll)
 	_test_etapu42(dll)
+	_test_etapu43(dll)
 	_koniec()
 
 
@@ -537,3 +538,73 @@ func _test_etapu42(dll: String) -> void:
 				if p3[int(run[0]) * N + y] == int(s["id"]): zg3 += 1
 	_wynik("e35_a: obszary z rodzajów pól (Core) → ten sam przydział podsektorów", not r3["obszary_z_gry"] and r3["obszarow"] == 43 and zg3 == pol,
 		"obszarów %d, zgodnych pól %d/%d" % [r3["obszarow"], zg3, pol])
+
+
+# etap 43: klasyfikacja pól z mapy SCN (Tile::SetKind 0x516E8C, bajt +0x14 wody 0x426577), z zapisu scenariusza,
+# punkty reprezentatywne (iloraz w precyzji x87).
+func _test_etapu43(dll: String) -> void:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	var A := 3
+	var B := 3
+	var T := 2 * A * B + A + B
+	var V := 2 * A * B + 3 * A + 3 * B + 1
+	var tex := PackedByteArray(); tex.resize(T); tex.fill(3)
+	var fl := PackedByteArray(); fl.resize(T)
+	var f10 := PackedFloat32Array(); f10.resize(T)
+	var wys := PackedFloat32Array(); wys.resize(V)
+	f10[5] = -0.6                     # pole (4, 1): f10 < −0,75·0,408248 → woda głęboka (1)
+	f10[6] = -0.1                     # pole (0, 2): płytko, narożniki ≥ 0 (4 z 4) → rodzina tekstury
+	tex[7] = 16                       # pole (1, 2): rodzina 6 (ląd)
+	c.wczytaj_mape_scn(A, B, tex, fl, f10, wys, {3: 0, 16: 6})
+	var m: Dictionary = c.wejscie_regionow_z_mapy()
+	var N: int = m.get("N", 0)
+	var rp: Array = m.get("rodzaj_pola", [])
+	_wynik("klasyfikacja pól 0x516E8C: głęboka woda, płytka z narożnikami ≥ 0, rodzina tekstury",
+		N == 6 and int(rp[4 * N + 1]) == 1 and int(rp[0 * N + 2]) == 0 and int(rp[1 * N + 2]) == 6 and int(rp[0]) == -1,
+		"(4,1)=%s (0,2)=%s (1,2)=%s" % [str(rp[4 * N + 1]) if rp.size() > 0 else "?", str(rp[0 * N + 2]) if rp.size() > 0 else "?", str(rp[1 * N + 2]) if rp.size() > 0 else "?"])
+	var hb: Array = m.get("bajt14", [])
+	_wynik("bajt +0x14 wody (0x4282B8/0x426577): pole wody z lądem obok < 0", hb.size() == 36 and int(hb[4 * N + 1]) < 0, str(hb[4 * N + 1]) if hb.size() > 0 else "?")
+	c.utworz_swiat("ee")
+	var u: int = c.dodaj_jednostke({"a": 2.0, "vmax": 0.6, "alfa": 12.2, "wmax": 13.9, "rozmiar": 0.5}, 2.5, 2.5, 0.0)
+	_wynik("wysokość z zapisu scenariusza (ustaw_z)", c.ustaw_z(u, 1.837) and not c.ustaw_z(9999, 0.0), "")
+	var plik := OS.get_environment("OPENEE_REGIONY_TEST")
+	var ref_plik := OS.get_environment("OPENEE_PODSEKTORY_TEST")
+	var scn := OS.get_environment("OPENEE_SCN_TEST_E35")
+	if plik == "" or ref_plik == "":
+		_skip("punkty reprezentatywne e35_a 1857/1857", "OPENEE_REGIONY_TEST / OPENEE_PODSEKTORY_TEST nie ustawione")
+		return
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(plik))
+	var ref: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ref_plik))
+	var c2: Object = CoreCpp.nowa_symulacja()
+	c2.uzyj_tablic_przyblizonych(); c2.utworz_swiat("ee")
+	c2.zbuduj_graf_z_wejscia(d, 19)
+	var pk := 0
+	for sp in ref["podsektory"]:
+		var q: Dictionary = c2.podsektor(int(sp["id"]))
+		if q.get("punkt", []) == [int(sp["punkt_i32"][0]), int(sp["punkt_i32"][1])]: pk += 1
+	_wynik("punkty reprezentatywne e35_a (iloraz x87, suma f32) = gra", pk == ref["podsektory"].size(), "%d/%d" % [pk, ref["podsektory"].size()])
+	if scn == "":
+		_skip("klasyfikacja pól e35_a z SCN vs odczyt gry", "OPENEE_SCN_TEST_E35 nie ustawione (plik scenariusza – lokalnie)")
+		return
+	var s3 := ScenariuszEE.new()
+	if not s3.wczytaj(FileAccess.get_file_as_bytes(scn)) or not s3.czytaj_teren():
+		_wynik("klasyfikacja e35_a: odczyt SCN", false, s3.blad); return
+	var rodz := {}
+	var rj = JSON.parse_string(OS.get_environment("OPENEE_RODZINY_TEST")) if OS.get_environment("OPENEE_RODZINY_TEST") != "" else {}
+	for k in rj: rodz[int(k)] = int(rj[k])
+	var t3: Dictionary = s3.teren
+	var c3: Object = CoreCpp.nowa_symulacja()
+	c3.wczytaj_mape_scn(t3["A"], t3["B"], t3["teren"], t3["flagi"], t3["f10"], t3["wysokosc"], rodz)
+	var m3: Dictionary = c3.wejscie_regionow_z_mapy()
+	var zr := 0; var zw := 0; var nw := 0
+	for i in m3["rodzaj_pola"].size():
+		var g0 := int(d["rodzaj_pola"][i])
+		if g0 == -1: continue
+		if int(m3["rodzaj_pola"][i]) == g0: zr += 1
+		if g0 == 1 or g0 == 10:
+			nw += 1
+			if signi(int(m3["bajt14"][i])) == signi(int(d["bajt14"][i])): zw += 1
+	# wartości odniesienia = pomiar etapu 43 (139 pól klifów – mechanizm [N], RAPORT_ETAP_43 § 3)
+	_wynik("klasyfikacja e35_a z SCN: rodzaj pola 39 341/39 480, znak +0x14 wody 19 595/19 610", zr == 39341 and zw == 19595 and nw == 19610,
+		"rodzaj %d, znak wody %d/%d" % [zr, zw, nw])

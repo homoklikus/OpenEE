@@ -1,0 +1,21 @@
+{
+ "opis": "Etap 43: parametry jednostek EE do odtwarzania nagrań w Core (narzędzie godot/testy/eksperymenty/odtworz_scenariusz.gd). Wartości z pomiarów pamięci oryginału (walka.md § 13, § 28; etapy 30–38) – te same co w odtworz_e35.gd; nie są zasobami gry.",
+ "ruch": {
+  "422": {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5},
+  "216": {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5},
+  "32":  {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+ },
+ "walka": {
+  "422": {"hp": 215, "p": {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,
+          "klasa_trafienia": 13, "rodzina_ataku": 48, "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156,
+          "rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000, "pole_ac": 0.6000000238418579, "typ_bazy": 422, "typ_jednostki": 5}},
+  "216": {"hp": 240, "p": {"atak": 0.0, "pole_widzenia": 8.0, "rozmiar": 0.5, "typ_jednostki": 13}},
+  "32":  {"hp": 65, "p": {"atak": 5.0, "zasieg_max": 2.0, "pole_widzenia": 3.0, "przeladowanie_ms": 2000, "klasa_trafienia": 36,
+          "rodzina_ataku": 38, "rozmiar": 0.3, "punktowy": 0, "szukanie_ms": 2000, "pole_ac": 0.5, "typ_jednostki": 6}}
+ },
+ "tablice_walki": {
+  "trafienie": {"08": {"13": {"48": 1.071}}, "0C": {"13": {"48": 1.5}}, "10": {"13": {"48": 2.1}, "36": {"48": 2.8}}},
+  "ai": [[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]]
+ },
+ "dozwolone_teren": [1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0]
+}

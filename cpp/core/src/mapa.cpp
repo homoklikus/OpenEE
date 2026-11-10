@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "openee/mapa.hpp"
 
 #include <bit>
@@ -58,6 +59,9 @@ MapaTitan MapaTitan::z_scn(const DaneTerenuScn& d, const std::array<std::int16_t
     m.teren_.assign(std::size_t(N) * N, -1);
     m.pewnosc_.assign(std::size_t(N) * N, PewnoscPola::brak);
     m.z_.assign(std::size_t(N + 1) * (N + 1), std::numeric_limits<float>::quiet_NaN());
+    m.tekstura_.assign(std::size_t(N) * N, 0);
+    m.f10_.assign(std::size_t(N) * N, 0.0f);
+    m.rodzina_ = rodzina;
     const auto rp = wiersze_rombu(N, d.B - 1, d.B, N - 1, 1);
     const auto rv = wiersze_rombu(N + 1, d.B - 1, d.B + 1, N, 2);
     std::size_t i = 0;
@@ -68,6 +72,8 @@ MapaTitan MapaTitan::z_scn(const DaneTerenuScn& d, const std::array<std::int16_t
         for (int x = rp[std::size_t(y)].od; x <= rp[std::size_t(y)].do_; ++x, ++i) {
             const std::size_t k = std::size_t(y) * N + std::size_t(x);
             int t = teren_z_pola(d.tekstura[i], d.flagi[i], d.f10[i], rodzina);
+            m.tekstura_[k] = d.tekstura[i];
+            m.f10_[k] = d.f10[i];
             m.teren_[k] = std::int8_t(t);
             m.pewnosc_[k] = t < 0 ? PewnoscPola::niepewne : PewnoscPola::regula;
             m.s1_ = std::min(m.s1_, x + y);
@@ -91,6 +97,70 @@ MapaTitan MapaTitan::z_scn(const DaneTerenuScn& d, const std::array<std::int16_t
             m.z_[std::size_t(y) * (N + 1) + std::size_t(x)] = d.wysokosc[i];
     if (i != V) throw std::logic_error("MapaTitan: liczba punktów ≠ V");
     return m;
+}
+
+std::vector<int> MapaTitan::rodzaj_pol_titan(double g) const {
+    const int N = n_;
+    std::vector<int> w(std::size_t(N) * N, -1);
+    const float prog = float(-(float(g) * 0.75f));
+    auto z = [&](int x, int y) { return z_[std::size_t(y) * (N + 1) + std::size_t(x)]; };
+    for (int y = 0; y < N; ++y)
+        for (int x = 0; x < N; ++x) {
+            const std::size_t k = std::size_t(y) * N + std::size_t(x);
+            if (teren_[k] < 0) continue;
+            const int rodz = rodzina_[tekstura_[k]];
+            int r = rodz;
+            const float f = f10_[k];
+            if (!(f >= 0.0f)) {                       // fcomp [0x824E64] (0,0); jae → rodzina
+                if (f < prog) r = 1;                  // −(G·0,75) > f10 → woda głęboka
+                else {
+                    int n = 0;                        // narożniki (x, y), (x+1, y), (x, y+1), (x+1, y+1): wysokość ≥ 0
+                    const int c[4][2] = {{x, y}, {x + 1, y}, {x, y + 1}, {x + 1, y + 1}};
+                    for (const auto& q : c) {
+                        const float h = z(q[0], q[1]);
+                        if (h == h && h >= 0.0f) ++n;
+                    }
+                    if (n < 3) r = 10;
+                }
+            }
+            w[std::size_t(x) * N + std::size_t(y)] = r;
+        }
+    return w;
+}
+
+std::vector<int> MapaTitan::bajt14_wody(const std::vector<int>& r) const {
+    const int N = n_;
+    std::vector<int> h(std::size_t(N) * N, 0);
+    std::vector<std::uint8_t> s(std::size_t(N) * N, 0);   // 1 = S1 (+0x1C), 2 = S2 (+0x2C)
+    auto rd = [&](int x, int y) { return (x < 0 || y < 0 || x >= N || y >= N) ? -1 : r[std::size_t(x) * N + std::size_t(y)]; };
+    const int s8[8][2] = {{-1, 0}, {-1, 1}, {-1, -1}, {1, 0}, {1, 1}, {1, -1}, {0, -1}, {0, 1}};   // kolejność 0x4282B8
+    for (int x = 0; x < N; ++x)
+        for (int y = 0; y < N; ++y) {
+            const int k = rd(x, y);
+            if (k != 1 && k != 10) continue;
+            bool lad = false, k9 = false;
+            for (const auto& d : s8) {
+                const int q = rd(x + d[0], y + d[1]);
+                if (q < 0) continue;
+                if (q != 1 && q != 10 && q != 9) { lad = true; break; }
+                if (q == 9) k9 = true;
+            }
+            s[std::size_t(x) * N + std::size_t(y)] = lad ? 1 : (k9 ? 2 : 0);
+        }
+    for (int x = 0; x < N; ++x)
+        for (int y = 0; y < N; ++y) {
+            const int k = rd(x, y);
+            if (k != 1 && k != 10) continue;
+            int v = 0;
+            for (const auto& d : s8) {
+                const int a = x + d[0], b = y + d[1];
+                if (a < 0 || b < 0 || a >= N || b >= N) continue;
+                if (s[std::size_t(a) * N + std::size_t(b)]) v += 10;
+            }
+            if (s[std::size_t(x) * N + std::size_t(y)] == 1) v = -10 - v;
+            h[std::size_t(x) * N + std::size_t(y)] = std::clamp(v, -120, 120);
+        }
+    return h;
 }
 
 bool MapaTitan::komorka_istnieje(int x, int y) const {

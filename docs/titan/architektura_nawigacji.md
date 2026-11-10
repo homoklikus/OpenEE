@@ -489,3 +489,23 @@ Plik `region_siatka_xH.json` z etapu 41 miał etykiety przesunięte o +1 (odczyt
 autonomii**: klasyfikacja obiektów pól (+0x04 rodzaj pola, +0x14) – nie jest funkcją samej tekstury SCN (np. tekstura 26:
 rodzaj 1 – 17 239 pól, 10 – 686, 0 – 4); funkcja klasyfikująca nieustalona [N]. Narzędzia: `narzedzia/titan/regiony_porownanie.py`,
 `podsektory_porownanie.py` (wariant `rodzaj`).
+
+## Etap 43 – klasyfikacja pól z kodu i graf z mapy SCN
+
+| Krok | Funkcja | Ustalenie | Pewność |
+|---|---|---|---|
+| obiekt pola | konstruktor 0x519DE6 (vtable bazowa 0x82C634, EE 0x82C574) | +0x04 rodzaj = 0, +0x08 lista obiektów, +0x0C wagi rodzin, +0x10 f10 (z SCN), +0x14 bajt = 0 | [W] |
+| rodzaj +0x04 | Map::UpdateTiles 0x51183B (vt+0x14 mapy 0x82C524) → Tile::SetKind 0x516E8C (vt+0x14 pola) | argument = rodzina terenu pola (rekord dbterrain +0x5C = „Terrain family”, id terenu – bajt +2 tablicy wierszy map+0x17B598 = tekstura SCN [P 39 480/39 480]); f10 ≥ 0 → rodzina; f10 < −0,75·G → 1; inaczej narożniki z wysokością ≥ 0 (tablica wierzchołków map+0x17B594 = wysokości SCN [P]) < 3 → 10, inaczej rodzina; G = [0x9130E4] = 0,408248 [P odczyt] | [W]; [P] 39 341/39 480 |
+| klify | 0x51241D (ładowanie mapy: pola rodziny 9 → teren domyślny +0x181734, 0x513941), 0x51357B (pole rodzaju 9 o rozpiętości narożników < 1,5·map+0x1816D8 → teren domyślny) | 139 pól e35_a (tekstury klifów 50/51 i sąsiednie) ma inny rodzaj niż reguła; 94 z nich ma rodzaj pola (x−1, y−1); mechanizm nieustalony | [N] |
+| +0x14 wody | 0x4282B8 (S1/S2 → wektory managera +0x1C/+0x2C) i 0x426577(1) przed 0x4240D3 | h = 10·(sąsiedzi ∈ S1 ∪ S2), w S1: −10 − h; ±120; znak (jedyna wartość używana przez regiony) 19 595/19 610, wartość 19 002/19 610 [P]; 0x426577(0) po regionach: ląd – 10·obiekty z „Resource type” 3 w oknie 3×3 | [W]; [P] częściowo |
+| typy obiektów | – | typ +0x568 = dbobjects „Resource type”, +0x600 = „Is building?”, +0x4B4 = „Unit type” [P 69/69 typów]; +0x612 (mury, bramy, wieże) – bez odpowiednika w bazie [N] | [P]/[N] |
+| pusty rekord | wektor +0x5C managera | 1858 = 1857 podsektorów + pusty wpis (id 0 nieużywane) – nie ma podsektora bez pól | [W] odczyt |
+
+**Punkty reprezentatywne** – iloraz x/n w precyzji rozszerzonej x87, suma zapisywana do f32 po każdym dodaniu:
+**1857/1857** (było 1851/1857).
+
+**Graf z mapy SCN (Core)**: `MapaTitan::rodzaj_pol_titan`, `bajt14_wody`, GDExtension `wejscie_regionow_z_mapy`. Z obiektami
+pól z odczytu gry: 42 obszary (gra 43), 1128 regionów (1135), 1851 podsektorów, 91 identycznych do pierwszej różnicy
+(podsektor 37, rodzaj 3 – pole klifu (206, 193)). Mimo to 619 i 620 dają wynik identyczny z grafem z gry (lokalna
+struktura grafu zgodna). **Pierwsza przyczyna braku autonomii: 139 pól klifów; druga – obiekty pól (lista +0x08 i flaga
++0x612) nadal z odczytu gry.**

@@ -158,3 +158,14 @@ Testy GDExtension: 30 (+2: kąt z pomiaru 616, ponowny wybór celu nieosiągalne
   modelu pomiarowego). Wynik: `regionow`, `obszarow`, `podsektorow`, `regiony` i `przydzial` (PackedInt32Array, x·N + y);
   graf instalowany w świecie, `diagnostyka()["graf_zrodlo"]` = „Core z wejścia mapy”.
 - Logika wyłącznie w Core (`zbuduj_obszary`, `zbuduj_siatke_regionow`, `zbuduj_przydzial_podsektorow`, `zbuduj_graf_z_wejscia`).
+
+## 24. Etap 43 – OpenEE Core 0.17.0 (testy GDExtension: 49)
+
+- `ustaw_z(id, z) -> bool` – wysokość jednostki z rekordu scenariusza (jednostka bez aktualizacji fizyki zachowuje z
+  z SCN; przechwycenie 0x62C963 liczy odległość 3D).
+- `wejscie_regionow_z_mapy() -> Dictionary` – wejście budowy regionów liczone w Core z mapy SCN: `N`, `rodzaj_pola`
+  (Tile::SetKind 0x516E8C), `bajt14` (+0x14 wody 0x426577(1)), `brzeg` (S1, S2, d), `zrodlo`. Obiekty pól trzeba
+  dołożyć osobno (nadal z odczytu gry) – tryb eksperymentalny, potyczka go nie używa.
+- `podsektor(id) -> Dictionary` – `punkt`, `sasiedzi`, `rodzaj`, `sektor` podsektora grafu Core.
+- Logika w Core (`MapaTitan::rodzaj_pol_titan`, `MapaTitan::bajt14_wody`, `Swiat::ustaw_z`); Godot nie ma własnego
+  wyszukiwania tras.

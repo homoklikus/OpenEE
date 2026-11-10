@@ -167,6 +167,10 @@ public:
 
     /// Nowa jednostka w spoczynku (Idle). Kolejność dodawania = kolejność listy jednostek.
     IdJednostki dodaj_jednostke(const ParametryRuchu& p, double x, double y, double kurs);
+    /// Etap 43: wysokość jednostki z zapisu scenariusza (translacja macierzy rekordu, +44). Gra trzyma ją bez zmian do
+    /// pierwszej aktualizacji fizyki jednostki (dosadzenie do terenu) – przechwycenie 0x62C963 liczy odległość 3D
+    /// z tą wartością [P: 631 – cel stojący z = 1,837 (zapis), teren 0,408; punkt (164,5001; 110,184) odtworzony].
+    bool ustaw_z(IdJednostki id, double z);
     Jednostka* jednostka(IdJednostki id);
     const Jednostka* jednostka(IdJednostki id) const;
     const std::vector<Jednostka>& jednostki() const { return jednostki_; }

@@ -52,6 +52,9 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("sciezka_grafu", "x0", "y0", "x1", "y1"), &OpenEESymulacja::sciezka_grafu);
     ClassDB::bind_method(D_METHOD("zbuduj_graf_z_przydzialu", "id_xH", "W", "H", "komorka"), &OpenEESymulacja::zbuduj_graf_z_przydzialu);
     ClassDB::bind_method(D_METHOD("zbuduj_graf_z_wejscia", "wejscie", "komorka"), &OpenEESymulacja::zbuduj_graf_z_wejscia);
+    ClassDB::bind_method(D_METHOD("ustaw_z", "id", "z"), &OpenEESymulacja::ustaw_z);
+    ClassDB::bind_method(D_METHOD("wejscie_regionow_z_mapy"), &OpenEESymulacja::wejscie_regionow_z_mapy);
+    ClassDB::bind_method(D_METHOD("podsektor", "id"), &OpenEESymulacja::podsektor);
     ClassDB::bind_method(D_METHOD("walka", "id"), &OpenEESymulacja::walka);
     ClassDB::bind_method(D_METHOD("zdarzenia_walki"), &OpenEESymulacja::zdarzenia_walki);
     ClassDB::bind_method(D_METHOD("stan_jednostek"), &OpenEESymulacja::stan_jednostek);
@@ -60,7 +63,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.16.0 (etap 42, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.17.0 (etap 43, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -536,6 +539,44 @@ Dictionary OpenEESymulacja::zbuduj_graf_z_wejscia(const Dictionary& d, int64_t k
     wyn["przydzial"] = pp;
     swiat_->ustaw_graf_podsektorow(std::move(G));
     return wyn;
+}
+
+// etap 43: wysokość z zapisu scenariusza (nieaktualna do pierwszej aktualizacji fizyki – 631 [P])
+bool OpenEESymulacja::ustaw_z(int64_t id, double z) { return swiat_ && swiat_->ustaw_z(openee::IdJednostki(id), z); }
+
+// etap 43: wejście floodu regionów z mapy SCN w Core (rodzaj pola 0x516E8C, bajt +0x14 wody 0x426577) – bez danych
+// z pamięci gry; obiekty pól (jednostki, typy) dodaje wywołujący – w Core brak listy obiektów na polach [N]
+Dictionary OpenEESymulacja::wejscie_regionow_z_mapy() const {
+    Dictionary d;
+    if (!mapa_) return d;
+    const auto r = mapa_->rodzaj_pol_titan();
+    const auto h = mapa_->bajt14_wody(r);
+    Array rp, hb;
+    rp.resize(int64_t(r.size())); hb.resize(int64_t(h.size()));
+    for (std::size_t i = 0; i < r.size(); ++i) { rp[int64_t(i)] = r[i]; hb[int64_t(i)] = h[i]; }
+    d["N"] = mapa_->szerokosc();
+    d["rodzaj_pola"] = rp;
+    d["bajt14"] = hb;
+    Array br; br.push_back(mapa_->brzeg_s1()); br.push_back(mapa_->brzeg_s2()); br.push_back(mapa_->brzeg_d());
+    d["brzeg"] = br;
+    d["zrodlo"] = "Core z mapy SCN (klasyfikacja 0x516E8C)";
+    return d;
+}
+
+// etap 43: podgląd podsektora grafu (punkt reprezentatywny, sąsiedzi w kolejności listy, rodzaj, sektor) – diagnostyka
+Dictionary OpenEESymulacja::podsektor(int64_t id) const {
+    Dictionary d;
+    if (!swiat_) return d;
+    const auto& g = swiat_->graf_podsektorow();
+    const auto it = g.podsektory.find(int(id));
+    if (it == g.podsektory.end()) return d;
+    const auto& p = it->second;
+    Array pkt; pkt.push_back(p.punkt_x); pkt.push_back(p.punkt_y);
+    Array sas;
+    for (int q : p.sasiedzi) sas.push_back(q);
+    Array sek; sek.push_back(p.sektor_i); sek.push_back(p.sektor_j);
+    d["punkt"] = pkt; d["sasiedzi"] = sas; d["rodzaj"] = p.rodzaj; d["sektor"] = sek;
+    return d;
 }
 
 Array OpenEESymulacja::sciezka_grafu(int64_t x0, int64_t y0, int64_t x1, int64_t y1) const {
