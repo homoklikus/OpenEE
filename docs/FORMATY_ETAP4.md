@@ -50,6 +50,10 @@ Przypisanie z dźwięków dbsounds powiązanych z gniazdami (858 rekordów EE):
 OpenEE nie nadaje gniazdom 3 i 5–11 nazw ogólnych – scena diagnostyczna pokazuje przy nich nazwy dźwięków z dbsounds.
 
 ### 2.3 Tempo – pole „wartość” [H]
+
+*[Etap 44 – rozstrzygnięte [P]: „wartość” to czas jednej klatki w ms (typ +0x318[anim], animacja 0x62462B). Umieranie
+gwardii 24 klatki × 102 ms = 72 takty, obywatela 17 × 94 ms = 47 taktów (pomiary 631–634 i 638). Odtwarzacz Godot
+nadal używa hipotezy poniżej (prezentacja) – do zmiany w kolejnym etapie.]*
 Przyjęte: **czas cyklu sekwencji = wartość × 0,01 s** (`SekwencjeAnimacji.CZAS_JEDNOSTKA`), tempo = klatki / czas.
 * Za: wszystkie sekwencje mieszczą się wtedy w 0,6–4 s (chód falangi 0,65 s, atak 1,2 s, śmierć 0,78 s, wiosła triremy
   4 s, strzał armaty 1,8 s); wartość 0 występuje tylko w sekwencjach jednej klatki.

@@ -10,7 +10,10 @@
   "3v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5], [162.5, 118.5], [166.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
   "blokada_podejscia": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]], "BLOK": ["CIT", 1, [[164.5, 109.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
   "cel_otoczony": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]],
-                   "PRZESZKODY": ["BLD", 5, [[162.5, 108.5], [166.5, 108.5], [164.5, 106.5], [164.5, 110.5]]], "OBS": ["OBS", 1, [[170.5, 104.5]]]}
+                   "PRZESZKODY": ["BLD", 5, [[162.5, 108.5], [166.5, 108.5], [164.5, 106.5], [164.5, 110.5]]], "OBS": ["OBS", 1, [[170.5, 104.5]]]},
+  "e44_cit_1v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
+  "e44_kontakt_590": {"A_GRD": ["GRD", 1, [[163.5, 108.5]]], "T_GRD": ["GRD", 5, [[164.5, 104.5]]], "OBS": ["OBS", 1, [[170.5, 106.5]]]}
  },
+ "opis_etap44": "e44_cit_1v1 – śmierć obywatela (czas stanu 6000 zależny od typu); e44_kontakt_590 – gwardie idące na siebie w walce (układ 590 G1: kontakt w trybie 1, rejestr push i kontaktów).",
  "niezrealizowane": {"cel_zmieniajacy_pole": "ruch celu wymaga rozkazu dla gracza 5 (komputer) – MCP wydaje rozkazy tylko graczowi 1; rekordy z trasą (L_pts) nie są obsługiwane przez narzędzie [N]"}
 }

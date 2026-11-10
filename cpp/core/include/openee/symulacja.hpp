@@ -133,9 +133,37 @@ struct SiatkaRegionow {
 };
 /// Etap 42 – siatka obszarów (+0xF4) z rodzajów pól, model z pomiaru [P: e35_a 39 480/39 480 pól i id; funkcja
 /// budująca w kodzie EE nieustalona – N]: klasa pola = 4 na brzegu rombu, 2 dla rodzaju pola 1, 3 dla rodzaju 9,
-/// inaczej 1; składowe (brzeg – 8-spójność, pozostałe – 4-spójność), start x malejąco, y malejąco, id od 1.
+/// inaczej 1; składowe (brzeg i klify – 8-spójność, pozostałe – 4-spójność; klify od etapu 44 – e13_para), start
+/// x malejąco, y malejąco, id od 1.
 /// Uzupełnia w.obszar i w.obszary.
 void zbuduj_obszary(WejscieRegionow& w);
+/// Etap 44 [W: 0x42439A; P: e35_a 19, e13_para 12 – odczyt managera +0xE0]: bok sektora podsektorów z map+0x1816F4
+/// (połowa szerokości rombu, MapaTitan::brzeg_d): ≤ 42 → 7, ≤ 58 → 10, ≤ 75 → 12, ≤ 105 → 15, ≤ 160 → 19, ≤ 220 → 21,
+/// powyżej → 15.
+int komorka_sektora(int brzeg_d);
+/// Etap 44 – obiekt scenariusza do rejestracji na polach mapy (kawałek 5 SCN + dbobjects).
+struct ObiektScnPola {
+    std::uint32_t id = 0;
+    int gracz = 0, X = 0, Y = 0;   // pole rekordu SCN (X, Y)
+    int kwadrat = 1;               // dbobjects „Square occupied”
+    int hp = 0;                    // dbobjects „Health” (regiony sprawdzają tylko hp > 0)
+    int klasa568 = 0, flaga600 = 0, klasa4b4 = 0, flaga612 = 0;   // „Resource type”, „Is building?”, „Unit type”, zestaw 9
+    bool vt58 = false;
+};
+/// Etap 44 [P: e35_a 5335/5335 obiektów]: obiekt zajmuje pola X..X+n−1 × Y..Y+n−1 (n = „Square occupied”); obiekty
+/// wstawiane na POCZĄTEK listy pola (+0x08) w kolejności rekordów SCN (gracze 0…, rekordy w kolejności pliku) – lista pola
+/// ma więc kolejność odwrotną do pliku. Pola spoza mapy (rodzaj −1) są pomijane. Uzupełnia w.obiekty.
+void dodaj_obiekty_scn(WejscieRegionow& w, const std::vector<ObiektScnPola>& obiekty);
+/// Etap 44 – zestaw jednostek dbunitset (0x52BFA4, [W]): obiekty (ID ≥ 0), zestaw dołączony („Include unit set”) i
+/// wykluczony („Exclude unit set”). Rodziny pomijane: 0x52BFA4 sprawdza je tylko przy fladze zestawu +0x38 [N].
+struct ZestawJednostek {
+    std::vector<int> obiekty;
+    std::vector<int> rodziny;      // tylko do testu „zestaw pusty” (obie listy puste → każdy typ); wartości > 0 [H]
+    int dolacz = -1, wyklucz = -1;
+};
+/// Czy typ obiektu należy do zestawu nr (0x52BFA4: dopasowanie → wykluczenie; brak dopasowania → zestaw dołączony).
+/// Typ +0x612 = zestaw 9 („Walls 1” → 10 → 71 → 68) – 0x621EB4 [W; P: e35_a 70/70 typów].
+bool zestaw_zawiera(const std::map<int, ZestawJednostek>& zestawy, int nr, int typ);
 /// Flood regionów 0x4240D3 → 0x42A66D z dostępnością 0x41B9C9 [P: e35_a 39 480/39 480 pól, 1135/1135 rodzajów przy
 /// wejściu odczytanym z gry]. Start: x malejąco, y malejąco, pole z obszarem i bez etykiety; etykiety od 1.
 SiatkaRegionow zbuduj_siatke_regionow(const WejscieRegionow& w);
@@ -171,6 +199,8 @@ public:
     /// pierwszej aktualizacji fizyki jednostki (dosadzenie do terenu) – przechwycenie 0x62C963 liczy odległość 3D
     /// z tą wartością [P: 631 – cel stojący z = 1,837 (zapis), teren 0,408; punkt (164,5001; 110,184) odtworzony].
     bool ustaw_z(IdJednostki id, double z);
+    /// Etap 44: kolejność listy jednostek po wczytaniu scenariusza – pozycja x rosnąco, potem y (kolejka fizyki 0x918DDC).
+    void uporzadkuj_wg_pozycji();
     Jednostka* jednostka(IdJednostki id);
     const Jednostka* jednostka(IdJednostki id) const;
     const std::vector<Jednostka>& jednostki() const { return jednostki_; }

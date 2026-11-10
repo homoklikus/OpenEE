@@ -509,3 +509,57 @@ pól z odczytu gry: 42 obszary (gra 43), 1128 regionów (1135), 1851 podsektoró
 (podsektor 37, rodzaj 3 – pole klifu (206, 193)). Mimo to 619 i 620 dają wynik identyczny z grafem z gry (lokalna
 struktura grafu zgodna). **Pierwsza przyczyna braku autonomii: 139 pól klifów; druga – obiekty pól (lista +0x08 i flaga
 +0x612) nadal z odczytu gry.**
+
+## Etap 44 – graf wyłącznie z SCN i baz gry
+
+**Klify** [W: kod; P: 3 mapy]. Ładowanie mapy kończy 0x51241D wywołaniem 0x512FB0(0, N, 0, N):
+
+| Krok | Funkcja | Reguła |
+|---|---|---|
+| teren domyślny | 0x51241D | pole z teksturą rodziny 9 dostaje teren domyślny mapy (+0x181734; dla e35_a i e13 – ID pierwszego ważnego rekordu dbterrain, 0x4D5662 → rodzina 0) i SetKind(rodzina tego terenu) |
+| przebieg 1 | 0x512FB0 | pole, którego najwyższy narożnik ≥ H (map+0x1816D8 = 0,408248) i rozpiętość narożników ≥ 1,5·H − 0,0001 → SetKind(9); tekstury klifu malowane na pola (x−1..x, y−1..y) – stąd przesunięcie (1, 1) między teksturą a rodzajem z etapu 43 |
+| przebieg 2 | 0x512FB0 | pole o rodzaju ≠ 9, gdy ≥ 3 z pól {(x, y), (x−1, y), (x, y−1), (x−1, y−1)} ma teksturę klifu zestawu mapy (dbcliffterrain, +0x181740) albo nie istnieje → SetKind(9) |
+
+SetKind(9) przechodzi przez regułę f10 (woda) jak każde inne wywołanie. Odpowiedzi na pytania A1:
+1. Końcowy rodzaj zapisuje Tile::SetKind 0x516E8C, ostatnie wywołanie – z 0x512FB0.
+2. To samo pole jest klasyfikowane do 3 razy: 0x51241D, przebieg 1 i przebieg 2.
+3. Kolejność: x zewnętrznie, y wewnętrznie. Przebiegi są niezależne od kolejności.
+4. Przesunięcie (1, 1) wynika z tego, że klif na polu (x, y) maluje tekstury na polach (x−1, y−1)…(x, y).
+5. Używane dane: rodziny tekstur, teren domyślny, wysokości narożników, tekstury klifu sąsiadów.
+6. UpdateTiles 0x51183B klasyfikuje 4 pola wokół zmienionego wierzchołka (edytor). Przy ładowaniu pola przechodzą pętlę.
+7. Regiony czytają końcowe +0x04.
+
+Wyniki rodzaju +0x04 z SCN:
+
+| Mapa | Zgodne pola |
+|---|---|
+| e35_a | **39 480/39 480** |
+| czysta mapa e42 | 39 480/39 480 (ten sam teren) |
+| e13_para (150 × 75, inna mapa kampanii) | **22 725/22 725** |
+
+**Obiekty pól** [P: e35_a 5335/5335 obiektów SCN, e13_para]:
+- obiekt zajmuje pola X..X+n−1 × Y..Y+n−1 (n = dbobjects „Square occupied”);
+- obiekty są wstawiane na początek listy +0x08 w kolejności rekordów kawałka 5, więc lista jest odwrócona względem pliku;
+- typ +0x568 = „Resource type”, +0x600 = „Is building?”, +0x4B4 = „Unit type” (70/70 typów);
+- +0x612 to przynależność do zestawu dbunitset 9 „Walls 1” (→ 10 → 71 → 68): 0x621EB4 = 0x4A7618(typ, 9) → 0x52BFA4 [W].
+  Wieża brązowa 462 nie ma flagi, bo zestaw 68 wymienia dwa razy 461 (dane gry) [P];
+- rekordy SCN z valid = 0 nie są ładowane na pola. Gra tworzy wtedy 41 własnych obiektów z flagami 0, bez wpływu na regiony.
+
+Listy pól z SCN w porównaniu z odczytem gry: e35_a 5402/5412 pól, e13_para 2226/2266. Różnice to wyłącznie jednostki,
+które przeszły na inne pole przed odczytem.
+
+**Obszary +0xF4** – model z pomiaru rozszerzony: klify (klasa 3) łączą się po przekątnej jak brzeg rombu.
+Wynik: e13_para 42/42 obszary i 22 725/22 725 pól, e35_a i czysta mapa bez zmian. Kod budujący jest nadal [N].
+
+**Bok sektora podsektorów** 0x42439A [W; P]: map+0x1816F4 ≤ 42 → 7, ≤ 58 → 10, ≤ 75 → 12, ≤ 105 → 15, ≤ 160 → 19,
+≤ 220 → 21, powyżej → 15. Daje e35_a 19 i e13_para 12, zgodnie z odczytem managera +0xE0.
+
+**Graf z samego SCN** (Core: `dodaj_obiekty_scn`, `zestaw_zawiera`, `komorka_sektora`; GDExtension
+`wejscie_regionow_z_scn`):
+
+| Mapa | Obszary | Regiony | Podsektory | Przydział pól | Punkty | Sąsiedzi |
+|---|---|---|---|---|---|---|
+| e35_a | 43/43 | 1135/1135 (39 480 pól) | 1857/1857 identycznych | 39 480/39 480 | 1857/1857 | 1857/1857 |
+| e13_para | 42/42 | 658 | 1320/1320 | 22 725/22 725 | 1320/1320 | 1320/1320 |
+
+619/620 z tym grafem są identyczne z etapem 43 i z grą. Potyczka buduje graf przy wczytaniu scenariusza.

@@ -23,7 +23,7 @@ const std::vector<OpisPodsystemu>& podsystemy() {
          "zdarzenia walki/transportu = fałsz + licznik"},
         {"kolejka celów, Shift (poziom 0)", StatusPodsystemu::czesciowy, "punkty +0x32 i porzucenie – nie"},
         {"A* po polach + Bounded", StatusPodsystemu::wdrozony, "18 przypadków bitowo z modelem e24; synchronicznie"},
-        {"graf podsektorów", StatusPodsystemu::czesciowy, "A* grafu i punkty +0x32 z kodu [W]; podsektory – dane z gry (tryb diagnostyczny), budowa [N]"},
+        {"graf podsektorów", StatusPodsystemu::czesciowy, "etap 44: budowa z SCN i baz gry (klasyfikacja 0x516E8C/0x512FB0, obiekty pól, regiony, podsektory) – e35_a zgodna; obszary +0xF4 – model z pomiaru [N]"},
         {"objazd 9002", StatusPodsystemu::czesciowy, "A* ±50 – NIEZWERYFIKOWANY dynamicznie"},
         {"kolizje w takcie (kontakty, 0x549179, 0x549A08, reguła (a))", StatusPodsystemu::czesciowy,
          "wzór [P]; okno kontaktów 0x5E8F0E [W, etap 30]; kolejność EE/AoC [W]"},
@@ -40,6 +40,15 @@ Swiat::Swiat(std::shared_ptr<const TabliceTrig> tablice, TerenSiatka teren, Wari
     : mat_(std::move(tablice)), teren_(std::move(teren)), wariant_(wariant), skrypt_(SkryptStanow::wbudowany_land()) {
     dt_ = f32(1.5 / 44.0);  // EEPhysics+0x8C: G/n s czasu gry na takt
     tps_ = 1.0 / dt_;
+}
+
+void Swiat::uporzadkuj_wg_pozycji() {
+    // Etap 44 [P: kolejka fizyki 0x918DDC odczytana w EE, zad. 639 – e42_1v1 i e44_kontakt_590; W: pętla 0x547AAD od
+    // końca]: po wczytaniu scenariusza kolejność obiektów to x rosnąco, przy równym x – y rosnąco (pozycje z zapisu).
+    // Odtworzenia 631, 633, 634 i 638 (kontakt jak 590 G1) zgodne co takt z tą kolejnością.
+    std::stable_sort(jednostki_.begin(), jednostki_.end(), [](const Jednostka& a, const Jednostka& b) {
+        return a.x < b.x || (a.x == b.x && a.y < b.y);
+    });
 }
 
 bool Swiat::ustaw_z(IdJednostki id, double z) {
@@ -312,7 +321,14 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
                 u.trasa_gotowa = false;
             }
             break;
-        case 6000:  // Dying: animacja umierania; dalsze stany (6001–6003) – czasy animacji [N]
+        case 6001:  // ResourcesRotting 0x61B1F6: +0x2A8 = 0 [W]
+            if (u.boj) u.boj->licznik_2a8 = 0;
+            break;
+        case 6002:  // UnitRotting 0x61B25E: +0x2A8 = czas rozkładu typu (+0x548) [W]
+            if (u.boj) u.boj->licznik_2a8 = u.boj->p.rozklad_ms;
+            break;
+        case 6000:  // Dying: animacja umierania (sekwencja gniazda 4); dalej 6001–6003 (etap 44)
+            if (u.boj) { u.boj->smierc_ms = 0; u.boj->smierc_klatka = 0; u.boj->smierc_koniec = false; u.boj->zasoby = u.boj->p.zasoby; }
             u.tryb = TrybRuchu::spoczynek;
             u.trasa.clear();
             u.zdjete_punkty = 0;
@@ -1267,6 +1283,14 @@ std::optional<bool> Swiat::zdarzenie_walki(Jednostka& u, const std::string& n) {
         return kat_do_celu_broni(u, *t) <= double(b.p.luk_ataku) * 0.5;
     }
     if (n == "Reloaded") return b.s.przeladowanie_ms == 0;   // 0x61B746: +0x2A0 == 0 (AoC +0x2A4)
+    // etap 44 – Generic Death.tai (0x61B677): 6000 DyingAnimationFinished: +0x337 ≠ 0 (koniec sekwencji, 0x62462B) albo
+    // czas klatki typu = 1; 6001 ResourcesRottedAway: zasoby +0x40 = 0; 6002 UnitRottedAway: +0x2A8 = 0 [W]
+    if (n == "DyingAnimationFinished") {
+        if (b.p.smierc_klatki <= 0) return std::nullopt;
+        return b.smierc_koniec || b.p.smierc_ms_klatki == 1;
+    }
+    if (n == "ResourcesRottedAway") return b.zasoby == 0;
+    if (n == "UnitRottedAway") return b.licznik_2a8 == 0;
     return std::nullopt;
 }
 
@@ -1276,6 +1300,23 @@ void Swiat::liczniki_walki(Jednostka& u) {
     const int ms = 34;
     b.s.przeladowanie_ms = std::max(0, b.s.przeladowanie_ms - ms);
     b.szukanie_ms = std::max(0, b.szukanie_ms - ms);
+    // etap 44: animacja umierania (0x62462B): +0x2FC += ms taktu; przy ≥ czasie klatki – kolejne klatki (reszta zostaje),
+    // po ostatniej klatce +0x337 = 1 [W]. Stany rozkładu (0x5FB218): 6001 – +0x2A8 += ms, co 4000 ms −(+0x2A8/4000)
+    // zasobów (reszta zostaje); 6002 – +0x2A8 −= ms, nie poniżej 0 [W].
+    if (u.stan == 6000 && b.p.smierc_klatki > 0 && !b.smierc_koniec) {
+        b.smierc_ms += ms;
+        if (b.p.smierc_ms_klatki > 0 && b.smierc_ms >= b.p.smierc_ms_klatki) {
+            b.smierc_klatka += b.smierc_ms / b.p.smierc_ms_klatki;
+            b.smierc_ms %= b.p.smierc_ms_klatki;
+            if (b.smierc_klatka >= b.p.smierc_klatki) b.smierc_koniec = true;
+        }
+    } else if (u.stan == 6001) {
+        int a = b.licznik_2a8 + ms;
+        if (a > 4000) { b.zasoby = std::max(0, b.zasoby - a / 4000); a %= 4000; }
+        b.licznik_2a8 = a;
+    } else if (u.stan == 6002) {
+        b.licznik_2a8 = std::max(0, b.licznik_2a8 - ms);
+    }
     // regeneracja HP 0x625B47 (wywołanie z aktualizacji typu 0x60071D/0x60498C/0x605490, gdy typ+0x578 ≠ 0) [P: kod +
     // pomiar 619 – bohater 173: +2 HP co 30 taktów]: +0x290 −= czas taktu; ≤ 0 → HP = min(HP + regeneracja, HP max)
     // (zapis tylko przy HP > 0), +0x290 := 1000 (bez przenoszenia nadwyżki). Flaga [0x918EA0] ≠ 0 pomija – w Core 0 [W].
@@ -1475,7 +1516,9 @@ void zbuduj_obszary(WejscieRegionow& w) {
                 stos.pop_back();
                 for (int dx = -1; dx <= 1; ++dx)
                     for (int dy = -1; dy <= 1; ++dy) {
-                        if ((!dx && !dy) || (dx && dy && kl != 4)) continue;
+                        // etap 44 [P: e13_para 22 725/22 725 pól i 42/42 obszary; e35_a i czysta mapa bez zmian]: klasa 3
+                        // (klify) łączy się także po przekątnej, jak brzeg rombu
+                        if ((!dx && !dy) || (dx && dy && kl != 4 && kl != 3)) continue;
                         const int c = a + dx, d = b + dy;
                         if (c < 0 || d < 0 || c >= N || d >= N) continue;
                         const std::size_t j = std::size_t(c) * N + d;
@@ -1485,6 +1528,49 @@ void zbuduj_obszary(WejscieRegionow& w) {
                     }
             }
         }
+}
+
+int komorka_sektora(int r) {
+    if (r <= 42) return 7;
+    if (r <= 58) return 10;
+    if (r <= 75) return 12;
+    if (r <= 105) return 15;
+    if (r <= 160) return 19;
+    if (r <= 220) return 21;
+    return 15;
+}
+
+void dodaj_obiekty_scn(WejscieRegionow& w, const std::vector<ObiektScnPola>& obiekty) {
+    const int N = w.N;
+    for (const auto& o : obiekty) {
+        const int n = std::max(1, o.kwadrat);
+        for (int x = o.X; x < o.X + n; ++x)
+            for (int y = o.Y; y < o.Y + n; ++y) {
+                if (x < 0 || y < 0 || x >= N || y >= N) continue;
+                const int i = x * N + y;
+                if (w.rodzaj_pola[std::size_t(i)] == -1) continue;
+                ObiektPolaRegionu p;
+                p.id = o.id; p.hp = o.hp; p.gracz = o.gracz; p.klasa568 = o.klasa568; p.flaga600 = o.flaga600;
+                p.klasa4b4 = o.klasa4b4; p.flaga612 = o.flaga612; p.vt58 = o.vt58;
+                auto& l = w.obiekty[i];
+                l.insert(l.begin(), p);   // wstawienie na początek listy pola
+            }
+    }
+}
+
+bool zestaw_zawiera(const std::map<int, ZestawJednostek>& zestawy, int nr, int typ) {
+    for (int glebokosc = 0; glebokosc < 64; ++glebokosc) {
+        const auto it = zestawy.find(nr);
+        if (it == zestawy.end()) return false;
+        const auto& z = it->second;
+        const bool pusty = std::none_of(z.obiekty.begin(), z.obiekty.end(), [](int v) { return v >= 0; }) &&
+                           std::none_of(z.rodziny.begin(), z.rodziny.end(), [](int v) { return v > 0; });
+        const bool jest = pusty || std::find(z.obiekty.begin(), z.obiekty.end(), typ) != z.obiekty.end();
+        if (jest) return !(z.wyklucz >= 0 && zestaw_zawiera(zestawy, z.wyklucz, typ));
+        if (z.dolacz < 0) return false;
+        nr = z.dolacz;
+    }
+    return false;
 }
 
 SiatkaRegionow zbuduj_siatke_regionow(const WejscieRegionow& w) {

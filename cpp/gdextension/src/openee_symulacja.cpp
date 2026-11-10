@@ -53,7 +53,9 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("zbuduj_graf_z_przydzialu", "id_xH", "W", "H", "komorka"), &OpenEESymulacja::zbuduj_graf_z_przydzialu);
     ClassDB::bind_method(D_METHOD("zbuduj_graf_z_wejscia", "wejscie", "komorka"), &OpenEESymulacja::zbuduj_graf_z_wejscia);
     ClassDB::bind_method(D_METHOD("ustaw_z", "id", "z"), &OpenEESymulacja::ustaw_z);
+    ClassDB::bind_method(D_METHOD("uporzadkuj_wg_pozycji"), &OpenEESymulacja::uporzadkuj_wg_pozycji);
     ClassDB::bind_method(D_METHOD("wejscie_regionow_z_mapy"), &OpenEESymulacja::wejscie_regionow_z_mapy);
+    ClassDB::bind_method(D_METHOD("wejscie_regionow_z_scn", "obiekty", "zestawy"), &OpenEESymulacja::wejscie_regionow_z_scn);
     ClassDB::bind_method(D_METHOD("podsektor", "id"), &OpenEESymulacja::podsektor);
     ClassDB::bind_method(D_METHOD("walka", "id"), &OpenEESymulacja::walka);
     ClassDB::bind_method(D_METHOD("zdarzenia_walki"), &OpenEESymulacja::zdarzenia_walki);
@@ -63,7 +65,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.17.0 (etap 43, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.18.0 (etap 44, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -112,6 +114,10 @@ int64_t OpenEESymulacja::dodaj_jednostke(const Dictionary& p, double x, double y
     r.alfa = liczba(p, "alfa", r.alfa);
     r.wmax = liczba(p, "wmax", r.wmax);
     r.rozmiar = liczba(p, "rozmiar", r.rozmiar);
+    // etap 44 [P: 638 – obywatel (rozmiar 0,3) nie jest odpychany przez gwardię w odległości 0,47]: promień kolizji
+    // +0x244 = typ+0x474 („Size of collider”) · min(skala, 1), co najmniej 0,05 (ruch_jednostki.md § 3) – domyślnie
+    // z rozmiaru typu (skala 1). Wcześniej stałe 0,5 dla każdej jednostki.
+    r.promien_kolizji = liczba(p, "promien_kolizji", std::max(0.05, r.rozmiar));
     r.c4 = liczba(p, "c4", r.c4);
     r.c8 = liczba(p, "c8", r.c8);
     r.t488 = liczba(p, "t488", r.t488);
@@ -341,6 +347,10 @@ bool OpenEESymulacja::ustaw_walke(int64_t id, int64_t gracz, bool czlowiek, cons
     p.typ_bazy = int(liczba(d, "typ_bazy", 0));
     p.typ_jednostki = int(liczba(d, "typ_jednostki", 0));
     p.regeneracja = int(liczba(d, "regeneracja", 0));
+    p.smierc_klatki = int(liczba(d, "smierc_klatki", 0));       // etap 44: dbgraphics gniazdo 4 – liczba klatek
+    p.smierc_ms_klatki = int(liczba(d, "smierc_ms_klatki", 0)); // „wartość” sekwencji = ms na klatkę
+    p.rozklad_ms = int(liczba(d, "rozklad_ms", 0));             // dbobjects „Rotting time” × 1000
+    p.zasoby = int(liczba(d, "zasoby", 0));
     openee::UstawieniaAI ai;   // etap 38: ustawienia AI typu/postawy (domyślne jak dotąd; pola z d – dane wejściowe)
     ai.szuka_wrogow = bool(liczba(d, "ai_szuka_wrogow", 1));
     ai.poscig_poza_icl = bool(liczba(d, "ai_poscig_poza_icl", 1));
@@ -542,6 +552,9 @@ Dictionary OpenEESymulacja::zbuduj_graf_z_wejscia(const Dictionary& d, int64_t k
 }
 
 // etap 43: wysokość z zapisu scenariusza (nieaktualna do pierwszej aktualizacji fizyki – 631 [P])
+// etap 44: kolejność listy jednostek jak kolejka fizyki EE po wczytaniu scenariusza (x, potem y rosnąco)
+void OpenEESymulacja::uporzadkuj_wg_pozycji() { if (swiat_) swiat_->uporzadkuj_wg_pozycji(); }
+
 bool OpenEESymulacja::ustaw_z(int64_t id, double z) { return swiat_ && swiat_->ustaw_z(openee::IdJednostki(id), z); }
 
 // etap 43: wejście floodu regionów z mapy SCN w Core (rodzaj pola 0x516E8C, bajt +0x14 wody 0x426577) – bez danych
@@ -559,7 +572,75 @@ Dictionary OpenEESymulacja::wejscie_regionow_z_mapy() const {
     d["bajt14"] = hb;
     Array br; br.push_back(mapa_->brzeg_s1()); br.push_back(mapa_->brzeg_s2()); br.push_back(mapa_->brzeg_d());
     d["brzeg"] = br;
-    d["zrodlo"] = "Core z mapy SCN (klasyfikacja 0x516E8C)";
+    d["komorka"] = openee::komorka_sektora(mapa_->brzeg_d());   // etap 44: bok sektora podsektorów (0x42439A)
+    d["zrodlo"] = "Core z mapy SCN (klasyfikacja 0x516E8C/0x512FB0)";
+    return d;
+}
+
+// etap 44: pełne wejście floodu regionów z danych lokalnych – mapa SCN (klasyfikacja w Core) + obiekty kawałka 5
+// zarejestrowane na polach w Core (openee::dodaj_obiekty_scn) z parametrami typów dbobjects i zestawem 9 dbunitset
+// (+0x612). obiekty: [{id, gracz, X, Y, kwadrat, hp, typ, zasob, budynek, unit_type}] w kolejności rekordów SCN;
+// zestawy: [{ID, obiekty: [...], rodziny: [...], dolacz, wyklucz}] (dbunitset). Wynik w układzie Riverlands_MCP
+// `regiony_wejscie` (jednostki/typy) – zbuduj_graf_z_wejscia przyjmuje go bez danych z pamięci gry.
+Dictionary OpenEESymulacja::wejscie_regionow_z_scn(const Array& obiekty, const Array& zestawy) const {
+    Dictionary d = wejscie_regionow_z_mapy();
+    if (d.is_empty()) return d;
+    std::map<int, openee::ZestawJednostek> zj;
+    for (int64_t i = 0; i < zestawy.size(); ++i) {
+        const Dictionary z = zestawy[i];
+        openee::ZestawJednostek e;
+        const Array ob = z.get("obiekty", Array()), rd = z.get("rodziny", Array());
+        for (int64_t j = 0; j < ob.size(); ++j) e.obiekty.push_back(int(ob[j]));
+        for (int64_t j = 0; j < rd.size(); ++j) e.rodziny.push_back(int(rd[j]));
+        e.dolacz = int(z.get("dolacz", -1)); e.wyklucz = int(z.get("wyklucz", -1));
+        zj[int(z.get("ID", -1))] = e;
+    }
+    openee::WejscieRegionow w;
+    w.N = int(d["N"]);
+    const Array rp = d["rodzaj_pola"];
+    w.rodzaj_pola.resize(std::size_t(rp.size()));
+    for (int64_t i = 0; i < rp.size(); ++i) w.rodzaj_pola[std::size_t(i)] = int(rp[i]);
+    std::vector<openee::ObiektScnPola> lista;
+    std::map<int, std::array<int, 4>> typy;
+    for (int64_t i = 0; i < obiekty.size(); ++i) {
+        const Dictionary o = obiekty[i];
+        openee::ObiektScnPola p;
+        p.id = std::uint32_t(int64_t(o.get("id", 0)));
+        p.gracz = int(o.get("gracz", 0)); p.X = int(o.get("X", 0)); p.Y = int(o.get("Y", 0));
+        p.kwadrat = int(o.get("kwadrat", 1)); p.hp = int(o.get("hp", 0));
+        const int typ = int(o.get("typ", -1));
+        p.klasa568 = int(o.get("zasob", 0)); p.flaga600 = int(o.get("budynek", 0)) ? 1 : 0;
+        p.klasa4b4 = int(o.get("unit_type", 0));
+        p.flaga612 = openee::zestaw_zawiera(zj, 9, typ) ? 1 : 0;
+        typy[typ] = {p.klasa568, p.flaga600, p.klasa4b4, p.flaga612};
+        lista.push_back(p);
+    }
+    openee::dodaj_obiekty_scn(w, lista);
+    // serializacja do układu MCP: klucz typu „typ:<ID dbobjects>”
+    std::map<std::uint32_t, int> typ_id;
+    for (int64_t i = 0; i < obiekty.size(); ++i) {
+        const Dictionary o = obiekty[i];
+        typ_id[std::uint32_t(int64_t(o.get("id", 0)))] = int(o.get("typ", -1));
+    }
+    Dictionary jed, ty;
+    for (const auto& [idx, l] : w.obiekty) {
+        Array a;
+        for (const auto& p : l) {
+            Array e;
+            e.push_back(String("0x") + String::num_int64(p.id, 16));
+            e.push_back(p.hp); e.push_back(p.gracz); e.push_back(String(""));
+            e.push_back(String("typ:") + String::num_int64(typ_id[p.id]));
+            a.push_back(e);
+        }
+        jed[String::num_int64(idx)] = a;
+    }
+    for (const auto& [typ, f] : typy) {
+        Array e; for (int v : f) e.push_back(v);
+        ty[String("typ:") + String::num_int64(typ)] = e;
+    }
+    d["jednostki"] = jed;
+    d["typy"] = ty;
+    d["zrodlo"] = "Core z mapy SCN i kawałka 5 (klasyfikacja 0x516E8C/0x512FB0, obiekty pól, zestaw 9)";
     return d;
 }
 

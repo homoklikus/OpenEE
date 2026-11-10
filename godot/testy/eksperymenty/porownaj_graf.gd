@@ -5,11 +5,44 @@ extends SceneTree
 ##         --podsektory=<odczyt `podsektory`> [--wynik=<.json>]
 ##         [--scn=<.scn>] – etap 43: rodzaj pola i bajt +0x14 wody z mapy SCN w Core (wejscie_regionow_z_mapy); z pliku
 ##         --wejscie biorą się wtedy tylko obiekty pól (jednostki, typy) i porównanie +0x04/+0x14 z odczytem gry
+##         [--obiekty-scn=1] – etap 44: obiekty pól też z SCN (wejscie_regionow_z_scn: kawałek 5 + dbobjects + dbunitset);
+##         plik --wejscie służy wtedy WYŁĄCZNIE do porównania (rodzaj pól, +0x14, listy obiektów pól)
 
 func _arg(n: String, d: String) -> String:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--%s=" % n): return a.split("=", true, 1)[1]
 	return d
+
+
+## Listy obiektów pól Core (z SCN) kontra odczyt gry: pola z identyczną listą (id w kolejności), z identyczną listą po
+## pominięciu obiektów nieobecnych w SCN (rekordy valid = 0 tworzone przez grę), oraz zgodność flag typów.
+func _porownaj_obiekty(m: Dictionary, d: Dictionary) -> Dictionary:
+	var a: Dictionary = m["jednostki"]; var b: Dictionary = d.get("jednostki", {})
+	var ids_core := {}
+	for k in a:
+		for e in a[k]: ids_core[String(e[0])] = true
+	var klucze := {}
+	for k in a: klucze[k] = true
+	for k in b: klucze[k] = true
+	var ident := 0; var ident_bez := 0; var roz := []
+	var flagi_ok := 0; var flagi_n := 0
+	for k in klucze:
+		var la: Array = a.get(k, []); var lb: Array = b.get(k, [])
+		var ia := la.map(func(e): return String(e[0]))
+		var ib := lb.map(func(e): return String(e[0]))
+		if ia == ib: ident += 1
+		var ib2 := ib.filter(func(v): return ids_core.has(v))
+		if ia == ib2: ident_bez += 1
+		elif roz.size() < 10: roz.append([int(k), ia, ib])
+		for e in lb:
+			var j := ia.find(String(e[0]))
+			if j < 0: continue
+			flagi_n += 1
+			var fa: Array = m["typy"].get(la[j][4], [])
+			var fb: Array = d["typy"].get(e[4], [])
+			if fa == fb.map(func(v): return int(v)): flagi_ok += 1
+	return {"pol_z_obiektami": klucze.size(), "listy_identyczne": ident, "listy_identyczne_bez_obiektow_spoza_scn": ident_bez,
+		"flagi_typow_zgodne": flagi_ok, "wpisow": flagi_n, "pierwsze_roznice": roz}
 
 
 func _initialize() -> void:
@@ -26,14 +59,15 @@ func _start() -> void:
 	if _arg("scn", "") != "":
 		var Z = root.get_node("Zasoby")
 		var s := ScenariuszEE.new()
-		if not s.wczytaj(FileAccess.get_file_as_bytes(_arg("scn", ""))) or not s.czytaj_teren():
+		if not s.wczytaj(FileAccess.get_file_as_bytes(_arg("scn", ""))) or not s.czytaj_teren() or not s.czytaj_graczy(root.get_node("Konfiguracja").katalog_openee):
 			print("BŁĄD SCN"); quit(1); return
 		var rodz := {}
 		for r0 in Z.tabela("dbterrain"):
 			if int(r0["ID"]) >= 0 and int(r0["ID"]) < 256: rodz[int(r0["ID"])] = int(r0.get("Terrain family", 0))
 		var t := s.teren
 		c.wczytaj_mape_scn(t["A"], t["B"], t["teren"], t["flagi"], t["f10"], t["wysokosc"], rodz)
-		var m: Dictionary = c.wejscie_regionow_z_mapy()
+		var autonom := _arg("obiekty-scn", "") == "1"
+		var m: Dictionary = ObiektyScnCore.wejscie(c, s, Z) if autonom else c.wejscie_regionow_z_mapy()
 		var zr := 0; var zh := 0; var zh_znak := 0; var nwody := 0; var npol := 0; var nh := 0
 		for i in m["rodzaj_pola"].size():
 			var g0 := int(d["rodzaj_pola"][i])
@@ -45,11 +79,12 @@ func _start() -> void:
 				nwody += 1
 				if signi(int(d["bajt14"][i])) == signi(int(m["bajt14"][i])): zh_znak += 1
 		kl = {"pol": npol, "rodzaj_zgodny": zr, "bajt14_zgodny": zh, "pol_wody": nwody, "bajt14_wody_znak_zgodny": zh_znak}
+		if autonom: kl["obiekty_pol"] = _porownaj_obiekty(m, d)
 		print("KLASYFIKACJA ", JSON.stringify(kl))
-		var d2 := {"N": m["N"], "rodzaj_pola": m["rodzaj_pola"], "bajt14": m["bajt14"], "brzeg": m["brzeg"],
-			"jednostki": d.get("jednostki", {}), "typy": d.get("typy", {})}
+		var d2 := {"N": m["N"], "rodzaj_pola": m["rodzaj_pola"], "bajt14": m["bajt14"], "brzeg": m["brzeg"], "komorka": m.get("komorka", 19),
+			"jednostki": m["jednostki"] if autonom else d.get("jednostki", {}), "typy": m["typy"] if autonom else d.get("typy", {})}
 		d = d2
-	var r: Dictionary = c.zbuduj_graf_z_wejscia(d, 19)
+	var r: Dictionary = c.zbuduj_graf_z_wejscia(d, int(d.get("komorka", 19)))   # etap 44: bok sektora z mapy (Core)
 	var N: int = d["N"]
 	var reg: PackedInt32Array = r["regiony"]
 	var prz: PackedInt32Array = r["przydzial"]

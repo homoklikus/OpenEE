@@ -40,6 +40,13 @@ struct ParametryWalki {
     bool reszta_przeladowania_bez_spoczynku = false;  // typ +0x5D4 bit 0: WaitForReload nie przełącza trybu 3
     int regeneracja = 0;                    // typ +0x578 „Health regeneration” – HP co 1000 ms (0x625B47, etap 38 [P: 619])
     int typ_jednostki = 0;                  // typ +0x4B4 (dbobjects „Unit type”): 5 gwardia, 6 obywatel (zad. 579 [P])
+    // Etap 44 – śmierć (Generic Death.tai): animacja umierania = sekwencja dbgraphics gniazda 4 (klatki, „wartość” =
+    // ms na klatkę, typ +0x318[anim]); czas rozkładu = dbobjects „Rotting time” ×1000 (typ +0x548); zasoby niesione
+    // +0x40. smierc_klatki = 0 → zdarzenie DyingAnimationFinished nieobsługiwane (stan 6000 bez końca – jak przed etapem 44).
+    int smierc_klatki = 0;
+    int smierc_ms_klatki = 0;
+    int rozklad_ms = 0;
+    int zasoby = 0;
 };
 
 /// Modyfikator wysokości 0x61E500 (EE; AoC 0x631918): konfiguracja reguł [0x917BB8] (AoC [0x92FCA8]) [W kod].

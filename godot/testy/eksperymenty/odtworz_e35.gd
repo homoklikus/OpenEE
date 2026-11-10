@@ -7,6 +7,7 @@ extends SceneTree
 ##         --t0=<czas gry 1. próbki> --t-rozkazu=<czas gry ostatniej próbki przed rozkazem> [--ruch=x,y[,kat]]
 ##         (kat = kurs końcowy celu EEUGLocation +0x2C z nagrania – `kat` w kolejce MCP; etap 37)
 ##         [--rozkazy=T:atak[:hero|cit[:A_GRD|K_GRD]];T:ruch:x:y[:kat]] [--pelny=1 --efekty=plik --wysokosc=0|1 --regen-ms=N]
+##         [--graf-autonomiczny=1 – etap 44: graf wyłącznie z SCN i baz gry]
 ##         [--graf=podsektory.json – graf podsektorów z gry, etap 40] [--probki=N] [--wyjscie=plik.json] [--takty=N]
 ## Dane wejściowe (SCN, nagranie) są lokalne – nie trafiają do repozytorium.
 
@@ -119,6 +120,9 @@ func _start() -> void:
 		var pw := _arg("graf-wejscie", "")   # etap 42: graf z wejścia mapy (regiony 0x4240D3 i podsektory 0x42434F w Core)
 		if pw != "":
 			wynik_graf = c.zbuduj_graf_z_wejscia(JSON.parse_string(FileAccess.get_file_as_string(pw)), 19).get("podsektorow", -1)
+		if _arg("graf-autonomiczny", "") == "1":   # etap 44: mapa, klasyfikacja i obiekty pól wyłącznie z SCN i baz gry
+			var we: Dictionary = ObiektyScnCore.wejscie(c, s, Z)
+			wynik_graf = c.zbuduj_graf_z_wejscia(we, int(we.get("komorka", 19))).get("podsektorow", -1)
 		var ps := _arg("graf-scn", "")   # etap 43: rodzaj pola i +0x14 wody z mapy SCN w Core; z pliku – tylko obiekty pól
 		if ps != "":
 			var ob_g: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ps))

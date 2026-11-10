@@ -70,8 +70,9 @@ w 91 polach, żadne z nich nie leży na trasach przypadków.
   gdy ≥ 1,0); kandydaci muszą m.in. mieć HP (+0x3C) > 0 i tę samą klasę ruchu (typ vt+0x5C) [W]. Core: etap 30.
 - `EEUnitClass`+0x4B4 = dbobjects „Unit type” [P: 71/71]. Blokada pola (+0x600): 1 dla zasobów i drzew (typ 1),
   budynków (2) oprócz farmy, fortecy (29) i gorących źródeł (383); 0 dla jednostek, bram (25), farmy i skał
-  dekoracyjnych [P]. Reguły wyprowadzającej +0x600 z bazy nie ustalono [N] – import korzysta z wartości z pamięci
-  (dane referencyjne) albo z tabeli typów.
+  dekoracyjnych [P]. *[Etap 44: +0x600 = dbobjects „Is building?” [P: e35_a 70/70 typów, m.in. obiekty kamery – 0];
+  +0x612 = zestaw dbunitset 9 (mury, bramy, wieże miedziane); obiekt zajmuje pola X..X+n−1 × Y..Y+n−1 i trafia na początek
+  listy pola – `architektura_nawigacji.md`, Etap 44.]*
 
 ## 5. Weryfikacja AoC
 
@@ -91,9 +92,8 @@ Zadanie 570 (ten sam scenariusz w AoC): wynik w raporcie etapu 30 (§ 8).
 
 ## 7. Niewiadome
 
-1. Klify (rodzina 9) – reguła przypisania [N]; prawdopodobnie z obiektów klifów (`dbcliffterrain`) albo z danych
-   bloku pola SCN.
+1. *[Etap 44 – rozwiązane: klify z wysokości narożników i tekstur klifu, 0x51241D/0x512FB0 – 39 480/39 480 i 22 725/22 725.]*
 2. Dokładny próg głębokości i znaczenie bitów flag [N]/[H].
-3. Reguła pola +0x600 z bazy danych [N].
+3. *[Etap 44 – rozwiązane: +0x600 = „Is building?”.]*
 4. Kto i kiedy wypełnia EETile+4 przy wczytywaniu (konstruktor EETile nie ma bezpośredniego zapisu vtable w kodzie –
    obiekty prawdopodobnie odtwarzane z serializacji) [N].

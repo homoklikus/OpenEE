@@ -336,3 +336,22 @@ Kontakt gwardii 0x1000857 z gwardią stojącą w punkcie celu ruchu (czysta mapa
 punkt zaliczony; 9000 w takcie 113253 [P]. Kod: 0x6213D8 (test osiągnięcia punktu) zwraca „osiągnięty”, gdy +0x330 = 8
 [W]. Core (etapy 29–42) zaliczał punkt w takcie reguły (założenie [H]) – poprawione: +0x330 = 8 zalicza punkt w
 następnej aktualizacji fizyki. Po poprawce 634 – 6413/6413 próbek wszystkich trzech gwardii zgodnych.
+
+## Etap 44 – promień kolizji i kolejność taktu
+
+- **Promień kolizji +0x244** = typ+0x474 („Size of collider”) · min(skala, 1), co najmniej 0,05. GDExtension bierze go
+  z rozmiaru typu. Wcześniej Core miał stałe 0,5, więc obywatel (0,3) był odpychany przez gwardię z odległości 0,47.
+  W grze nie jest [P: 638, kontakty = 1, push = 0].
+- **Kolejność obiektów w takcie** [P]:
+  - kolejka fizyki 0x918DDC (deque wskaźników, pętla od końca w 0x547AAD → 0x547E0E) odczytana w zad. 639;
+  - po wczytaniu scenariusza kolejka ma kolejność pozycji: x rosnąco, przy równym x – y rosnąco. Przykłady:
+    e42_1v1 [T_GRD, A_GRD, OBS], e44_kontakt_590 [A_GRD, T_GRD, OBS];
+  - Core: `Swiat::uporzadkuj_wg_pozycji()`.
+
+  Z tą kolejnością odtworzenia 631, 633, 634 i nowe nagranie kontaktu 638 (układ 590 G1) są zgodne co takt.
+  Odrzucone [P: odtworzenia]:
+  - wariant dwufazowy: wszystkie maszyny stanów, potem fizyka;
+  - kolejność wg bieżącego pola liczona co takt.
+- **Pierwszy etap różnicy w nagraniu kontaktu** (przed korektą kolejności): punkt przechwycenia 0x62C963 w PrepareToMove
+  gwardii AI (t = 46363). Gra liczy go z pozycji celu z poprzedniego taktu: obliczenie ręczne daje (164,563; 106,21433)
+  do 5 cyfr. Core miał kolejność odwrotną. Przyczyną jest więc kolejność aktualizacji, nie wzór odpychania ani integracja.

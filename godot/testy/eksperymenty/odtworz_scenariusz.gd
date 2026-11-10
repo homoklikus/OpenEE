@@ -1,5 +1,7 @@
 extends SceneTree
 ## Etap 43 – wspólne odtwarzanie nagrań MCP z czystej mapy w OpenEE Core (dowolny układ jednostek z opisu).
+## Etap 44: domyślna kolejność listy – pozycja (Core `uporzadkuj_wg_pozycji`), parametry śmierci z baz gry (--smierc=0
+## wyłącza), próbka zawiera też z.
 ## Opis tworzy `narzedzia/titan/odtworzenie_nagrania.py opis` (jednostki, kursy i rozkazy z nagrania); parametry typów –
 ## `dane/testy_walki/parametry_jednostek_ee.json`. Mapa i obiekty statyczne z pliku SCN (interpretacja w Core), jak
 ## odtworz_e35.gd. Wynik: próbka co takt dla wszystkich jednostek (stan, x, y, kurs, HP, cel, kolejka) – porównanie
@@ -72,17 +74,23 @@ func _start() -> void:
 	var core_id := {}   # id gry → id Core
 	var gra_id := {}
 	var lista: Array = opis["jednostki"].duplicate()
-	# kolejność listy Core (pętla jednostek idzie od końca listy, 0x547AAD): --kolejnosc=rosnaco (dotychczasowa
-	# konwencja odtworz_e35) albo malejaco (etap 43 – pierwsze w takcie jednostki o mniejszym id)
-	if _arg("kolejnosc", "malejaco") == "malejaco": lista.reverse()
+	# kolejność listy Core (pętla jednostek idzie od końca listy, 0x547AAD). Etap 44 [P: odczyt kolejki fizyki 0x918DDC,
+	# zad. 639 – e42_1v1 i e44_kontakt_590]: lista po wczytaniu mapy ma kolejność pozycji (x rosnąco, potem y rosnąco) –
+	# domyślnie --kolejnosc=pozycja. Dawne konwencje: rosnaco (odtworz_e35), malejaco (etap 43 – id malejąco).
+	var kol := _arg("kolejnosc", "pozycja")
+	if kol == "malejaco": lista.reverse()
+
 	for j in lista:
 		var ty := str(int(j["typ"]))
 		if not par["ruch"].has(ty) or not par["walka"].has(ty):
 			print("BŁĄD: brak parametrów typu ", ty); quit(1); return
 		var id: int = c.dodaj_jednostke(par["ruch"][ty], float(j["x"]), float(j["y"]), float(j["kurs"]))
-		c.ustaw_walke(id, int(j["gracz"]), int(j["gracz"]) == 1, par["walka"][ty]["p"], int(j["hp"]) if j["hp"] != null else int(par["walka"][ty]["hp"]))
+		var pw: Dictionary = par["walka"][ty]["p"].duplicate()
+		if _arg("smierc", "1") == "1": pw.merge(ObiektyScnCore.parametry_smierci(int(ty), Z))   # etap 44: z dbgraphics i dbobjects
+		c.ustaw_walke(id, int(j["gracz"]), int(j["gracz"]) == 1, pw, int(j["hp"]) if j["hp"] != null else int(par["walka"][ty]["hp"]))
 		if j.get("z") != null: c.ustaw_z(id, float(j["z"]))   # z zapisu scenariusza (etap 43, 631 [P])
 		core_id[str(j["id"])] = id; gra_id[id] = str(j["id"])
+	if kol == "pozycja": c.uporzadkuj_wg_pozycji()   # etap 44: kolejka fizyki po wczytaniu (Core)
 	var T0 := float(opis["T0"])
 	# etap 43: symulacja od czasu gry 0 (start scenariusza – jednostki tworzone przy wczytaniu; w 629 pierwszy wybór celu
 	# w 34 ms [P]), żeby fazy liczników (szukanie celu, regeneracja) odpowiadały grze; --od-startu=0 – od 1. próbki
@@ -110,7 +118,7 @@ func _start() -> void:
 			var kq := ""
 			for e in c.walka(int(d.id)).get("kolejka", []):
 				kq += "%s(%.4f,%.4f,%s);" % [str(e.rodzaj).substr(4, 3), float(e.x), float(e.y), gra_id.get(int(e.cel), "0")]
-			pr[gid] = [int(d.stan), float(d.x), float(d.y), float(d.kurs), int(d.get("hp", -1)), gra_id.get(int(d.get("cel", 0)), "0"), kq, float(d.v)]
+			pr[gid] = [int(d.stan), float(d.x), float(d.y), float(d.kurs), int(d.get("hp", -1)), gra_id.get(int(d.get("cel", 0)), "0"), kq, float(d.v), float(c.jednostka(int(d.id)).get("z", 0.0))]
 		wynik.probki.append([k, snappedf(T0 + TAKT_MS * (k + 1), 0.1), pr])
 	wynik["diag"] = c.diagnostyka()
 	wynik["zdarzenia"] = c.zdarzenia_walki_od(0)

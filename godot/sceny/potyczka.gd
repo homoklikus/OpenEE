@@ -131,15 +131,10 @@ func _przygotuj_mape_core() -> void:
 				"kwadrat": maxi(1, int(ob.get("Square occupied", 1))), "blokuje": _blokuje(int(u.type), ob)})
 
 
-## Blokada pola (typ +0x600) – reguła z pomiarów pamięci, import_mapy.md § 4 [P dla wymienionych typów]:
-## zasoby i drzewa (Unit type 1), budynki (2) oprócz farmy, forteca (29), gorące źródła (383) – blokują;
-## jednostki, bramy (25), farma, skały dekoracyjne – nie. Pełnej reguły z bazy nie ustalono [N].
-static func _blokuje(typ: int, ob: Dictionary) -> bool:
-	var ut := int(ob.get("Unit type", -1))
-	if typ == 383: return true
-	if ut == 1 or ut == 29: return true
-	if ut == 2: return not ("farm" in String(ob.get("Name", "")).to_lower())
-	return false
+## Blokada pola (typ +0x600) = dbobjects „Is building?” [P etap 44: e35_a 70/70 typów z odczytu pamięci, m.in. obiekty
+## kamery (Unit type 2) – 0, drzewa i zasoby – 1, bramy – 0]. Zastępuje regułę z etapu 30 (Unit type + wyjątki).
+static func _blokuje(_typ: int, ob: Dictionary) -> bool:
+	return int(ob.get("Is building?", 0)) != 0
 
 
 ## Nowa bitwa (start i restart): nowy świat Core na tej samej mapie, jednostki z pliku układu, świeże warstwy widoku.
@@ -168,6 +163,13 @@ func nowa_bitwa() -> bool:
 	var dozw := PackedByteArray(pierwszy.get("teren_dozwolony", [1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0]))
 	if not core.utworz_swiat_na_mapie(String(uklad.get("wariant", "ee")), dozw):
 		_raport_p["blad"] = "Core: utworz_swiat_na_mapie – %s" % str(core.get("ostatni_blad")); return false
+	# etap 44: graf podsektorów Titan budowany w Core wyłącznie z danych lokalnych (mapa SCN, kawałek 5, dbobjects,
+	# dbunitset) – klasyfikacja pól 0x516E8C/0x512FB0, obiekty pól, regiony 0x4240D3, podsektory 0x42434F
+	if not "--bez-grafu" in OS.get_cmdline_user_args():
+		var we: Dictionary = ObiektyScnCore.wejscie(core, scn, Zasoby)
+		var gw: Dictionary = core.zbuduj_graf_z_wejscia(we, int(we.get("komorka", 19)))
+		_raport_p["graf"] = {"podsektorow": gw.get("podsektorow", -1), "regionow": gw.get("regionow", -1),
+			"obszarow": gw.get("obszarow", -1), "zrodlo": "SCN + bazy gry (Core)"}
 	var tb: Dictionary = uklad.get("tablice", {})
 	var traf := {}
 	var tr_j: Dictionary = tb.get("trafienie", {})
@@ -194,6 +196,7 @@ func nowa_bitwa() -> bool:
 		var pw := {}
 		var wd: Dictionary = td.get("walka", {})
 		for k in wd: pw[k] = (1 if wd[k] else 0) if wd[k] is bool else wd[k]
+		if not pw.has("smierc_klatki"): pw.merge(ObiektyScnCore.parametry_smierci(typ, Zasoby))   # etap 44
 		core.ustaw_walke(id, g, g == gl, pw, int(td.get("hp", 1)))
 		var ob: Dictionary = _obiekty.get(typ, {})
 		sym.zarejestruj(id, g, typ, maxf(0.15, float(ob.get("Circle selection size", 0.25))), String(ob.get("Name", "")))
@@ -206,6 +209,7 @@ func nowa_bitwa() -> bool:
 		widok.dodaj(id, model, tex, _kolor_gracza(g), skala, SekwencjeAnimacji.z_rekordu(gr))
 		widok.ustaw_grafike_id(id, gid)
 		n += 1
+	core.uporzadkuj_wg_pozycji()   # etap 44: kolejność taktu jak kolejka fizyki EE po wczytaniu (Core)
 	var wb := widok.zbuduj(Zasoby)
 	var start_zle: Array = []          # kontrola danych układu: jednostka na polu nieprzejezdnym (Core)
 	for jd in uklad.get("jednostki", []):

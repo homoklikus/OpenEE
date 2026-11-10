@@ -135,6 +135,7 @@ func _testy() -> void:
 	_test_etapu41(dll)
 	_test_etapu42(dll)
 	_test_etapu43(dll)
+	_test_etapu44(dll)
 	_koniec()
 
 
@@ -555,13 +556,15 @@ func _test_etapu43(dll: String) -> void:
 	var wys := PackedFloat32Array(); wys.resize(V)
 	f10[5] = -0.6                     # pole (4, 1): f10 < −0,75·0,408248 → woda głęboka (1)
 	f10[6] = -0.1                     # pole (0, 2): płytko, narożniki ≥ 0 (4 z 4) → rodzina tekstury
-	tex[7] = 16                       # pole (1, 2): rodzina 6 (ląd)
+	tex[7] = 16                       # pole (1, 2): rodzina 6; f10 < 0, narożniki ≥ 0 (4 z 4) → rodzina tekstury
+	f10[7] = -0.1
 	c.wczytaj_mape_scn(A, B, tex, fl, f10, wys, {3: 0, 16: 6})
 	var m: Dictionary = c.wejscie_regionow_z_mapy()
 	var N: int = m.get("N", 0)
 	var rp: Array = m.get("rodzaj_pola", [])
-	_wynik("klasyfikacja pól 0x516E8C: głęboka woda, płytka z narożnikami ≥ 0, rodzina tekstury",
-		N == 6 and int(rp[4 * N + 1]) == 1 and int(rp[0 * N + 2]) == 0 and int(rp[1 * N + 2]) == 6 and int(rp[0]) == -1,
+	# etap 44: (0, 2) leży na brzegu rombu – 0x512FB0 przebieg 2 liczy pola spoza mapy jak klif (≥ 3 z 4) → 9
+	_wynik("klasyfikacja pól 0x516E8C/0x512FB0: głęboka woda, płytka z narożnikami ≥ 0, brzeg rombu → klif",
+		N == 6 and int(rp[4 * N + 1]) == 1 and int(rp[0 * N + 2]) == 9 and int(rp[1 * N + 2]) == 6 and int(rp[0]) == -1,
 		"(4,1)=%s (0,2)=%s (1,2)=%s" % [str(rp[4 * N + 1]) if rp.size() > 0 else "?", str(rp[0 * N + 2]) if rp.size() > 0 else "?", str(rp[1 * N + 2]) if rp.size() > 0 else "?"])
 	var hb: Array = m.get("bajt14", [])
 	_wynik("bajt +0x14 wody (0x4282B8/0x426577): pole wody z lądem obok < 0", hb.size() == 36 and int(hb[4 * N + 1]) < 0, str(hb[4 * N + 1]) if hb.size() > 0 else "?")
@@ -605,6 +608,112 @@ func _test_etapu43(dll: String) -> void:
 		if g0 == 1 or g0 == 10:
 			nw += 1
 			if signi(int(m3["bajt14"][i])) == signi(int(d["bajt14"][i])): zw += 1
-	# wartości odniesienia = pomiar etapu 43 (139 pól klifów – mechanizm [N], RAPORT_ETAP_43 § 3)
-	_wynik("klasyfikacja e35_a z SCN: rodzaj pola 39 341/39 480, znak +0x14 wody 19 595/19 610", zr == 39341 and zw == 19595 and nw == 19610,
+	# etap 44: klify z kodu 0x51241D/0x512FB0 (teren domyślny, wysokości narożników, tekstury klifu) – 39 480/39 480;
+	# znak +0x14 wody zależy od rodzajów pól (S1/S2), więc rośnie z 19 595 do 19 605 (RAPORT_ETAP_44 § 3)
+	_wynik("klasyfikacja e35_a z SCN: rodzaj pola 39 480/39 480, znak +0x14 wody 19 605/19 610", zr == 39480 and zw == 19605 and nw == 19610,
 		"rodzaj %d, znak wody %d/%d" % [zr, zw, nw])
+
+
+# etap 44: śmierć z danych typu (Generic Death.tai, 0x61B677/0x62462B/0x5FB218), rejestracja obiektów SCN na polach
+# (dodaj_obiekty_scn, zestaw 9 dbunitset → +0x612) i graf e35_a wyłącznie z SCN i baz gry
+func _test_etapu44(dll: String) -> void:
+	var sym: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not sym.zaladuj_tablice(dll)["ok"]: sym.uzyj_tablic_przyblizonych()
+	sym.utworz_swiat("ee")
+	var tr := {}
+	for i in 3:
+		var f := PackedFloat32Array(); f.resize(64); f[48] = [1.071, 1.5, 2.1][i]
+		tr[["08", "0C", "10"][i]] = {13: f}
+	var mn := []
+	for i in 16: mn.append([1, 1, 1, 1, 1, 1])
+	sym.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
+		[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
+	var g := {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,
+		"klasa_trafienia": 13, "rodzina_ataku": 48, "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156,
+		"rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000, "pole_ac": 0.6000000238418579, "typ_bazy": 422, "typ_jednostki": 5,
+		"smierc_klatki": 24, "smierc_ms_klatki": 102, "rozklad_ms": 40000, "zasoby": 0}
+	# gwardia (dbgraphics 265: 24 klatki × 102 ms, Rotting time 40 s) – pomiar 631/633/634: 72 / 1 / 1177 taktów [P];
+	# obywatel (dbgraphics 54: 17 klatek × 94 ms, Rotting time 40 s) – pomiar 638: 47 / 1 / 1177 taktów [P]
+	var gw := _czasy_smierci(sym, g, 24, 102)
+	var sym2: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not sym2.zaladuj_tablice(dll)["ok"]: sym2.uzyj_tablic_przyblizonych()
+	sym2.utworz_swiat("ee")
+	sym2.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
+		[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
+	var ob_ := _czasy_smierci(sym2, g, 17, 94)
+	_wynik("śmierć z danych typu: gwardia 72/1/1177, obywatel 47/1/1177 taktów (6000/6001/6002, pomiary 631–634, 638)",
+		gw == [72, 1, 1177] and ob_ == [47, 1, 1177], "gwardia %s, obywatel %s" % [str(gw), str(ob_)])
+	# rejestracja obiektów na polach: mapa 4 × 4 (romb), obiekt 2 × 2 i dwa jednopolowe na tym samym polu
+	var c: Object = CoreCpp.nowa_symulacja()
+	var A := 4
+	var B := 4
+	var T := 2 * A * B + A + B
+	var V := 2 * A * B + 3 * A + 3 * B + 1
+	var tex := PackedByteArray(); tex.resize(T); tex.fill(3)
+	var fl := PackedByteArray(); fl.resize(T)
+	var f10 := PackedFloat32Array(); f10.resize(T)
+	var wys := PackedFloat32Array(); wys.resize(V)
+	c.wczytaj_mape_scn(A, B, tex, fl, f10, wys, {3: 0})
+	var ob := [{"id": 0x100, "gracz": 0, "X": 4, "Y": 4, "typ": 467, "kwadrat": 2, "hp": 7000, "zasob": 0, "budynek": 1, "unit_type": 2},
+		{"id": 0x101, "gracz": 1, "X": 4, "Y": 4, "typ": 32, "kwadrat": 1, "hp": 65, "zasob": 0, "budynek": 0, "unit_type": 6}]
+	var zs := [{"ID": 9, "obiekty": [468, -1], "rodziny": [0, 0], "dolacz": 10, "wyklucz": -1},
+		{"ID": 10, "obiekty": [467], "rodziny": [0], "dolacz": -1, "wyklucz": -1}]
+	var m: Dictionary = c.wejscie_regionow_z_scn(ob, zs)
+	var N: int = m.get("N", 0)
+	var j: Dictionary = m.get("jednostki", {})
+	var l44: Array = j.get(str(4 * N + 4), [])
+	var l55: Array = j.get(str(5 * N + 5), [])
+	var ty: Dictionary = m.get("typy", {})
+	_wynik("obiekty SCN na polach: obszar n × n, wstawianie na początek listy, +0x612 z zestawu 9 (przez zestaw dołączony)",
+		l44.size() == 2 and String(l44[0][0]) == "0x101" and String(l44[1][0]) == "0x100" and l55.size() == 1 and
+		ty.get("typ:467", []) == [0, 1, 2, 1] and ty.get("typ:32", []) == [0, 0, 6, 0],
+		"(4,4) %s (5,5) %s typy %s" % [str(l44), str(l55), str(ty)])
+	var scn := OS.get_environment("OPENEE_SCN_TEST_E35")
+	var ref_plik := OS.get_environment("OPENEE_PODSEKTORY_TEST")
+	if scn == "" or ref_plik == "":
+		_skip("graf e35_a wyłącznie z SCN i baz gry", "OPENEE_SCN_TEST_E35 / OPENEE_PODSEKTORY_TEST nie ustawione")
+		return
+	var Z = root.get_node("Zasoby")
+	var s := ScenariuszEE.new()
+	if not s.wczytaj(FileAccess.get_file_as_bytes(scn)) or not s.czytaj_teren() or not s.czytaj_graczy(root.get_node("Konfiguracja").katalog_openee):
+		_wynik("graf e35_a z SCN: odczyt", false, s.blad); return
+	var rodz := {}
+	for r in Z.tabela("dbterrain"):
+		if int(r["ID"]) >= 0 and int(r["ID"]) < 256: rodz[int(r["ID"])] = int(r.get("Terrain family", 0))
+	var c2: Object = CoreCpp.nowa_symulacja()
+	c2.uzyj_tablic_przyblizonych()
+	var t3 := s.teren
+	c2.wczytaj_mape_scn(t3["A"], t3["B"], t3["teren"], t3["flagi"], t3["f10"], t3["wysokosc"], rodz)
+	c2.utworz_swiat("ee")
+	var we: Dictionary = ObiektyScnCore.wejscie(c2, s, Z)
+	var w: Dictionary = c2.zbuduj_graf_z_wejscia(we, int(we.get("komorka", 0)))
+	var ref: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ref_plik))
+	var pk := 0; var sk := 0
+	for sp in ref["podsektory"]:
+		var q: Dictionary = c2.podsektor(int(sp["id"]))
+		if q.get("punkt", []) == [int(sp["punkt_i32"][0]), int(sp["punkt_i32"][1])]: pk += 1
+		if q.get("sasiedzi", []) == sp["sasiedzi"].map(func(v): return int(v) if v != null else -1): sk += 1
+	_wynik("graf e35_a wyłącznie z SCN i baz gry: 43 obszary, 1135 regionów, 1857 podsektorów, punkty i sąsiedzi 1857/1857",
+		int(w.get("obszarow", 0)) == 43 and int(w.get("regionow", 0)) == 1135 and int(w.get("podsektorow", 0)) == 1857 and pk == 1857 and sk == 1857,
+		"obszary %d, regiony %d, podsektory %d, punkty %d, sąsiedzi %d" % [int(w.get("obszarow", 0)), int(w.get("regionow", 0)), int(w.get("podsektorow", 0)), pk, sk])
+
+
+## Czasy stanów 6000/6001/6002 celu (takty) przy sekwencji umierania `klatki` × `ms` (etap 44).
+func _czasy_smierci(sym: Object, g: Dictionary, klatki: int, ms: int) -> Array:
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var gc := g.duplicate(); gc["smierc_klatki"] = klatki; gc["smierc_ms_klatki"] = ms
+	# kolejność listy: cel przed atakującym (jak w nagraniach – lista od końca 0x547AAD)
+	var b: int = sym.dodaj_jednostke(p, 13.5, 11.0, 0.0)
+	var a: int = sym.dodaj_jednostke(p, 10.5, 10.5, 0.0)
+	sym.ustaw_walke(a, 1, true, g, 215); sym.ustaw_walke(b, 5, false, gc, 215)
+	var wejscia := {}
+	var prev := -1
+	for k in 3000:
+		sym.takt(1)
+		var st := -1
+		for d in sym.stan_jednostek():
+			if int(d.id) == b: st = int(d.stan)
+		if st != prev and st >= 6000: wejscia[st] = k
+		prev = st
+	return [int(wejscia.get(6001, -1)) - int(wejscia.get(6000, 0)), int(wejscia.get(6002, -1)) - int(wejscia.get(6001, 0)),
+		int(wejscia.get(6003, -1)) - int(wejscia.get(6002, 0))]

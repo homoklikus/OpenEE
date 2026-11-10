@@ -80,8 +80,11 @@ public:
     /// Etap 43 – rodzaj obiektu pola (+0x04) z kodu Titan: Map::UpdateTiles 0x51183B → Tile::SetKind 0x516E8C [W, P]:
     /// f10 ≥ 0 → rodzina tekstury (dbterrain „Terrain family”, rekord +0x5C); f10 < −0,75·G → 1; inaczej, gdy mniej niż
     /// 3 narożniki pola mają wysokość ≥ 0 → 10, w przeciwnym razie rodzina. G = [0x9130E4] = 0,408248 (odczyt w grze).
+    /// Etap 44: przed SetKind ładowanie 0x51241D zastępuje teksturę klifu (rodzina 9) terenem domyślnym mapy, a 0x512FB0
+    /// ustawia rodzaj 9 z wysokości narożników (przebieg 1) i z tekstur klifu na polach (x−1..x, y−1..y) (przebieg 2) –
+    /// e35_a 39 480/39 480 [P]. rodzina_domyslna < 0 → rodzina pierwszego znanego terenu (ID rosnąco).
     /// Układ wyniku x·N + y, −1 = brak pola. Niezależne od teren() (reguła etapu 30 – przejezdność, skrót bez zmian).
-    std::vector<int> rodzaj_pol_titan(double g = 0.40824827551841736) const;
+    std::vector<int> rodzaj_pol_titan(double g = 0.40824827551841736, int rodzina_domyslna = -1) const;
     /// Etap 43 – bajt +0x14 pól wody (rodzaj 1 i 10) z 0x4282B8 + 0x426577 (tryb 1) [W; P – znak]: S1 = pola wody
     /// z sąsiadem lądowym (rodzaj ∉ {1, 10, 9}) wśród 8 sąsiadów, S2 = pola wody bez lądu, z sąsiadem rodzaju 9;
     /// h = 10·(sąsiedzi ∈ S1 + sąsiedzi ∈ S2), dla pola ∈ S1: −10 − h; przycięcie ±120. Pola lądu: 0 (ich +0x14

@@ -488,6 +488,10 @@ Prognoza nie jest obietnicą terminu.
   Etap 43: reguła rodzaju pola z kodu (Tile::SetKind 0x516E8C) i +0x14 wody w Core [P 39 341/39 480; znak 19 595/19 610];
   graf z SCN eksperymentalny (619/620 jak gra). Brakuje: 139 pól klifów (ślad dynamiczny), obiektów pól w Core
   (rejestracja z dbobjects, flaga +0x612), +0x14 lądu i kodu obszarów +0xF4. Szacunek: 1–2 etapy do grafu z samego SCN.
+  Etap 44: graf wyłącznie z SCN i baz gry [P: e35_a 1857/1857, e13_para 1320/1320; 619/620 jak gra] – klify 0x512FB0,
+  obiekty pól i +0x612 (zestaw 9), bok sektora 0x42439A; obszary – model z pomiaru [N kod]. Potyczka używa grafu.
+  Kolejka fizyki 0x918DDC (kolejność x, y) i śmierć 6000–6003 z danych typu. Dalej: kolejność obiektów dodanych w grze,
+  skrypty obywatela i bohatera, kod obszarów 0x427D42.
 - **Wybór obiektu pod kursorem** [P/W]: 0x50EC37 – lista renderu kamery + `GEPhysicalModel::Intersects` (DLL).
   Odtworzenie przecięcia z siatką wymaga modeli (poza zakresem Core). Dla automatyzacji wystarcza warunek listy renderu
   i potwierdzenie kolejką celów.

@@ -58,7 +58,9 @@ public:
     int64_t zbuduj_graf_z_przydzialu(const godot::PackedInt32Array& id_xH, int64_t W, int64_t H, int64_t komorka);
     godot::Dictionary zbuduj_graf_z_wejscia(const godot::Dictionary& wejscie, int64_t komorka);
     bool ustaw_z(int64_t id, double z);
+    void uporzadkuj_wg_pozycji();
     godot::Dictionary wejscie_regionow_z_mapy() const;
+    godot::Dictionary wejscie_regionow_z_scn(const godot::Array& obiekty, const godot::Array& zestawy) const;
     godot::Dictionary podsektor(int64_t id) const;
     godot::Array sciezka_grafu(int64_t x0, int64_t y0, int64_t x1, int64_t y1) const;
     int64_t ustaw_efekty_obszaru(const godot::Dictionary& d);

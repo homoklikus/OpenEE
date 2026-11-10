@@ -99,32 +99,74 @@ MapaTitan MapaTitan::z_scn(const DaneTerenuScn& d, const std::array<std::int16_t
     return m;
 }
 
-std::vector<int> MapaTitan::rodzaj_pol_titan(double g) const {
+std::vector<int> MapaTitan::rodzaj_pol_titan(double g, int rodzina_domyslna) const {
+    // Etap 44 [W: 0x51241D / 0x512FB0, P: e35_a]. Ładowanie mapy:
+    //  1) 0x51241D: każde pole → Tile::SetKind(rodzina tekstury); tekstura rodziny 9 (klif) zastępowana terenem
+    //     domyślnym mapy (+0x181734, 0x513941) → SetKind(rodzina terenu domyślnego);
+    //  2) 0x512FB0 przebieg 1: pole, którego najwyższy narożnik ≥ H (= map+0x1816D8) i rozpiętość narożników
+    //     ≥ 1,5·H − 0,0001 → SetKind(9) (i malowanie tekstur klifu na polach (x−1..x, y−1..y));
+    //  3) 0x512FB0 przebieg 2: pole o rodzaju ≠ 9, gdy ≥ 3 z pól {(x, y), (x−1, y), (x, y−1), (x−1, y−1)} ma
+    //     teksturę klifu (lub nie istnieje) → SetKind(9).
+    // Tile::SetKind 0x516E8C: f10 ≥ 0 → argument; f10 < −0,75·G → 1; inaczej < 3 narożniki ≥ 0 → 10, reszta → argument.
     const int N = n_;
+    if (rodzina_domyslna < 0) {
+        // teren domyślny map+0x181734: pole ogona kawałka 4 (e35_a: 0 – brak terenu 0) → [0x8D1FD0] = ID pierwszego
+        // ważnego rekordu dbterrain (0x4D5662: rekord +0x0C > 0, +0x50 ≠ −1) – EE: ID 2, rodzina 0 [W; P e35_a]
+        rodzina_domyslna = 0;
+        for (int id = 0; id < 256; ++id)
+            if (rodzina_[std::size_t(id)] >= 0) { rodzina_domyslna = rodzina_[std::size_t(id)]; break; }
+    }
     std::vector<int> w(std::size_t(N) * N, -1);
+    std::vector<int> k_yx(std::size_t(N) * N, -1);
     const float prog = float(-(float(g) * 0.75f));
+    const float H = float(g);
+    const float prog_klifu = float(H * 1.5f) - 9.999999747378752e-05f;
     auto z = [&](int x, int y) { return z_[std::size_t(y) * (N + 1) + std::size_t(x)]; };
+    auto istnieje = [&](int x, int y) { return x >= 0 && y >= 0 && x < N && y < N && teren_[std::size_t(y) * N + std::size_t(x)] >= 0; };
+    auto ustaw = [&](int x, int y, int arg) {
+        const std::size_t k = std::size_t(y) * N + std::size_t(x);
+        int r = arg;
+        const float f = f10_[k];
+        if (!(f >= 0.0f)) {
+            if (f < prog) r = 1;
+            else {
+                int n = 0;
+                const int c[4][2] = {{x, y}, {x + 1, y}, {x, y + 1}, {x + 1, y + 1}};
+                for (const auto& q : c) {
+                    const float h = z(q[0], q[1]);
+                    if (h == h && h >= 0.0f) ++n;
+                }
+                if (n < 3) r = 10;
+            }
+        }
+        k_yx[k] = r;
+    };
+    auto klif_tekstura = [&](int x, int y) { return !istnieje(x, y) || rodzina_[tekstura_[std::size_t(y) * N + std::size_t(x)]] == 9; };
     for (int y = 0; y < N; ++y)
         for (int x = 0; x < N; ++x) {
-            const std::size_t k = std::size_t(y) * N + std::size_t(x);
-            if (teren_[k] < 0) continue;
-            const int rodz = rodzina_[tekstura_[k]];
-            int r = rodz;
-            const float f = f10_[k];
-            if (!(f >= 0.0f)) {                       // fcomp [0x824E64] (0,0); jae → rodzina
-                if (f < prog) r = 1;                  // −(G·0,75) > f10 → woda głęboka
-                else {
-                    int n = 0;                        // narożniki (x, y), (x+1, y), (x, y+1), (x+1, y+1): wysokość ≥ 0
-                    const int c[4][2] = {{x, y}, {x + 1, y}, {x, y + 1}, {x + 1, y + 1}};
-                    for (const auto& q : c) {
-                        const float h = z(q[0], q[1]);
-                        if (h == h && h >= 0.0f) ++n;
-                    }
-                    if (n < 3) r = 10;
-                }
-            }
-            w[std::size_t(x) * N + std::size_t(y)] = r;
+            if (!istnieje(x, y)) continue;
+            const int rodz = rodzina_[tekstura_[std::size_t(y) * N + std::size_t(x)]];
+            ustaw(x, y, rodz == 9 ? rodzina_domyslna : rodz);
         }
+    for (int x = 0; x < N; ++x)            // przebieg 1 (pętla zewnętrzna po x jak 0x512FB0; kolejność bez znaczenia)
+        for (int y = 0; y < N; ++y) {
+            if (!istnieje(x, y)) continue;
+            float mn = z(x, y), mx = mn;
+            const float c[3] = {z(x, y + 1), z(x + 1, y), z(x + 1, y + 1)};
+            for (float h : c) { if (h < mn) mn = h; if (h > mx) mx = h; }
+            if (!(mx >= H)) continue;
+            if (!(mx - mn >= prog_klifu)) continue;
+            ustaw(x, y, 9);
+        }
+    for (int x = 0; x < N; ++x)            // przebieg 2
+        for (int y = 0; y < N; ++y) {
+            if (!istnieje(x, y) || k_yx[std::size_t(y) * N + std::size_t(x)] == 9) continue;
+            const int n = int(klif_tekstura(x, y)) + int(klif_tekstura(x - 1, y)) + int(klif_tekstura(x, y - 1)) +
+                          int(klif_tekstura(x - 1, y - 1));
+            if (n >= 3) ustaw(x, y, 9);
+        }
+    for (int y = 0; y < N; ++y)
+        for (int x = 0; x < N; ++x) w[std::size_t(x) * N + std::size_t(y)] = k_yx[std::size_t(y) * N + std::size_t(x)];
     return w;
 }
 

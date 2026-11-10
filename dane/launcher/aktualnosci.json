@@ -6,6 +6,18 @@
   {
    "data": "2026-11-10",
    "tytul": {
+    "pl": "Etap 44: mapa tras z samego scenariusza i śmierć jednostek",
+    "en": "Stage 44: route map from the scenario alone and unit deaths"
+   },
+   "tekst": {
+    "pl": "OpenEE buduje mapę tras dokładnie taką jak oryginalna gra wyłącznie z pliku scenariusza i baz danych gry – także na drugiej, innej mapie – i używa jej w potyczce. Jednostki umierają i rozkładają się w tym samym tempie co w Empire Earth.",
+    "en": "OpenEE now builds the route map exactly like the original game from the scenario file and game databases alone – also on a second, different map – and uses it in skirmishes. Units die and decay at the same pace as in Empire Earth."
+   },
+   "raport": "RAPORT_ETAP_44.md"
+  },
+  {
+   "data": "2026-11-10",
+   "tytul": {
     "pl": "Etap 43: klasyfikacja terenu z kodu gry i walka na czystej mapie",
     "en": "Stage 43: terrain classification from game code and combat on a clean map"
    },
@@ -13,7 +25,7 @@
     "pl": "OpenEE rozpoznaje rodzaje pól mapy regułą odczytaną z kodu gry, prosto z pliku scenariusza, i buduje z tego graf tras. Pojedynki dwóch i trzech jednostek na czystej mapie przebiegają w OpenEE tak samo jak w oryginalnym Empire Earth.",
     "en": "OpenEE now classifies map cells with a rule taken from the game's code, straight from the scenario file, and builds the route graph from it. Two- and three-unit fights on the clean map play out in OpenEE exactly as in the original Empire Earth."
    },
-   "raport": "RAPORT_ETAP_43.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_43.md"
   },
   {
    "data": "2026-11-10",

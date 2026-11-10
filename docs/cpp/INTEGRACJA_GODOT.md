@@ -169,3 +169,17 @@ Testy GDExtension: 30 (+2: kąt z pomiaru 616, ponowny wybór celu nieosiągalne
 - `podsektor(id) -> Dictionary` – `punkt`, `sasiedzi`, `rodzaj`, `sektor` podsektora grafu Core.
 - Logika w Core (`MapaTitan::rodzaj_pol_titan`, `MapaTitan::bajt14_wody`, `Swiat::ustaw_z`); Godot nie ma własnego
   wyszukiwania tras.
+
+## 25. Etap 44 – OpenEE Core 0.18.0 (testy GDExtension: 52)
+
+- `wejscie_regionow_z_scn(obiekty: Array, zestawy: Array) -> Dictionary` – pełne wejście floodu regionów z danych
+  lokalnych: mapa SCN (klasyfikacja 0x516E8C/0x512FB0) i obiekty kawałka 5 zarejestrowane na polach w Core
+  (`openee::dodaj_obiekty_scn`, +0x612 z `openee::zestaw_zawiera(…, 9, typ)`). Dane zbiera `ObiektyScnCore`
+  (`godot/silnik/symulacja/obiekty_scn_core.gd`): obiekty (id, gracz, X, Y, typ, „Square occupied”, „Health”, „Resource
+  type”, „Is building?”, „Unit type”) i zestawy dbunitset. Wynik przyjmuje `zbuduj_graf_z_wejscia` – bez danych z gry.
+- `wejscie_regionow_z_mapy()` zwraca też `komorka` – bok sektora podsektorów (`openee::komorka_sektora`, 0x42439A).
+- `uporzadkuj_wg_pozycji()` – kolejność listy jednostek jak kolejka fizyki EE po wczytaniu (x, potem y rosnąco).
+- `ustaw_walke`: `smierc_klatki`, `smierc_ms_klatki`, `rozklad_ms`, `zasoby` – przejścia 6000–6003 w Core
+  (`ObiektyScnCore.parametry_smierci` z dbgraphics i dbobjects).
+- `dodaj_jednostke`: promień kolizji (+0x244) z `rozmiar` (lub `promien_kolizji`), wcześniej stałe 0,5.
+- Potyczka: graf podsektorów budowany przy wczytaniu i restarcie (`--bez-grafu` wyłącza), blokada pola = „Is building?”.

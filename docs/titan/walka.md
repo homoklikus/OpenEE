@@ -830,3 +830,26 @@ różnic we wszystkich czterech nagraniach.
   w Core DyingAnimationFinished nie jest zamodelowane [N] (jedyna różnica 631/633/634).
 - Wyniki: 631 – gwardia i obserwator 2808/2808 próbek (stan, HP, pozycja, kurs), cel do śmierci; 633 (2v1) – obie gwardie
   3695 + 2 spóźnione / 3697; 634 (3v1, z kontaktem) – trzy gwardie 6413/6413.
+
+## 32. Etap 44 – śmierć: Generic Death.tai z danych typu
+
+| Stan | Zdarzenie (0x61B677) | Warunek | Licznik |
+|---|---|---|---|
+| 6000 Dying | DyingAnimationFinished (0x1770) | +0x337 ≠ 0 (koniec sekwencji) albo czas klatki typu = 1 | animacja 0x62462B: +0x2FC += ms taktu (34); przy ≥ czasie klatki (typ +0x318[anim] = „wartość” sekwencji dbgraphics) kolejne klatki, reszta zostaje; po ostatniej klatce +0x337 = 1 |
+| 6001 ResourcesRotting | ResourcesRottedAway (0x1771) | zasoby +0x40 = 0 | wejście 0x61B1F6: +0x2A8 = 0; takt 0x5FB218: +0x2A8 += ms, co 4000 ms −1 zasób |
+| 6002 UnitRotting | UnitRottedAway (0x1772) | +0x2A8 = 0 | wejście 0x61B25E: +0x2A8 = typ+0x548 (dbobjects „Rotting time” × 1000); takt: −34 ms, nie poniżej 0 |
+| 6003 Dead | – | – | usunięcie z mapy [N] |
+
+Pomiary [P]:
+
+| Typ | Sekwencja umierania | 6000 | 6001 | 6002 |
+|---|---|---|---|---|
+| gwardia (631/633/634) | 24 klatki × 102 ms | 72 takty = ⌈24·102/34⌉ | 1 takt | 1177 taktów = ⌈40 000/34⌉ |
+| obywatel (638) | 17 klatek × 94 ms | 47 taktów = ⌈17·94/34⌉ | 1 takt | 1177 taktów |
+
+**„Wartość” sekwencji dbgraphics to czas klatki w ms**, a nie czas cyklu (hipoteza z FORMATY_ETAP4 § 2.3 obalona).
+Bohatera nie zmierzono. Core: parametry `smierc_klatki`, `smierc_ms_klatki`, `rozklad_ms` i `zasoby` (bez nich – zachowanie
+jak przed etapem 44); Godot pobiera je z baz gry (`ObiektyScnCore.parametry_smierci`).
+
+Wyniki odtworzeń po zmianie: 631 2808/2808 próbek wszystkich jednostek, 633 3697 (2 próbki spóźnione), 634 6413/6413
+z przejściem 6003. Wcześniej cel był zgodny do 2186/2084/2081 próbek.

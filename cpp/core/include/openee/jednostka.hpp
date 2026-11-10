@@ -89,6 +89,12 @@ struct BojJednostki {
     // EEAEMoraleFromBuildings (min(+0x24, +0x20)). Źródło (budynki i ich zasięg) – poza Core [N]; ustawiane z zewnątrz.
     std::vector<int> morale;
     std::vector<CelNieosiagalny> nieosiagalne;   // EEUnit +0xA0 (etap 37)
+    // etap 44: animacja umierania (+0x2FC – ms od ostatniej klatki, klatka, +0x337 – koniec sekwencji) i licznik +0x2A8
+    // stanów 6001 (narastająco, co 4000 ms −1 zasób) / 6002 (odliczanie czasu rozkładu)
+    int smierc_ms = 0, smierc_klatka = 0;
+    bool smierc_koniec = false;
+    int licznik_2a8 = 0;
+    int zasoby = 0;
     int regeneracja_ms = 0;   // EEUnit +0x290: odliczanie do regeneracji HP (0x625B47; etap 38 [P: 619 – −34 ms/takt, 1000 po regeneracji])
 };
 
