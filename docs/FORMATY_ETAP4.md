@@ -54,6 +54,9 @@ OpenEE nie nadaje gniazdom 3 i 5–11 nazw ogólnych – scena diagnostyczna pok
 *[Etap 44 – rozstrzygnięte [P]: „wartość” to czas jednej klatki w ms (typ +0x318[anim], animacja 0x62462B). Umieranie
 gwardii 24 klatki × 102 ms = 72 takty, obywatela 17 × 94 ms = 47 taktów (pomiary 631–634 i 638). Odtwarzacz Godot
 nadal używa hipotezy poniżej (prezentacja) – do zmiany w kolejnym etapie.]*
+*[Etap 45: odtwarzacz Godot przestawiony – `CZAS_JEDNOSTKA` = 0,001 s na klatkę, tempo = 1000 / wartość klatek/s, cykl
+= klatki × wartość. Zegar odtwarzacza to czas gry (delta), nie liczba klatek obrazu – tempo nie zależy od FPS. Opis
+poniżej zostaje jako historia hipotezy.]*
 Przyjęte: **czas cyklu sekwencji = wartość × 0,01 s** (`SekwencjeAnimacji.CZAS_JEDNOSTKA`), tempo = klatki / czas.
 * Za: wszystkie sekwencje mieszczą się wtedy w 0,6–4 s (chód falangi 0,65 s, atak 1,2 s, śmierć 0,78 s, wiosła triremy
   4 s, strzał armaty 1,8 s); wartość 0 występuje tylko w sekwencjach jednej klatki.

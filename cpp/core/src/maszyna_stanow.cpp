@@ -35,6 +35,9 @@ const NazwaNumer NAZWY[] = {
     {"ChangeTargetForSpecialEnemy", 2031},
     {"ReacquireEnemyUnit", 5002},
     {"ResourcesRotting", 6001},
+    // etap 44/45: rejestracja nazw 0x618E11 (push numer, push nazwa) [W]
+    {"FleeDanger", 8019},
+    {"MoveToRepairSite", 8018},
 };
 }  // namespace
 
@@ -300,6 +303,23 @@ UnitRotting { UnitRottedAway true(Dead) }
     SkryptStanow s;
     std::string blad;
     s.parsuj(TEKST, nullptr, blad);
+    return s;
+}
+
+SkryptStanow SkryptStanow::wbudowany_obywatel() {
+    // Etap 45 [W: citizen.tai – #include Gather.tai (Idle { TakingLightDamage true(FleeDanger) }), własne Idle
+    // { BuildingInBuildQueue true(MoveToRepairSite); TakingLightDamage true(FleeDanger) }, potem Generic Attack /
+    // Movement / Death jak land]. Własny zapis: skrypt ruchu i walki jak wbudowany_land, Idle w kolejności dołączeń.
+    // Budowa i zbieranie surowców – poza Core (zdarzenia nieobsługiwane = fałsz).
+    SkryptStanow s = wbudowany_land();
+    auto& idle = s.stany_["Idle"];
+    std::vector<Przejscie> nowe;
+    nowe.push_back({Przejscie::Typ::pojedyncze, {"TakingLightDamage"}, "FleeDanger", ""});
+    nowe.push_back({Przejscie::Typ::pojedyncze, {"BuildingInBuildQueue"}, "MoveToRepairSite", ""});
+    for (const auto& p : idle.przejscia) nowe.push_back(p);
+    idle.przejscia = nowe;
+    s.stany_["FleeDanger"] = StanSkryptu{"FleeDanger", 8019, {}};   // stan natywny – akcja wejścia EEUC vt+0x40
+    s.stany_["MoveToRepairSite"] = StanSkryptu{"MoveToRepairSite", 8018, {}};
     return s;
 }
 

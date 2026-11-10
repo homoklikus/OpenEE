@@ -302,6 +302,10 @@ bool FizykaLadowa::takt(const KontekstFizyki& k, Jednostka& u) {
         case TrybRuchu::spoczynek:
             if (u.v != 0.0 || u.omega != 0.0) tryb_hamowanie(k, u);
             return true;
+        case TrybRuchu::zatrzymanie:   // 0x54DDFF
+            u.v = 0.0;
+            u.omega = 0.0;
+            return true;
     }
     return true;
 }

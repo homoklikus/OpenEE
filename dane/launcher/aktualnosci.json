@@ -6,6 +6,18 @@
   {
    "data": "2026-11-10",
    "tytul": {
+    "pl": "Etap 45: kolejność symulacji i ucieczka obywatela",
+    "en": "Stage 45: simulation order and citizen flight"
+   },
+   "tekst": {
+    "pl": "OpenEE przetwarza jednostki w tej samej kolejności co oryginalna gra i usuwa martwe w tym samym takcie. Obywatel trafiony w spoczynku ucieka w to samo miejsce i tą samą drogą co w Empire Earth, a nowe pomiary walki gwardii zgadzają się z grą takt po takcie.",
+    "en": "OpenEE now processes units in the same order as the original game and removes dead ones on the same tick. A citizen hit while idle flees to the same spot along the same path as in Empire Earth, and new guard combat measurements match the game tick by tick."
+   },
+   "raport": "RAPORT_ETAP_45.md"
+  },
+  {
+   "data": "2026-11-10",
+   "tytul": {
     "pl": "Etap 44: mapa tras z samego scenariusza i śmierć jednostek",
     "en": "Stage 44: route map from the scenario alone and unit deaths"
    },
@@ -13,7 +25,7 @@
     "pl": "OpenEE buduje mapę tras dokładnie taką jak oryginalna gra wyłącznie z pliku scenariusza i baz danych gry – także na drugiej, innej mapie – i używa jej w potyczce. Jednostki umierają i rozkładają się w tym samym tempie co w Empire Earth.",
     "en": "OpenEE now builds the route map exactly like the original game from the scenario file and game databases alone – also on a second, different map – and uses it in skirmishes. Units die and decay at the same pace as in Empire Earth."
    },
-   "raport": "RAPORT_ETAP_44.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_44.md"
   },
   {
    "data": "2026-11-10",

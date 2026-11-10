@@ -59,6 +59,9 @@ public:
     godot::Dictionary zbuduj_graf_z_wejscia(const godot::Dictionary& wejscie, int64_t komorka);
     bool ustaw_z(int64_t id, double z);
     void uporzadkuj_wg_pozycji();
+    bool ustaw_skrypt_jednostki(int64_t id, const godot::String& nazwa);
+    void ustaw_stan_rng(int64_t stan);
+    godot::Array kolejka_fizyki() const;
     godot::Dictionary wejscie_regionow_z_mapy() const;
     godot::Dictionary wejscie_regionow_z_scn(const godot::Array& obiekty, const godot::Array& zestawy) const;
     godot::Dictionary podsektor(int64_t id) const;

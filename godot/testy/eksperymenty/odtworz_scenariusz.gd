@@ -89,6 +89,8 @@ func _start() -> void:
 		if _arg("smierc", "1") == "1": pw.merge(ObiektyScnCore.parametry_smierci(int(ty), Z))   # etap 44: z dbgraphics i dbobjects
 		c.ustaw_walke(id, int(j["gracz"]), int(j["gracz"]) == 1, pw, int(j["hp"]) if j["hp"] != null else int(par["walka"][ty]["hp"]))
 		if j.get("z") != null: c.ustaw_z(id, float(j["z"]))   # z zapisu scenariusza (etap 43, 631 [P])
+		if _arg("skrypty", "1") == "1":   # etap 45: skrypt .tai typu (dbobjects „TAI Script”), interpretacja w Core
+			c.ustaw_skrypt_jednostki(id, String(ob.get(int(ty), {}).get("TAI Script", "")))
 		core_id[str(j["id"])] = id; gra_id[id] = str(j["id"])
 	if kol == "pozycja": c.uporzadkuj_wg_pozycji()   # etap 44: kolejka fizyki po wczytaniu (Core)
 	var T0 := float(opis["T0"])
@@ -103,7 +105,17 @@ func _start() -> void:
 	var wynik := {"mapa": im.get("skrot", ""), "graf": graf, "ids": {}, "probki": [], "rozkazy": []}
 	for j in opis["jednostki"]: wynik.ids[str(j["id"])] = str(j["nazwa"])
 	var takty := int(_arg("takty", str(int(round((float(opis["koniec_t"]) - T0) / TAKT_MS)) + 2)))
+	# etap 45: --rng-nagranie=PLIK – przed każdym taktem stan generatora z nagrania gry (próbka końca poprzedniego taktu);
+	# diagnostyka losowań w takcie (poza nagraniem gra losuje też w systemach nieodwzorowanych w Core)
+	var rng_gry := {}
+	if _arg("rng-nagranie", "") != "":
+		for p in JSON.parse_string(FileAccess.get_file_as_string(_arg("rng-nagranie", "")))["probki"]:
+			if p.has("rng"): rng_gry[int(round(float(p["t"])))] = int(p["rng"])
 	for k in takty:
+		var t_przed := int(round(T0 + TAKT_MS * k))
+		for dt in [0, -1, 1]:
+			if rng_gry.has(t_przed + dt):
+				c.ustaw_stan_rng(rng_gry[t_przed + dt]); break
 		for r in rozkazy.get(k, []):
 			var kto: int = core_id[str(r["kto"])]
 			var w
@@ -119,6 +131,7 @@ func _start() -> void:
 			for e in c.walka(int(d.id)).get("kolejka", []):
 				kq += "%s(%.4f,%.4f,%s);" % [str(e.rodzaj).substr(4, 3), float(e.x), float(e.y), gra_id.get(int(e.cel), "0")]
 			pr[gid] = [int(d.stan), float(d.x), float(d.y), float(d.kurs), int(d.get("hp", -1)), gra_id.get(int(d.get("cel", 0)), "0"), kq, float(d.v), float(c.jednostka(int(d.id)).get("z", 0.0))]
+		if _arg("rng", "0") == "1": pr["rng"] = int(c.diagnostyka().get("rng_stan", 0))   # etap 45: stan generatora
 		wynik.probki.append([k, snappedf(T0 + TAKT_MS * (k + 1), 0.1), pr])
 	wynik["diag"] = c.diagnostyka()
 	wynik["zdarzenia"] = c.zdarzenia_walki_od(0)

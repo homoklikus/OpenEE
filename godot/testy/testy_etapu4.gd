@@ -108,8 +108,9 @@ func _jednostkowe() -> void:
 		s.blad == "" and at.od == 16 and at.do == 31 and at.klatki == 16 and at.petla and at.zdarzenia == [26] and at.dzwieki == [54]
 		and ru.zdarzenia == [8, 15] and ru.dzwieki == [39, 83] and s.bezczynnosc().od == 32 and s.bezczynnosc().gniazdo == 2
 		and sm.klatki == 27 and not sm.petla and ps.od == 74 and ps.petla and s.sekwencje.size() == 6, s.sekwencje.map(func(q): return [q.gniazdo, q.stan, q.od, q.do]))
-	t._ok("E4 sekwencje: czas cyklu = wartość × 0,01 s [H], tempo = klatki / czas",
-		is_equal_approx(at.czas_cyklu, 1.2) and is_equal_approx(sm.czas_cyklu, 0.78) and is_equal_approx(at.klatki_na_s, 16 / 1.2), [at.czas_cyklu, at.klatki_na_s])
+	t._ok("E4 sekwencje (etap 45): wartość = ms na klatkę, cykl = klatki × wartość, tempo = 1000 / wartość",
+		is_equal_approx(at.czas_klatki, 0.12) and is_equal_approx(at.czas_cyklu, 16 * 0.12) and is_equal_approx(sm.czas_cyklu, 27 * 0.078)
+		and is_equal_approx(at.klatki_na_s, 1000.0 / 120.0), [at.czas_klatki, at.czas_cyklu, at.klatki_na_s])
 	t._ok("E4 sekwencje: kontrola zakresów wobec liczby klatek modelu", s.kontrola(75).is_empty() and s.kontrola(60).size() == 2, s.kontrola(60))
 	# --- interpolacja / wybór klatek ---
 	var k1 := AnimacjaVAT.klatki_dla(Vector4(32, 16, 0, 16), 0.5)

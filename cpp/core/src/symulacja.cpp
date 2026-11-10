@@ -111,7 +111,7 @@ bool Swiat::nadaj_trase(IdJednostki id, const std::vector<Punkt2>& punkty, std::
     u->kolejka_celow.clear();
     if (!punkty.empty()) u->kolejka_celow.push_back({TypCelu::miejsce, punkty.back().x, punkty.back().y, kurs_koncowy, true, false, 0});
     u->licznik_blokady_ms = 0;
-    const StanSkryptu* s = skrypt_.stan(start == StartTrasy::advance ? 10003 : 8000);
+    const StanSkryptu* s = skr(*u).stan(start == StartTrasy::advance ? 10003 : 8000);
     if (s) wejdz_w_stan(*u, *s);
     else u->stan = start == StartTrasy::advance ? 10003 : 8000;
     return true;
@@ -321,15 +321,23 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
                 u.trasa_gotowa = false;
             }
             break;
+        case 8019:  // FleeDanger 0x61B2D5 → EEUC vt+0x40 = 0x620687 (EEUCLand i EEUCLandCitizen) [W]
+            ucieczka(u);
+            break;
         case 6001:  // ResourcesRotting 0x61B1F6: +0x2A8 = 0 [W]
             if (u.boj) u.boj->licznik_2a8 = 0;
+            break;
+        case 6003:  // Dead: obiekt do usunięcia z kolejki fizyki (0x530913) – zatwierdzenie w następnym takcie
+            // [P: 641 – 578: 0x5000ad0 stan 6003 w t = 105945, poza kolejką od t = 105979; 0x5000ad3 138164 → 138198;
+            //  590: analogicznie]; wywołujący z grupy 0x5EED94/0x5EF968/0x5F120A/0x6163E3 [N: który]
+            u.usun_z_fizyki = true;
             break;
         case 6002:  // UnitRotting 0x61B25E: +0x2A8 = czas rozkładu typu (+0x548) [W]
             if (u.boj) u.boj->licznik_2a8 = u.boj->p.rozklad_ms;
             break;
         case 6000:  // Dying: animacja umierania (sekwencja gniazda 4); dalej 6001–6003 (etap 44)
             if (u.boj) { u.boj->smierc_ms = 0; u.boj->smierc_klatka = 0; u.boj->smierc_koniec = false; u.boj->zasoby = u.boj->p.zasoby; }
-            u.tryb = TrybRuchu::spoczynek;
+            u.tryb = TrybRuchu::zatrzymanie;   // etap 45: tryb 2 [P: 638 t = 66988; 590/578 – jednostki stały]
             u.trasa.clear();
             u.zdjete_punkty = 0;
             u.kolejka_celow.clear();   // etap 32 [P: 578 G3, 590 – w takcie śmierci kolejka celów pusta]
@@ -352,7 +360,8 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
 
 void Swiat::krok_maszyny(Jednostka& u) {
     // 0x5F0F7E: najwyżej jedno przejście. BO-8: w Idle ocena pomijana tylko, gdy termin < zegar (bez znaku).
-    const StanSkryptu* s = skrypt_.stan(u.stan);
+    const SkryptStanow& sk = skr(u);
+    const StanSkryptu* s = sk.stan(u.stan);
     if (!s) return;
     if (u.stan == 5000) {
         if (u.termin_oceny < zegar_ms_) return;
@@ -362,8 +371,8 @@ void Swiat::krok_maszyny(Jednostka& u) {
         const bool w = ocen_przejscie(u, p);
         const std::string& cel = w ? p.cel_prawda : p.cel_falsz;
         if (cel.empty()) continue;
-        auto it = skrypt_.stany().find(cel);
-        if (it != skrypt_.stany().end()) wejdz_w_stan(u, it->second);
+        auto it = sk.stany().find(cel);
+        if (it != sk.stany().end()) wejdz_w_stan(u, it->second);
         return;
     }
 }
@@ -373,8 +382,12 @@ void Swiat::takt() {
     ++takty_;
     czas_ms_ += 1000.0 * 1.5 / 44.0;
     zegar_ms_ = std::uint32_t(czas_ms_);
-    rng_.krok();
-    rng_.krok();
+    rng_.krok();  // 0x546CE9 (0x546C63)
+    // etap 45: zatwierdzenie kolejek dodań/usunięć fizyki 0x53066A (wywołanie 0x546D35): nowe obiekty na koniec (w Core
+    // już przy dodaniu – vector), usunięte znikają z kolejki; kolejność pozostałych bez zmian [W; P: 641]
+    for (auto& u : jednostki_)
+        if (u.usun_z_fizyki) { u.usun_z_fizyki = false; u.w_fizyce = false; }
+    rng_.krok();  // 0x547C09 w 0x547B6B, wywołanej z 0x546D4C – przed pętlą jednostek 0x547AAD (wywołanie 0x546D6B) [W]
     // Efekty obszarowe 0x547742 (AoC 0x553C59) – po menedżerze tras (0x4A396B), przed pętlą jednostek (0x547AAD):
     // +0x9C += +0x98 (f32, porównanie na stosie x87); ≥ 2000 → przebieg menedżera 0x663DBD i +0x9C −= 2000 [P: kod]
     {
@@ -393,6 +406,7 @@ void Swiat::takt() {
     k.srodek_w_polu = nullptr;
     for (std::size_t i = jednostki_.size(); i-- > 0;) {  // od końca listy (0x547AAD)
         Jednostka& u = jednostki_[i];
+        if (!u.w_fizyce) continue;   // poza kolejką 0x918DDC – bez maszyny stanów i fizyki (0x547E0E)
         krok_maszyny(u);
         if (u.tryb == TrybRuchu::do_celu) {  // tryb 1: pozycja celu ataku (cel +0x30 → +0x13C/+0x14C) w chwili fizyki
             if (Jednostka* t = cel_ataku(u)) {
@@ -412,7 +426,7 @@ void Swiat::takt() {
         FizykaLadowa::takt(k, u);
         if (u.boj) liczniki_walki(u);
         po_ruchu(u, x0, y0);
-        krok_koncowy(u);  // 0x549E61 (po każdym trybie oprócz 2)
+        if (u.tryb != TrybRuchu::zatrzymanie) krok_koncowy(u);  // 0x549E61 (po każdym trybie oprócz 2: 0x549FD2)
     }
 }
 
@@ -473,8 +487,8 @@ void Swiat::aktywuj_cel(Jednostka& u) {
         u.dl_po.clear();
         u.zdjete_punkty = 0;
         u.trasa_gotowa = false;
-        auto it = skrypt_.stany().find("InitialAttackState");
-        if (it != skrypt_.stany().end()) { wejdz_w_stan(u, it->second); return; }
+        auto it = skr(u).stany().find("InitialAttackState");
+        if (it != skr(u).stany().end()) { wejdz_w_stan(u, it->second); return; }
     }
     u.cel = c.typ;
     u.cel_od_gracza = c.od_gracza;
@@ -484,7 +498,7 @@ void Swiat::aktywuj_cel(Jednostka& u) {
     u.dl_po.clear();
     u.zdjete_punkty = 0;
     u.trasa_gotowa = false;
-    const StanSkryptu* s = skrypt_.stan(8000);
+    const StanSkryptu* s = skr(u).stan(8000);
     if (s) wejdz_w_stan(u, *s);
 }
 
@@ -705,6 +719,7 @@ bool Swiat::ustaw_walke(IdJednostki id, int gracz, bool czlowiek, const Parametr
     BojJednostki b;
     b.p = p;
     b.s.hp = hp;
+    b.hp_29c = hp;
     b.ai = ai;
     u->boj = b;
     return true;
@@ -919,8 +934,8 @@ bool Swiat::rozkaz_ataku(IdJednostki id, IdJednostki cel) {
     // rozkazu). Dalej skrypt: 2013 → 2024 → 8000 → 2015 → 10003, jak w grze (619: zgodne czasy przejść i kurs co takt;
     // to samo 9000 → 2016 → 2012 przy aktywacji celu ataku z kolejki gwardii 0x1000858).
     // *[Etap 36 – zastąpione: „wejście w CheckRange [H]” (etap 31) – kurs o 1 takt za grą, przejścia o 1 takt za wcześnie.]*
-    auto it = skrypt_.stany().find("InitialAttackState");
-    if (it != skrypt_.stany().end()) wejdz_w_stan(*u, it->second);
+    auto it = skr(*u).stany().find("InitialAttackState");
+    if (it != skr(*u).stany().end()) wejdz_w_stan(*u, it->second);
     return true;
 }
 
@@ -1289,6 +1304,8 @@ std::optional<bool> Swiat::zdarzenie_walki(Jednostka& u, const std::string& n) {
         if (b.p.smierc_klatki <= 0) return std::nullopt;
         return b.smierc_koniec || b.p.smierc_ms_klatki == 1;
     }
+    if (n == "TakingLightDamage") return b.hp_29c > b.s.hp;   // 0x61BA3A: +0x29C > HP [W]
+    if (n == "BuildingInBuildQueue") return false;           // budowa poza Core
     if (n == "ResourcesRottedAway") return b.zasoby == 0;
     if (n == "UnitRottedAway") return b.licznik_2a8 == 0;
     return std::nullopt;
@@ -1300,6 +1317,7 @@ void Swiat::liczniki_walki(Jednostka& u) {
     const int ms = 34;
     b.s.przeladowanie_ms = std::max(0, b.s.przeladowanie_ms - ms);
     b.szukanie_ms = std::max(0, b.szukanie_ms - ms);
+    b.hp_29c = b.s.hp;   // etap 45: aktualizacja typu (0x600664 i pokrewne) zapisuje +0x29C = HP po kroku maszyny [W]
     // etap 44: animacja umierania (0x62462B): +0x2FC += ms taktu; przy ≥ czasie klatki – kolejne klatki (reszta zostaje),
     // po ostatniej klatce +0x337 = 1 [W]. Stany rozkładu (0x5FB218): 6001 – +0x2A8 += ms, co 4000 ms −(+0x2A8/4000)
     // zasobów (reszta zostaje); 6002 – +0x2A8 −= ms, nie poniżej 0 [W].
@@ -1353,12 +1371,13 @@ void Swiat::liczniki_walki(Jednostka& u) {
     zdarzenia_walki_.push_back({takty_, u.id, t->id, "trafienie", obr});
     t->boj->szukanie_ms = 0;   // TakeDamage 0x6172BC zeruje +0x2AC [W]
     // liczniki +0x2C4/+0x2C8 (0x5EDCA4) – w Core 0 [N]
+    t->boj->ostatni_atakujacy = u.id;   // etap 45: źródło dla FleeDanger (0x62FE01 [H])
     if (przyjmij_obrazenia(t->boj->s, obr)) {
         ++b.s.zabicia;
         ++diag_.zgony;
         zdarzenia_walki_.push_back({takty_, t->id, u.id, "smierc", 0});
-        auto it = skrypt_.stany().find("Dying");
-        if (it != skrypt_.stany().end()) wejdz_w_stan(*t, it->second);
+        auto it = skr(*t).stany().find("Dying");
+        if (it != skr(*t).stany().end()) wejdz_w_stan(*t, it->second);
         else t->stan = 6000;
     }
 }
@@ -1528,6 +1547,78 @@ void zbuduj_obszary(WejscieRegionow& w) {
                     }
             }
         }
+}
+
+int Swiat::losuj_zakres(int lo, int hi) {
+    // 0x5531C2 [W]: f = generator RTSPhysics ([0x919774]+0x18, import 0xB2FBC8); v = f·(hi + 1 − lo) + lo zapisane do
+    // f32, zaokrąglenie fistp (do najbliższej, remis do parzystej); v = hi + 1 → hi
+    const double f = rng_.losuj();
+    const double v = f32((long double)f * (long double)(hi + 1 - lo) + (long double)lo);
+    int r = int(std::nearbyint(v));
+    if (r == hi + 1) r = hi;
+    return r;
+}
+
+void Swiat::ucieczka(Jednostka& u) {
+    // 0x620687 [W; P: 638 – obywatel (164,5; 108,5) → EEUGLocation (168,5; 104,5), pochodzenie 1, kat 0, stan 8000]:
+    //  1) atakujący 0x62FE01 (brak → Idle); 2) odległość: gracz ≠ 0 → fistp(f32(pole widzenia·1,5)), gracz 0 →
+    //  losowanie 1..2; 3) oktant od jednostki do atakującego 0x62F451 (pola +0x1C/+0x20, UMArcTan2(ux − ax, ay − uy):
+    //  |θ| ≤ π/8 → 4, θ > π/8 → trunc((θ − π/8)·4/π), θ < −π/8 → trunc(5 − (θ + π/8)·4/π), 8 → 3);
+    //  4) 0x632FFC(oktant, 1): n = losuj(0, 3) + 3, b = losuj(0, 1) ≠ 0, obrót 0x637AB9 o n kroków w kierunku b;
+    //  5) do 8 prób: pole = pole jednostki + krok kierunku 0x632E7C × odległość, przejezdne (0x62C7C8) – inaczej
+    //  kierunek + 1 (mod 8); 6) cel EEUGLocation w punkcie (pole + część ułamkowa pozycji), stan 8000.
+    auto idle = [&]() { if (const StanSkryptu* s = skr(u).stan(5000)) wejdz_w_stan(u, *s); };
+    Jednostka* a = (u.boj && u.boj->ostatni_atakujacy) ? jednostka(u.boj->ostatni_atakujacy) : nullptr;
+    if (!a) { idle(); return; }
+    int d;
+    if (u.gracz != 0) d = int(std::nearbyint(f32(f32(u.boj->p.pole_widzenia) * 1.5f)));
+    else d = losuj_zakres(1, 2);
+    const std::int64_t ux = u.komorka_x, uy = u.komorka_y, ax = a->komorka_x, ay = a->komorka_y;
+    const long double th = mat_.um_arctan2(double(ux - ax), double(ay - uy));
+    const long double c = (long double)0.39269909262657166f, k = (long double)1.2732394933700562f;
+    int okt = 4;
+    if (th > c) okt = int((th - c) * k);
+    else if (th < -c) { okt = int(5.0L - (th + c) * k); if (okt >= 8) okt = 3; }
+    const int n = losuj_zakres(0, 3) + 3;
+    const bool b = losuj_zakres(0, 1) != 0;
+    static const int OBR[8][2] = {{1, 4}, {2, 0}, {3, 1}, {7, 2}, {0, 5}, {4, 6}, {5, 7}, {6, 3}};   // [oktant][b]
+    for (int i = 0; i < n % 8; ++i) okt = OBR[okt][b ? 1 : 0];
+    static const int KROK[8][2] = {{-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}};
+    const double fx = f32(f32(u.x) - double(ux)), fy = f32(f32(u.y) - double(uy));
+    for (int proba = 0; proba < 8; ++proba) {
+        const std::int64_t tx = ux + KROK[okt][0] * d, ty = uy + KROK[okt][1] * d;
+        const double px = f32(double(tx) + fx), py = f32(double(ty) + fy);
+        okt = (okt + 1) % 8;
+        if (!teren_.pole_przejezdne(podloga(px), podloga(py))) continue;
+        CelRuchu cel{TypCelu::miejsce, px, py, std::nullopt, true, false, 0};
+        u.kolejka_celow.clear();
+        u.kolejka_celow.push_front(cel);
+        u.cel = TypCelu::miejsce;
+        u.cel_od_gracza = true;    // pochodzenie +0x1C = 1 [P: 638]
+        u.kurs_koncowy.reset();
+        u.trasa.clear();
+        u.dl_przed.clear();
+        u.dl_po.clear();
+        u.zdjete_punkty = 0;
+        u.trasa_gotowa = false;
+        if (const StanSkryptu* s = skr(u).stan(8000)) wejdz_w_stan(u, *s);
+        return;
+    }
+    idle();
+}
+
+bool Swiat::ustaw_skrypt_jednostki(IdJednostki id, const std::string& nazwa) {
+    Jednostka* u = jednostka(id);
+    if (!u) return false;
+    if (nazwa.empty() || nazwa == "land") { u->skrypt = nullptr; return true; }
+    auto it = skrypty_.find(nazwa);
+    if (it == skrypty_.end()) {
+        if (nazwa == "obywatel" || nazwa == "Citizen")   // dbobjects „TAI Script” = Citizen (typ 32 [P])
+            it = skrypty_.emplace(nazwa, SkryptStanow::wbudowany_obywatel()).first;
+        else return false;
+    }
+    u->skrypt = &it->second;
+    return true;
 }
 
 int komorka_sektora(int r) {

@@ -186,6 +186,8 @@ public:
     const WariantTitan& wariant() const { return wariant_; }
     const Diagnostyka& diagnostyka() const { return diag_; }
     void ustaw_skrypt(SkryptStanow s) { skrypt_ = std::move(s); }
+    /// Etap 45: skrypt .tai typu jednostki ("land" – skrypt świata, "obywatel" – citizen.tai).
+    bool ustaw_skrypt_jednostki(IdJednostki id, const std::string& nazwa);
 
     double dt() const { return dt_; }
     std::uint64_t takty() const { return takty_; }
@@ -333,6 +335,10 @@ private:
     WariantTitan wariant_;
     GeneratorTitan rng_;
     SkryptStanow skrypt_;
+    std::map<std::string, SkryptStanow> skrypty_;   // etap 45: skrypty typów (adresy stabilne – std::map)
+    const SkryptStanow& skr(const Jednostka& u) const { return u.skrypt ? *u.skrypt : skrypt_; }
+    int losuj_zakres(int lo, int hi);
+    void ucieczka(Jednostka& u);
     Diagnostyka diag_;
     std::vector<Jednostka> jednostki_;
     IdJednostki nastepny_id_ = 1;

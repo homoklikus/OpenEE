@@ -853,3 +853,22 @@ jak przed etapem 44); Godot pobiera je z baz gry (`ObiektyScnCore.parametry_smie
 
 Wyniki odtworzeń po zmianie: 631 2808/2808 próbek wszystkich jednostek, 633 3697 (2 próbki spóźnione), 634 6413/6413
 z przejściem 6003. Wcześniej cel był zgodny do 2186/2084/2081 próbek.
+
+## 33. Etap 45 – obywatel (citizen.tai, FleeDanger), tryb śmierci i kolejka fizyki
+
+- **FleeDanger 0x620687** (wejście 8019 przez vt+0x40 EEUC) [W; P: 638]:
+  - odległość: gracz ≠ 0 → fistp(f32(LOS · 1,5)); gracz 0 → losowanie 1..2;
+  - oktant 0x62F451 z pól +0x1C/+0x20 przez UMArcTan2(ux − ax, ay − uy); te same pola → +π/2 → oktant 1;
+  - 0x632FFC: n = losuj(0, 3) + 3, b = losuj(0, 1) ≠ 0, n obrotów (tablica w kodzie Core);
+  - do 8 pól kandydujących od kierunku, test 0x62C7C8; cel EEUGLocation, pochodzenie 1, stan 8000.
+  638: stan generatora przed taktem 62215 = 132607946; losowania ucieczki to 3. i 4. losowanie taktu → n = 3, b = 0
+  → kierunek 7, cel (168,5; 104,5). Odtworzenie zgodne co próbkę (4264/4264) przy stanie generatora z nagrania.
+- **TakingLightDamage** (0x61BA3A): +0x29C > HP; +0x29C = HP na początku aktualizacji typu.
+- **Tryb 2 (0x54DDFF)** przy wejściu w Dying: v = 0 (0x54A55B), ω = 0, bez kroku końcowego vt+0x48 [W; P: 638 –
+  śmierć w ruchu, t = 66988; 578 – 6000 z trybem 2]. Od 6001 gra pokazuje tryb 6 (gałąź domyślna 0x549FA4: HP ≤ 0 →
+  nic) – w Core tryb 2, skutek ten sam.
+- **Kolejka fizyki 0x918DDC**: dodanie na koniec, usunięcie zatwierdzane w następnym takcie (Dead 6003 → poza kolejką
+  takt później) [W: 0x530896/0x530913/0x53066A; P: 641].
+- **Healer.tai** (bohater 173): HealSearchTimeElapsed = EEUC+0x4A4 ≠ 0 i licznik +0x22C = 0; licznik maleje o
+  PH+0x98 · 0,001 s (0x600822); LookForHealee (0x61B57A) szuka celu 0x620A68 w LOS (lista od końca, 0x630E07:
+  HP/HPmax ≤ typ+0x49C, sojusznik, maska klas) i ustawia +0x22C = +0x4A4 [W]. W Core niewdrożone (RAPORT_ETAP_45 § 7).

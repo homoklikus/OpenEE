@@ -1,9 +1,10 @@
 {
  "opis": "Etap 43: parametry jednostek EE do odtwarzania nagrań w Core (narzędzie godot/testy/eksperymenty/odtworz_scenariusz.gd). Wartości z pomiarów pamięci oryginału (walka.md § 13, § 28; etapy 30–38) – te same co w odtworz_e35.gd; nie są zasobami gry.",
+ "ruch_uwaga": "Etap 45: obywatel 32 – a 1,2, vmax 0,5; prorok 216 – vmax 0,45 (dbobjects „Acceleration/Deceleration”, „Speed”; pomiar 638: Δv = 0,041/takt = 1,2·dt). Wcześniej skopiowane z gwardii.",
  "ruch": {
   "422": {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5},
-  "216": {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5},
-  "32":  {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+  "216": {"a": 2.0, "vmax": 0.45, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5},
+  "32":  {"a": 1.2, "vmax": 0.5, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
  },
  "walka": {
   "422": {"hp": 215, "p": {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,

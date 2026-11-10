@@ -2,7 +2,7 @@
  "opis": "Etap 42: warianty czystej mapy testowej EE (kopia „Wojny trojańskiej” SCN 231 oczyszczona narzędziem scenariusz_czysty.py). Wzory rekordów: gracz 1 scenariusza e35_a (gwardia 0x100018b, prorok 0x100055d, obywatel 0x100011a, dom 0x1000039). Prorok-obserwator (pole widzenia 8, atak 0) jest konieczny: cel widoczny tylko w polu widzenia gwardii (4), a wtedy gwardia atakuje sama w 34 ms [P: zad. 629–630].",
  "baza": {"zrodlo": "kampanie/een1ve1s_wojna trojańska.scn",
           "czyszczenie": {"usun_graczy": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], "swiat_usun": [140, 85, 190, 135], "kawalek6_pusty": true}},
- "wzory": {"GRD": "0x100018b", "OBS": "0x100055d", "CIT": "0x100011a", "BLD": "0x1000039"},
+ "wzory": {"GRD": "0x100018b", "OBS": "0x100055d", "CIT": "0x100011a", "BLD": "0x1000039", "HERO": "0x100055c"},
  "zrodlo_wzorow": "e35_a.scn",
  "warianty": {
   "1v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
@@ -12,8 +12,13 @@
   "cel_otoczony": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]],
                    "PRZESZKODY": ["BLD", 5, [[162.5, 108.5], [166.5, 108.5], [164.5, 106.5], [164.5, 110.5]]], "OBS": ["OBS", 1, [[170.5, 104.5]]]},
   "e44_cit_1v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
-  "e44_kontakt_590": {"A_GRD": ["GRD", 1, [[163.5, 108.5]]], "T_GRD": ["GRD", 5, [[164.5, 104.5]]], "OBS": ["OBS", 1, [[170.5, 106.5]]]}
+  "e44_kontakt_590": {"A_GRD": ["GRD", 1, [[163.5, 108.5]]], "T_GRD": ["GRD", 5, [[164.5, 104.5]]], "OBS": ["OBS", 1, [[170.5, 106.5]]]},
+  "e45_cit_poscig": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
+  "e45_cit_ruch": {"A_CIT": ["CIT", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 104.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
+  "e45_bohater": {"A_HERO": ["HERO", 1, [[164.5, 115.5]]], "A_GRD": ["GRD", 1, [[164.5, 112.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]],
+                  "OBS": ["OBS", 1, [[172.5, 112.5]]]}
  },
+ "opis_etap45": "e45_cit_poscig – obywatel ucieka (FleeDanger), gwardia dostaje rozkaz odejścia (pościg przerwany); e45_cit_ruch – obywatel gracza 1 idzie w pole widzenia gwardii komputera (trafienie w trakcie ruchu, potem w Idle); e45_bohater – bohater 173 (Military Healer Prophet, wzór 0x100055c z e35_a) przy gwardii walczącej z gwardią komputera (leczenie z atakującym, potem bez).",
  "opis_etap44": "e44_cit_1v1 – śmierć obywatela (czas stanu 6000 zależny od typu); e44_kontakt_590 – gwardie idące na siebie w walce (układ 590 G1: kontakt w trybie 1, rejestr push i kontaktów).",
  "niezrealizowane": {"cel_zmieniajacy_pole": "ruch celu wymaga rozkazu dla gracza 5 (komputer) – MCP wydaje rozkazy tylko graczowi 1; rekordy z trasą (L_pts) nie są obsługiwane przez narzędzie [N]"}
 }

@@ -32,7 +32,9 @@ struct ParametryRuchu {
 };
 
 /// Tryb fizyki EEPMLand (+0x264, AoC +0x268).
-enum class TrybRuchu : std::uint8_t { jazda = 0, do_celu = 1, spoczynek = 3, hamowanie = 4, obrot_w_miejscu = 5 };
+enum class TrybRuchu : std::uint8_t { jazda = 0, do_celu = 1, zatrzymanie = 2, spoczynek = 3, hamowanie = 4, obrot_w_miejscu = 5 };
+// tryb 2 (etap 45): EEPMLand vt+0x30 = EE 0x54DDFF – v = 0 (0x54A55B), ω = 0, bez kroku końcowego vt+0x48 [W: kod;
+// P: 638, t = 66988 – obywatel ginie w ruchu: tryb 2, v 0,418 → 0, pozycja bez zmian w takcie śmierci].
 // tryb 1 (etap 31): EEPMLand vt+0x10 = EE 0x54DA82 – obrót do celu ataku (vt+0x1C z flagą broni), hamowanie v.
 
 /// Typ celu (kolejka celów, etap 21): rodzaj celu +5 – 1 miejsce (EEUGLocation), 2 jednostka (EEUGAttackUnit, etap 31).
@@ -91,6 +93,8 @@ struct BojJednostki {
     std::vector<CelNieosiagalny> nieosiagalne;   // EEUnit +0xA0 (etap 37)
     // etap 44: animacja umierania (+0x2FC – ms od ostatniej klatki, klatka, +0x337 – koniec sekwencji) i licznik +0x2A8
     // stanów 6001 (narastająco, co 4000 ms −1 zasób) / 6002 (odliczanie czasu rozkładu)
+    int hp_29c = 0;                       // etap 45: EEUnit +0x29C – HP z aktualizacji typu (TakingLightDamage: +0x29C > HP)
+    std::uint32_t ostatni_atakujacy = 0;   // etap 45: atakujący dla FleeDanger (0x62FE01 – wybór uproszczony [H])
     int smierc_ms = 0, smierc_klatka = 0;
     bool smierc_koniec = false;
     int licznik_2a8 = 0;
@@ -98,8 +102,10 @@ struct BojJednostki {
     int regeneracja_ms = 0;   // EEUnit +0x290: odliczanie do regeneracji HP (0x625B47; etap 38 [P: 619 – −34 ms/takt, 1000 po regeneracji])
 };
 
+class SkryptStanow;
 struct Jednostka {
     IdJednostki id = 0;
+    const SkryptStanow* skrypt = nullptr;   // etap 45: skrypt .tai typu (nullptr = skrypt świata)
     WariantTitan wariant = WariantTitan::ee();
     ParametryRuchu param;
 
@@ -114,6 +120,10 @@ struct Jednostka {
     // --- maszyna stanów (+0x1E8) ---
     int stan = 5000;               // numer stanu (5000 Idle, 10003 Advance …)
     std::uint32_t termin_oceny = 0xFFFFFFFFu;  // +0x254 (BO-8)
+    // etap 45 – kolejka fizyki EEPhysics+0xADC (0x918DDC) [W: 0x530896/0x530913/0x53066A; P: 641 – 590 G1 i 578 G3]:
+    // obiekt jest w kolejce od dodania (koniec kolejki) do zatwierdzenia usunięcia na początku następnego taktu.
+    bool w_fizyce = true;
+    bool usun_z_fizyki = false;   // kolejka usunięć +0xB04 (zatwierdzana w 0x53066A)
 
     // --- trasa: kolejka punktów (+0x7C) i suma długości ---
     std::vector<Punkt2> trasa;

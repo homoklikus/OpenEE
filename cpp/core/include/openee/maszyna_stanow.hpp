@@ -40,6 +40,8 @@ public:
 
     /// Skrypt ruchu jednostki lądowej odtworzony z tabeli docs/titan/skrypty_stanow.md § 4 (land.tai bez wrogów).
     static SkryptStanow wbudowany_land();
+    /// Etap 45: obywatel (citizen.tai) – Idle z ucieczką TakingLightDamage → FleeDanger (8019).
+    static SkryptStanow wbudowany_obywatel();
 
     const StanSkryptu* stan(int numer) const;
     const std::map<std::string, StanSkryptu>& stany() const { return stany_; }

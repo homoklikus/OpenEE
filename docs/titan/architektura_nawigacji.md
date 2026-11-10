@@ -563,3 +563,21 @@ Wynik: e13_para 42/42 obszary i 22 725/22 725 pól, e35_a i czysta mapa bez zmia
 | e13_para | 42/42 | 658 | 1320/1320 | 22 725/22 725 | 1320/1320 | 1320/1320 |
 
 619/620 z tym grafem są identyczne z etapem 43 i z grą. Potyczka buduje graf przy wczytaniu scenariusza.
+
+## Etap 45 – zmiana mapy a przebudowa grafu (0x4288A7, 0x4A36F3, 0x4278C3) [W]
+
+| Krok | EE | Działanie |
+|---|---|---|
+| zgłoszenie | 0x4288A7 ← 0x555DFF, 0x55C38C, 0x55C539 | menedżer zbudowany (+0xC > 0), brak przebudowy w toku (+0x130 = 0), mapa istnieje, obiekt nie vt+0x58, typ +0x600 ≠ 0 albo klasa +0x4B4 = 0x19 |
+| pola obiektu | 0x635629 → 0x422DB6 | lista pól zajmowanych przez obiekt, posortowana, bez powtórzeń – zakres przebudowy |
+| termin | 0x4A36F3(1, natychmiast) | +0xD8 = 1 już ustawione → bez zmian (termin się nie przesuwa); inaczej +0xD4 = teraz + 1 ms albo teraz + fistp(f32(*0x9183C0 · 10000)) |
+| przebudowa | 0x4A3641 → 0x4278C3 | gdy kolejka grafu pusta i minął +0xD4; niedokończona – ponowna próba za 100 ms |
+
+Wartość 0x9183C0 w pliku wykonywalnym to 0 – ustawiana w czasie gry [N]. Core: brak przebudowy (graf budowany
+przy wczytaniu). Przebudowa nie odbywa się co takt – tylko dla pól zgłoszonych obiektów.
+
+Rozstrzygający pomiar (przygotowany, niewykonany – automatyzacja gry niedostępna w etapie 45):
+1. Czysta mapa e42: dom (wzór BLD 0x1000039) zamyka jedyne przejście między dwiema częściami terenu.
+2. Rejestrator: +0xD4/+0xD8/+0x130 menedżerów 0x917D00 i 0x917BC8, podsektory pól domu i ich sąsiedzi co takt.
+3. Trzy gwardie gracza 1 niszczą dom. Przed zniszczeniem i po nim obserwator dostaje rozkaz ruchu przez przejście.
+4. Oczekiwane: zgłoszenie w takcie usunięcia domu, przebudowa po +0xD4, trasa przez przejście dopiero po przebudowie.

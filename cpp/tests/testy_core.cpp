@@ -1186,7 +1186,8 @@ int test_walka_swiat() {
             sprawdz(n > 0 && zg >= n - 1, "CompletedUnitFacing = |Δkurs| ≤ 1° (0x614F52) na pomiarach gry (≤ 1 wyjątek z innym przejściem)");
         }
     }
-    for (const char* plik : {"walka_578_g1.json", "walka_578_g3.json", "walka_580_g1.json", "walka_590_g1.json", "walka_589_g3.json"}) {
+    for (const char* plik : {"walka_578_g1.json", "walka_578_g3.json", "walka_580_g1.json", "walka_590_g1.json", "walka_589_g3.json",
+                             "walka_578_g3_e45.json", "walka_590_g1_e45.json"}) {
         const std::string tw = czytaj(kat + "/" + plik);
         if (tw.empty()) {
             std::printf("  SKIP %s: brak pliku\n", plik);
@@ -1285,6 +1286,7 @@ int test_walka_swiat() {
         std::map<std::string, std::string> pierwsze;
         std::map<std::string, std::size_t> takt_pierwszej;
         std::map<std::string, std::pair<double, double>> poprz;   // pozycja Core z poprzedniego taktu
+        std::map<std::string, std::array<int, 3>> poprz_l;        // stan, HP, +0x2A0 Core z poprzedniego taktu
         int spoznione = 0;
         for (std::size_t k = 1; k < pr.size(); ++k) {
             sw.takt();
@@ -1298,7 +1300,23 @@ int test_walka_swiat() {
                 if ((u.x != g2["x"].n || u.y != g2["y"].n) && std::fabs(pp.first - g2["x"].n) < 1e-6 &&
                     std::fabs(pp.second - g2["y"].n) < 1e-6) {
                     ++spoznione;
+                    poprz_l[ids] = {u.stan, u.boj->s.hp, u.boj->s.przeladowanie_ms};
                     continue;
+                }
+                // etap 45: ten sam wyścig odczytu dla jednostki stojącej – próbka gry = próbka poprzednia (stan, HP, +0x2A0
+                // bez zmian), a wartości Core z poprzedniego taktu = próbka gry; następna próbka gry „przeskakuje” 2 takty
+                // [P: 641 – 578 G3 takt 111 (r 130, 130, 62), 590 G1 takt 328 (r 402, 402, 334)]
+                {
+                    const std::array<int, 3> lc{u.stan, u.boj->s.hp, u.boj->s.przeladowanie_ms};
+                    const std::array<int, 3> lg{int(g2["stan"].n), int(g2["hp"].n), int(g2["r"].n)};
+                    const auto pl = poprz_l.count(ids) ? poprz_l[ids] : lc;
+                    poprz_l[ids] = lc;
+                    const Wartosc& gp = pr[k - 1]["j"][ids];
+                    const std::array<int, 3> lgp{int(gp["stan"].n), int(gp["hp"].n), int(gp["r"].n)};
+                    if (lc != lg && pl == lg && lgp == lg && pl != lc) {
+                        ++spoznione;
+                        continue;
+                    }
                 }
                 ++por;
                 const double e = std::hypot(u.x - g2["x"].n, u.y - g2["y"].n);

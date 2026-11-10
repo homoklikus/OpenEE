@@ -54,6 +54,9 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("zbuduj_graf_z_wejscia", "wejscie", "komorka"), &OpenEESymulacja::zbuduj_graf_z_wejscia);
     ClassDB::bind_method(D_METHOD("ustaw_z", "id", "z"), &OpenEESymulacja::ustaw_z);
     ClassDB::bind_method(D_METHOD("uporzadkuj_wg_pozycji"), &OpenEESymulacja::uporzadkuj_wg_pozycji);
+    ClassDB::bind_method(D_METHOD("ustaw_skrypt_jednostki", "id", "nazwa"), &OpenEESymulacja::ustaw_skrypt_jednostki);
+    ClassDB::bind_method(D_METHOD("ustaw_stan_rng", "stan"), &OpenEESymulacja::ustaw_stan_rng);
+    ClassDB::bind_method(D_METHOD("kolejka_fizyki"), &OpenEESymulacja::kolejka_fizyki);
     ClassDB::bind_method(D_METHOD("wejscie_regionow_z_mapy"), &OpenEESymulacja::wejscie_regionow_z_mapy);
     ClassDB::bind_method(D_METHOD("wejscie_regionow_z_scn", "obiekty", "zestawy"), &OpenEESymulacja::wejscie_regionow_z_scn);
     ClassDB::bind_method(D_METHOD("podsektor", "id"), &OpenEESymulacja::podsektor);
@@ -65,7 +68,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.18.0 (etap 44, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.19.0 (etap 45, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -553,6 +556,25 @@ Dictionary OpenEESymulacja::zbuduj_graf_z_wejscia(const Dictionary& d, int64_t k
 
 // etap 43: wysokość z zapisu scenariusza (nieaktualna do pierwszej aktualizacji fizyki – 631 [P])
 // etap 44: kolejność listy jednostek jak kolejka fizyki EE po wczytaniu scenariusza (x, potem y rosnąco)
+// etap 45: skrypt .tai typu jednostki w Core ("land", "obywatel")
+// etap 45: kolejka fizyki 0x918DDC – identyfikatory od początku kolejki (pętla 0x547AAD przetwarza od końca)
+Array OpenEESymulacja::kolejka_fizyki() const {
+    Array a;
+    if (swiat_)
+        for (const auto& u : swiat_->jednostki())
+            if (u.w_fizyce) a.push_back(int64_t(u.id));
+    return a;
+}
+
+// etap 45: stan generatora RTSPhysics (diagnostyka odtworzeń – synchronizacja z nagraniem gry)
+void OpenEESymulacja::ustaw_stan_rng(int64_t stan) {
+    if (swiat_) swiat_->generator().ustaw_ziarno(std::uint32_t(stan));
+}
+
+bool OpenEESymulacja::ustaw_skrypt_jednostki(int64_t id, const String& nazwa) {
+    return swiat_ && swiat_->ustaw_skrypt_jednostki(openee::IdJednostki(id), std::string(nazwa.utf8().get_data()));
+}
+
 void OpenEESymulacja::uporzadkuj_wg_pozycji() { if (swiat_) swiat_->uporzadkuj_wg_pozycji(); }
 
 bool OpenEESymulacja::ustaw_z(int64_t id, double z) { return swiat_ && swiat_->ustaw_z(openee::IdJednostki(id), z); }

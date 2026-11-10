@@ -136,6 +136,7 @@ func _testy() -> void:
 	_test_etapu42(dll)
 	_test_etapu43(dll)
 	_test_etapu44(dll)
+	_test_etapu45(dll)
 	_koniec()
 
 
@@ -609,7 +610,7 @@ func _test_etapu43(dll: String) -> void:
 			nw += 1
 			if signi(int(m3["bajt14"][i])) == signi(int(d["bajt14"][i])): zw += 1
 	# etap 44: klify z kodu 0x51241D/0x512FB0 (teren domyślny, wysokości narożników, tekstury klifu) – 39 480/39 480;
-	# znak +0x14 wody zależy od rodzajów pól (S1/S2), więc rośnie z 19 595 do 19 605 (RAPORT_ETAP_44 § 3)
+	# znak +0x14 wody zależy od rodzajów pól (S1/S2), więc rośnie z 19 595 do 19 605 (raporty/archiwum/RAPORT_ETAP_44 § 3)
 	_wynik("klasyfikacja e35_a z SCN: rodzaj pola 39 480/39 480, znak +0x14 wody 19 605/19 610", zr == 39480 and zw == 19605 and nw == 19610,
 		"rodzaj %d, znak wody %d/%d" % [zr, zw, nw])
 
@@ -696,6 +697,69 @@ func _test_etapu44(dll: String) -> void:
 	_wynik("graf e35_a wyłącznie z SCN i baz gry: 43 obszary, 1135 regionów, 1857 podsektorów, punkty i sąsiedzi 1857/1857",
 		int(w.get("obszarow", 0)) == 43 and int(w.get("regionow", 0)) == 1135 and int(w.get("podsektorow", 0)) == 1857 and pk == 1857 and sk == 1857,
 		"obszary %d, regiony %d, podsektory %d, punkty %d, sąsiedzi %d" % [int(w.get("obszarow", 0)), int(w.get("regionow", 0)), int(w.get("podsektorow", 0)), pk, sk])
+
+
+func _test_etapu45(dll: String) -> void:
+	var mn := []
+	for i in 16: mn.append([1, 1, 1, 1, 1, 1])
+	var tr := {}
+	for i in 3:
+		var f := PackedFloat32Array(); f.resize(64); f[48] = [1.071, 1.5, 2.1][i]
+		tr[["08", "0C", "10"][i]] = {13: f}
+	var g := {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,
+		"klasa_trafienia": 13, "rodzina_ataku": 48, "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156,
+		"rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000, "pole_ac": 0.6000000238418579, "typ_bazy": 422, "typ_jednostki": 5,
+		"smierc_klatki": 24, "smierc_ms_klatki": 102, "rozklad_ms": 40000, "zasoby": 0}
+	var nowa := func() -> Object:
+		var c: Object = CoreCpp.nowa_symulacja()
+		if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+		c.utworz_swiat("ee")
+		c.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
+			[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
+		return c
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	# 1) kolejka fizyki 0x918DDC: dodanie na koniec, usunięcie w takcie po wejściu w Dead (6003); śmierć = tryb 2, v = 0
+	var c: Object = nowa.call()
+	var b: int = c.dodaj_jednostke(p, 13.5, 11.0, 0.0)
+	var a: int = c.dodaj_jednostke(p, 10.5, 10.5, 0.0)
+	c.ustaw_walke(a, 1, true, g, 215); c.ustaw_walke(b, 5, false, g, 215)
+	var k0: Array = c.kolejka_fizyki()
+	var tryb_smierci := -1
+	var v_smierci := -1.0
+	var t6003 := -1
+	var po: Array = []
+	for k in 3000:
+		c.takt(1)
+		var j: Dictionary = c.jednostka(b)
+		if int(j.stan) == 6000 and tryb_smierci < 0: tryb_smierci = int(j.tryb); v_smierci = float(j.v)
+		if int(j.stan) == 6003 and t6003 < 0:
+			t6003 = k
+			if not (c.kolejka_fizyki() as Array).has(b): t6003 = -2   # usunięcie za wcześnie
+		elif t6003 >= 0 and k == t6003 + 1:
+			po = c.kolejka_fizyki(); break
+	_wynik("kolejka fizyki: kolejność dodania, usunięcie w takcie po 6003 (0x530913/0x53066A), śmierć = tryb 2 i v = 0 (0x54DDFF)",
+		k0 == [b, a] and po == [a] and tryb_smierci == 2 and v_smierci == 0.0, "k0 %s, po %s, tryb %d, v %.3f, 6003 %d" % [str(k0), str(po), tryb_smierci, v_smierci, t6003])
+	# 2) FleeDanger obywatela (0x620687): to samo pole co atakujący → oktant 1 (UMArcTan2(0, 0) = +π/2), odległość
+	# fistp(3 · 1,5) = 4; stan generatora gry przed taktem 62215 (638) = 132607946 → n = 3, b = 0 → kierunek 7 (+4, −4)
+	var c2: Object = nowa.call()
+	var po_ := p.duplicate(); po_["a"] = 1.2; po_["vmax"] = 0.5
+	var ob := g.duplicate(); ob["pole_widzenia"] = 3.0; ob["ai_szuka_wrogow"] = 0
+	var cit: int = c2.dodaj_jednostke(po_, 10.5, 10.5, 0.0)
+	var grd: int = c2.dodaj_jednostke(p, 10.5, 10.97, 3.14159)
+	c2.ustaw_walke(grd, 1, true, g, 215); c2.ustaw_walke(cit, 5, false, ob, 65)
+	var skr_ok: bool = c2.ustaw_skrypt_jednostki(cit, "Citizen") and not c2.ustaw_skrypt_jednostki(cit, "nieznany")
+	c2.ustaw_skrypt_jednostki(cit, "Citizen")
+	c2.rozkaz_ataku(grd, cit)
+	var cel := Vector2(-1, -1)
+	for k in 400:
+		c2.ustaw_stan_rng(132607946)
+		c2.takt(1)
+		var w: Dictionary = c2.walka(cit)
+		if int(c2.jednostka(cit).stan) == 8000:
+			for e in w.get("kolejka", []): cel = Vector2(float(e.x), float(e.y))
+			break
+	_wynik("obywatel: FleeDanger po trafieniu w Idle – cel EEUGLocation (14,5; 6,5) jak w 638 (kierunek 7, odległość 4)",
+		skr_ok and cel.is_equal_approx(Vector2(14.5, 6.5)), "cel %s" % str(cel))
 
 
 ## Czasy stanów 6000/6001/6002 celu (takty) przy sekwencji umierania `klatki` × `ms` (etap 44).

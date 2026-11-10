@@ -16,14 +16,15 @@ extends RefCounted
 ##   ten sam zakres klatek, inne tempo; u części jednostek dźwięki ataku/nawracania], 4 śmierć (jednorazowa) +
 ##   2 sekwencje po śmierci [D: pętla 0, ostatnie klatki modelu], 5–11 czynności zależne od rodzaju jednostki
 ##   [D: obywatel – Mining, forage, Farm, Chopping wood, Build; kapłan – Convert].
-## „Wartość” – HIPOTEZA OpenEE [H]: czas cyklu sekwencji w setnych sekundy (uzasadnienie w FORMATY_ETAP4.md §2.3);
-## przelicznik w `CZAS_JEDNOSTKA` – do potwierdzenia porównaniem z uruchomioną grą.
+## „Wartość” = CZAS JEDNEJ KLATKI w ms (etap 44/45 [W: 0x62462B – +0x2FC += ms taktu, przy ≥ typ+0x318[anim]
+## następna klatka, reszta zostaje; P: 638 – czas stanu 6000 obywatela = klatki × wartość]). Hipoteza z etapu 4
+## („czas cyklu w setnych sekundy”) obalona – docs/titan/walka.md § śmierć.
 
 const LICZBA_GNIAZD := 12
-const CZAS_JEDNOSTKA := 0.01        # [H] wartość × 0,01 s = czas cyklu
+const CZAS_JEDNOSTKA := 0.001       # [W/P] wartość × 0,001 s = czas klatki (etap 45)
 const STANY := {0: "atak", 1: "ruch", 2: "bezczynnosc", 3: "gniazdo_3", 4: "smierc"}
 
-## Sekwencja: {gniazdo, podsekwencja, stan, od, do, klatki, wartosc, czas_cyklu, klatki_na_s, petla, flagi, param,
+## Sekwencja: {gniazdo, podsekwencja, stan, od, do, klatki, wartosc, czas_klatki, czas_cyklu, klatki_na_s, petla, flagi, param,
 ##             zdarzenia:[klatki], dzwieki:[ID]}
 var sekwencje: Array = []
 var naglowek: Array = []
@@ -63,14 +64,16 @@ func _dodaj(g: int, j: int, q: Array, zd: Array, snd: Array) -> void:
 	if not istnieje or od < 0 or do_ < od:
 		return
 	var n := do_ - od + 1
-	var czas := wart * CZAS_JEDNOSTKA
+	var czas_klatki := wart * CZAS_JEDNOSTKA
+	var czas := n * czas_klatki
 	var stan: String
 	if g == 4:
 		stan = ["smierc", "po_smierci_1", "po_smierci_2"][mini(j, 2)]
 	else:
 		stan = STANY.get(g, "czynnosc_%d" % g)
 	sekwencje.append({"gniazdo": g, "podsekwencja": j, "stan": stan, "od": od, "do": do_, "klatki": n,
-		"wartosc": wart, "czas_cyklu": czas, "klatki_na_s": (n / czas) if czas > 0.0 else 0.0,
+		"wartosc": wart, "czas_klatki": czas_klatki, "czas_cyklu": czas,
+		"klatki_na_s": (1.0 / czas_klatki) if czas_klatki > 0.0 else 0.0,
 		"petla": petla != 0, "flagi": int(q[0]) & 0xFFFF, "param": int(q[5]),
 		"zdarzenia": zd.filter(func(x): return int(x) > 0), "dzwieki": snd.filter(func(x): return int(x) != -1)})
 
