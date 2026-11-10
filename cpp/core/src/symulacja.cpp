@@ -136,8 +136,16 @@ std::optional<bool> Swiat::zdarzenie(Jednostka& u, const std::string& n) {
     if (n == "GoalIsUnit" || n == "GoalIsLoadContainer" || n == "GoalIsPatrol" || n == "GoalIsAttackLocation" ||
         n == "GoalIsExplore" || n == "GoalIsAttack")
         return false;  // typy celów inne niż miejsce nie istnieją w Core
-    if (n == "UnitFacingNotRequired")  // [W, model v4]: jednostka musi stanąć
+    if (n == "UnitFacingNotRequired") {
+        // Etap 37 [P: kod]: zdarzenie 9014 obsługuje cel bieżący (vt+0x64). EEUGLocation (0x6153A3 → 0x6153CA):
+        // prawda, gdy cel+0x31 = 0 albo w poziomie kolejki jest więcej niż 1 cel. Pozostałe cele (EEUGAttackUnit
+        // 0x60B5CB → baza 0x62871E): zawsze prawda – bez warunku na v i ω [P: 619 – 9006 trwa 1 takt przy v = 0,259].
+        if (u.cel == TypCelu::brak) return false;
+        if (u.cel != TypCelu::miejsce) return true;
+        if (u.kolejka_celow.size() > 1) return true;
+        // cel+0x31 = 0 odpowiada w Core brakowi kursu końcowego; warunek v = ω = 0 – model v4 [W] (S1–S7)
         return !u.kurs_koncowy && u.v == 0.0 && u.omega == 0.0;
+    }
     if (n == "CompletedUnitFacing") {
         // etap 32 [P]: EEUGLocation vt+0x64 (0x6153A3) → 0x614F52; bez warunku na v i ω (189 taktów 9006 z pomiarów
         // EE/AoC: 188 zgodnych). Przy prawdzie macierz ustawiana dokładnie na kurs celu (0x5F043B).
@@ -371,6 +379,23 @@ IdJednostki Swiat::srodek_w_polu(std::int64_t ix, std::int64_t iy, IdJednostki p
     return w;
 }
 
+double Swiat::kat_rozkazu(const std::vector<IdJednostki>& ids, double x, double y) const {
+    // 0x5F6377: prostokąt z pozycji (+0x13C, +0x14C) jednostek grupy (pierwsza ustawia oba rogi, kolejne rozszerzają –
+    // import 0xB2FB70) [P: kod]; środek prostokąta (import 0xB2FBF4) [W]; 0x64138B: θ = UMArcTan2(−(x − sx), y − sy)
+    bool jest = false;
+    double x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+    for (const auto id : ids) {
+        const Jednostka* u = nullptr;
+        for (const auto& o : jednostki_) if (o.id == id) u = &o;
+        if (!u) continue;
+        const double px = f32(u->x), py = f32(u->y);
+        if (!jest) { x0 = x1 = px; y0 = y1 = py; jest = true; }
+        else { x0 = std::min(x0, px); x1 = std::max(x1, px); y0 = std::min(y0, py); y1 = std::max(y1, py); }
+    }
+    if (!jest) return 0.0;
+    return mat_.kat_do_celu(f32((x0 + x1) * 0.5), f32((y0 + y1) * 0.5), x, y);
+}
+
 bool Swiat::rozkaz_ruchu(IdJednostki id, double x, double y, std::optional<double> kurs_koncowy, bool shift) {
     Jednostka* u = jednostka(id);
     if (!u) return false;
@@ -454,10 +479,12 @@ bool Swiat::przygotuj_trase(Jednostka& u, int okno) {
             for (std::size_t i = (reszta.empty() ? 0 : 1); i < reszta.size(); ++i) pola.push_back(reszta[i]);
         }
     }
-    // 0x5EE4E6: pomiń pole startu, gdy jednostka na nim stoi; punkty (x + 0,5; y + 0,5); ostatni = dokładny cel [W]
+    // 0x5EE4E6: pomiń pole startu, gdy jednostka na nim stoi – tylko gdy trasa ma więcej niż 1 pole (lista n > 1;
+    // przy jednym polu punkt zostaje) [P: kod, etap 37; 619 – trasa 1 punkt (161,5; 105,5) przy starcie w tym polu,
+    // gdy cel-jednostka stoi na polu nieprzejezdnym]; punkty (x + 0,5; y + 0,5); ostatni = dokładny cel [W]
     std::vector<Punkt2> pts;
     for (std::size_t i = 0; i < pola.size(); ++i) {
-        if (i == 0 && pola[i] == start) continue;
+        if (i == 0 && pola.size() > 1 && pola[i] == start) continue;
         pts.push_back({double(pola[i].x) + 0.5, double(pola[i].y) + 0.5});
     }
     if (!pola.empty() && pola.back() == meta) {
@@ -854,7 +881,7 @@ bool Swiat::widoczny_dla(int gracz, const Jednostka& c) const {
     return false;
 }
 
-Punkt2 Swiat::punkt_podejscia(const Jednostka& u, const Jednostka& t) {
+Punkt2 Swiat::punkt_podejscia(Jednostka& u, const Jednostka& t) {
     const Punkt2 poz_celu{t.x, t.y};
     if (t.v > 0.0) {
         // 0x62C963: przechwycenie tylko, gdy cel ma > 1 punkt trasy (+0x8C); inaczej pozycja celu
@@ -912,6 +939,11 @@ Punkt2 Swiat::punkt_podejscia(const Jednostka& u, const Jednostka& t) {
             zalozenie("miejsce podejścia 0x63234D: porządek przy równych odległościach i test obiektów blokujących [W]");
             for (const auto& p : k)
                 if (teren_.pole_przejezdne(podloga(p.x), podloga(p.y))) return p;
+            // brak przejezdnego miejsca → 0x632CF4 fałsz → 0x62CD76: cel wpisany (albo odświeżony) w mapie
+            // nieosiągalnych (0x5E8651, termin + 30 s) przy każdym PrepareToMove; dalej obsługa garnizonu (brak w Core)
+            // [P: kod 0x62D1F2–0x62D207, 0x62CD88; W: warunek „brak miejsca” jako jedyna przyczyna fałszu 0x632CF4;
+            // 616 – ponowny wybór 30 s po ostatnim 8000, etap 37]
+            oznacz_nieosiagalny(u, t);
         }
         zalozenie("punkt podejścia: gałąź 0x62C315 (ulepszenie +0xAC = 0 albo brak miejsca) – pozycja celu [N]");
         return poz_celu;
@@ -969,6 +1001,36 @@ double Swiat::w_mnoznik(const Jednostka& a, const Jednostka& c) const {
     return double(m[std::size_t(w)][std::size_t(k)]);
 }
 
+bool Swiat::cel_nieosiagalny(Jednostka& u, const Jednostka& t, bool sprawdz_pola) {
+    // 0x5EC9BB: wyszukanie wpisu celu; termin ≤ czas gry → wpis usunięty, fałsz; bez sprawdzania pól → prawda;
+    // z polami: pole atakującego i pole celu jak przy wpisie → prawda, inaczej wpis usunięty i fałsz [P: kod, etap 37]
+    auto& w = u.boj->nieosiagalne;
+    for (std::size_t i = 0; i < w.size(); ++i) {
+        if (w[i].cel != t.id) continue;
+        if (!(w[i].termin_ms > zegar_ms_)) {
+            w.erase(w.begin() + std::ptrdiff_t(i));
+            return false;
+        }
+        if (!sprawdz_pola) return true;
+        if (w[i].pole_x == u.komorka_x && w[i].pole_y == u.komorka_y && w[i].pole_celu_x == t.komorka_x &&
+            w[i].pole_celu_y == t.komorka_y)
+            return true;
+        w.erase(w.begin() + std::ptrdiff_t(i));
+        return false;
+    }
+    return false;
+}
+
+void Swiat::oznacz_nieosiagalny(Jednostka& u, const Jednostka& t) {
+    // 0x5E8651: nowy wpis (pola atakującego i celu, termin = czas gry + 30000 ms) albo odświeżenie samego terminu
+    for (auto& e : u.boj->nieosiagalne)
+        if (e.cel == t.id) {
+            e.termin_ms = zegar_ms_ + 30000u;
+            return;
+        }
+    u.boj->nieosiagalne.push_back({t.id, u.komorka_x, u.komorka_y, t.komorka_x, t.komorka_y, zegar_ms_ + 30000u});
+}
+
 bool Swiat::szukaj_wroga(Jednostka& u) {
     // 0x61AC11 (CanISeeEnemy / EnemyUnitSpotted) → 0x62EBD2/0x62EBEE → przegląd 0x63969A/0x639D7D, ocena 0x6399CA
     BojJednostki& b = *u.boj;
@@ -1014,6 +1076,9 @@ bool Swiat::szukaj_wroga(Jednostka& u) {
             }
             if (d2 > max2) continue;
             if (!widoczny_dla(u.gracz, c)) continue;  // 0x631B64(kandydat, gracz, 1) – mgła wojny pól [H]
+            // 0x639B61: mapa celów nieosiągalnych (+0xB0 ≠ 0) – ważny wpis (termin, te same pola) odrzuca kandydata
+            // [P: kod; 616 – ponowny wybór obywatela 207 ms po upływie 30 s od porzucenia, 619 – wybór innego celu, etap 37]
+            if (!b.nieosiagalne.empty() && cel_nieosiagalny(u, c, true)) continue;
             const auto m = m_trafienia(u, c);
             if (!m) {
                 zalozenie("tablica trafień dla tej pary graczy nieznana – kandydat odrzucony [N]");
@@ -1109,9 +1174,15 @@ std::optional<bool> Swiat::zdarzenie_walki(Jednostka& u, const std::string& n) {
     if (n == "AttackerIsRangedUnit") return b.p.zasieg_max > 1.0f;                // 0x60B763 (> 1,0)
     if (n == "EnemyUnitMoved") return t && (t->komorka_x != g->pole_x || t->komorka_y != g->pole_y);  // 0x60B827
     if (n == "EnemyUnitHasNotMovedOneTile") return t && t->komorka_x == g->pole_x && t->komorka_y == g->pole_y;  // 0x60B8B7
-    if (n == "EnemyUnitReachable") {   // 0x60B1EA: osiągalność 0x62D696 [N] i licznik prób celu < 25
+    if (n == "EnemyUnitReachable") {
+        // 0x60B1EA: (typ+0x61A → 0x5ECAD0) i osiągalność 0x62D696 [N – w Core prawda] i licznik prób celu ≤ 25
+        // (cmp 25, [cel+0x18]; sbb; inc) [P: kod; 619 – 2013 przy +0x18 = 25, porzucenie przy 26, etap 37].
+        // *[Etap 37 – zastąpione: „< 25” (etap 31).]*
         zalozenie("EnemyUnitReachable: osiągalność 0x62D696 = prawda [N]");
-        return t && t->boj && t->boj->s.hp > 0 && g->proby < 25;
+        const bool r = t && t->boj && t->boj->s.hp > 0 && g->proby <= 25;
+        // ścieżka fałszu (0x60B241): cel wpisany do mapy nieosiągalnych na 30 s, o ile nie ma ważnego wpisu [P: kod]
+        if (!r && t && !cel_nieosiagalny(u, *t, true)) oznacz_nieosiagalny(u, *t);
+        return r;
     }
     if (n == "UnitInWeaponRange") {    // 0x5F0CE8
         if (!t || !t->boj || b.p.zasieg_max == 0.0f || t->boj->s.hp <= 0) return false;

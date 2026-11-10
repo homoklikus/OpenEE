@@ -637,3 +637,37 @@ Eksperymenty referencyjne do etapu 35+:
 5. pocisk paraboliczny i zależność od wysokości (modyfikator 0x61E500);
 6. obszar rażenia (0x61DAE6) i ogień do sojusznika;
 7. te same przypadki w AoC (inne vt+0xA8).
+
+## 27. Cel nieosiągalny, ponowny wybór i stan 9006 przy celu ataku (etap 37)
+
+Kod EE (adresy Empire Earth.exe, analiza capstone) i nagrania 616/619/620 (EE, e35_a) [P: kod; P: pomiar co takt]:
+
+1. **Mapa celów nieosiągalnych jednostki** (EEUnit +0xA0, liczba +0xB0, klucz = id celu +0x24). Wpis: pole atakującego
+   (+0x1C/+0x20), pole celu, id, **termin = czas gry + 30000 ms** (0x7530).
+   - 0x5E8651(cel): nowy wpis albo odświeżenie samego terminu (pola zostają z pierwszego wpisu).
+   - 0x5EC9BB(cel, sprawdź_pola): brak wpisu → fałsz; termin ≤ czas gry → wpis usunięty, fałsz; bez sprawdzania pól →
+     prawda; z polami: pole atakującego i pole celu jak przy wpisie → prawda, inaczej wpis usunięty, fałsz.
+2. **Kto wpisuje** [P: kod]:
+   - EnemyUnitReachable (0x60B1EA) przy fałszu, gdy nie ma ważnego wpisu;
+   - punkt podejścia do celu stojącego (0x62D1F2): brak przejezdnego z 8 miejsc 0x632CF4 → 0x62CD76 → 0x5E8651 –
+     **przy każdym PrepareToMove**, także przy rozkazie gracza;
+   - wybór celu (0x639D65), gdy osiągalność 0x62D696 najlepszego kandydata jest fałszywa; RepathAroundObstacle
+     (0x622776, cel AI); odwet na atakujących (0x623717) – te trzy ścieżki nie wystąpiły w pomiarach [N].
+3. **Kto czyta**: wybór celu (0x639B61) – ważny wpis (z polami) odrzuca kandydata; odwet (0x623629) [P: kod].
+4. **EnemyUnitReachable** = (typ+0x61A → 0x5ECAD0) ∧ 0x62D696 ∧ **licznik prób celu ≤ 25** (`cmp 25, [cel+0x18]`,
+   `sbb`, `inc`). *[Etap 37 – zastąpione: „< 25” (§ 10, etap 31).]* 619: 2013 przy liczniku 25, porzucenie przy 26.
+5. **Przebieg z nagrań**: każda próba (gracza i AI) = 26 × PrepareToMove co 9 taktów (307 ms), potem 2025 → 5000.
+   Ponowny wybór tego samego celu przez AI następuje 30,2–30,5 s po ostatnim PrepareToMove (616: 135675, 173894,
+   212113 wobec ostatnich 8000 przy 105195, 143414, 181633), czyli przy pierwszym przeglądzie po upływie terminu.
+   W 619 po porzuceniu obywatela AI od razu (1 takt) wybiera innego widocznego wroga – bohatera 0x5000ad2.
+6. **Rozkaz gracza a AI**: cel gracza (`pochodzenie_1C` = 1) nie jest kontynuowany po porzuceniu – kolejka pustoszeje,
+   dalej wybiera AI (cel z `pochodzenie_1C` = 0). Oba rodzaje celów używają tego samego licznika prób celu (+0x18)
+   i tej samej mapy nieosiągalnych (mapa należy do atakującego, nie do celu).
+7. **9006 przy celu innym niż EEUGLocation**: zdarzenie 9014 UnitFacingNotRequired obsługuje cel (vt+0x64);
+   EEUGAttackUnit (0x60B5CB) przekazuje je do bazy 0x62871E = zawsze prawda; EEUGLocation (0x6153CA): cel+0x31 = 0
+   albo w poziomie > 1 cel. Tryb fizyki 5 (0x54E0F1) wykonuje się tylko dla celu EEUGLocation (dynamic_cast celu
+   +0x1F0); przy celu ataku albo bez celu **nie robi nic** – pozycja, v i ω zostają (619: v = 0,259 zamrożone).
+
+Core (etap 37): mapa nieosiągalnych w `BojJednostki::nieosiagalne`, `Swiat::cel_nieosiagalny` / `oznacz_nieosiagalny`,
+filtr kandydatów w `szukaj_wroga`, wpis w `punkt_podejscia` (brak miejsca) i w EnemyUnitReachable; licznik ≤ 25;
+9014 i tryb 5 jak wyżej. 0x62D696 i 0x5ECAD0 nadal przyjmowane jako prawda [N].

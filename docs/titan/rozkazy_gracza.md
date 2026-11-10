@@ -321,3 +321,13 @@ Pomiary co takt 619 i 620 (EE, e35_a, gwardia → obywatel na polu z drzewami) [
 
 Core (etap 36): `Swiat::rozkaz_ataku` wchodzi w InitialAttackState – odtworzenie 619 zgodne co takt w 116 przejściach,
 620 (z przerwaniem ruchem) w 37 przejściach; różnice zaczynają się na 9006 (dziennik eksperymentów).
+
+## 10. Kąt szyku PPM i kurs końcowy celu (etap 37)
+
+Zwolnienie PPM bez przeciągnięcia (EEUICCommandUnits +0x48, EE 0x641B53): kąt = 0x64138B(środek zaznaczenia, punkt
+kliknięcia) = UMArcTan2(−(x − sx), y − sy); środek z 0x5F6377 (prostokąt pozycji +0x13C/+0x14C jednostek grupy
+gracza +0x9C0) [P: kod; środek prostokąta – import 0xB2FBF4 – W]. Kąt idzie przez `EEMPathTo`+0x10 do celu
+EEUGLocation +0x2C i jest kursem końcowym w 9006. Liczony jest **w chwili kliknięcia**, a rozkaz wykonuje się do
+350 ms później – w 620 kąt −0,36194 odpowiada pozycji jednostki sprzed kilku taktów od wykonania [P: nagranie, pole
+`kat` kolejki]. Core: `Swiat::kat_rozkazu`, GDExtension `kat_rozkazu(ids, x, y)`; scena potyczki podaje go do
+`rozkaz_ruchu`.

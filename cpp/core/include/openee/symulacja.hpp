@@ -97,6 +97,10 @@ public:
 
     /// Rozkaz ruchu do punktu (kolejka celów, etap 21): zwykły – czyści kolejkę i wstawia cel na początek (8000);
     /// shift – dopisuje na koniec, gdy jednostka ma cel (inaczej jak zwykły). Trasa: A* w Core przy wejściu w 8000.
+    /// Kąt szyku rozkazu PPM bez przeciągnięcia (EEUICCommandUnits 0x641BDA → 0x64138B, etap 37) [P: kod; W: środek]:
+    /// środek prostokąta pozycji zaznaczonych jednostek (0x5F6377) → punkt kliknięcia, θ = UMArcTan2(−Δx, Δy).
+    /// Wartość trafia do celu EEUGLocation +0x2C jako kurs końcowy (620: kurs po 9006 zgodny z grą).
+    double kat_rozkazu(const std::vector<IdJednostki>& ids, double x, double y) const;
     bool rozkaz_ruchu(IdJednostki id, double x, double y, std::optional<double> kurs_koncowy = std::nullopt,
                       bool shift = false);
 
@@ -179,9 +183,11 @@ private:
     Jednostka* cel_ataku(const Jednostka& u);
     std::optional<bool> zdarzenie_walki(Jednostka& u, const std::string& n);
     bool szukaj_wroga(Jednostka& u);
+    bool cel_nieosiagalny(Jednostka& u, const Jednostka& t, bool sprawdz_pola);   // 0x5EC9BB (etap 37)
+    void oznacz_nieosiagalny(Jednostka& u, const Jednostka& t);                   // 0x5E8651 (etap 37)
     double odl2(const Jednostka& a, const Jednostka& b) const;
     bool widoczny_dla(int gracz, const Jednostka& c) const;
-    Punkt2 punkt_podejscia(const Jednostka& u, const Jednostka& t);
+    Punkt2 punkt_podejscia(Jednostka& u, const Jednostka& t);
     double kat_do_celu_broni(const Jednostka& u, const Jednostka& t) const;
     std::optional<double> m_trafienia(const Jednostka& a, const Jednostka& c) const;
     double w_mnoznik(const Jednostka& a, const Jednostka& c) const;

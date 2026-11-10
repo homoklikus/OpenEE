@@ -259,7 +259,10 @@ void FizykaLadowa::tryb_do_celu(const KontekstFizyki& k, Jednostka& u) {
 }
 
 void FizykaLadowa::tryb_obrot_w_miejscu(const KontekstFizyki& k, Jednostka& u) {
-    // tryb 5: przy v ≠ 0 jak tryb 4; inaczej obrót do kursu końcowego celu (cel+0x2C)
+    // tryb 5 (EE 0x54E0F1): dynamic_cast celu bieżącego (+0x1F0) na EEUGLocation; inny cel albo brak celu → koniec
+    // bez ruchu, bez zmiany v i ω, bez 0x5F043B [P: kod; 619 – pozycja i v = 0,259 zamrożone w 9006/5001/5002, etap 37].
+    if (u.cel != TypCelu::miejsce) return;
+    // EEUGLocation: przy v ≠ 0 jak tryb 4 (vt+0x4C); inaczej obrót do kursu końcowego celu (cel+0x2C, 0x548266)
     if (u.v != 0.0) {
         tryb_hamowanie(k, u);
         return;

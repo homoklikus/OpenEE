@@ -282,3 +282,19 @@ Odtworzenie 619 w Core (mapa e35_a z SCN): 116 przejść zgodnych z grą (pozycj
 PPM w teren): 37 przejść. *[Etap 36 – zastąpione: wejście w CheckRange [H] z etapu 31.]* Pierwsza różnica w obu
 przypadkach – czas trwania 9006 TurnToUnitFacing na końcu trasy [N]. GDExtension: `stan_jednostek`,
 `zdarzenia_walki_od`, `ustaw_wrogow`, `takty` (INTEGRACJA_GODOT.md § 17).
+
+## 18. Etap 37 – 9006 przy celu ataku, cel nieosiągalny, kąt szyku
+
+Zmiany z kodu EE, sprawdzone na nagraniach 616/619/620 (porównanie stanu co takt):
+- `zdarzenie("UnitFacingNotRequired")`: cel inny niż miejsce → prawda (baza 0x62871E); miejsce → > 1 cel w kolejce
+  albo dotychczasowy warunek (brak kursu, v = ω = 0) [W].
+- `FizykaLadowa::tryb_obrot_w_miejscu` (tryb 5, 0x54E0F1): bez celu EEUGLocation nic nie robi.
+- `przygotuj_trase` (0x5EE4E6): pole startu pomijane tylko przy trasie > 1 pola.
+- EnemyUnitReachable: licznik prób ≤ 25 (było < 25).
+- Mapa celów nieosiągalnych (`BojJednostki::nieosiagalne`, 0x5E8651/0x5EC9BB): wpis w `punkt_podejscia` (brak
+  przejezdnego miejsca przy celu stojącym) i przy fałszu EnemyUnitReachable; filtr w `szukaj_wroga`.
+- `Swiat::kat_rozkazu(ids, x, y)` (0x64138B, środek prostokąta 0x5F6377): kurs końcowy rozkazu PPM.
+
+Wynik: 619 zgodny co takt do porzucenia celu (t = 71954, wcześniej 64147), 620 do końca ruchu, 616 – cały zapis
+(5322 takty, ponowne wybory AI w tych samych taktach). 578 G1, S1–S7, 578 G3, 590 G1, AoC bez zmian; 589 G3 mniej
+różnic (stan 118 → 84, HP 38 → 17, +0x2A0 821 → 468), pierwszy rozbieżny takt bez zmian.

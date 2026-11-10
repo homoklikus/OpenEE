@@ -70,3 +70,27 @@ Odtworzenie w Core [P – porównanie co takt]:
 
 Przed poprawką etapu 36 (wejście rozkazu w CheckRange [H]) Core był w 619 o jeden takt przed grą w przejściach i o jeden
 takt za grą w kursie (obrót w trybie 1 zaczyna się w takcie rozkazu).
+
+## Etap 37 – 9006 i ponowny wybór celu nieosiągalnego (bez nowych uruchomień gry)
+
+Metoda: ponowna analiza nagrań 616, 619 i 620 co takt (pola `tryb`, `v`, `kat`, `obrot`, licznik prób celu, czasy
+utworzenia celów) i analiza statyczna kodu EE (capstone, adresy w `walka.md` § 27). Porównanie stanu co takt:
+`narzedzia/eksperymenty/porownaj_takty.py` (próbki nieaktualne rejestratora – stan z poprzedniego taktu jeden raz –
+liczone osobno: 616 → 3 takie próbki). Nowych zadań MCP nie uruchamiano – dane z etapu 36 rozstrzygnęły hipotezy.
+
+| Pytanie | Dane | Wynik | Wniosek |
+|---|---|---|---|
+| Dlaczego w 619 9006 trwa 1 takt przy v = 0,259 i pozycja stoi? | 619 co takt: tryb 5, v = 0,2591 i pozycja niezmienne w 9006/5001/5002/2013/2024/8000/2015 | tryb 5 (0x54E0F1) działa tylko dla celu EEUGLocation; 9014 dla EEUGAttackUnit = prawda (0x62871E) | [P: kod + pomiar] |
+| Dlaczego w 620 9006 trwa 3 takty? | 620: cel EEUGLocation `kat` = −0,36194, `obrot` = 1; obrót −0,27266 → −0,39040 → −0,40459 | kurs końcowy = kąt szyku z kliknięcia; z nim Core = gra (kurs do 4·10⁻⁵ rad) | [P] |
+| Skąd kąt szyku? | 616: `kat` = 2,7300477, jednostka nieruchoma w (164,5; 118,5), punkt (159,2415; 106,4529) | UMArcTan2(−Δx, Δy) od środka zaznaczenia = 2,7300477 | [P: kod 0x64138B + pomiar] |
+| Kiedy cel jest porzucany? | 619: 2013 przy liczniku prób 25, 2025 przy 26 | EnemyUnitReachable: licznik ≤ 25 | [P: kod 0x60B235 + pomiar] |
+| Dlaczego AI wraca do celu po 30 s, a nie od razu? | 616: ponowne wybory 30,2–30,5 s po ostatnim PrepareToMove (3×); 619: od razu inny cel | mapa celów nieosiągalnych (+0xA0, 30 s, te same pola), wpis przy każdym PrepareToMove bez miejsca podejścia | [P: kod + pomiar] |
+| Czy rozkaz gracza jest kontynuowany po porzuceniu? | 616/619: po 2025 kolejka pusta, następny cel z `pochodzenie_1C` = 0 | nie – dalej wybiera AI; ten sam licznik prób celu i ta sama mapa | [P] |
+
+Odtworzenie w Core po zmianach etapu 37 (`odtworz_e35.gd`, kąt celu z nagrania):
+
+| Nagranie | Przed (etap 36) | Po (etap 37) | Następna różnica |
+|---|---|---|---|
+| 619 | 116 przejść, t = 64147 (9006) | 345 przejść / 936 taktów do porzucenia (t = 71954) | t = 71988: AI wybiera bohatera 0x5000ad2 – w odtworzeniu brak bohatera (parametry [N]) |
+| 620 | 37 przejść, t = 59783 (9006) | wszystkie 39 przejść / 4471 taktów do końca ruchu | t = 192032: kolejny rozkaz MCP (bohater), nieodtwarzany |
+| 616 | 2 przejścia (drugie kliknięcie), brak wyboru AI | 5322 takty bez różnicy stanu, 4 wybory AI i 4 porzucenia w tych samych taktach | koniec zapisu |

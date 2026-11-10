@@ -497,3 +497,12 @@ Prognoza nie jest obietnicą terminu.
 - Zmiana wniosku etapu 35: w 616 nie było pościgu – obywatel stał na polu z drzewami (cel nieosiągalny).
 - Kolejność prac: 9006/CompletedUnitFacing przy celu ataku i rozkazie PPM → ponowny wybór celu (osiągalność
   0x62D696) → 578 G3 / 590 → AoC RNG → strzelcy (pomiar pocisku). Potyczka: szyk grupy w Core, mgła wojny, więcej typów.
+
+### 4.14. Aktualizacja po etapie 37
+
+- Stan 9006 i cel nieosiągalny wyjaśnione kodem EE i potwierdzone na nagraniach: Core zgodny co takt w 616 (cały zapis,
+  z ponownym wyborem celu przez AI po 30 s), 619 (do porzucenia celu), 620 (do końca ruchu; kurs końcowy = kąt szyku).
+- Pozostałe [N]: osiągalność 0x62D696 i 0x5ECAD0 (w Core prawda), ścieżki wpisu w RepathAroundObstacle i odwecie,
+  zachowanie przy zmianie pola celu lub atakującego (warunek z kodu, bez pomiaru), kąt szyku przy wielu jednostkach.
+- Kolejność prac: pomiar kontrolny „zmiana pola” i wielu jednostek → pościg za ruchomym celem (578 G3 / 590 G1) →
+  AoC RNG → strzelcy.

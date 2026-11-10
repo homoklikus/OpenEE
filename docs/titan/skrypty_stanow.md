@@ -205,3 +205,14 @@ cel atakowany:  UnderAttack 2018 ──▶ RetaliateAgainstAttacker 2020 / RunFr
   Ocena przejścia jest na początku taktu, przed fizyką – na orientacji z poprzedniego taktu [P: 578].
 - **5001 ReacquireGoal** nie zmienia trybu ruchu (w pomiarze tryb 5 w stanie 5001, tryb 3 dopiero w 5000) [P].
 - S2/S4b (model v4) wymagały ω = 0 – po korekcie kończą się takt wcześniej (`walka.md` § 15).
+
+## 9. Aktualizacja etapu 37 – 9014 UnitFacingNotRequired
+
+- 9014 jest zdarzeniem celu bieżącego (vt+0x64): EEUGLocation 0x6153A3 → 0x6153CA (cel+0x31 = 0 albo > 1 cel
+  w poziomie), EEUGAttackUnit 0x60B5CB → baza 0x62871E (zawsze prawda) [P: kod; 619 – 9006 → 5001 w 1 takcie przy
+  v = 0,259]. *[Etap 37 – zastąpione: „UnitFacingNotRequired wymaga v = ω = 0” dla wszystkich celów (model v4).]*
+  Dla EEUGLocation bez kursu końcowego Core zachowuje warunek v = ω = 0 [W] (S1–S7).
+- Kurs końcowy celu EEUGLocation (+0x2C, w nagraniach MCP pole `kat`) = kąt szyku z interfejsu (EEUICCommandUnits
+  0x64138B): środek prostokąta zaznaczonych jednostek w chwili kliknięcia → punkt kliknięcia, UMArcTan2(−Δx, Δy)
+  [P: kod; 616 – 2,7300477 z pozycji (164,5; 118,5) i punktu (159,2415; 106,4529)]. Z tym kursem 620 kończy 9006
+  w 3 taktach jak gra (Core = gra co takt, kurs do 4·10⁻⁵ rad).

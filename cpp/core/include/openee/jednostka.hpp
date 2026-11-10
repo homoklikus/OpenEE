@@ -67,6 +67,15 @@ struct UstawieniaAI {
 
 /// Stan bojowy jednostki w świecie (etap 31). Pola: HP +0x3C, przeładowanie +0x2A0 (AoC +0x2A4), szukanie +0x2AC,
 /// animacja +0x260, miejsce pierwszego kontaktu +0x118 i kurs +0x214 (−10000 = brak).
+/// Wpis mapy celów nieosiągalnych jednostki (EEUnit +0xA0, klucz = id celu +0x24), etap 37 [P: kod 0x5E8651/0x5EC9BB]:
+/// pola atakującego i celu w chwili wpisu oraz termin = czas gry + 30000 ms.
+struct CelNieosiagalny {
+    std::uint32_t cel = 0;
+    std::int64_t pole_x = 0, pole_y = 0;          // pole atakującego (+0x1C/+0x20) przy wpisie
+    std::int64_t pole_celu_x = 0, pole_celu_y = 0; // pole celu przy wpisie
+    std::uint32_t termin_ms = 0;
+};
+
 struct BojJednostki {
     ParametryWalki p;
     StanWalki s;
@@ -78,6 +87,7 @@ struct BojJednostki {
     // Modyfikatory obrażeń jednostki (EEUnit +0xF8, wektor +0x100…+0x104), etap 33: poziomy morale obiektów
     // EEAEMoraleFromBuildings (min(+0x24, +0x20)). Źródło (budynki i ich zasięg) – poza Core [N]; ustawiane z zewnątrz.
     std::vector<int> morale;
+    std::vector<CelNieosiagalny> nieosiagalne;   // EEUnit +0xA0 (etap 37)
 };
 
 struct Jednostka {

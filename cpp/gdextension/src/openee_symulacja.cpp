@@ -43,6 +43,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("ustaw_walke", "id", "gracz", "czlowiek", "parametry", "hp"), &OpenEESymulacja::ustaw_walke);
     ClassDB::bind_method(D_METHOD("ustaw_tablice_walki", "tablice", "wagi"), &OpenEESymulacja::ustaw_tablice_walki);
     ClassDB::bind_method(D_METHOD("rozkaz_ataku", "id", "cel"), &OpenEESymulacja::rozkaz_ataku);
+    ClassDB::bind_method(D_METHOD("kat_rozkazu", "ids", "x", "y"), &OpenEESymulacja::kat_rozkazu);
     ClassDB::bind_method(D_METHOD("walka", "id"), &OpenEESymulacja::walka);
     ClassDB::bind_method(D_METHOD("zdarzenia_walki"), &OpenEESymulacja::zdarzenia_walki);
     ClassDB::bind_method(D_METHOD("stan_jednostek"), &OpenEESymulacja::stan_jednostek);
@@ -51,7 +52,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.10.0 (etap 36, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.11.0 (etap 37, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -360,6 +361,13 @@ bool OpenEESymulacja::ustaw_tablice_walki(const Dictionary& d, const Array& wagi
     }
     swiat_->ustaw_tablice_walki(std::move(t), w);
     return true;
+}
+
+double OpenEESymulacja::kat_rozkazu(const Array& ids, double x, double y) const {
+    if (!swiat_) return 0.0;
+    std::vector<openee::IdJednostki> v;
+    for (int64_t i = 0; i < ids.size(); ++i) v.push_back(openee::IdJednostki(int64_t(ids[i])));
+    return swiat_->kat_rozkazu(v, x, y);
 }
 
 bool OpenEESymulacja::rozkaz_ataku(int64_t id, int64_t cel) {

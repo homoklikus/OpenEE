@@ -117,3 +117,10 @@ Testy: `testy_gdextension.gd` – potyczka przez `SymulacjaCore` (rozkazy → wy
 samych taktach → ten sam skrót i kolejność zdarzeń), przerwanie ataku ruchem, zwłoki, sekwencja stanów rozkazu ataku
 (619/620); rzeczywisty przebieg sceny z renderem: `xvfb-run … res://sceny/potyczka.tscn -- --potyczka-demo=70
 --potyczka-restart --potyczka-zrzuty=… --potyczka-raport=…` (zdarzenia wejścia przez `Input.parse_input_event`).
+
+## 18. Etap 37 – kąt szyku w rozkazie ruchu
+
+Nowa metoda `kat_rozkazu(ids: Array, x, y) -> float` (OpenEE Core 0.11.0): kąt szyku PPM z oryginału (środek
+prostokąta zaznaczonych jednostek → punkt kliknięcia, UMArcTan2). `SymulacjaCore.rozkaz_grupy` liczy go w chwili
+kliknięcia i podaje jako kurs końcowy do `rozkaz_ruchu` – jednostki obracają się na końcu ruchu jak w EE (9006).
+Testy GDExtension: 30 (+2: kąt z pomiaru 616, ponowny wybór celu nieosiągalnego po 30 s).

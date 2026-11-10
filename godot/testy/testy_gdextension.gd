@@ -128,6 +128,7 @@ func _testy() -> void:
 		"rng %d, losowań %d, nieobsługiwanych zdarzeń %d" % [d["rng_stan"], d["rng_losowania"], d["zdarzenia_nieobslugiwane"]])
 	_test_walki(sym)
 	_test_potyczki(dll)
+	_test_etapu37(dll)
 	_koniec()
 
 
@@ -288,6 +289,56 @@ func _test_potyczki(dll: String) -> void:
 	var obcy := s2.rozkaz_ataku_grupy([e2[1]], w2[0])   # jednostki wroga nie przyjmują rozkazów gracza lokalnego
 	_wynik("rozkaz ruchu przerywa atak; rozkazy tylko dla jednostek gracza lokalnego", mial_cel == e2[0] and s2.cel_walki[w2[0]] == 0 and obcy == 0,
 		"cel przed %d, po %d, rozkaz dla wroga przyjęty %d" % [mial_cel, s2.cel_walki[w2[0]], obcy])
+
+
+# etap 37: kąt szyku PPM (0x64138B) i mapa celów nieosiągalnych (0x5E8651 / 0x5EC9BB – 30 s, te same pola)
+func _test_etapu37(dll: String) -> void:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var g: int = c.dodaj_jednostke(p, 10.5, 16.5, 0.0)
+	# 616 [P]: jednostka stoi w (164,5; 118,5), PPM w (159,2415; 106,4529) → kąt celu 2,7300477 (kolejka MCP „kat”);
+	# te same różnice współrzędnych w świecie syntetycznym
+	var k: float = c.kat_rozkazu([g], 10.5 - 5.2585, 16.5 - 12.0471)
+	_wynik("kąt szyku PPM (0x64138B): pomiar 616 – 2,7300477", absf(k - 2.7300477027893066) < 2e-6, "%.7f" % k)
+	var tr := {}
+	for i in 3:
+		var f := PackedFloat32Array(); f.resize(64); f[48] = [1.071, 1.5, 2.1][i]
+		tr[["08", "0C", "10"][i]] = {13: f}
+	var f36 := PackedFloat32Array(); f36.resize(64); f36[48] = 2.8
+	tr["10"][36] = f36
+	var mn := []
+	for i in 16: mn.append([1, 1, 1, 1, 1, 1])
+	c.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
+		[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
+	c.ustaw_wrogow(1, 5, true); c.ustaw_wrogow(5, 1, true)
+	var gw := {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,
+		"klasa_trafienia": 13, "rodzina_ataku": 48, "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156,
+		"rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000, "pole_ac": 0.6000000238418579, "typ_bazy": 422, "typ_jednostki": 5}
+	var ob := {"atak": 5.0, "zasieg_max": 2.0, "pole_widzenia": 3.0, "przeladowanie_ms": 2000, "klasa_trafienia": 36,
+		"rodzina_ataku": 38, "rozmiar": 0.3, "punktowy": 0, "szukanie_ms": 2000, "pole_ac": 0.5, "typ_jednostki": 6}
+	c.ustaw_walke(g, 1, true, gw, 215)
+	var pc := p.duplicate(); pc.rozmiar = 0.3
+	var o: int = c.dodaj_jednostke(pc, 10.5, 12.5, 0.0)
+	c.ustaw_walke(o, 5, false, ob, 65)
+	c.ustaw_przejezdnosc(10, 12, false)          # obywatel na polu nieprzejezdnym (jak drzewa w e35_a)
+	c.rozkaz_ataku(g, o)
+	var poprz := 0; var ost8000 := -1; var porzucenia: Array = []; var wybory: Array = []
+	for t in 5200:
+		c.takt(1)
+		var st := 0
+		for d in c.stan_jednostek():
+			if int(d.id) == g: st = int(d.stan)
+		var ms := t * 1500.0 / 44.0
+		if st == 8000: ost8000 = int(ms)
+		if st == 5000 and poprz == 2025: porzucenia.append([int(ms), ost8000])
+		if poprz == 5000 and st == 2013: wybory.append(int(ms))
+		poprz = st
+	var ok := porzucenia.size() >= 2 and wybory.size() >= 1
+	var odstep: int = (int(wybory[0]) - int(porzucenia[0][1])) if ok else -1
+	_wynik("cel nieosiągalny: porzucenie, ponowny wybór AI dopiero po 30 s od ostatniego PrepareToMove (0x62CD76)",
+		ok and odstep >= 30000 and odstep < 30000 + 2400, "porzucenia %s, wybory %s, odstęp %d ms" % [str(porzucenia.slice(0, 3)), str(wybory.slice(0, 3)), odstep])
 
 
 func _koniec() -> void:

@@ -4,7 +4,8 @@ extends SceneTree
 ## na polu z drzewami (cel nieosiągalny). Narzędzie badawcze (nie test regresji): mapa z pliku SCN (interpretacja
 ## w Core), obiekty blokujące jak w scenie potyczki, jednostki i rozkaz w takcie z pomiaru.
 ## Użycie: godot --headless --path godot --script res://testy/eksperymenty/odtworz_e35.gd -- --scn=e35_a.scn
-##         --t0=<czas gry 1. próbki> --t-rozkazu=<czas gry ostatniej próbki przed rozkazem> [--ruch=x,y]
+##         --t0=<czas gry 1. próbki> --t-rozkazu=<czas gry ostatniej próbki przed rozkazem> [--ruch=x,y[,kat]]
+##         (kat = kurs końcowy celu EEUGLocation +0x2C z nagrania – `kat` w kolejce MCP; etap 37)
 ##         [--rozkazy=T:atak;T:ruch:x:y] [--probki=N] [--wyjscie=plik.json] [--takty=N]
 ## Dane wejściowe (SCN, nagranie) są lokalne – nie trafiają do repozytorium.
 
@@ -51,8 +52,12 @@ func _start() -> void:
 	c.utworz_swiat_na_mapie("ee", PackedByteArray([1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0]))
 	var tr := {}
 	for i in 3:
-		var f := PackedFloat32Array(); f.resize(64); f[48] = [1.071, 1.5, 2.1][i]; f[36] = [2.0, 2.8, 4.0][i]
+		var f := PackedFloat32Array(); f.resize(64); f[48] = [1.071, 1.5, 2.1][i]
 		tr[["08", "0C", "10"][i]] = {13: f}
+	# klasa 36 (obywatel) × rodzina 48 (gwardia) w tablicy 0x10 (człowiek → komputer) = 2,8 [P: walka.md § 13, 42 = 15·2,8];
+	# tablic 0x08/0x0C dla klasy 36 nie odczytano – nieużywane w tym układzie (atakuje tylko gracz-człowiek)
+	var f36 := PackedFloat32Array(); f36.resize(64); f36[48] = 2.8
+	tr["10"][36] = f36
 	var mn := []
 	for i in 16: mn.append([1, 1, 1, 1, 1, 1])
 	c.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
@@ -82,17 +87,19 @@ func _start() -> void:
 	var stary_cel := 0
 	for k in int(_arg("takty", "6300")):
 		if k == takt_rozkazu:
-			if ruch != "": wynik["rozkaz"] = c.rozkaz_ruchu(a, float(ruch.get_slice(",", 0)), float(ruch.get_slice(",", 1)), null, false)
+			if ruch != "": wynik["rozkaz"] = c.rozkaz_ruchu(a, float(ruch.get_slice(",", 0)), float(ruch.get_slice(",", 1)),
+				float(ruch.get_slice(",", 2)) if ruch.get_slice_count(",") > 2 else null, false)
 			else: wynik["rozkaz"] = c.rozkaz_ataku(a, cel)
 		if dalsze.has(k):
 			var cz: PackedStringArray = dalsze[k]
-			if cz[1] == "ruch": c.rozkaz_ruchu(a, float(cz[2]), float(cz[3]), null, false)
+			if cz[1] == "ruch": c.rozkaz_ruchu(a, float(cz[2]), float(cz[3]), float(cz[4]) if cz.size() > 4 else null, false)
 			else: c.rozkaz_ataku(a, cel)
 		c.takt(1)
 		var ja: Dictionary = {}
 		for d in c.stan_jednostek():
 			if int(d.id) == a: ja = d
-		if k >= takt_rozkazu and k < takt_rozkazu + int(_arg("probki", "0")):
+		var k0 := takt_rozkazu if _arg("probki-od", "") == "" else int(round((float(_arg("probki-od", "0")) - T0) / TAKT_MS))
+		if k >= k0 and k < k0 + int(_arg("probki", "0")):
 			if not wynik.has("probki"): wynik["probki"] = []
 			wynik.probki.append([snappedf(T0 + TAKT_MS * (k + 1), 0.1), int(ja.stan), float(ja.x), float(ja.y), float(ja.kurs), float(ja.v), int(ja.tryb)])
 		var klucz := "%d|%d" % [int(ja.stan), int(ja.get("cel", 0))]

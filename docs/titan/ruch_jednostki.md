@@ -236,7 +236,7 @@ tryb 0 (Advance i stany przejściowe 9000 / 2015, bo tryb ustawia tylko wejście
   u+0x33F = osiągnięto(u, d)               ; d sprzed ruchu (0x6213D8)
   zapis transformacji, pola +0x1C / +0x20, list kolizji (0x5F043B)
 tryb 4: v' = max(0, v − a·dt), ω hamowane, ruch naprzód o v'·dt po dotychczasowym kursie
-tryb 5: jeśli v ≠ 0: jak tryb 4; inaczej obrót (0x548266) do kursu celu (cel+0x2C)
+tryb 5 (0x54E0F1): tylko gdy cel bieżący jest EEUGLocation (dynamic_cast; inaczej nic – etap 37 [P: kod, 619]); jeśli v ≠ 0: jak tryb 4 (vt+0x4C); inaczej obrót (0x548266) do kursu celu (cel+0x2C)
 tryb 3: jeśli v ≠ 0 lub ω ≠ 0: jak tryb 4
 po każdym trybie oprócz 2: kolizje i odpychanie (0x549E61):
   (vx, vy) = (+0x230, +0x234)·k;  pomijane, gdy |vx| + |vy| < 0,02;  przycięte do max(vmax, 0,005/dt)

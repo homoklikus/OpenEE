@@ -117,11 +117,14 @@ func czy_wrog(gracz: int, id: int) -> bool:
 
 
 ## PPM w teren: rozkaz ruchu każdej zaznaczonej jednostki do punktu (Core: kolejka celów, Shift = dopisanie).
-## Szyk grupy EE nie jest jeszcze w Core [N] – wszystkie jednostki dostają ten sam punkt.
+## Kurs końcowy celu = kąt szyku liczony w Core z zaznaczenia w chwili kliknięcia (EEUICCommandUnits 0x64138B,
+## etap 37). Szyk grupy EE nie jest jeszcze w Core [N] – wszystkie jednostki dostają ten sam punkt.
 func rozkaz_grupy(ids: Array, cel: Vector2, dolacz := false) -> void:
-	for id in ids:
-		if _wlasna(int(id)):
-			core.rozkaz_ruchu(int(id), cel.x, cel.y, null, dolacz)
+	var wlasne: Array = ids.filter(func(i): return _wlasna(int(i)))
+	if wlasne.is_empty(): return
+	var kat: float = core.kat_rozkazu(wlasne, cel.x, cel.y)
+	for id in wlasne:
+		core.rozkaz_ruchu(int(id), cel.x, cel.y, kat, dolacz)
 
 
 ## PPM na wrogu: rozkaz ataku (EEUGAttackUnit w Core). Zwraca liczbę jednostek, które go przyjęły.

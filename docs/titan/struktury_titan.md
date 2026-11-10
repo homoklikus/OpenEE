@@ -22,6 +22,7 @@ Jednostka (EEUnit / EEComplexUnit). Wspólne pola obiektów mapy i pola ruchu je
 | trasa_n | u32 | 0x8C | 0x8C | [P] | – | astar_wyniki.md §5; liczba punktów trasy |
 | poziomy_celow_pocz | ptr | 0x94 | 0x94 | [P] | – | kolejka_rozkazow.md; wektor poziomów celów (+0x90): początek; element 0x28 B |
 | poziomy_celow_kon | ptr | 0x98 | 0x98 | [P] | – | kolejka_rozkazow.md; wektor poziomów celów: koniec |
+| cele_nieosiagalne | obj | 0xA0 | – | [P] | 0x5E8651 | walka.md § 27; etap 37: mapa celów nieosiągalnych (liczba +0xB0), klucz id celu, wpis: pola atakującego i celu, termin = czas gry + 30000 ms (0x5E8651 / 0x5EC9BB); offset AoC nieustalony |
 | kontakty | u32 | 0xC8 | 0xC8 | [P] | – | etap 29 (ee_obserwacja); liczba kontaktów kolizyjnych |
 | poz_rozkazu | f32[2] | 0x118 | 0x118 | [P] | – | ruch_jednostki.md §3; pozycja w chwili rozkazu; etap 31: InitialAttackState (0x61ADD7) zapisuje ICL x/y (+0x118/+0x11C) |
 | macierz | f32[16] | 0x130 | 0x130 | [P] | – | ruch_jednostki.md §3; orientacja; x +0x13C, y +0x14C, z +0x15C |

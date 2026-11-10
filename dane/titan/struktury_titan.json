@@ -255,6 +255,22 @@
      "zapis": []
     },
     {
+     "nazwa": "cele_nieosiagalne",
+     "typ": "obj",
+     "ee": "0xA0",
+     "aoc": null,
+     "rozmiar": 4,
+     "pewnosc": "P",
+     "zrodlo": "walka.md § 27",
+     "opis": "etap 37: mapa celów nieosiągalnych (liczba +0xB0), klucz id celu, wpis: pola atakującego i celu, termin = czas gry + 30000 ms (0x5E8651 / 0x5EC9BB); offset AoC nieustalony",
+     "odczyt": [
+      "0x5EC9BB"
+     ],
+     "zapis": [
+      "0x5E8651"
+     ]
+    },
+    {
      "nazwa": "kontakty",
      "typ": "u32",
      "ee": "0xC8",

@@ -52,6 +52,7 @@ public:
     bool ustaw_walke(int64_t id, int64_t gracz, bool czlowiek, const godot::Dictionary& parametry, int64_t hp);
     bool ustaw_tablice_walki(const godot::Dictionary& tablice, const godot::Array& wagi);
     bool rozkaz_ataku(int64_t id, int64_t cel);
+    double kat_rozkazu(const godot::Array& ids, double x, double y) const;
     godot::Dictionary walka(int64_t id) const;
     godot::Array zdarzenia_walki() const;
     // etap 36: potyczka w Godocie – stan wszystkich jednostek jednym wywołaniem, przyrostowe zdarzenia walki,
