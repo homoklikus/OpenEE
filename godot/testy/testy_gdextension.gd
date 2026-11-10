@@ -133,6 +133,7 @@ func _testy() -> void:
 	_test_etapu39(dll)
 	_test_etapu40(dll)
 	_test_etapu41(dll)
+	_test_etapu42(dll)
 	_koniec()
 
 
@@ -475,3 +476,64 @@ func _test_etapu41(dll: String) -> void:
 	a[10 * H + 10] = 3   # (10, 10) – styk po przekątnej z (9, 9)
 	_wynik("graf z przydziału pól: 3 podsektory, źródło jawne", c.zbuduj_graf_z_przydzialu(a, W, H, 19) == 3 and str(c.diagnostyka()["graf_zrodlo"]) == "Core z przydziału pól", str(c.diagnostyka()["graf_zrodlo"]))
 	_wynik("sąsiedzi 0x4246E8 (także po przekątnej) i ścieżka grafu", c.sciezka_grafu(1, 1, 10, 10) == [3, 2, 1], str(c.sciezka_grafu(1, 1, 10, 10)))
+
+
+# etap 42: regiony 0x4240D3 i flood podsektorów 0x42AA10 z flagą przekątnej z rodzaju regionu (0x41EAE7).
+func _wejscie_syntetyczne(rodzaj_obszaru: int) -> Dictionary:
+	# 6 × 6, wszystkie pola lądu (rodzaj 1, wysokość 0) w obszarze 1; dwie części stykające się tylko narożnikiem:
+	# pola (1,1) i (2,2) należą do obiektu blokującego (gdy rodzaj obszaru 1 → region trybu 0xC), reszta – zwykły ląd.
+	var N := 6
+	var rp := []; var h := []; var ob := []
+	for i in N * N:
+		rp.append(1); h.append(0); ob.append(1)
+	var jed := {str(1 * N + 1): [["0x2000001", 100, 2, "0x831fd8", "0xT"]], str(2 * N + 2): [["0x2000001", 100, 2, "0x831fd8", "0xT"]]}
+	return {"N": N, "rodzaj_pola": rp, "bajt14": h, "obszar": ob, "obszary_rodzaj_id": [null, [rodzaj_obszaru, 1]],
+		"jednostki": jed, "typy": {"0xT": [0, 1, 0, 0]}, "brzeg": [-100, -100, -100]}
+
+
+func _test_etapu42(dll: String) -> void:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	var w := _wejscie_syntetyczne(1)
+	var r: Dictionary = c.zbuduj_graf_z_wejscia(w, 19)
+	var reg: PackedInt32Array = r.get("regiony", PackedInt32Array())
+	var prz: PackedInt32Array = r.get("przydzial", PackedInt32Array())
+	# obiekt blokujący: region trybu 0xC (flaga 0) łączy (1,1)–(2,2) po przekątnej mimo obcych boków; ląd – jeden region
+	var ok_reg: bool = reg.size() == 36 and reg[1 * 6 + 1] == reg[2 * 6 + 2] and reg[1 * 6 + 1] != reg[0] and r.get("regionow", 0) == 2
+	_wynik("regiony 0x4240D3: obiekt blokujący = osobny region, przekątna bez warunku boku (tryb 0xC)", ok_reg, str(r.get("regionow")))
+	_wynik("podsektory 0x42AA10: flaga przekątnej z rodzaju regionu (rodzaj 12 → jeden podsektor narożny)",
+		prz.size() == 36 and prz[1 * 6 + 1] == prz[2 * 6 + 2] and r.get("podsektorow", 0) == 2 and str(c.diagnostyka()["graf_zrodlo"]) == "Core z wejścia mapy",
+		"%s / %s" % [str(r.get("podsektorow")), str(c.diagnostyka()["graf_zrodlo"])])
+	var plik := OS.get_environment("OPENEE_REGIONY_TEST")
+	var ref_plik := OS.get_environment("OPENEE_PODSEKTORY_TEST")
+	if plik == "" or ref_plik == "":
+		_skip("regiony i podsektory e35_a z wejścia mapy (39 480 pól)", "OPENEE_REGIONY_TEST / OPENEE_PODSEKTORY_TEST nie ustawione (dane z gry – lokalnie)")
+		return
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(plik))
+	var ref: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ref_plik))
+	var rr: Dictionary = c.zbuduj_graf_z_wejscia(d, 19)
+	var N: int = d["N"]
+	var p2: PackedInt32Array = rr["przydzial"]
+	var r2: PackedInt32Array = rr["regiony"]
+	var zg_reg := 0; var zg_pod := 0; var pol := 0
+	for s in ref["podsektory"]:
+		for run in s["pola"]:
+			for y in range(int(run[1]), int(run[2]) + 1):
+				var i: int = int(run[0]) * N + y
+				pol += 1
+				if r2[i] == int(s["w4c"][1]): zg_reg += 1
+				if p2[i] == int(s["id"]): zg_pod += 1
+	_wynik("e35_a z wejścia mapy: siatka regionów i przydział podsektorów = odczyt gry", pol > 0 and zg_reg == pol and zg_pod == pol,
+		"pól %d, regiony %d, podsektory %d, podsektorów %d" % [pol, zg_reg, zg_pod, rr["podsektorow"]])
+	# bez siatki obszarów z gry – obszary z rodzajów pól w Core (model z pomiaru)
+	d.erase("obszar"); d.erase("obszary_rodzaj_id")
+	var r3: Dictionary = c.zbuduj_graf_z_wejscia(d, 19)
+	var p3: PackedInt32Array = r3["przydzial"]
+	var zg3 := 0
+	for s in ref["podsektory"]:
+		for run in s["pola"]:
+			for y in range(int(run[1]), int(run[2]) + 1):
+				if p3[int(run[0]) * N + y] == int(s["id"]): zg3 += 1
+	_wynik("e35_a: obszary z rodzajów pól (Core) → ten sam przydział podsektorów", not r3["obszary_z_gry"] and r3["obszarow"] == 43 and zg3 == pol,
+		"obszarów %d, zgodnych pól %d/%d" % [r3["obszarow"], zg3, pol])

@@ -1,6 +1,7 @@
 #include "openee/symulacja.hpp"
 
 #include <algorithm>
+#include <deque>
 #include <cmath>
 #include <cstdlib>
 
@@ -1425,6 +1426,221 @@ GrafPodsektorow zbuduj_graf_z_przydzialu(const std::vector<int>& g, int W, int H
                 if (d && d != c) lacz(c, d);
             }
         }
+    return G;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Etap 42: regiony 0x4240D3 i przydział podsektorów 0x42434F – docs/titan/architektura_nawigacji.md „Etap 42”.
+
+namespace {
+struct KlasaRegionu {
+    int obszar = 0, rodzaj_obszaru = 0, tryb = 0;
+    bool flaga = true;          // +0x1C maszyny: przekątna tylko przy dostępnym boku
+    std::uint32_t uid = 0;      // +0x6C
+    int gracz = 0;              // +0x70
+};
+}  // namespace
+
+void zbuduj_obszary(WejscieRegionow& w) {
+    const int N = w.N;
+    auto brzeg = [&](int x, int y) {
+        return x + y == w.brzeg_e0 || x + y == w.brzeg_e1 || y - x == w.brzeg_e2 || x - y == w.brzeg_e2;
+    };
+    auto klasa = [&](int x, int y) {
+        if (brzeg(x, y)) return 4;
+        const int k = w.rodzaj_pola[std::size_t(x) * N + y];
+        return k == 1 ? 2 : k == 9 ? 3 : 1;
+    };
+    w.obszar.assign(std::size_t(N) * N, 0);
+    w.obszary.assign(1, {0, 0});
+    std::vector<std::pair<int, int>> stos;
+    int n = 0;
+    for (int x = N - 1; x >= 0; --x)
+        for (int y = N - 1; y >= 0; --y) {
+            const std::size_t s = std::size_t(x) * N + y;
+            if (w.rodzaj_pola[s] == -1 || w.obszar[s]) continue;
+            const int kl = klasa(x, y);
+            w.obszary.push_back({kl, ++n});
+            w.obszar[s] = n;
+            stos.assign(1, {x, y});
+            while (!stos.empty()) {
+                const auto [a, b] = stos.back();
+                stos.pop_back();
+                for (int dx = -1; dx <= 1; ++dx)
+                    for (int dy = -1; dy <= 1; ++dy) {
+                        if ((!dx && !dy) || (dx && dy && kl != 4)) continue;
+                        const int c = a + dx, d = b + dy;
+                        if (c < 0 || d < 0 || c >= N || d >= N) continue;
+                        const std::size_t j = std::size_t(c) * N + d;
+                        if (w.rodzaj_pola[j] == -1 || w.obszar[j] || klasa(c, d) != kl) continue;
+                        w.obszar[j] = n;
+                        stos.push_back({c, d});
+                    }
+            }
+        }
+}
+
+SiatkaRegionow zbuduj_siatke_regionow(const WejscieRegionow& w) {
+    const int N = w.N;
+    SiatkaRegionow R;
+    R.N = N;
+    R.etykieta.assign(std::size_t(N) * N, 0);
+    R.rodzaj.assign(1, 0);
+    static const std::vector<ObiektPolaRegionu> pusta;
+    auto ob = [&](int i) -> const std::vector<ObiektPolaRegionu>& {
+        auto it = w.obiekty.find(i);
+        return it == w.obiekty.end() ? pusta : it->second;
+    };
+    auto klasa3 = [&](int i) {            // 0x42CA21: pole ≠ 1 i obiekt typu z +0x568 = 3
+        if (w.rodzaj_pola[i] == 1) return false;
+        for (const auto& o : ob(i)) if (o.klasa568 == 3) return true;
+        return false;
+    };
+    auto blokujaca = [](const ObiektPolaRegionu& o) {
+        return (o.flaga600 || o.klasa4b4 == 0x19) && !o.vt58 && (o.hp > 0 || o.klasa4b4 == 1);
+    };
+    auto bez_blokujacych = [&](int i) {
+        for (const auto& o : ob(i)) if (blokujaca(o)) return false;
+        return true;
+    };
+    auto brzeg = [&](int x, int y) {
+        return x + y == w.brzeg_e0 || y - x == w.brzeg_e2 || x + y == w.brzeg_e1 || x - y == w.brzeg_e2;
+    };
+    auto start = [&](int i) {             // 0x41BF51
+        KlasaRegionu k;
+        k.obszar = w.obszar[i];
+        k.rodzaj_obszaru = w.obszary[std::size_t(k.obszar)].first;
+        const int rp = w.rodzaj_pola[i], h = w.wysokosc[i];
+        if (k.rodzaj_obszaru == 1) {
+            k.tryb = rp == 0xA ? (h < 0 ? 8 : h > 0 ? 9 : 7) : 1;
+            if (klasa3(i)) { k.tryb = 4; k.flaga = false; }
+            else for (const auto& o : ob(i))
+                if (blokujaca(o)) {
+                    k.uid = o.id; k.gracz = o.gracz; k.tryb = 0xC; k.flaga = false;
+                    if (o.klasa4b4 == 0x19) k.tryb = 0xE;
+                    else if (o.flaga612) k.tryb = 0xD;
+                    break;
+                }
+        } else if (k.rodzaj_obszaru == 2) k.tryb = h < 0 ? 0xA : h > 0 ? 0xB : 2;
+        else if (k.rodzaj_obszaru == 4) { k.tryb = 6; k.flaga = false; }
+        else if (k.rodzaj_obszaru == 3) { k.tryb = 3; k.flaga = false; }
+        return k;
+    };
+    auto dostepne = [&](const KlasaRegionu& k, int x, int y) {   // 0x41B9C9 (kolejne pola, tabela 0x41C235)
+        if (x < 0 || y < 0 || x >= N || y >= N) return false;
+        const int i = x * N + y;
+        if (w.rodzaj_pola[i] == -1 || w.obszar[i] != k.obszar) return false;
+        const int rp = w.rodzaj_pola[i], h = w.wysokosc[i];
+        bool ok = false;
+        switch (k.tryb) {
+            case 1: ok = rp != 0xA && !klasa3(i) && bez_blokujacych(i); break;
+            case 2: ok = rp == 1 && h == 0; break;
+            case 3: ok = rp == 9; break;
+            case 4: ok = klasa3(i); break;
+            case 6: ok = true; break;
+            case 7: case 8: case 9:
+                ok = rp == 0xA && (k.tryb == 7 ? h == 0 : k.tryb == 8 ? h < 0 : h > 0) && !klasa3(i) && bez_blokujacych(i);
+                break;
+            case 0xA: ok = rp == 1 && h < 0; break;
+            case 0xB: ok = rp == 1 && h > 0; break;
+            case 0xC: case 0xE: {
+                if (klasa3(i)) break;
+                std::int64_t uid = -1;
+                for (const auto& o : ob(i)) {
+                    if (!(o.hp > 0 || o.klasa4b4 == 1)) continue;
+                    if (k.tryb == 0xE && o.klasa4b4 == 0x19 && o.gracz == k.gracz) { uid = o.id; break; }
+                    if ((o.flaga600 && !o.vt58) || o.klasa4b4 == 0x19) { uid = o.id; break; }
+                }
+                ok = uid == std::int64_t(k.uid);
+                break;
+            }
+            case 0xD:
+                if (klasa3(i)) break;
+                for (const auto& o : ob(i)) {
+                    if (o.flaga612 && o.hp > 0 && o.klasa4b4 != 0x19 && o.gracz == k.gracz && !o.vt58) { ok = true; break; }
+                    if (blokujaca(o)) break;
+                }
+                break;
+            default: break;
+        }
+        return ok && (brzeg(x, y) == (k.rodzaj_obszaru == 4));
+    };
+    int nr = 0;
+    std::deque<std::pair<int, int>> q;
+    for (int x = N - 1; x >= 0; --x)
+        for (int y = N - 1; y >= 0; --y) {
+            const int i = x * N + y;
+            if (w.rodzaj_pola[i] == -1 || !w.obszar[i] || R.etykieta[i]) continue;
+            const KlasaRegionu k = start(i);
+            R.rodzaj.push_back(k.tryb);
+            R.etykieta[i] = ++nr;
+            q.assign(1, {x, y});
+            while (!q.empty()) {
+                const auto [a, b] = q.front();
+                q.pop_front();
+                auto dodaj = [&](int c, int d) {
+                    const int j = c * N + d;
+                    if (!R.etykieta[j]) { R.etykieta[j] = nr; q.push_back({c, d}); }
+                };
+                const bool g = dostepne(k, a, b - 1), l = dostepne(k, a - 1, b), p = dostepne(k, a + 1, b),
+                           d = dostepne(k, a, b + 1);
+                if (g) dodaj(a, b - 1);
+                if (l) dodaj(a - 1, b);
+                if (p) dodaj(a + 1, b);
+                if (d) dodaj(a, b + 1);
+                const int przek[4][4] = {{-1, -1, l, g}, {1, -1, g, p}, {1, 1, p, d}, {-1, 1, d, l}};
+                for (const auto& e : przek)
+                    if ((!k.flaga || e[2] || e[3]) && dostepne(k, a + e[0], b + e[1])) dodaj(a + e[0], b + e[1]);
+            }
+        }
+    return R;
+}
+
+std::vector<int> zbuduj_przydzial_podsektorow(const SiatkaRegionow& r, int K) {
+    const int N = r.N;
+    std::vector<int> g(std::size_t(N) * N, 0);
+    int nid = 0;
+    std::vector<std::pair<int, int>> stos;
+    for (int x = N - 1; x >= 0; --x)          // 0x424565
+        for (int y = N - 1; y >= 0; --y) {
+            const int i = x * N + y;
+            const int reg = r.etykieta[i];
+            if (!reg || g[i]) continue;
+            const int si = x / K, sj = y / K;
+            const int x0 = si * K, x1 = std::min(si * K + K - 1, N - 1), y0 = sj * K, y1 = std::min(sj * K + K - 1, N - 1);
+            const int rk = reg < int(r.rodzaj.size()) ? r.rodzaj[std::size_t(reg)] : 0;
+            const bool flaga = !(rk == 3 || rk == 5 || rk == 6 || rk == 12 || rk == 13 || rk == 14);   // 0x41EAE7
+            auto ok = [&](int a, int b) { return a >= x0 && a <= x1 && b >= y0 && b <= y1 && r.etykieta[std::size_t(a) * N + b] == reg; };
+            ++nid;
+            g[i] = nid;
+            stos.assign(1, {x, y});
+            while (!stos.empty()) {     // zbiór pól składowej nie zależy od kolejności (dostępność bez historii)
+                const auto [a, b] = stos.back();
+                stos.pop_back();
+                for (int dx = -1; dx <= 1; ++dx)
+                    for (int dy = -1; dy <= 1; ++dy) {
+                        if (!dx && !dy) continue;
+                        const int c = a + dx, d = b + dy;
+                        if (!ok(c, d) || g[std::size_t(c) * N + d]) continue;
+                        if (dx && dy && flaga && !(ok(a + dx, b) || ok(a, b + dy))) continue;
+                        g[std::size_t(c) * N + d] = nid;
+                        stos.push_back({c, d});
+                    }
+            }
+        }
+    return g;
+}
+
+GrafPodsektorow zbuduj_graf_z_wejscia(const WejscieRegionow& w, int komorka) {
+    const SiatkaRegionow R = zbuduj_siatke_regionow(w);
+    const std::vector<int> g = zbuduj_przydzial_podsektorow(R, komorka);
+    GrafPodsektorow G = zbuduj_graf_z_przydzialu(g, w.N, w.N, komorka);
+    for (int x = 0; x < w.N; ++x)
+        for (int y = 0; y < w.N; ++y) {
+            const std::size_t i = std::size_t(x) * w.N + y;
+            if (g[i]) G.podsektory[g[i]].rodzaj = R.rodzaj[std::size_t(R.etykieta[i])];
+        }
+    G.zrodlo = "Core z wejścia mapy";
     return G;
 }
 

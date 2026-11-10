@@ -51,6 +51,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("ustaw_graf_podsektorow", "dane"), &OpenEESymulacja::ustaw_graf_podsektorow);
     ClassDB::bind_method(D_METHOD("sciezka_grafu", "x0", "y0", "x1", "y1"), &OpenEESymulacja::sciezka_grafu);
     ClassDB::bind_method(D_METHOD("zbuduj_graf_z_przydzialu", "id_xH", "W", "H", "komorka"), &OpenEESymulacja::zbuduj_graf_z_przydzialu);
+    ClassDB::bind_method(D_METHOD("zbuduj_graf_z_wejscia", "wejscie", "komorka"), &OpenEESymulacja::zbuduj_graf_z_wejscia);
     ClassDB::bind_method(D_METHOD("walka", "id"), &OpenEESymulacja::walka);
     ClassDB::bind_method(D_METHOD("zdarzenia_walki"), &OpenEESymulacja::zdarzenia_walki);
     ClassDB::bind_method(D_METHOD("stan_jednostek"), &OpenEESymulacja::stan_jednostek);
@@ -59,7 +60,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.15.0 (etap 41, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.16.0 (etap 42, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -468,6 +469,73 @@ int64_t OpenEESymulacja::zbuduj_graf_z_przydzialu(const PackedInt32Array& a, int
     const int64_t n = int64_t(G.podsektory.size());
     swiat_->ustaw_graf_podsektorow(std::move(G));
     return n;
+}
+
+// etap 42: graf z wejścia mapy (regiony 0x4240D3 → przydział 0x42434F → punkty i sąsiedzi) – układ słownika jak
+// odczyt Riverlands_MCP `regiony_wejscie` (N, rodzaj_pola, bajt14 / siatka_wys, obszar, obszary_rodzaj_id,
+// jednostki {indeks: [[id, hp, gracz, vtable, typ], …]}, typy {typ: [+0x568, +0x600, +0x4B4, +0x612]}, brzeg [e0, e1, e2]).
+Dictionary OpenEESymulacja::zbuduj_graf_z_wejscia(const Dictionary& d, int64_t komorka) {
+    Dictionary wyn;
+    openee::WejscieRegionow w;
+    w.N = int(d.get("N", 0));
+    const int64_t n = int64_t(w.N) * w.N;
+    auto tab = [&](const Variant& v, std::vector<int>& out) {
+        const Array a = v;
+        if (a.size() != n) return false;
+        out.resize(std::size_t(n));
+        for (int64_t i = 0; i < n; ++i) out[std::size_t(i)] = int(a[i]);
+        return true;
+    };
+    const Variant wys = d.get("siatka_wys", Variant());
+    const bool obszary_z_gry = d.has("obszar") && d.has("obszary_rodzaj_id");
+    if (!swiat_ || w.N <= 0 || !tab(d.get("rodzaj_pola", Array()), w.rodzaj_pola) ||
+        (obszary_z_gry && !tab(d.get("obszar", Array()), w.obszar)) ||
+        !tab(wys.get_type() == Variant::ARRAY ? wys : d.get("bajt14", Array()), w.wysokosc)) {
+        wyn["blad"] = "niepełne wejście";
+        return wyn;
+    }
+    const Array ob = obszary_z_gry ? Array(d.get("obszary_rodzaj_id", Array())) : Array();
+    for (int64_t i = 0; i < ob.size(); ++i) {
+        const Variant e = ob[i];
+        if (e.get_type() == Variant::ARRAY) { const Array p = e; w.obszary.push_back({int(p[0]), int(p[1])}); }
+        else w.obszary.push_back({0, 0});
+    }
+    const Dictionary typy = d.get("typy", Dictionary());
+    const Dictionary jed = d.get("jednostki", Dictionary());
+    const Array klucze = jed.keys();
+    for (int64_t k = 0; k < klucze.size(); ++k) {
+        const int idx = String(klucze[k]).to_int();
+        const Array lista = jed[klucze[k]];
+        auto& v = w.obiekty[idx];
+        for (int64_t j = 0; j < lista.size(); ++j) {
+            const Array u = lista[j];
+            openee::ObiektPolaRegionu o;
+            o.id = std::uint32_t(String(u[0]).hex_to_int());
+            o.hp = int(u[1]);
+            o.gracz = u[2].get_type() == Variant::NIL ? -1 : int(u[2]);
+            const Array t = typy.get(u[4], Array());
+            if (t.size() >= 4) { o.klasa568 = int(t[0]); o.flaga600 = int(t[1]); o.klasa4b4 = int(t[2]); o.flaga612 = int(t[3]); }
+            o.vt58 = false;   // jednostka złożona: bajt +0x345 (0x5F3487) – nieodczytany [H: 0]
+            v.push_back(o);
+        }
+    }
+    const Array br = d.get("brzeg", Array());
+    if (br.size() == 3) { w.brzeg_e0 = int(br[0]); w.brzeg_e1 = int(br[1]); w.brzeg_e2 = int(br[2]); }
+    if (!obszary_z_gry) openee::zbuduj_obszary(w);   // etap 42: obszary z rodzajów pól (model z pomiaru)
+    const auto R = openee::zbuduj_siatke_regionow(w);
+    const auto g = openee::zbuduj_przydzial_podsektorow(R, int(komorka));
+    PackedInt32Array pr, pp;
+    pr.resize(n); pp.resize(n);
+    for (int64_t i = 0; i < n; ++i) { pr.set(i, R.etykieta[std::size_t(i)]); pp.set(i, g[std::size_t(i)]); }
+    auto G = openee::zbuduj_graf_z_wejscia(w, int(komorka));
+    wyn["regionow"] = int64_t(R.rodzaj.size()) - 1;
+    wyn["obszarow"] = int64_t(w.obszary.size()) - 1;
+    wyn["obszary_z_gry"] = obszary_z_gry;
+    wyn["podsektorow"] = int64_t(G.podsektory.size());
+    wyn["regiony"] = pr;
+    wyn["przydzial"] = pp;
+    swiat_->ustaw_graf_podsektorow(std::move(G));
+    return wyn;
 }
 
 Array OpenEESymulacja::sciezka_grafu(int64_t x0, int64_t y0, int64_t x1, int64_t y1) const {

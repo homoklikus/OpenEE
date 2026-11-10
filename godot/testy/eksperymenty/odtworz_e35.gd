@@ -116,6 +116,9 @@ func _start() -> void:
 				for r in e["pola"]:
 					for yy in range(int(r[1]), int(r[2]) + 1): przydzial[int(r[0]) * 280 + yy] = int(e["id"])
 			wynik_graf = c.zbuduj_graf_z_przydzialu(przydzial, 280, 280, 19)
+		var pw := _arg("graf-wejscie", "")   # etap 42: graf z wejścia mapy (regiony 0x4240D3 i podsektory 0x42434F w Core)
+		if pw != "":
+			wynik_graf = c.zbuduj_graf_z_wejscia(JSON.parse_string(FileAccess.get_file_as_string(pw)), 19).get("podsektorow", -1)
 		var pe := _arg("efekty", "")
 		if pe != "":
 			wynik_efekty = c.ustaw_efekty_obszaru(JSON.parse_string(FileAccess.get_file_as_string(pe)))

@@ -483,6 +483,8 @@ Prognoza nie jest obietnicą terminu.
   budowa podsektorów (0x42434F/0x41E990) to następny krok (1–2 etapy; test referencyjny: odczyt e35_a).
   Etap 41: sąsiedzi i punkty reprezentatywne z kodu w Core [P]; brak siatki regionów (0x423E3F) i reguły floodu –
   graf nadal z przydziału pól odczytanego z gry.
+  Etap 42: regiony 0x4240D3 i flood podsektorów odtworzone [P 39 480/39 480]; graf Core z wejścia mapy; brakująca
+  część autonomii – klasyfikacja obiektów pól (+0x04, +0x14) i kod budowy obszarów +0xF4 [N].
 - **Wybór obiektu pod kursorem** [P/W]: 0x50EC37 – lista renderu kamery + `GEPhysicalModel::Intersects` (DLL).
   Odtworzenie przecięcia z siatką wymaga modeli (poza zakresem Core). Dla automatyzacji wystarcza warunek listy renderu
   i potwierdzenie kolejką celów.

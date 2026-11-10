@@ -156,6 +156,49 @@ def _wzor(blob_zrodla, wzor_id):
     raise SystemExit(f"brak jednostki wzorcowej {hex(wzor_id)} u gracza 1")
 
 
+def konwertuj_rekord(rek, w_z, w_do):
+    """Etap 42: rekord jednostki scenariusza z wersji w_z do w_do (tylko 231 → 250) według GRAMATYKA_JEDNOSTKI.
+
+    Pola obecne w obu wersjach są kopiowane bajt w bajt; pola nowe (c328 od 232, c355/c358 od 235, c35c od 243,
+    c250 od 244, c32c od 245 – w scenariuszu 250 czytane zawsze, bo „od” ≤ 250) dostają 0 – tak jak w rodzimych
+    rekordach 250 generatora Riverlands (obywatel: wszystkie 0, [P] porównanie pól). Listy z polami zależnymi od
+    wersji (L_pairs.b od 248) muszą być puste – inaczej błąd. Wynik jest ponownie czytany gramatyką w_do."""
+    if (w_z, w_do) != (231, 250):
+        raise SystemExit(f"konwersja rekordu {w_z} → {w_do} nieobsługiwana")
+    a, b, off_z, u = _jednostka_z_offsetami(rek, 0, w_z)
+    if b != len(rek) or not u.get("complex"):
+        raise SystemExit("konwersja: rekord niepełny lub prosty")
+    rozm = {"I": 4, "i": 4, "f": 4, "B": 1, "H": 2}
+    wyj = bytearray()
+    nazwy = [el[1] for el in G.GRAMATYKA_JEDNOSTKI if el[0] not in ("koniec_jesli_prosty",) and el[0] != "cele"]
+    # granice pól źródła: kolejne offsety w kolejności gramatyki
+    kol = [(k, v) for k, v in sorted(off_z.items(), key=lambda kv: kv[1])] + [("_koniec", b)]
+    zakres = {kol[i][0]: (kol[i][1], kol[i + 1][1]) for i in range(len(kol) - 1)}
+    for el in G.GRAMATYKA_JEDNOSTKI:
+        k = el[0]
+        if k == "koniec_jesli_prosty":
+            continue
+        nazwa = "cele" if k == "cele" else el[1]
+        if k == "lista":
+            if any(len(p) > 2 for p in el[2]) and u[nazwa]:
+                raise SystemExit(f"konwersja: lista {nazwa} niepusta z polami zależnymi od wersji")
+        jest_z, jest_do = G._jest(el, w_z) if k not in ("lista", "cele") else True, \
+            G._jest(el, w_do) if k not in ("lista", "cele") else True
+        if jest_z and jest_do:
+            p0, p1 = zakres[nazwa]
+            wyj += rek[p0:p1]
+        elif jest_do:
+            wyj += bytes(rozm[k])
+    _a, b2, off2, u2 = _jednostka_z_offsetami(bytes(wyj), 0, w_do)
+    if b2 != len(wyj):
+        raise SystemExit("konwersja: kontrola odczytu 250 nieudana")
+    for k2, v in u.items():
+        if u2.get(k2) != v:
+            raise SystemExit(f"konwersja: pole {k2} zmienione")
+    del nazwy
+    return bytes(wyj), {k: v for k, v in off2.items()}
+
+
 def zbuduj(wej, wyj, uklad_plik, riverlands):
     uklad = json.loads(Path(uklad_plik).read_text(encoding="utf-8"))
     blob = Path(wej).read_bytes()
@@ -180,7 +223,8 @@ def zbuduj(wej, wyj, uklad_plik, riverlands):
             zr = Path(grp["zrodlo"]).read_bytes() if grp.get("zrodlo") else blob
             rek_wzor, off, w_wzoru, u = _wzor(zr, int(grp["wzor"], 16))
             if w_wzoru != wersja:
-                raise SystemExit(f"wzór {grp['wzor']} z wersji {w_wzoru}, scenariusz {wersja}")
+                # etap 42: jedyna dozwolona zmiana wersji – rekord 231 → scenariusz 250 (konwersja gramatyką)
+                rek_wzor, off = konwertuj_rekord(rek_wzor, w_wzoru, wersja)
             ids = []
             for (x, y) in grp["pozycje"]:
                 rec = bytearray(rek_wzor)

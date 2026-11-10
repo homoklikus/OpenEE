@@ -450,11 +450,11 @@ podsektor), siatka obszarów +0xF4 (u16, układ x·H + y – każdy podsektor le
 |---|---|---|---|
 | sektory | 0x42434F → 0x42E4C5 | siatka sektorów, komórka z rozmiaru mapy (0x4243A0…: 7/10/12/15/19/21 – e35_a: 19), prostokąt przycięty do W − 1; id sektora od 1 | [W]; [P] 19 |
 | kolejność | 0x424565 | pola od (W − 1, H − 1): x malejąco (zewnętrznie), y malejąco; start tylko na polu bez podsektora z obiektem pola ([map+0x1816D4]) | [W]; [P] pierwsze 62–94 podsektory (id i pola) |
-| flood | 0x429B6D → 0x42AA10, cel 0x41EAE7 | maszyna A* w prostokącie sektora; pole dostępne, gdy ta sama wartość siatki regionów (goal+0xAC = odczyt `w4c[1]`) jak pole startowe; po przekątnej przy co najmniej jednym boku dostępnym (0x42AB38); wszystkie węzły list otwartej i zamkniętej trafiają do podsektora (0x41E8EC) | [W]; reguła przekątnej – sprzeczne przypadki (podsektory 95 i 63) [N] |
+| flood | 0x429B6D → 0x42AA10, cel 0x41EAE7 | maszyna A* w prostokącie sektora; pole dostępne, gdy ta sama wartość siatki regionów (goal+0xAC = odczyt `w4c[1]`) jak pole startowe; po przekątnej przy co najmniej jednym boku dostępnym (0x42AB38) – **tylko gdy flaga maszyny +0x1C = 1; etap 42: flagę ustawia 0x41EAE7 z rodzaju regionu** (0 dla 3, 5, 6, 12, 13, 14); wszystkie węzły list otwartej i zamkniętej trafiają do podsektora (0x41E8EC) | [W]; etap 42: [P] 1857/1857 (podsektor 63 – rodzaj 13, 95 – rodzaj 4) |
 | id i rodzaj | 0x41E8EC, 0x41E990 | id = kolejny licznik managera (0x425E8D); +0x4C = obszar (+0xF4), +0x4E = region (goal+0xAC), +0x54 = rodzaj regionu (obiekt regionu +0x7C) | [W]; [P] w odczycie |
 | punkt | 0x42C2D5 → U2DSparseArrayPointContainer::ComputeCenterPoint(true) | średnia f32 Σ x/n od końca listy pól (kolumny od ostatniej), obcięcie; spoza zbioru – najbliższe pole (d² całkowite, start od ostatniego, remis → mniejszy indeks) | [P] 1851/1857 |
 | sąsiedzi | 0x4246E8 → 0x423255 | skan x↑, y↑; pola (x−1, y), (x, y−1), (x−1, y−1), (x+1, y−1) innego podsektora (≠ 0); wzajemne dopisanie na koniec +0x2C, jeśli brak; tryb przekątnej (dwa różne boki) tylko dodatkowo zapisuje mapę +0x04 | [P] 1857/1857 (zbiór i kolejność) |
-| regiony | 0x423E3F / 0x4240D3 (PathAreaStorage) | siatka regionów (wartości do ~400; rodzaje 1, 4, 12, 13, 14 …) z obiektów pól (0x4039AC, +0x04) i klas (0x42301D) – nieodtworzona | [N] |
+| regiony | 0x4240D3 (0x423E3F – kontynenty regionów) | etap 42: odtworzone – patrz niżej | [P] |
 
 Dlatego podsektor może mieć rozłączne fragmenty w jednej kolumnie (połączenie przez inne kolumny lub przekątną),
 a sąsiedztwo łączy podsektory z sąsiednich sektorów przy każdym styku pól. Graf nie zależy od kategorii jednostki
@@ -463,3 +463,29 @@ a sąsiedztwo łączy podsektory z sąsiednich sektorów przy każdym styku pól
 **Core (etap 41)**: `zbuduj_graf_z_przydzialu` – z przydziału pól liczy sektory, punkty 0x42C2D5 i sąsiadów 0x4246E8.
 Z przydziałem odczytanym z gry (punkty i sąsiedzi z Core) 619 i 620 są zgodne co takt (obie gwardie, kolejki). Pełna
 autonomia wymaga siatki regionów i reguły floodu – [N]. Narzędzie: `narzedzia/titan/podsektory_porownanie.py`.
+
+## Etap 42 – regiony 0x4240D3, reguła przekątnej i graf z wejścia mapy
+
+Kolejność budowy [W]: 0x427D5D → **0x4240D3** (regiony: flood maszyny 0x8262C4 z dostępnością 0x41B9C9 po każdym polu
+z obszarem; obiekty regionów → wektor managera +0x7C, indeks = etykieta) → na końcu 0x42434F (podsektory, dostaje
+siatkę regionów maszyny: goal+0x60, u16, układ x·H + y) → 0x427D79/0x427D83: **0x423E3F** ×2 (kontynenty regionów:
+lądowe +0x118 / wodne +0x114 – flood po regionach z tablicy 0x42301D, znaczniki regionu +0x84 / +0x86).
+
+| Krok | Funkcja | Ustalenie | Pewność |
+|---|---|---|---|
+| start | 0x4240D3 | x malejąco (zewnętrznie), y malejąco; pole z obszarem (0x41C537 ≠ 0) i bez etykiety; etykiety od 1 w kolejności startów | [W]; [P] 0 inwersji, 1135 regionów |
+| flood | 0x429AEA → 0x42A5F6, 0x42A66D | 4 boki (0x42B96A – pamięć podręczna bit 1/2, czyszczona przy każdym starcie, bez historii), przekątne: flaga +0x1C = 1 → wymagany jeden dostępny bok, 0 → bez warunku | [W] |
+| klasa regionu | 0x41BF51 (pierwsze pole) | obszar (+0xDA) i rodzaj obszaru (+0xD8); tryb +0x94 = rodzaj regionu +0x7C: obszar 1 – 1, a na polu 0xA 7/8/9 wg znaku wysokości; przeszkoda klasy 3 (0x42CA21) → 4; pierwsza jednostka blokująca (+0x600 lub klasa 0x19, żywa) → 0xC (0xE dla klasy 0x19, 0xD dla typu z +0x612); obszar 2 – 2/0xA/0xB wg wysokości; obszar 3 – 3; obszar 4 – 6. Flaga przekątnej 0 dla 3, 4, 6, 0xC–0xE | [W]; [P] 1135/1135 rodzajów |
+| dostępność | 0x41B9C9, tabela 0x41C235 | ten sam obszar i warunek trybu (np. 1: pole ≠ 0xA, bez przeszkody i jednostki blokującej; 2: pole 1 i wysokość 0; 0xC: ta sama jednostka); brzeg rombu (x + y = E0 / E1, \|y − x\| = E2; map+0x1816EC/F0/F4) dozwolony tylko w obszarze rodzaju 4 | [W]; [P] |
+| wynik | – | **39 480/39 480 pól** e35_a (wejście odczytane z gry: rodzaj pola +0x04, bajt +0x14, obiekty pola, obszary) | [P] zad. 628 |
+| obszary +0xF4 | funkcja budująca nieustalona | model z pomiaru: klasa pola 4 (brzeg) / 2 (rodzaj pola 1) / 3 (rodzaj 9) / 1; składowe (brzeg 8-spójnie, reszta 4-spójnie – wariant „jeden bok” daje ten sam wynik), skan x↓ y↓, id od 1 | [P] 39 480/39 480 pól, 43 obszary; kod [N] |
+| podsektory | 0x42AA10 + 0x41EAE7 | flaga przekątnej z rodzaju regionu (pierwsze pole floodu) – wyjaśnia przypadki 63 (rodzaj 13, przekątna wolna) i 95 (rodzaj 4, bok wymagany) | [P] 1857/1857 podsektorów (pola i id) |
+
+Plik `region_siatka_xH.json` z etapu 41 miał etykiety przesunięte o +1 (odczyt `w4c[1]` + 1) – podział pól ten sam.
+
+**Core (etap 42)**: `zbuduj_obszary`, `zbuduj_siatke_regionow`, `zbuduj_przydzial_podsektorow`, `zbuduj_graf_z_wejscia`
+(źródło „Core z wejścia mapy”). Z wejścia mapy odczytanego z gry (bez przydziału pól, bez siatki regionów i – opcjonalnie
+– bez siatki obszarów) 619 i 620 dają wynik identyczny z etapem 41 (= gra co takt). **Pierwsza przyczyna braku pełnej
+autonomii**: klasyfikacja obiektów pól (+0x04 rodzaj pola, +0x14) – nie jest funkcją samej tekstury SCN (np. tekstura 26:
+rodzaj 1 – 17 239 pól, 10 – 686, 0 – 4); funkcja klasyfikująca nieustalona [N]. Narzędzia: `narzedzia/titan/regiony_porownanie.py`,
+`podsektory_porownanie.py` (wariant `rodzaj`).

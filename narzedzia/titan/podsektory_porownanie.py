@@ -3,7 +3,8 @@
 Odtwarza z kodu EE: skan pól od (W−1, H−1) w dół (0x424565), flood w prostokącie sektora 19 × 19 po polach o tej
 samej wartości siatki regionów (0x41EAE7, goal+0xAC), kolejne id (0x425E8D), punkt reprezentatywny
 U2DSparseArrayPointContainer::ComputeCenterPoint(true) (0x42C2D5) i listy sąsiadów (0x4246E8). Reguła łączenia po
-przekątnej we floodzie – NIEUSTALONA (warianty: oba / jeden / brak / zero / zero_bez_sektora).
+przekątnej we floodzie (etap 42): wariant `rodzaj` – flaga z rodzaju regionu (0x41EAE7); pozostałe warianty
+(oba / jeden / brak / zero / zero_bez_sektora) zachowane do porównań.
 
 Użycie (dane lokalne, z odczytu Riverlands_MCP `podsektory` i siatki regionów):
   python3 podsektory_porownanie.py <wariant> <siatka_regionow_xH.json> [odczyt_podsektorow.json]
@@ -12,6 +13,10 @@ import json,sys,collections
 A=json.load(open(sys.argv[2] if len(sys.argv)>2 else 'obszar_siatka_xH.json')); W=H=280; K=19
 REF=json.load(open(sys.argv[3] if len(sys.argv)>3 else 'podsektory_e35_a_pelne.json'))
 naroznik=sys.argv[1] if len(sys.argv)>1 else 'oba'
+# etap 42: rodzaj regionu (+0x54 podsektora = +0x7C regionu) z odczytu – 0x41EAE7 ustawia flagę przekątnej
+# maszyny (+0x1C): 0 (przekątna bez warunku boku) dla rodzajów 3, 5, 6, 12, 13, 14; 1 (bok wymagany) dla pozostałych.
+RODZAJ={s['w4c'][1]:s['rodzaj'] for s in REF['podsektory'] if s.get('w4c')}
+WOLNE_PRZEKATNE={3,5,6,12,13,14}
 def zbuduj():
     grid=[[0]*H for _ in range(W)]; subs={}; nid=1
     for x in range(W-1,-1,-1):
@@ -27,6 +32,7 @@ def zbuduj():
                     q=(a+dx,b+dy)
                     if not ok(*q): continue
                     if dx and dy and naroznik=='oba' and not (ok2(a+dx,b,x0,x1,y0,y1,ar) and ok2(a,b+dy,x0,x1,y0,y1,ar)): continue
+                    if dx and dy and naroznik=='rodzaj' and RODZAJ.get(ar) not in WOLNE_PRZEKATNE and not (ok2(a+dx,b,x0,x1,y0,y1,ar) or ok2(a,b+dy,x0,x1,y0,y1,ar)): continue
                     if dx and dy and naroznik in ('jeden','zero','zero_bez_sektora') and not (ok2(a+dx,b,x0,x1,y0,y1,ar) or ok2(a,b+dy,x0,x1,y0,y1,ar)): continue
                     grid[q[0]][q[1]]=nid; pts.append(q); st.append(q)
             subs[nid]={'id':nid,'sektor':(si,sj),'obszar':ar,'pola':pts}; nid+=1

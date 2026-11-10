@@ -6,6 +6,18 @@
   {
    "data": "2026-11-10",
    "tytul": {
+    "pl": "Etap 42: regiony terenu i czysta mapa testowa",
+    "en": "Stage 42: terrain regions and a clean test map"
+   },
+   "tekst": {
+    "pl": "OpenEE odtwarza już podział mapy na regiony i podsektory dokładnie tak jak gra – z danych o polach mapy. Powstała też czysta mapa testowa dla oryginalnego Empire Earth, na której rozkaz ataku wydany automatycznie działa jak u gracza.",
+    "en": "OpenEE now splits the map into regions and subsectors exactly like the game, starting from the map's cell data. A clean test map for the original Empire Earth was also built, where an automated attack order works just like a player's."
+   },
+   "raport": "RAPORT_ETAP_42.md"
+  },
+  {
+   "data": "2026-11-10",
+   "tytul": {
     "pl": "Etap 41: jak gra dzieli mapę na podsektory",
     "en": "Stage 41: how the game splits the map into subsectors"
    },
@@ -13,7 +25,7 @@
     "pl": "Odczytano z kodu gry, jak Titan łączy podsektory w graf i wybiera ich punkty reprezentatywne. OpenEE liczy to już sam, zgodnie z oryginałem. Pełne samodzielne dzielenie mapy wymaga jeszcze odtworzenia regionów terenu.",
     "en": "The game code revealed how Titan links subsectors into a graph and picks their representative points. OpenEE now computes this itself, matching the original. Fully independent map splitting still needs the terrain regions to be reconstructed."
    },
-   "raport": "RAPORT_ETAP_41.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_41.md"
   },
   {
    "data": "2026-11-10",

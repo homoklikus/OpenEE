@@ -1,0 +1,16 @@
+{
+ "opis": "Etap 42: warianty czystej mapy testowej EE (kopia „Wojny trojańskiej” SCN 231 oczyszczona narzędziem scenariusz_czysty.py). Wzory rekordów: gracz 1 scenariusza e35_a (gwardia 0x100018b, prorok 0x100055d, obywatel 0x100011a, dom 0x1000039). Prorok-obserwator (pole widzenia 8, atak 0) jest konieczny: cel widoczny tylko w polu widzenia gwardii (4), a wtedy gwardia atakuje sama w 34 ms [P: zad. 629–630].",
+ "baza": {"zrodlo": "kampanie/een1ve1s_wojna trojańska.scn",
+          "czyszczenie": {"usun_graczy": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], "swiat_usun": [140, 85, 190, 135], "kawalek6_pusty": true}},
+ "wzory": {"GRD": "0x100018b", "OBS": "0x100055d", "CIT": "0x100011a", "BLD": "0x1000039"},
+ "zrodlo_wzorow": "e35_a.scn",
+ "warianty": {
+  "1v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
+  "2v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5], [162.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
+  "3v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5], [162.5, 118.5], [166.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
+  "blokada_podejscia": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]], "BLOK": ["CIT", 1, [[164.5, 109.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
+  "cel_otoczony": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]],
+                   "PRZESZKODY": ["BLD", 5, [[162.5, 108.5], [166.5, 108.5], [164.5, 106.5], [164.5, 110.5]]], "OBS": ["OBS", 1, [[170.5, 104.5]]]}
+ },
+ "niezrealizowane": {"cel_zmieniajacy_pole": "ruch celu wymaga rozkazu dla gracza 5 (komputer) – MCP wydaje rozkazy tylko graczowi 1; rekordy z trasą (L_pts) nie są obsługiwane przez narzędzie [N]"}
+}

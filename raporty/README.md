@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_41.md`](../RAPORT_ETAP_41.md) – etap 41: kroki budowy grafu podsektorów z kodu EE; listy sąsiadów i punkty reprezentatywne liczone w Core zgodnie z odczytem z gry (1857/1857 i 1851/1857); pełna autonomia grafu jeszcze niedostępna (siatka regionów, reguła floodu); czysta mapa i 590 G1 nieukończone.
+[`RAPORT_ETAP_42.md`](../RAPORT_ETAP_42.md) – etap 42: siatka regionów 0x4240D3 odtworzona (39 480/39 480 pól), reguła przekątnej floodu podsektorów wyjaśniona rodzajem regionu (1857/1857), graf Core z wejścia mapy (619/620 jak gra); czysta mapa EE (oczyszczona kopia 231) z rozkazem ataku MCP potwierdzonym w grze i generator wariantów.
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -63,6 +63,7 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_30.md`](archiwum/RAPORT_ETAP_30.md) | etap 30 | etap 30: import rzeczywistych map SCN do OpenEE Core, schemat struktur Titan i narzędzia statyki, narzędzie pomiar → Core, kamera i kolejka celów w Riverlands_MCP, początek rekonstrukcji walki (pojedynek wręcz EE odtworzony bez różnic), aktualizacja prognozy |
 | [`RAPORT_ETAP_31.md`](archiwum/RAPORT_ETAP_31.md) | etap 31 | etap 31: pełny cykl ataku w OpenEE Core (wybór celu z wagami z gry, podejście i pościg, zasięg, łuk i obrót, atak, przeładowanie, śmierć), przeładowanie AoC 0x5FEA22, obrażenia klas, walka zintegrowana ze `Swiat`, API walki w GDExtension, porównanie Core z grą, aktualizacja prognozy |
 | [`RAPORT_ETAP_40.md`](archiwum/RAPORT_ETAP_40.md) | etap 40 | etap 40: graf podsektorów odczytany z gry, A* grafu i punkty pośrednie, osiągalność 0x62D696, obie gwardie zgodne co takt w 616/619/620 |
+| [`RAPORT_ETAP_41.md`](archiwum/RAPORT_ETAP_41.md) | etap 41 | etap 41: kroki budowy grafu podsektorów z kodu, sąsiedzi 0x4246E8 i punkty 0x42C2D5 w Core (1857/1857, 1851/1857), 619/620 z przydziałem pól z gry |
 | [`RAPORT_ETAP_39.md`](archiwum/RAPORT_ETAP_39.md) | etap 39 | etap 39: zajętość miejsc podejścia (0x63234D) w Core, 578 G3 bliżej gry, pośrednie EEUGLocation jako etap grafu podsektorów, potwierdzanie rozkazów MCP stanem gry, scenariusz e39_a |
 | [`RAPORT_ETAP_38.md`](archiwum/RAPORT_ETAP_38.md) | etap 38 | etap 38: pełne odtworzenie e35_a z bohaterem, regeneracja HP (0x625B47), obrót trybu 1 do EEUGLocation, gwardia zgodna co takt w całych 616/619/620/622, eksperyment B1 |
 | [`RAPORT_ETAP_37.md`](archiwum/RAPORT_ETAP_37.md) | etap 37 | etap 37: przyczyna rozbieżności stanu 9006 (tryb 5 i 9014 zależne od rodzaju celu, kurs końcowy PPM = kąt szyku), ponowny wybór nieosiągalnego celu (licznik ≤ 25, mapa celów nieosiągalnych na 30 s); Core zgodny co takt z 616/619/620 znacznie dłużej |

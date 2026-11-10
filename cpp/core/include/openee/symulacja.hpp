@@ -86,7 +86,7 @@ struct Podsektor {
 };
 struct GrafPodsektorow {
     bool z_gry = false;         // dane odczytane z pamięci gry (nie zbudowane w Core)
-    std::string zrodlo = "brak";   // etap 41: „gra (odczyt)”, „Core z przydziału pól”
+    std::string zrodlo = "brak";   // etap 41: „gra (odczyt)”, „Core z przydziału pól”; etap 42: „Core z wejścia mapy”
     std::map<int, Podsektor> podsektory;
     std::map<std::int64_t, int> pole_podsektor;   // (x << 32 | y) → id (pola z U2DSparseArrayPointContainer +0x10)
     int podsektor_pola(std::int64_t x, std::int64_t y) const {
@@ -106,6 +106,44 @@ std::vector<int> szukaj_w_grafie(const GrafPodsektorow& g, int start, int cel);
 /// (skan x↑, y↑; pola (x−1, y), (x, y−1), (x−1, y−1), (x+1, y−1); dopisanie wzajemne na koniec listy; 1857/1857
 /// zgodnych co do zbioru i kolejności). Przydział pól (flood 0x42434F po siatce regionów 0x423E3F) – [N]: wejście.
 GrafPodsektorow zbuduj_graf_z_przydzialu(const std::vector<int>& id_xH, int W, int H, int komorka);
+/// Etap 42 – wejście floodu regionów 0x4240D3 (dane mapy na pole, układ x·N + y). Pola z kodu EE:
+/// rodzaj pola = obiekt pola +0x04 (−1 = brak obiektu pola), wysokość = siatka 0x917CB8 albo bajt +0x14 pola,
+/// obszar = siatka +0xF4 managera (indeks w wektorze +0x3C; obszar: rodzaj +0xD8, id +0xDA), obiekty z listy pola +0x08.
+struct ObiektPolaRegionu {
+    std::uint32_t id = 0;   // jednostka +0x24
+    int hp = 0;             // +0x3C
+    int gracz = 0;          // gracz(+0x18) +0x45C
+    int klasa568 = 0;       // typ +0x568 (3 = obiekt klasy przeszkody wodnej – 0x42CA21)
+    int flaga600 = 0;       // typ +0x600
+    int klasa4b4 = 0;       // typ +0x4B4 (0x19, 1)
+    int flaga612 = 0;       // typ +0x612
+    bool vt58 = false;      // vt+0x58 (jednostka złożona: bajt +0x345; prosta: 0)
+};
+struct WejscieRegionow {
+    int N = 0;
+    std::vector<int> rodzaj_pola, wysokosc, obszar;
+    std::vector<std::pair<int, int>> obszary;   // indeks → (rodzaj +0xD8, id +0xDA)
+    std::map<int, std::vector<ObiektPolaRegionu>> obiekty;   // indeks pola → lista (kolejność listy pola)
+    int brzeg_e0 = 0, brzeg_e1 = 0, brzeg_e2 = 0;           // map+0x1816EC / +0x1816F0 / +0x1816F4
+};
+struct SiatkaRegionow {
+    int N = 0;
+    std::vector<int> etykieta;     // x·N + y; 0 = brak regionu
+    std::vector<int> rodzaj;       // etykieta → rodzaj regionu (+0x7C = tryb +0x94 maszyny), [0] nieużywane
+};
+/// Etap 42 – siatka obszarów (+0xF4) z rodzajów pól, model z pomiaru [P: e35_a 39 480/39 480 pól i id; funkcja
+/// budująca w kodzie EE nieustalona – N]: klasa pola = 4 na brzegu rombu, 2 dla rodzaju pola 1, 3 dla rodzaju 9,
+/// inaczej 1; składowe (brzeg – 8-spójność, pozostałe – 4-spójność), start x malejąco, y malejąco, id od 1.
+/// Uzupełnia w.obszar i w.obszary.
+void zbuduj_obszary(WejscieRegionow& w);
+/// Flood regionów 0x4240D3 → 0x42A66D z dostępnością 0x41B9C9 [P: e35_a 39 480/39 480 pól, 1135/1135 rodzajów przy
+/// wejściu odczytanym z gry]. Start: x malejąco, y malejąco, pole z obszarem i bez etykiety; etykiety od 1.
+SiatkaRegionow zbuduj_siatke_regionow(const WejscieRegionow& w);
+/// Przydział pól do podsektorów 0x42434F (flood 0x42AA10 w prostokącie sektora, ta sama etykieta regionu; flaga
+/// przekątnej z rodzaju regionu – 0x41EAE7: bez warunku boku dla rodzajów 3, 5, 6, 12, 13, 14) [P: 1857/1857].
+std::vector<int> zbuduj_przydzial_podsektorow(const SiatkaRegionow& r, int komorka);
+/// Pełny graf z wejścia mapy: regiony → przydział → zbuduj_graf_z_przydzialu (+ rodzaje podsektorów).
+GrafPodsektorow zbuduj_graf_z_wejscia(const WejscieRegionow& w, int komorka);
 /// Punkt reprezentatywny 0x42C2D5 dla listy pól w kolejności kontenera (kolumny od ostatniej, przedziały y rosnąco).
 std::pair<int, int> punkt_reprezentatywny(const std::vector<std::pair<int, int>>& pola);
 

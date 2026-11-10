@@ -149,3 +149,12 @@ Testy GDExtension: 30 (+2: kąt z pomiaru 616, ponowny wybór celu nieosiągalne
 
 - `zbuduj_graf_z_przydzialu(id_xH: PackedInt32Array, W, H, komorka) -> int` – graf z przydziału pól (punkty
   0x42C2D5 i sąsiedzi 0x4246E8 liczone w Core); `diagnostyka()["graf_zrodlo"]` – jawne źródło grafu.
+
+## 23. Etap 42 – OpenEE Core 0.16.0 (testy GDExtension: 44)
+
+- `zbuduj_graf_z_wejscia(wejscie: Dictionary, komorka) -> Dictionary` – regiony 0x4240D3, przydział podsektorów
+  0x42434F, punkty i sąsiedzi w Core; słownik w układzie odczytu Riverlands_MCP `regiony_wejscie` (N, rodzaj_pola,
+  bajt14 / siatka_wys, obiekty pól, typy, brzeg; `obszar` i `obszary_rodzaj_id` opcjonalne – bez nich obszary z
+  modelu pomiarowego). Wynik: `regionow`, `obszarow`, `podsektorow`, `regiony` i `przydzial` (PackedInt32Array, x·N + y);
+  graf instalowany w świecie, `diagnostyka()["graf_zrodlo"]` = „Core z wejścia mapy”.
+- Logika wyłącznie w Core (`zbuduj_obszary`, `zbuduj_siatke_regionow`, `zbuduj_przydzial_podsektorow`, `zbuduj_graf_z_wejscia`).
