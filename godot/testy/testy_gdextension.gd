@@ -129,6 +129,7 @@ func _testy() -> void:
 	_test_walki(sym)
 	_test_potyczki(dll)
 	_test_etapu37(dll)
+	_test_etapu38(dll)
 	_koniec()
 
 
@@ -344,3 +345,32 @@ func _test_etapu37(dll: String) -> void:
 func _koniec() -> void:
 	print("WYNIK GDExtension: %d zaliczonych, %d niezaliczonych, %d pominiętych" % [zal, niezal, pomin])
 	quit(1 if niezal > 0 else 0)
+
+
+# etap 38: regeneracja HP 0x625B47 (bohater 173 – +2 HP co 30 taktów [P: kod + 619]) oraz obrót trybu 1 do celu
+# EEUGLocation (rozkaz ruchu w trakcie ataku [P: 622, takt 86682]).
+func _test_etapu38(dll: String) -> void:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	var p := {"a": 2.0, "vmax": 0.8, "alfa": 6.98132, "wmax": 6.98132, "rozmiar": 0.55, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var b: int = c.dodaj_jednostke(p, 10.5, 10.5, 0.0)
+	c.ustaw_walke(b, 5, false, {"regeneracja": 2, "regeneracja_ms": 898, "hp_max": 1235, "ai_szuka_wrogow": 0}, 1221)
+	c.ustaw_modyfikator_wysokosci(true)
+	var hp: Array = []
+	for t in 61:
+		c.takt(1)
+		for d in c.stan_jednostek():
+			if int(d.id) == b and (hp.is_empty() or int(d.hp) != int(hp[-1][1])): hp.append([t + 1, int(d.hp)])
+	# 898 − 34·k ≤ 0 przy k = 27 (takt 27: −20) → +2; potem co 30 taktów (1000 − 29·34 = 14 > 0, takt 30: −20)
+	_wynik("regeneracja HP (0x625B47): +2 w takcie 27 i 57, odliczanie +0x290 co 34 ms", hp == [[1, 1221], [27, 1223], [57, 1225]], str(hp))
+	c.ustaw_walke(b, 5, false, {"regeneracja": 2, "hp_max": 1235}, 1235)
+	c.takt(1)
+	var pelne := 0
+	for d in c.stan_jednostek():
+		if int(d.id) == b: pelne = int(d.hp)
+	_wynik("regeneracja nie przekracza HP max (min z +0x144)", pelne == 1235, str(pelne))
+	var e: int = c.ustaw_efekty_obszaru({"szablony": [{"id": 1, "typ": 5, "ksztalt": 1, "relacja": 2, "rozmiar": 3.0, "maks_morale": 2, "zestaw": [422]}],
+		"budynki": [{"typ": 37, "gracz": 5, "pole": [12, 12], "rozmiar": 1, "srodek": [12.5, 12.5], "efekty": [1]}]})
+	c.odtworz_efekty_obszaru()
+	_wynik("efekty obszarowe ze słownika (format narzędzia efekty_obszaru.py)", e == 1, str(e))

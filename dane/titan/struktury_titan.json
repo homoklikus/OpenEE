@@ -566,11 +566,15 @@
      "ee": "0x290",
      "aoc": null,
      "rozmiar": 4,
-     "pewnosc": "W",
-     "zrodlo": "etap 30: EE 0x625B47 (co 1000 ms + typ+0x578)",
-     "opis": "termin następnej regeneracji HP",
-     "odczyt": [],
-     "zapis": [],
+     "pewnosc": "P",
+     "zrodlo": "etap 30: EE 0x625B47; etap 38: kod (odliczanie −czas taktu [0x919774]+0xA4 = 34 ms, ≤ 0 → regeneracja i 1000 bez przeniesienia nadwyżki) + pomiar 619 (bohater 173: 898 → … → 14 → 1000, +2 HP)",
+     "opis": "odliczanie do następnej regeneracji HP [ms] (nie termin bezwzględny)",
+     "odczyt": [
+      "0x625B5D"
+     ],
+     "zapis": [
+      "0x625BE1"
+     ],
      "grupa": "walka"
     },
     {
@@ -732,9 +736,9 @@
      "ee": "0x578",
      "aoc": null,
      "rozmiar": 4,
-     "pewnosc": "W",
-     "zrodlo": "etap 30: EE 0x625B73",
-     "opis": "HP dodawane co 1000 ms",
+     "pewnosc": "P",
+     "zrodlo": "etap 30: EE 0x625B73; etap 38: = dbobjects „Health regeneration” (173: 2), pomiar 619 (+2 HP co 30 taktów); wywołanie 0x625B47 tylko gdy ≠ 0 (0x600712, 0x60497F, 0x605484)",
+     "opis": "HP dodawane przy każdym wyzerowaniu odliczania +0x290 (min z HP max ulepszenia +0x144; zapis tylko przy HP > 0)",
      "odczyt": [],
      "zapis": [],
      "grupa": "walka"

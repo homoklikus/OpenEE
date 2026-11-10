@@ -1333,7 +1333,11 @@ int test_walka_swiat() {
                 zap("cel", cel_core != cel_gry, r_cel);
                 zap("pozycja > 0,001", e > 1e-3, r_poz);
                 if (const Wartosc* gk = g2.znajdz("kurs")) {   // etap 32: orientacja i ω (pomiar_core walka ≥ etap 32)
-                    const double dk = std::fabs(MatematykaTitan::normalizuj_roznice(sw.matematyka().kurs_z_macierzy(u.orientacja) - gk->n));
+                    // etap 38: kurs gry w serii = math.atan2(−m01, m11) w f64 (pomiar_core.py) – porównanie z tą samą funkcją
+                    // macierzy Core (std::atan2), nie z tablicowym UMArcTan2 (błąd tablic do 4,9·10⁻⁴ rad dawał pozorne
+                    // „kurs > 0,0002” przy identycznych macierzach – dowód: 619/620 bitowo zgodne w m01/m11)
+                    const double kc = std::atan2(-double(u.orientacja.m01()), double(u.orientacja.m11()));
+                    const double dk = std::fabs(std::remainder(kc - gk->n, 2.0 * 3.14159265358979323846));
                     kmax = std::max(kmax, dk);
                     zap("kurs > 0,0002", dk > 2e-4, r_kurs);
                     zap("omega", std::fabs(u.omega - g2["w"].n) > 1e-4, r_w);

@@ -46,7 +46,7 @@ Jednostka (EEUnit / EEComplexUnit). Wspólne pola obiektów mapy i pola ruchu je
 | k330 | u16 | 0x330 | 0x33C | [P] | – | fizyka_terenu.md §4; znacznik blokady kroku (2 = zablokowany) |
 | osiagniety_punkt | u8 | 0x33F | 0x34B | [W] | – | ruch_jednostki.md §3; osiągnięto bieżący punkt |
 | hp | i32 | 0x3C | 0x3C | [W] | 0x616F30, 0x6172BC | etap 30: setter EE 0x616F30, TakeDamage EE 0x6172BC (vt+0x70), EEHitPointUpgrader EE 0x638CBF / AoC 0x64F18D; bieżące punkty życia (int); ≤ 0 = martwy |
-| regeneracja_termin | i32 | 0x290 | – | [W] | – | etap 30: EE 0x625B47 (co 1000 ms + typ+0x578); termin następnej regeneracji HP |
+| regeneracja_termin | i32 | 0x290 | – | [P] | 0x625BE1 | etap 30: EE 0x625B47; etap 38: kod (odliczanie −czas taktu [0x919774]+0xA4 = 34 ms, ≤ 0 → regeneracja i 1000 bez przeniesienia nadwyżki) + pomiar 619 (bohater 173: 898 → … → 14 → 1000, +2 HP); odliczanie do następnej regeneracji HP [ms] (nie termin bezwzględny) |
 | zabicia | u16 | 0x332 | – | [W] | – | etap 30: EE 0x61DDC7 (inc, gdy cel ma HP ≤ 0 po trafieniu); licznik zabitych celów |
 | termin_szukania | i32 | 0x2AC | 0x2B0 | [P] | – | etap 31: 0x61AC11 ustawia := typ+0x564 po każdym szukaniu; pomiar 578/580 (−34 na takt); licznik ms do następnego szukania wroga (LookForEnemies); > 0 blokuje szukanie poza celem-miejscem bez +0x30 |
 | ai | ptr | 0x208 | – | [P] | – | etap 31: 0x61BFF4 czyta [+0x208]+8; ee_walka surowe [0,0x40,0x208] (vtable 0x82AB0C); obiekt ustawień AI jednostki: +7 pościg poza ICL, +8 szuka wrogów, +9 powrót do ICL, +0xA ucieczka |
@@ -65,7 +65,7 @@ Typ jednostki (jeden obiekt na typ).
 | klasa_trafienia | i32 | 0x4C0 | – | [P] | – | etap 30: DealDamage EE 0x61DE61; odczyt 565: 0 (gwardia – atak „shock”); atakujący: rodzaj ataku (indeks pancerza 0–5); cel: wiersz tablicy mnożników 0x8D2050 (×6) |
 | klasa_tablicy_trafien | i32 | 0x4C4 | – | [P] | – | etap 30: EE 0x4D5F2C; odczyt 565: 13 (gwardia); wiersz tablicy trafień (cel) |
 | rodzina_ataku | i32 | 0x4C8 | – | [P] | – | etap 30: EE 0x61DE61 → 0x4D5F2C; rodzina ataku = dbobjects „Family attack type” (odczyt 565: 48 dla gwardii); kolumna tablicy trafień 0x4D5F2C |
-| regeneracja | i32 | 0x578 | – | [W] | – | etap 30: EE 0x625B73; HP dodawane co 1000 ms |
+| regeneracja | i32 | 0x578 | – | [P] | – | etap 30: EE 0x625B73; etap 38: = dbobjects „Health regeneration” (173: 2), pomiar 619 (+2 HP co 30 taktów); wywołanie 0x625B47 tylko gdy ≠ 0 (0x600712, 0x60497F, 0x605484); HP dodawane przy każdym wyzerowaniu odliczania +0x290 (min z HP max ulepszenia +0x144; zapis tylko przy HP > 0) |
 | flagi_ruchu | u8 | 0x5D4 | – | [W] | – | nawigacja_wejscie.md (AoC testuje +0x2D0 & 0xC); flagi ruchu |
 | teren_dozwolony | u8[] | 0x5D6 | – | [W] | – | astar_pola.md §7; bajt na typ terenu komórki; AoC – metoda typu |
 | blokuje | u8 | 0x600 | – | [W] | – | astar_pola.md §7; obiekt blokuje pole |

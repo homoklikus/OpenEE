@@ -472,6 +472,11 @@ Prognoza nie jest obietnicą terminu.
 - **Efekty obszarowe** jako podsystem: menedżer co 2000 ms jest wspólny dla leczenia (szpital, port, medyk), ochrony
   przed klęskami/konwersją (świątynia, uniwersytet), ekonomii TC i maskowania. Szkielet w Core przyjmuje te typy, ale
   ich działania nie odtwarza. Szacunek: 1 etap na leczenie i regenerację z pomiarem.
+  Etap 38: regeneracja własna jednostek (0x625B47, typ+0x578, odliczanie +0x290) zamknięta [P: kod + 619]; leczenie
+  innych (Healer.tai 16000, efekt 138) i stan 5001 bohatera – otwarte.
+- **Wielu atakujących na jeden cel** (etap 38, [P] pomiar 619/620): druga gwardia omija zajęte miejsce podejścia,
+  wstawia EEUGLocation przed celem ataku i po drugim 9006 usuwa cel gracza. Kod testu zajętości (0x632CF4/0x63234D) –
+  następny krok; szacunek 1 etap z pomiarem.
 - **Wybór obiektu pod kursorem** [P/W]: 0x50EC37 – lista renderu kamery + `GEPhysicalModel::Intersects` (DLL).
   Odtworzenie przecięcia z siatką wymaga modeli (poza zakresem Core). Dla automatyzacji wystarcza warunek listy renderu
   i potwierdzenie kolejką celów.

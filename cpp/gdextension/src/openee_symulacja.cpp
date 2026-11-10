@@ -44,6 +44,10 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("ustaw_tablice_walki", "tablice", "wagi"), &OpenEESymulacja::ustaw_tablice_walki);
     ClassDB::bind_method(D_METHOD("rozkaz_ataku", "id", "cel"), &OpenEESymulacja::rozkaz_ataku);
     ClassDB::bind_method(D_METHOD("kat_rozkazu", "ids", "x", "y"), &OpenEESymulacja::kat_rozkazu);
+    ClassDB::bind_method(D_METHOD("ustaw_modyfikator_wysokosci", "wlaczony"), &OpenEESymulacja::ustaw_modyfikator_wysokosci);
+    ClassDB::bind_method(D_METHOD("ustaw_efekty_obszaru", "dane"), &OpenEESymulacja::ustaw_efekty_obszaru);
+    ClassDB::bind_method(D_METHOD("odtworz_efekty_obszaru"), &OpenEESymulacja::odtworz_efekty_obszaru);
+    ClassDB::bind_method(D_METHOD("morale", "id"), &OpenEESymulacja::morale);
     ClassDB::bind_method(D_METHOD("walka", "id"), &OpenEESymulacja::walka);
     ClassDB::bind_method(D_METHOD("zdarzenia_walki"), &OpenEESymulacja::zdarzenia_walki);
     ClassDB::bind_method(D_METHOD("stan_jednostek"), &OpenEESymulacja::stan_jednostek);
@@ -52,7 +56,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.11.0 (etap 37, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.12.0 (etap 38, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -322,7 +326,16 @@ bool OpenEESymulacja::ustaw_walke(int64_t id, int64_t gracz, bool czlowiek, cons
     p.pole_ac = float(liczba(d, "pole_ac", 0));
     p.typ_bazy = int(liczba(d, "typ_bazy", 0));
     p.typ_jednostki = int(liczba(d, "typ_jednostki", 0));
-    return swiat_->ustaw_walke(openee::IdJednostki(id), int(gracz), czlowiek, p, int(hp));
+    p.regeneracja = int(liczba(d, "regeneracja", 0));
+    openee::UstawieniaAI ai;   // etap 38: ustawienia AI typu/postawy (domyślne jak dotąd; pola z d – dane wejściowe)
+    ai.szuka_wrogow = bool(liczba(d, "ai_szuka_wrogow", 1));
+    ai.poscig_poza_icl = bool(liczba(d, "ai_poscig_poza_icl", 1));
+    ai.wraca_do_icl = bool(liczba(d, "ai_wraca_do_icl", 0));
+    ai.moze_swobodnie = bool(liczba(d, "ai_moze_swobodnie", 1));
+    if (!swiat_->ustaw_walke(openee::IdJednostki(id), int(gracz), czlowiek, p, int(hp), ai)) return false;
+    // stan licznika +0x290 w chwili startu (odczyt z nagrania; domyślnie 0 = regeneracja w pierwszym takcie) [P: kod]
+    swiat_->jednostka(openee::IdJednostki(id))->boj->regeneracja_ms = int(liczba(d, "regeneracja_ms", 0));
+    return true;
 }
 
 bool OpenEESymulacja::ustaw_tablice_walki(const Dictionary& d, const Array& wagi) {
@@ -361,6 +374,57 @@ bool OpenEESymulacja::ustaw_tablice_walki(const Dictionary& d, const Array& wagi
     }
     swiat_->ustaw_tablice_walki(std::move(t), w);
     return true;
+}
+
+// etap 38: modyfikator wysokości z cfg gry (odczyt 587/588 [P]) – jak w testach Core (ModyfikatorWysokosci::z_gry)
+void OpenEESymulacja::ustaw_modyfikator_wysokosci(bool wlaczony) {
+    if (!swiat_) return;
+    auto m = openee::ModyfikatorWysokosci::z_gry(swiat_->wariant().gra == openee::Gra::aoc);
+    m.wlaczony = wlaczony;
+    swiat_->ustaw_modyfikator_wysokosci(m);
+}
+
+// etap 38: efekty obszarowe i budynki z pliku narzędzia narzedzia/titan/efekty_obszaru.py (format jak wczytaj_efekty
+// w testach Core): {szablony: [...], budynki: [...]}. Zwraca liczbę budynków.
+int64_t OpenEESymulacja::ustaw_efekty_obszaru(const Dictionary& d) {
+    if (!swiat_) return -1;
+    const Array sz = d.get("szablony", Array());
+    for (int64_t i = 0; i < sz.size(); ++i) {
+        const Dictionary t = sz[i];
+        openee::SzablonEfektu e;
+        e.id = int(liczba(t, "id", 0)); e.typ = int(liczba(t, "typ", 0)); e.ksztalt = int(liczba(t, "ksztalt", 1));
+        e.relacja = int(liczba(t, "relacja", 2)); e.rozmiar = float(liczba(t, "rozmiar", 0));
+        e.maks_morale = int(liczba(t, "maks_morale", 0)); e.wartosc_40 = int(liczba(t, "wartosc_40", 0));
+        const Array z = t.get("zestaw", Array());
+        for (int64_t k = 0; k < z.size(); ++k) e.zestaw.push_back(int(int64_t(z[k])));
+        swiat_->dodaj_szablon_efektu(std::move(e));
+    }
+    const Array bu = d.get("budynki", Array());
+    for (int64_t i = 0; i < bu.size(); ++i) {
+        const Dictionary b = bu[i];
+        openee::Budynek x;
+        x.typ_db = int(liczba(b, "typ", 0)); x.gracz = int(liczba(b, "gracz", 0));
+        const Array pole = b.get("pole", Array()); const Array sr = b.get("srodek", Array());
+        if (pole.size() >= 2) { x.pole_x = int(int64_t(pole[0])); x.pole_y = int(int64_t(pole[1])); }
+        x.rozmiar_pol = int(liczba(b, "rozmiar", 1));
+        if (sr.size() >= 2) { x.x = float(double(sr[0])); x.y = float(double(sr[1])); }
+        std::vector<int> ef;
+        const Array e = b.get("efekty", Array());
+        for (int64_t k = 0; k < e.size(); ++k) ef.push_back(int(int64_t(e[k])));
+        swiat_->dodaj_budynek(x, ef);
+    }
+    return bu.size();
+}
+
+void OpenEESymulacja::odtworz_efekty_obszaru() { if (swiat_) swiat_->odtworz_efekty_obszaru(); }
+
+Array OpenEESymulacja::morale(int64_t id) const {
+    Array a;
+    if (!swiat_) return a;
+    const openee::Jednostka* u = swiat_->jednostka(openee::IdJednostki(id));
+    if (!u) return a;
+    for (int v : swiat_->poziomy_morale(*u)) a.push_back(v);
+    return a;
 }
 
 double OpenEESymulacja::kat_rozkazu(const Array& ids, double x, double y) const {

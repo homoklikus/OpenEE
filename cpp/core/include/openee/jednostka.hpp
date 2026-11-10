@@ -88,6 +88,7 @@ struct BojJednostki {
     // EEAEMoraleFromBuildings (min(+0x24, +0x20)). Źródło (budynki i ich zasięg) – poza Core [N]; ustawiane z zewnątrz.
     std::vector<int> morale;
     std::vector<CelNieosiagalny> nieosiagalne;   // EEUnit +0xA0 (etap 37)
+    int regeneracja_ms = 0;   // EEUnit +0x290: odliczanie do regeneracji HP (0x625B47; etap 38 [P: 619 – −34 ms/takt, 1000 po regeneracji])
 };
 
 struct Jednostka {

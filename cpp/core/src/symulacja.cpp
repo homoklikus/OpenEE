@@ -359,6 +359,11 @@ void Swiat::takt() {
             if (Jednostka* t = cel_ataku(u)) {
                 u.cel_walki_x = t->x;
                 u.cel_walki_y = t->y;
+            } else if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::miejsce) {
+                // etap 38: cel EEUGLocation (rozkaz ruchu w trakcie ataku, tryb 1 z 2012/2001 jeszcze aktywny) – obrót do
+                // punktu celu (+0x30) [P: 622, takt 86682 – ω +0,4165 w stronę punktu ruchu, nie własnej pozycji]
+                u.cel_walki_x = u.kolejka_celow.front().x;
+                u.cel_walki_y = u.kolejka_celow.front().y;
             } else {
                 u.cel_walki_x = u.x;
                 u.cel_walki_y = u.y;
@@ -1208,6 +1213,18 @@ void Swiat::liczniki_walki(Jednostka& u) {
     const int ms = 34;
     b.s.przeladowanie_ms = std::max(0, b.s.przeladowanie_ms - ms);
     b.szukanie_ms = std::max(0, b.szukanie_ms - ms);
+    // regeneracja HP 0x625B47 (wywołanie z aktualizacji typu 0x60071D/0x60498C/0x605490, gdy typ+0x578 ≠ 0) [P: kod +
+    // pomiar 619 – bohater 173: +2 HP co 30 taktów]: +0x290 −= czas taktu; ≤ 0 → HP = min(HP + regeneracja, HP max)
+    // (zapis tylko przy HP > 0), +0x290 := 1000 (bez przenoszenia nadwyżki). Flaga [0x918EA0] ≠ 0 pomija – w Core 0 [W].
+    if (b.p.regeneracja != 0) {
+        int r = b.regeneracja_ms - ms;
+        if (r <= 0) {
+            const int nowe = std::min(b.s.hp + b.p.regeneracja, b.p.hp_max);
+            if (b.s.hp > 0 && nowe > 0) b.s.hp = nowe;
+            r = 1000;
+        }
+        b.regeneracja_ms = r;
+    }
     if (b.s.hp <= 0) return;
     if (b.s.trafienie_w_cyklu || b.p.opoznienie_trafienia_ms < 0 || (u.stan != 2021 && u.stan != 2001)) return;
     // czas od wejścia w AttackEnemyUnit liczony jak licznik +0x2A0 (takt wejścia = 34 ms) [P: 564 – 1122 ms]

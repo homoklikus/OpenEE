@@ -6,10 +6,11 @@ extends SceneTree
 ## Użycie: godot --headless --path godot --script res://testy/eksperymenty/odtworz_e35.gd -- --scn=e35_a.scn
 ##         --t0=<czas gry 1. próbki> --t-rozkazu=<czas gry ostatniej próbki przed rozkazem> [--ruch=x,y[,kat]]
 ##         (kat = kurs końcowy celu EEUGLocation +0x2C z nagrania – `kat` w kolejce MCP; etap 37)
-##         [--rozkazy=T:atak;T:ruch:x:y] [--probki=N] [--wyjscie=plik.json] [--takty=N]
+##         [--rozkazy=T:atak[:hero|cit[:A_GRD|K_GRD]];T:ruch:x:y[:kat]] [--pelny=1 --efekty=plik --wysokosc=0|1 --regen-ms=N] [--probki=N] [--wyjscie=plik.json] [--takty=N]
 ## Dane wejściowe (SCN, nagranie) są lokalne – nie trafiają do repozytorium.
 
 const TAKT_MS := 1500.0 / 44.0
+var wynik_efekty := -1
 const RUCH_422 := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
 
 
@@ -71,10 +72,44 @@ func _start() -> void:
 		"rodzina_ataku": 38, "rozmiar": 0.3, "punktowy": 0, "szukanie_ms": 2000, "pole_ac": 0.5, "typ_jednostki": 6}
 	var prorok := {"atak": 0.0, "pole_widzenia": 8.0, "rozmiar": 0.5, "typ_jednostki": 13}
 	var ruch_ob := RUCH_422.duplicate(); ruch_ob.rozmiar = 0.3
-	var obs: int = c.dodaj_jednostke(RUCH_422, 164.5, 111.5, -1.35201); c.ustaw_walke(obs, 1, true, prorok, 100)
+	var pelny := _arg("pelny", "0") == "1"
+	var obs: int = c.dodaj_jednostke(RUCH_422, 164.5, 111.5, -1.35201); c.ustaw_walke(obs, 1, true, prorok, 240 if _arg("pelny", "0") == "1" else 100)
 	var a: int = c.dodaj_jednostke(RUCH_422, 164.5, 118.5, -2.35621); c.ustaw_walke(a, 1, true, gw, 215)
+	var ids := {"A_GRD": a, "OBS": obs}
+	if pelny:
+		# etap 38: pełny skład e35_a (kolejność listy: identyfikatory rosnąco – kolejność listy gry [N])
+		var ob_g := ob_p.duplicate()   # obywatel gracza 1 (typ 32 – te same parametry)
+		var k1: int = c.dodaj_jednostke(ruch_ob, 166.5, 118.5, -0.78367); c.ustaw_walke(k1, 1, true, ob_g, 65); ids["A_CIT"] = k1
+		var k2: int = c.dodaj_jednostke(RUCH_422, 162.5, 118.5, -2.35621); c.ustaw_walke(k2, 1, true, gw, 215); ids["K_GRD"] = k2
 	var cel: int = c.dodaj_jednostke(ruch_ob, 160.5, 105.5, -0.78367); c.ustaw_walke(cel, 5, false, ob_p, 65)
-	var wynik := {"mapa": im.get("skrot", ""), "pole_celu_przejezdne": c.pole_przejezdne(160, 105), "przejscia": []}
+	ids["T_CIT"] = cel
+	var bohater := 0
+	if pelny:
+		var gw5 := gw.duplicate()
+		var k3: int = c.dodaj_jednostke(RUCH_422, 168.5, 104.5, -2.35621); c.ustaw_walke(k3, 5, false, gw5, 215); ids["T_GRD"] = k3
+		# bohater 173 „h1-4 Alexander the Great (heal)” – odczyt zad. 621 (typ/ulepszenie EE) i dbobjects [P];
+		# ai_szuka_wrogow = 0: w 619 bohater nie atakuje – cykl 5000 → 16000 (LookForHealee, Healer.tai) → 2025 [P pomiar];
+		# stan 16000 w Core niezamodelowany [N]. Parametry ruchu c4/c8 nieodczytane [N] (bohater stoi – bez wpływu).
+		var ruch_b := {"a": 2.0, "vmax": 0.8, "alfa": 6.98132, "wmax": 6.98132, "rozmiar": 0.55, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+		var bh := {"atak": 14.0, "pancerz": [3, 0, 3, 0, 0, 0], "zasieg_max": 0.6, "pole_widzenia": 6.0, "przeladowanie_ms": 2000,
+			"rodzaj_ataku": 5, "wiersz_celu": 5, "klasa_trafienia": 8, "rodzina_ataku": 55, "luk_ataku": 0.3490658700466156,
+			"rozmiar": 0.55, "punktowy": 1, "szukanie_ms": 1000, "pole_ac": 0.800000011920929, "typ_bazy": 173, "typ_jednostki": 13,
+			"regeneracja": 2, "regeneracja_ms": int(_arg("regen-ms", "898")), "ai_szuka_wrogow": 0}
+		bohater = c.dodaj_jednostke(ruch_b, 164.5, 104.5, -2.35810); c.ustaw_walke(bohater, 5, false, bh, 1235); ids["HERO"] = bohater
+		# klasa 8 (bohater) × rodzina 48 (gwardia): 0,714 / 1,0 / 1,4 (odczyt zad. 621 [P])
+		for i in 3:
+			var f8 := PackedFloat32Array(); f8.resize(64); f8[48] = [0.714, 1.0, 1.4][i]
+			tr[["08", "0C", "10"][i]][8] = f8
+		mn[0] = [1, 1, 1.5, 1, 1, 1]
+		c.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
+			[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
+		if _arg("wysokosc", "1") == "1": c.ustaw_modyfikator_wysokosci(true)
+		var pe := _arg("efekty", "")
+		if pe != "":
+			wynik_efekty = c.ustaw_efekty_obszaru(JSON.parse_string(FileAccess.get_file_as_string(pe)))
+			c.odtworz_efekty_obszaru()
+	var wynik := {"mapa": im.get("skrot", ""), "pole_celu_przejezdne": c.pole_przejezdne(160, 105), "przejscia": [],
+		"ids": ids, "budynki_efektow": wynik_efekty, "jednostki": {}}
 	var T0 := float(_arg("t0", "9909"))
 	var takt_rozkazu := int(round((float(_arg("t-rozkazu", "40113")) - T0) / TAKT_MS))   # ostatnia próbka przed rozkazem
 	var ruch := _arg("ruch", "")
@@ -93,21 +128,36 @@ func _start() -> void:
 		if dalsze.has(k):
 			var cz: PackedStringArray = dalsze[k]
 			if cz[1] == "ruch": c.rozkaz_ruchu(a, float(cz[2]), float(cz[3]), float(cz[4]) if cz.size() > 4 else null, false)
-			else: c.rozkaz_ataku(a, cel)
+			else:   # T:atak[:hero|cit[:A_GRD|K_GRD]] – etap 38: cel i wykonawca rozkazu
+				var kto: int = ids.get(cz[3], a) if cz.size() > 3 else a
+				c.rozkaz_ataku(kto, bohater if cz.size() > 2 and cz[2] == "hero" else cel)
 		c.takt(1)
+		if pelny:   # przejścia wszystkich jednostek: stan, cel, HP
+			for d in c.stan_jednostek():
+				var nm := ""
+				for kk in ids:
+					if ids[kk] == int(d.id): nm = kk
+				var jd: Dictionary = c.jednostka(int(d.id))
+				var kl := "%d|%d|%d" % [int(d.stan), int(d.get("cel", 0)), int(d.get("hp", -1))]
+				if not wynik.jednostki.has(nm): wynik.jednostki[nm] = [["", 0]]
+				if wynik.jednostki[nm][-1][0] != kl:
+					wynik.jednostki[nm].append([kl, snappedf(T0 + TAKT_MS * (k + 1), 0.1), snappedf(float(d.x), 0.001), snappedf(float(d.y), 0.001)])
 		var ja: Dictionary = {}
 		for d in c.stan_jednostek():
 			if int(d.id) == a: ja = d
 		var k0 := takt_rozkazu if _arg("probki-od", "") == "" else int(round((float(_arg("probki-od", "0")) - T0) / TAKT_MS))
 		if k >= k0 and k < k0 + int(_arg("probki", "0")):
 			if not wynik.has("probki"): wynik["probki"] = []
-			wynik.probki.append([snappedf(T0 + TAKT_MS * (k + 1), 0.1), int(ja.stan), float(ja.x), float(ja.y), float(ja.kurs), float(ja.v), int(ja.tryb)])
+			var mj: Array = c.jednostka(a)["macierz"]
+			wynik.probki.append([snappedf(T0 + TAKT_MS * (k + 1), 0.1), int(ja.stan), float(ja.x), float(ja.y), float(ja.kurs), float(ja.v), int(ja.tryb),
+				float(mj[1]), float(mj[4]), float(c.jednostka(a)["omega"])])
 		var klucz := "%d|%d" % [int(ja.stan), int(ja.get("cel", 0))]
 		if klucz != prev:
 			prev = klucz
 			wynik.przejscia.append([snappedf(T0 + TAKT_MS * (k + 1), 0.1), int(ja.stan), int(ja.get("cel", 0)), snappedf(float(ja.x), 0.001), snappedf(float(ja.y), 0.001), snappedf(float(ja.v), 0.001)])
 	wynik["koniec"] = c.jednostka(a)
 	wynik["diag"] = c.diagnostyka()
+	if pelny: wynik["zdarzenia"] = c.zdarzenia_walki_od(0)
 	var p := _arg("wyjscie", "")
 	if p != "":
 		var f := FileAccess.open(p, FileAccess.WRITE); f.store_string(JSON.stringify(wynik, " "))

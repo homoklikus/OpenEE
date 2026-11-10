@@ -671,3 +671,63 @@ Kod EE (adresy Empire Earth.exe, analiza capstone) i nagrania 616/619/620 (EE, e
 Core (etap 37): mapa nieosiągalnych w `BojJednostki::nieosiagalne`, `Swiat::cel_nieosiagalny` / `oznacz_nieosiagalny`,
 filtr kandydatów w `szukaj_wroga`, wpis w `punkt_podejscia` (brak miejsca) i w EnemyUnitReachable; licznik ≤ 25;
 9014 i tryb 5 jak wyżej. 0x62D696 i 0x5ECAD0 nadal przyjmowane jako prawda [N].
+
+## 28. Regeneracja HP, bohater w 619 i pełne odtworzenie e35_a (etap 38)
+
+**Regeneracja HP – 0x625B47** [P: kod + pomiar 619]. Wywoływana z aktualizacji typu jednostki (0x60071D, 0x60498C,
+0x605490) tylko wtedy, gdy typ+0x578 („Health regeneration” z dbobjects) ≠ 0. Flaga [0x918EA0] ≠ 0 pomija całość
+(w Core zawsze 0 [W]).
+
+```
+licznik = EEUnit+0x290 − czas_taktu        ; czas_taktu = [0x919774]+0xA4 = 34 ms (pomiar: −34 co takt)
+jeśli licznik > 0:  EEUnit+0x290 := licznik
+inaczej:            nowe = min(HP + typ+0x578, ulepszenie+0x144)
+                    jeśli HP > 0 i nowe > 0: HP := nowe (setter 0x616F30)
+                    EEUnit+0x290 := 1000     ; bez przenoszenia nadwyżki → okres 30 taktów (1000 − 29·34 = 14)
+```
+
+Pomiar 619 (bohater 173 „h1-4 Alexander the Great (heal)”, regeneracja 2): licznik 898 w pierwszej próbce
+(t = 9909), dalej −34 co takt, po 14 → 1000 i HP +2; trafienia gwardii (−14) nie przesuwają fazy. W 622 licznik
+startowy 1000 (t = 9806). Pole +0x290 to odliczanie, nie termin bezwzględny (poprawione w `struktury_titan.json`).
+
+**Bohater 0x5000ad2 – parametry** (odczyt zad. 621 z typu i ulepszenia EE [P]): klasa 8, rodzina ataku 55, rodzaj/wiersz
+5, łuk 0,349066, rozmiar 0,55, punktowy, szukanie 1000 ms, zasięg 0,6, LOS 6, atak 14, pancerz [3,0,3,0,0,0],
+przeładowanie 2000, HP 1235, a 2,0, vmax 0,8, α = ωmax = 6,98132, +0xAC 0,8, regeneracja 2, leczenie innych 50 w
+promieniu 4,0 (dbobjects, efekt 138 – nieużyte w 619). Brak odczytu: c4/c8 ruchu (bohater stoi – bez wpływu) [N].
+Obrażenia gwardii na bohaterze: 15 · 1,4 (tablica 0x10, klasa 8 × rodzina 48) · r(wysokość) − 3 = **14** – Core z
+modyfikatorem wysokości `z_gry` daje 14 w każdym z 79 trafień [P: 619].
+
+**Stany bohatera w 619** [P pomiar, N mechanizm]: bohater nie atakuje (gracz 5 bez celu w LOS 6 – gwardia A stoi
+poza nim do 77716, potem bohater jest celem); cykl 5000 → 16000 (LookForHealee, Healer.tai) → 2025 → 5000 co
+~1023 ms oraz 5001 przez 2 takty po każdym trafieniu. Skrypt leczenia nie jest w Core – porównanie stanów bohatera
+pomija 16000/2025 (jawny parametr narzędzia) i zatrzymuje się na 5001 (t = 79045); HP bohatera zgodne w całym zapisie.
+
+**Wybór bohatera w 619 to AI, nie rozkaz** [P: kolejka celów]: cel EEUGAttackUnit utworzony w 71988 ma
+`pochodzenie` 0 (nie od gracza) – po porzuceniu obywatela (5000 w 71954) Idle `CanISeeEnemy` → CheckRange 2013
+w następnym takcie (bez 2016/2012, tryb 3 – brak obrotu przed ruchem). Rozkaz MCP na bohatera wszedł dopiero w
+88694 (pochodzenie 1, 2016 → 2012). Rozkazy dla 0x1000858 (zgłoszone przez MCP jako nieudane) weszły z opóźnieniem
+w 123981, 152108 i 180236 (pochodzenie 1). Etap 37 błędnie przypisywał t = 71988 rozkazowi.
+
+**Obrót trybu 1 do celu EEUGLocation** [P: 622, takt 86682]: rozkaz ruchu wydany w trakcie WaitForReload (tryb 1
+z 2012/2001 aktywny) – pierwszy takt obraca jednostkę w stronę punktu ruchu (ω = +0,4165), nie w stronę dawnego celu
+ani własnej pozycji. Core: w trybie 1 bez celu-jednostki pozycja celu = punkt celu EEUGLocation (+0x30).
+
+**Zmiana pola atakującego (B1)** [P: 622]: po przejściu gwardii z pola (161,105) na (162,108) – 22,8 s po ostatnim
+wpisie obywatela w mapie nieosiągalnych – AI wybiera obywatela ponownie natychmiast (94524, pochodzenie 0); wpis
+z innym polem atakującego nie blokuje wyboru. Reguła etapu 37 (pola atakującego i celu w kluczu ważności) daje ten
+sam przebieg co takt (622: 6725 taktów zgodnych, macierz bitowo). Zmiana pola celu (B2) i dwie gwardie na jeden
+cel jako niezależne mapy (B3) – nie zmierzone (cel wroga nie daje się przesunąć przez MCP; rozkaz drugiej gwardii
+wchodzi z opóźnieniem i ma inny przebieg – § niżej).
+
+**Druga gwardia na bohatera (0x1000858, 619/620)** [P pomiar, N przyczyna]: PrepareToMove wybiera miejsce
+(164,5; 105,025) – miejsce (163,975; 105,025) zajmuje gwardia A – i wstawia przed celem ataku EEUGLocation
+(163,5; 103,5); trasa = 1 punkt (własna pozycja), 10003 → 9000 → cel EEUGLocation zdjęty → 2016 → drugi
+PrepareToMove bez EEUGLocation → 9000 → 9006 → 5001 → 5002 → 2025 → 5000 z usunięciem celu gracza. Core: brak
+testu zajętości miejsca i wstawiania EEUGLocation – 9006 już w pierwszym przejściu, potem cykl 5002/2013. Pierwsza
+rozbieżność 0x1000858: 619 t = 124254, 620 t = 109423. Wymaga analizy 0x632CF4/0x62D696 (zajętość pól, okno A*).
+
+**0x5ECAD0** [W: kod]: test osiągalności przez mapę 0x917BC8: najpierw 0x4256BE(jednostka, pole celu) – test
+bezpośredni; inaczej identyfikatory regionów (+0xDA obiektów pól z 0x42C49A) obu jednostek i macierz połączeń
+regionów [0x917CC4][i·[0x917CEC] + j]. To nie A* – spójność regionów mapy. **0x622776 / 0x623717** [W]: miejsca
+wywołania wpisu do mapy nieosiągalnych 0x5E8651 – w PrepareToMove (potem funktor 0x6233D2/0x630013 i dalsze
+przygotowanie trasy) i w drugiej akcji stanu (powrót do 0x6236DD). Reguł nie wdrożono – brak pomiaru rozróżniającego.

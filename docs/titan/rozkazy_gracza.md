@@ -331,3 +331,14 @@ EEUGLocation +0x2C i jest kursem końcowym w 9006. Liczony jest **w chwili klikn
 350 ms później – w 620 kąt −0,36194 odpowiada pozycji jednostki sprzed kilku taktów od wykonania [P: nagranie, pole
 `kat` kolejki]. Core: `Swiat::kat_rozkazu`, GDExtension `kat_rozkazu(ids, x, y)`; scena potyczki podaje go do
 `rozkaz_ruchu`.
+
+## 11. Odczyt pośredni 2016 i opóźnione rozkazy MCP (etap 38)
+
+- Próbka 620, t = 192032 (rozkaz ataku na bohatera): stan 2016 i macierz sprzed obrotu, a od następnej próbki
+  stan, kurs i ω identyczne z Core, w którym rozkaz wchodzi przed taktem (2016 → 2012 w tym samym takcie). To odczyt
+  pamięci w trakcie taktu (rejestrator), nie inny wariant reguły [P: 620].
+- Rozkaz, który `walka_atak_rzut_gry` zgłasza jako nieudany (brak celu w kolejce po kliknięciu), może wejść
+  później: 619/620 – gwardia 0x1000858, cele EEUGAttackUnit z `pochodzenie` 1 utworzone 25–110 s po krokach MCP.
+  Odtworzenie bierze czas utworzenia celu z kolejki w nagraniu, nie z wyniku kroku MCP.
+- 616: drugie kliknięcie w ten sam punkt (t = 47511) nie tworzy nowego celu, ale ponawia PrepareToMove (2015 w
+  47545) – w odtworzeniu jako drugi rozkaz ruchu w ten sam punkt.

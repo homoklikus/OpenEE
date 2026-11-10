@@ -6,6 +6,18 @@
   {
    "data": "2026-11-10",
    "tytul": {
+    "pl": "Etap 38: bohater, regeneracja i pełne odtworzenie walki",
+    "en": "Stage 38: hero, regeneration and a full battle replay"
+   },
+   "tekst": {
+    "pl": "OpenEE odtwarza scenariusz testowy z bohaterem takt po takcie: gwardia zachowuje się jak w oryginale przez całe nagrania, a bohater traci i odzyskuje życie w tych samych chwilach. Dodano regenerację zdrowia i obrót do punktu ruchu wydanego w trakcie walki.",
+    "en": "OpenEE replays the test scenario with the hero tick by tick: the guard behaves like the original for whole recordings, and the hero loses and regains health at the same moments. Health regeneration and turning towards a move point given during combat were added."
+   },
+   "raport": "RAPORT_ETAP_38.md"
+  },
+  {
+   "data": "2026-11-10",
+   "tytul": {
     "pl": "Etap 37: jednostki zachowują się jak w oryginale przy celu nie do osiągnięcia",
     "en": "Stage 37: units behave like the original when a target cannot be reached"
    },
@@ -13,7 +25,7 @@
     "pl": "Sprawdziliśmy w kodzie gry dwa zachowania, które w OpenEE jeszcze się różniły. Po pierwsze: jednostka po dojściu do celu obraca się w stronę wskazaną kliknięciem, a przy ataku nie traci na to czasu. Po drugie: gdy wróg stoi tam, gdzie nie da się podejść, jednostka po kilku próbach rezygnuje i wraca do niego dopiero po 30 sekundach, a w tym czasie może zaatakować kogoś innego. Teraz OpenEE robi to samo, takt po takcie zgodnie z nagraniami z oryginalnej gry.",
     "en": "We checked two behaviours in the game code that still differed in OpenEE. First: after reaching its destination a unit turns towards the direction given by the click, but does not waste time on it when attacking. Second: when an enemy stands where it cannot be reached, the unit gives up after a number of attempts and only comes back to it after 30 seconds, possibly attacking someone else meanwhile. OpenEE now does the same, matching recordings of the original game tick by tick."
    },
-   "raport": "RAPORT_ETAP_37.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_37.md"
   },
   {
    "data": "2026-11-10",

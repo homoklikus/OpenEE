@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_37.md`](../RAPORT_ETAP_37.md) – etap 37: przyczyna rozbieżności stanu 9006 (tryb 5 i zdarzenie 9014 zależne od rodzaju celu, kurs końcowy PPM = kąt szyku) i mechanizm ponownego wyboru nieosiągalnego celu (licznik prób ≤ 25, mapa celów nieosiągalnych na 30 s) z kodu EE; Core zgodny co takt z nagraniami 616, 619 i 620 znacznie dłużej; potyczka bez regresji.
+[`RAPORT_ETAP_38.md`](../RAPORT_ETAP_38.md) – etap 38: scenariusz `e35_a` w pełnym składzie z bohaterem; regeneracja HP (0x625B47) i obrót trybu 1 do punktu EEUGLocation w Core; gwardia zgodna z grą co takt w całych nagraniach 616, 619, 620 i 622, HP bohatera w całym 619; eksperyment B1 (zmiana pola atakującego); kurs 619/620 bitowo zgodny; potyczka działa.
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -62,6 +62,7 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_29.md`](archiwum/RAPORT_ETAP_29.md) | etap 29 | etap 29: A* po polach, test kroku, kolizje w takcie i kolejka celów w OpenEE Core (C++), porównanie Core z pomiarami EE/AoC, rejestracja wielu jednostek w Riverlands_MCP, mapa systemów Titan i prognoza rekonstrukcji |
 | [`RAPORT_ETAP_30.md`](archiwum/RAPORT_ETAP_30.md) | etap 30 | etap 30: import rzeczywistych map SCN do OpenEE Core, schemat struktur Titan i narzędzia statyki, narzędzie pomiar → Core, kamera i kolejka celów w Riverlands_MCP, początek rekonstrukcji walki (pojedynek wręcz EE odtworzony bez różnic), aktualizacja prognozy |
 | [`RAPORT_ETAP_31.md`](archiwum/RAPORT_ETAP_31.md) | etap 31 | etap 31: pełny cykl ataku w OpenEE Core (wybór celu z wagami z gry, podejście i pościg, zasięg, łuk i obrót, atak, przeładowanie, śmierć), przeładowanie AoC 0x5FEA22, obrażenia klas, walka zintegrowana ze `Swiat`, API walki w GDExtension, porównanie Core z grą, aktualizacja prognozy |
+| [`RAPORT_ETAP_37.md`](archiwum/RAPORT_ETAP_37.md) | etap 37 | etap 37: przyczyna rozbieżności stanu 9006 (tryb 5 i 9014 zależne od rodzaju celu, kurs końcowy PPM = kąt szyku), ponowny wybór nieosiągalnego celu (licznik ≤ 25, mapa celów nieosiągalnych na 30 s); Core zgodny co takt z 616/619/620 znacznie dłużej |
 | [`RAPORT_ETAP_36.md`](archiwum/RAPORT_ETAP_36.md) | etap 36 | etap 36: pierwsza grywalna potyczka w Godocie (ruch i walka wręcz w OpenEE Core, sterowanie EE, wynik, restart), pomiary 619–620, rozkaz ataku gracza zgodny z grą co takt, poprawiona interpretacja 616 |
 | [`RAPORT_ETAP_35.md`](archiwum/RAPORT_ETAP_35.md) | etap 35 | etap 35: nowa metodologia eksperymentów (scenariusz `e35_a`, dziennik 602–618), przyczyny niepowodzeń PPM (mgła, zwłoki, błędny rzut MCP), działający rozkaz ataku gracza przez MCP, warunki EEMAttackUnit w `EEAMouseClick`, lista braków do potyczki |
 | [`RAPORT_ETAP_34.md`](archiwum/RAPORT_ETAP_34.md) | etap 34 | etap 34: pełne reguły morale z budynków liczone w Core (5/5 okien zgodnych z grą), mechanizm wyboru obiektu pod kursorem, próby rozkazu ataku MCP, śmierć celu i kolejka, mapa statyczna pocisków |

@@ -124,3 +124,11 @@ Nowa metoda `kat_rozkazu(ids: Array, x, y) -> float` (OpenEE Core 0.11.0): kąt 
 prostokąta zaznaczonych jednostek → punkt kliknięcia, UMArcTan2). `SymulacjaCore.rozkaz_grupy` liczy go w chwili
 kliknięcia i podaje jako kurs końcowy do `rozkaz_ruchu` – jednostki obracają się na końcu ruchu jak w EE (9006).
 Testy GDExtension: 30 (+2: kąt z pomiaru 616, ponowny wybór celu nieosiągalnego po 30 s).
+
+## 19. Etap 38 – OpenEE Core 0.12.0 (testy GDExtension: 33)
+
+- `ustaw_modyfikator_wysokosci(wlaczony: bool)` – reguły 0x61E500 z cfg gry (`ModyfikatorWysokosci::z_gry`).
+- `ustaw_efekty_obszaru(dane: Dictionary) -> int` i `odtworz_efekty_obszaru()` – szablony i budynki w formacie
+  narzędzia `narzedzia/titan/efekty_obszaru.py` (jak `wczytaj_efekty` w testach Core); `morale(id) -> Array`.
+- `ustaw_walke`: nowe klucze `regeneracja` (typ+0x578), `regeneracja_ms` (stan licznika +0x290 na starcie),
+  `ai_szuka_wrogow`, `ai_poscig_poza_icl`, `ai_wraca_do_icl`, `ai_moze_swobodnie` (domyślne jak dotąd).

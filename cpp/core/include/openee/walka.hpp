@@ -38,6 +38,7 @@ struct ParametryWalki {
     float pole_ac = 0.0f;                   // ulepszenie +0xAC – używane tylko w ocenie celu (znaczenie [N])
     int typ_bazy = 0;                       // typ +0x4B8 (porównanie z wagą +0x14 „typ specjalny”)
     bool reszta_przeladowania_bez_spoczynku = false;  // typ +0x5D4 bit 0: WaitForReload nie przełącza trybu 3
+    int regeneracja = 0;                    // typ +0x578 „Health regeneration” – HP co 1000 ms (0x625B47, etap 38 [P: 619])
     int typ_jednostki = 0;                  // typ +0x4B4 (dbobjects „Unit type”): 5 gwardia, 6 obywatel (zad. 579 [P])
 };
 
