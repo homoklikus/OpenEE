@@ -48,7 +48,8 @@ struct CelRuchu {
     double x = 0, y = 0;                  // dokładny punkt rozkazu
     std::optional<double> kurs_koncowy;   // cel+0x2C
     bool od_gracza = true;
-    bool punkt_automatyczny = false;      // flaga +0x32 (punkty pośrednie podsystemu tras) – niewdrożone
+    bool punkt_automatyczny = false;      // flaga +0x32 (punkt pośredni z grafu podsektorów, etap 40)
+    bool etap_grafu = false;              // flaga +0x1D: etap grafu podsektorów wykonany dla tego celu (0x4A2764)
     std::uint32_t proby = 0;              // cel+0x18: licznik prób przygotowania trasy
     // EEUGAttackUnit (etap 31): +0x30 jednostka celu, +0x34/+0x38 pole celu (−10000 bez celu), punkt +0x20/+0x24
     std::uint32_t cel_jednostka = 0;

@@ -137,3 +137,10 @@ Testy GDExtension: 30 (+2: kąt z pomiaru 616, ponowny wybór celu nieosiągalne
 
 - `walka(id)["kolejka"]` – pełna kolejka celów jednostki: `rodzaj` (EEUGAttackUnit / EEUGLocation), `x`, `y`, `cel`,
   `od_gracza`, `proby`. Godot tylko odczytuje; wybór miejsca podejścia (0x63234D) liczy Core.
+
+## 21. Etap 40 – OpenEE Core 0.14.0 (testy GDExtension: 38)
+
+- `ustaw_graf_podsektorow(dane: Dictionary) -> int` – graf podsektorów w formacie odczytu Riverlands_MCP
+  `podsektory` (tryb diagnostyczny „graf z gry”; budowa podsektorów w Core nieodtworzona).
+- `sciezka_grafu(x0, y0, x1, y1) -> Array` – ścieżka A* grafu (od celu do startu).
+- `diagnostyka()`: `graf_z_gry`, `graf_prosby`, `graf_punkty`, `graf_ostatnia`.

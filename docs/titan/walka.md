@@ -787,3 +787,31 @@ W 619/620 rozkazy 0x1000858 najpewniej były przyjęte – trzy próby MCP ↔ t
 kolejność się zgadzają; czasów kroków MCP w czasie gry nie zapisano]. `walka_atak_rzut_gry` (etap 39) czyta kolejkę
 w każdym takcie do 1000 ms czasu gry po PPM i zapisuje zaznaczenie +0x9B0/+0x9AC, czas PPM, czas utworzenia celu
 i porzucenie w oknie.
+
+## 30. Pochodzenie punktu (163,5; 103,5), osiągalność 0x62D696 i pełne 619/620 (etap 40)
+
+**Punkt (163,5; 103,5)** [P: kod + odczyt + pomiar 624]: punkt reprezentatywny (163, 103) podsektora 472, do którego
+należy pole celu ataku drugiej gwardii ((164,105) w 619, (163,105) w 624). Gwardia stoi na polu (162,118) w podsektorze
+523; 523 nie ma 472 na liście sąsiadów, więc A* grafu kończy przez 469 i daje ścieżkę [472, 469, 523] (n = 3) →
+0x4A26E3 wstawia punkt podsektora o indeksie 0 (cel) i ustawia na EEUGAttackUnit +0x1D = 1. Kolejność w 624:
+8000 (punkt + atak, próby: punkt 1, atak 0) → 2015 → 10003 → 9000 → (8021 GetNextAutoWaypoint, zdjęcie +0x32) → 2016
+→ … → drugi 8000 bez punktu (+0x1D = 1) → 9000 → 9006 → 5001 → 5002 → 2025 → 5000.
+
+**Dlaczego trasy mają 1 punkt** [P: Core + mapa]: pole (162,118) jest nieprzejezdne (las) – gwardia stoi w nim od
+startu scenariusza; A* po polach z takiego pola kończy się po 2 iteracjach, trasa = własna pozycja.
+
+**0x62D696** [W: kod; P: 619/620/624 przez zgodność co takt]: metryka 0x409914 = kwadrat odległości pól (całkowity);
+0x406D5E = kwadrat odległości pozycji. T = max(zasięg², 2,0). Szybka prawda: typ+0x430 = 0, (typ+0x5D4 & 6) = 0
+(oba przyjęte ≠ 0 [H]) albo d²(pozycje) ≤ T. Inaczej A* Bounded w obwiedni pól obu jednostek ± 2·⌈max(LOS, T)⌉
+(przycięta do mapy), budżet min(2·max(2·⌈…⌉, d²(pola)), 0x23) iteracji; prawda, gdy węzeł końcowy wyniku (pierwszy
+element listy) ma d²(pola, pole celu) ≤ T. Core: `Swiat::osiagalny_62d696` (AStarTitan, koniec = najbliższy węzeł).
+0x5ECAD0 (spójność regionów) nadal prawda [N].
+
+**Zwykły PPM** [P: nawigacja_wejscie pkt 3; 616]: trasa idzie przez prośbę grupową, kolejka nie dostaje punktów +0x32
+nawet przy ścieżce grafu 3 podsektorów (616: cel w podsektorze 572) – Core traktuje cel zwykłego PPM jak po etapie
+grafu (+0x1D = 1) [H: kto ustawia flagę]; cel z Shift przechodzi etap grafu przy aktywacji.
+
+**Wyniki** (gwardie 0x1000856 i 0x1000858, pełny skład, graf z gry): 619 – 7270/7273 i 7273/7273 taktów stanu,
+kolejki wszystkich jednostek bez różnicy; 620 – 6418/6419 i 6419/6419, kolejki bez różnicy; 616 (z rozkazem
+220637 dla 0x1000858) – 6420/6423 i 6423/6423; 622 – bez różnicy. Pozycja, macierz, v i ω gwardii A bez rzeczywistych
+różnic we wszystkich czterech nagraniach.

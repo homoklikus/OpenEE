@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_39.md`](../RAPORT_ETAP_39.md) – etap 39: zajętość miejsc podejścia z kodu EE (0x63234D) wdrożona w Core – druga gwardia wybiera to samo miejsce co w grze, seria 578 G3 (dwóch na jednego) znacznie bliżej gry; pośrednie EEUGLocation wyjaśnione etapem grafu podsektorów (0x4A26E3), którego Core jeszcze nie ma; potwierdzanie rozkazów MCP stanem gry; scenariusz e39_a.
+[`RAPORT_ETAP_40.md`](../RAPORT_ETAP_40.md) – etap 40: graf podsektorów odczytany z oryginalnego EE i wyjaśnione pochodzenie punktu pośredniego (163,5; 103,5); A* grafu, punkty pośrednie i osiągalność celu (0x62D696) w Core; obie gwardie zgodne z grą co takt w całych 616, 619 i 620 (graf z gry w trybie diagnostycznym); baza czystej mapy.
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -62,6 +62,7 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_29.md`](archiwum/RAPORT_ETAP_29.md) | etap 29 | etap 29: A* po polach, test kroku, kolizje w takcie i kolejka celów w OpenEE Core (C++), porównanie Core z pomiarami EE/AoC, rejestracja wielu jednostek w Riverlands_MCP, mapa systemów Titan i prognoza rekonstrukcji |
 | [`RAPORT_ETAP_30.md`](archiwum/RAPORT_ETAP_30.md) | etap 30 | etap 30: import rzeczywistych map SCN do OpenEE Core, schemat struktur Titan i narzędzia statyki, narzędzie pomiar → Core, kamera i kolejka celów w Riverlands_MCP, początek rekonstrukcji walki (pojedynek wręcz EE odtworzony bez różnic), aktualizacja prognozy |
 | [`RAPORT_ETAP_31.md`](archiwum/RAPORT_ETAP_31.md) | etap 31 | etap 31: pełny cykl ataku w OpenEE Core (wybór celu z wagami z gry, podejście i pościg, zasięg, łuk i obrót, atak, przeładowanie, śmierć), przeładowanie AoC 0x5FEA22, obrażenia klas, walka zintegrowana ze `Swiat`, API walki w GDExtension, porównanie Core z grą, aktualizacja prognozy |
+| [`RAPORT_ETAP_39.md`](archiwum/RAPORT_ETAP_39.md) | etap 39 | etap 39: zajętość miejsc podejścia (0x63234D) w Core, 578 G3 bliżej gry, pośrednie EEUGLocation jako etap grafu podsektorów, potwierdzanie rozkazów MCP stanem gry, scenariusz e39_a |
 | [`RAPORT_ETAP_38.md`](archiwum/RAPORT_ETAP_38.md) | etap 38 | etap 38: pełne odtworzenie e35_a z bohaterem, regeneracja HP (0x625B47), obrót trybu 1 do EEUGLocation, gwardia zgodna co takt w całych 616/619/620/622, eksperyment B1 |
 | [`RAPORT_ETAP_37.md`](archiwum/RAPORT_ETAP_37.md) | etap 37 | etap 37: przyczyna rozbieżności stanu 9006 (tryb 5 i 9014 zależne od rodzaju celu, kurs końcowy PPM = kąt szyku), ponowny wybór nieosiągalnego celu (licznik ≤ 25, mapa celów nieosiągalnych na 30 s); Core zgodny co takt z 616/619/620 znacznie dłużej |
 | [`RAPORT_ETAP_36.md`](archiwum/RAPORT_ETAP_36.md) | etap 36 | etap 36: pierwsza grywalna potyczka w Godocie (ruch i walka wręcz w OpenEE Core, sterowanie EE, wynik, restart), pomiary 619–620, rozkaz ataku gracza zgodny z grą co takt, poprawiona interpretacja 616 |

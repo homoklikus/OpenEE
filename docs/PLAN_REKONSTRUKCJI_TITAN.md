@@ -479,6 +479,8 @@ Prognoza nie jest obietnicą terminu.
   następny krok; szacunek 1 etap z pomiarem.
   Etap 39: test zajętości 0x63234D wdrożony [W/P: 619, 578 G3]; pozostaje graf podsektorów (0x4A26E3 – pośrednie
   EEUGLocation) i 0x62D696 (A* Bounded w EnemyUnitReachable). Szacunek: 1–2 etapy (odczyt grafu z pamięci, potem budowa).
+  Etap 40: graf podsektorów (A* 0x4A5807, punkty 0x4A26E3, 9016/8021) i 0x62D696 w Core; graf odczytany z gry –
+  budowa podsektorów (0x42434F/0x41E990) to następny krok (1–2 etapy; test referencyjny: odczyt e35_a).
 - **Wybór obiektu pod kursorem** [P/W]: 0x50EC37 – lista renderu kamery + `GEPhysicalModel::Intersects` (DLL).
   Odtworzenie przecięcia z siatką wymaga modeli (poza zakresem Core). Dla automatyzacji wystarcza warunek listy renderu
   i potwierdzenie kolejką celów.

@@ -6,6 +6,18 @@
   {
    "data": "2026-11-10",
    "tytul": {
+    "pl": "Etap 40: graf podsektorów i pełna zgodność dwóch gwardii",
+    "en": "Stage 40: subsector graph and full agreement for two guards"
+   },
+   "tekst": {
+    "pl": "OpenEE odczytuje graf podsektorów z oryginalnej gry i planuje na nim trasy jak Titan: wstawia punkty pośrednie i porzuca cele, do których jednostka nie dojdzie. Obie gwardie w nagraniach testowych zachowują się jak w oryginale w każdym takcie.",
+    "en": "OpenEE reads the subsector graph from the original game and plans routes on it like Titan: it inserts intermediate points and drops targets a unit cannot reach. Both guards in the test recordings behave like the original on every tick."
+   },
+   "raport": "RAPORT_ETAP_40.md"
+  },
+  {
+   "data": "2026-11-10",
+   "tytul": {
     "pl": "Etap 39: kilka jednostek atakuje jeden cel jak w oryginale",
     "en": "Stage 39: several units attack one target like the original"
    },
@@ -13,7 +25,7 @@
     "pl": "Jednostki atakujące wspólny cel wybierają wolne miejsca wokół niego według reguły odczytanej z kodu gry, więc walka dwóch na jednego jest dużo bliższa oryginałowi. Wyjaśniono też, skąd biorą się dodatkowe punkty ruchu przed atakiem.",
     "en": "Units attacking a shared target pick free spots around it using the rule read from the game code, so two-on-one fights are much closer to the original. The extra move points before an attack were also explained."
    },
-   "raport": "RAPORT_ETAP_39.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_39.md"
   },
   {
    "data": "2026-11-10",

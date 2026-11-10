@@ -29,6 +29,10 @@ struct Diagnostyka {
     std::uint64_t wejscia_niewdrozone = 0;        // np. RepathAroundObstacle, stany walki
     std::string ostatnie_niewdrozone;
     std::uint64_t losowania_idle_pominiete = 0;   // wejście w Idle: warunkowe losowania [N]
+    std::uint64_t osiagalnosc_astar = 0;          // etap 40: wywołania A* w 0x62D696
+    std::uint64_t graf_prosby = 0;                // etap 40: etapy grafu podsektorów (0x4A1AFF bajt +0x1C)
+    std::uint64_t graf_punkty = 0;                // wstawione punkty +0x32 (0x4A26E3)
+    std::vector<int> graf_ostatnia;               // ostatnia ścieżka grafu (od celu do startu)
     std::uint64_t objazdy_niezweryfikowane = 0;   // wejścia w 9002 (objazd A* ±50 – [W], bez pomiaru)
     std::uint64_t kolizje = 0;                    // wywołania 0x549179 z kolizją
     std::uint64_t kroki_odpychania = 0;           // udane przesunięcia 0x549A08
@@ -70,6 +74,30 @@ enum class StartTrasy {
     rozkaz,   // jak rozkaz gracza: stan 8000 PrepareToMove z gotową trasą
     advance,  // bezpośrednio w Advance (start przypadków referencyjnych etapu 27 – model v4)
 };
+
+/// Graf podsektorów Titan (EEAIContinentManager, EE 0x917BC8) – etap 40. Struktura z kodu [W]; algorytm budowy
+/// podsektorów (0x42434F/0x41E990) nieodtworzony – dane podaje wywołujący (tryb diagnostyczny: odczyt z pamięci gry).
+struct Podsektor {
+    int id = 0;                 // +0x50
+    int sektor_i = 0, sektor_j = 0;   // sektor +0x44 → +0x40/+0x44 (komórka siatki sektorów)
+    int rodzaj = 0;             // +0x54
+    int punkt_x = 0, punkt_y = 0;     // +0x3C/+0x40 – punkt reprezentatywny (pole)
+    std::vector<int> sasiedzi;  // +0x2C…+0x34 (kolejność z pamięci; pętla grafu przechodzi od końca)
+};
+struct GrafPodsektorow {
+    bool z_gry = false;         // dane odczytane z pamięci gry (nie zbudowane w Core)
+    std::map<int, Podsektor> podsektory;
+    std::map<std::int64_t, int> pole_podsektor;   // (x << 32 | y) → id (pola z U2DSparseArrayPointContainer +0x10)
+    int podsektor_pola(std::int64_t x, std::int64_t y) const {
+        auto it = pole_podsektor.find((x << 32) | (y & 0xffffffff));
+        return it == pole_podsektor.end() ? -1 : it->second;
+    }
+};
+/// A* grafu podsektorów 0x4A5807 [W: kod]: koszt krawędzi 0x41E584 (ten sam sektor 1, sąsiedni w osi 10, po
+/// przekątnej 14), H = 10·Manhattan komórek sektorów (0x4A6077), sąsiedzi od końca listy, test celu 0x41E3C0 (węzeł =
+/// cel albo sektor w odległości ≤ 1 i cel na liście sąsiadów węzła). Wynik: identyfikatory od celu do startu
+/// (z celem na początku). Remisy F – LIFO [H, jak lista otwarta pól].
+std::vector<int> szukaj_w_grafie(const GrafPodsektorow& g, int start, int cel);
 
 class Swiat {
 public:
@@ -145,6 +173,10 @@ public:
     void ustaw_przeladowanie_aoc(double lo, double hi) { aoc_lo_ = lo; aoc_hi_ = hi; }
     /// Modyfikator wysokości obrażeń (konfiguracja reguł gry) i premia gracza +0xA3C.
     void ustaw_modyfikator_wysokosci(ModyfikatorWysokosci m) { mod_wys_ = m; }
+    void ustaw_graf_podsektorow(GrafPodsektorow g) { graf_ = std::move(g); }
+    const GrafPodsektorow& graf_podsektorow() const { return graf_; }
+    /// N progu 9016 ShouldMoveToNextAutoWaypoint ([0x917DC8], 0x4243AC) z rozmiaru mapy
+    static int prog_punktu_auto(int rozmiar_mapy);
     void ustaw_premie_wysokosci(int gracz, float p) { premia_wys_[gracz] = p; }
     /// Rozkaz ataku gracza (EEUGAttackUnit z +0x1C = 1): jak PPM na wrogu – cel na początek kolejki, stan CheckRange
     /// ([H]: wejście rozkazu ataku w InitialAttackState/CheckRange nieodczytane; tu – CheckRange).
@@ -167,12 +199,15 @@ public:
     std::vector<MigawkaJednostki> migawka() const;
 
 private:
+    GrafPodsektorow graf_;
     void krok_maszyny(Jednostka& u);
     std::optional<bool> zdarzenie(Jednostka& u, const std::string& nazwa);
     bool ocen_przejscie(Jednostka& u, const Przejscie& p);
     void wejdz_w_stan(Jednostka& u, const StanSkryptu& s);
     void nieobslugiwane(const std::string& n);
     bool przygotuj_trase(Jednostka& u, int okno);
+    void etap_grafu(Jednostka& u);
+    bool osiagalny_62d696(Jednostka& u, const Jednostka& t);
     void aktywuj_cel(Jednostka& u);
     void po_ruchu(Jednostka& u, double x0, double y0);
     void odbuduj_kontakty(Jednostka& u, double cx, double cy);

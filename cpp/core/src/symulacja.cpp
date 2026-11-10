@@ -22,7 +22,7 @@ const std::vector<OpisPodsystemu>& podsystemy() {
          "zdarzenia walki/transportu = fałsz + licznik"},
         {"kolejka celów, Shift (poziom 0)", StatusPodsystemu::czesciowy, "punkty +0x32 i porzucenie – nie"},
         {"A* po polach + Bounded", StatusPodsystemu::wdrozony, "18 przypadków bitowo z modelem e24; synchronicznie"},
-        {"graf podsektorów", StatusPodsystemu::niewdrozony, ""},
+        {"graf podsektorów", StatusPodsystemu::czesciowy, "A* grafu i punkty +0x32 z kodu [W]; podsektory – dane z gry (tryb diagnostyczny), budowa [N]"},
         {"objazd 9002", StatusPodsystemu::czesciowy, "A* ±50 – NIEZWERYFIKOWANY dynamicznie"},
         {"kolizje w takcie (kontakty, 0x549179, 0x549A08, reguła (a))", StatusPodsystemu::czesciowy,
          "wzór [P]; okno kontaktów 0x5E8F0E [W, etap 30]; kolejność EE/AoC [W]"},
@@ -128,7 +128,13 @@ std::optional<bool> Swiat::zdarzenie(Jednostka& u, const std::string& n) {
     if (n == "NextWaypointRetrieved") return u.pozostalo_punktow() > 0;
     if (n == "NoMoreWaypoints") return u.trasa_gotowa && u.pozostalo_punktow() == 0;
     if (n == "MovePreparationComplete") return u.trasa_gotowa && u.pozostalo_punktow() > 0;
-    if (n == "ShouldMoveToNextAutoWaypoint") return false;  // punkty +0x32 – brak w kolejce Core
+    if (n == "ShouldMoveToNextAutoWaypoint") {
+        // 9016 (0x5F0844) [W, etap 40]: cel EEUGLocation z +0x32, w poziomie > 1 cel, trasa kompletna i pozostało
+        // ≤ N punktów (N = [0x917DC8] z rozmiaru mapy). Gałąź „≤ 2N i region końca bliski” (0x409914 < 2) – [N].
+        if (u.kolejka_celow.empty() || !u.kolejka_celow.front().punkt_automatyczny) return false;
+        if (u.kolejka_celow.size() < 2 || !u.trasa_gotowa) return false;
+        return int(u.pozostalo_punktow()) <= prog_punktu_auto(std::max(teren_.szerokosc(), teren_.wysokosc()) - 1);
+    }
     if (n == "UnitHasGoal") return u.cel != TypCelu::brak;
     if (n == "GoalIsLocation") return miejsce;
     if (n == "GoalIsNotAttack") return true;
@@ -198,7 +204,6 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
             if (!u.kolejka_celow.empty()) aktywuj_cel(u);
             break;
         case 8000:  // PrepareToMove: cel+0x18++, prośba o trasę (A* w Core – synchronicznie, w grze w kolejnych taktach)
-            if (!u.kolejka_celow.empty()) ++u.kolejka_celow.front().proby;
             if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::jednostka) {
                 // cel-jednostka (PrepareToMove 0x6222A8 → cel vt+0x08 = 0x60AF05): punkt podejścia – cel w ruchu:
                 // przechwycenie 0x62C963 (gdy cel ma > 1 punkt trasy, inaczej jego pozycja [P: 564]); cel stojący:
@@ -217,7 +222,18 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
                 u.zdjete_punkty = 0;
                 u.trasa_gotowa = false;
             }
+            // etap 40: etap grafu podsektorów prośby 0x4A1AFF (bajt +0x1C) i wynik 0x4A26E3 – może wstawić punkty +0x32
+            // na czoło kolejki; licznik prób (+0x18) zwiększa się na celu z czoła po wstawieniu [P: 624 – EEUGLocation
+            // proby 1, EEUGAttackUnit 0 w takcie wstawienia]
+            etap_grafu(u);
+            if (!u.kolejka_celow.empty()) ++u.kolejka_celow.front().proby;
             if (!u.trasa_gotowa && !u.kolejka_celow.empty()) przygotuj_trase(u, 0);
+            break;
+        case 8021:  // GetNextAutoWaypoint: zdjęcie celu +0x32 (0x5EAE25) i aktywacja następnego [W: ruch_trasa_przeszkody § 6]
+            if (!u.kolejka_celow.empty() && u.kolejka_celow.front().punkt_automatyczny) {
+                u.kolejka_celow.pop_front();
+                if (!u.kolejka_celow.empty()) aktywuj_cel(u);
+            }
             break;
         case 10003:  // Advance: tryb 0, +0x33F = 0
             u.tryb = TrybRuchu::jazda;
@@ -410,6 +426,11 @@ bool Swiat::rozkaz_ruchu(IdJednostki id, double x, double y, std::optional<doubl
         return true;
     }
     // zwykły PPM: zdjęcie celu bieżącego (0x5EAE25), wyczyszczenie poziomu (0x5E9664), cel na początek (0x5F05BD), 8000
+    // etap 40: trasa zwykłego PPM idzie przez prośbę grupową (stan grupy 8000 → 0x4A15E7); po zwykłym rozkazie
+    // kolejka nie ma punktów +0x32 nawet przy długim obejściu [P: nawigacja_wejscie.md pkt 3, EE 444/445, AoC 454;
+    // 616 – brak punktu (159,5; 106,5) mimo ścieżki grafu 3 podsektorów] – cel traktowany jak po etapie grafu
+    // (+0x1D = 1) [H: kto ustawia flagę]. Cel z Shift przechodzi etap grafu przy aktywacji (punkty przed celem B [P]).
+    c.etap_grafu = true;
     u->kolejka_celow.clear();
     u->kolejka_celow.push_front(c);
     aktywuj_cel(*u);
@@ -418,6 +439,20 @@ bool Swiat::rozkaz_ruchu(IdJednostki id, double x, double y, std::optional<doubl
 
 void Swiat::aktywuj_cel(Jednostka& u) {
     const CelRuchu& c = u.kolejka_celow.front();
+    if (c.typ == TypCelu::jednostka) {
+        // etap 40: aktywacja celu ataku z kolejki (EEUGAttackUnit vt+0x54) → InitialAttackState 2016 [P: 619/624 –
+        // po zdjęciu punktu +0x32: 9000 → (8021) → 2016 → 2012]
+        u.cel = c.typ;
+        u.cel_od_gracza = c.od_gracza;
+        u.kurs_koncowy.reset();
+        u.trasa.clear();
+        u.dl_przed.clear();
+        u.dl_po.clear();
+        u.zdjete_punkty = 0;
+        u.trasa_gotowa = false;
+        auto it = skrypt_.stany().find("InitialAttackState");
+        if (it != skrypt_.stany().end()) { wejdz_w_stan(u, it->second); return; }
+    }
     u.cel = c.typ;
     u.cel_od_gracza = c.od_gracza;
     u.kurs_koncowy = c.kurs_koncowy;
@@ -1205,8 +1240,8 @@ std::optional<bool> Swiat::zdarzenie_walki(Jednostka& u, const std::string& n) {
         // 0x60B1EA: (typ+0x61A → 0x5ECAD0) i osiągalność 0x62D696 [N – w Core prawda] i licznik prób celu ≤ 25
         // (cmp 25, [cel+0x18]; sbb; inc) [P: kod; 619 – 2013 przy +0x18 = 25, porzucenie przy 26, etap 37].
         // *[Etap 37 – zastąpione: „< 25” (etap 31).]*
-        zalozenie("EnemyUnitReachable: osiągalność 0x62D696 = prawda [N]");
-        const bool r = t && t->boj && t->boj->s.hp > 0 && g->proby <= 25;
+        zalozenie("EnemyUnitReachable: 0x5ECAD0 (spójność regionów) = prawda [N]");
+        const bool r = t && t->boj && t->boj->s.hp > 0 && g->proby <= 25 && osiagalny_62d696(u, *t);
         // ścieżka fałszu (0x60B241): cel wpisany do mapy nieosiągalnych na 30 s, o ile nie ma ważnego wpisu [P: kod]
         if (!r && t && !cel_nieosiagalny(u, *t, true)) oznacz_nieosiagalny(u, *t);
         return r;
@@ -1279,6 +1314,142 @@ void Swiat::liczniki_walki(Jednostka& u) {
         if (it != skrypt_.stany().end()) wejdz_w_stan(*t, it->second);
         else t->stan = 6000;
     }
+}
+
+bool Swiat::osiagalny_62d696(Jednostka& u, const Jednostka& t) {
+    // 0x62D696 (etap 40) [W: kod; P: 619/620 – porzucenie celu przez 0x1000858 stojącą na polu nieprzejezdnym,
+    // a 0x1000856 przy obywatelu w odległości 1 – szybka prawda]:
+    if (t.komorka_x == -10000) return false;
+    const BojJednostki& b = *u.boj;
+    const double z2 = f32(double(b.p.zasieg_max) * double(b.p.zasieg_max));
+    const double T = z2 < 2.0 ? 2.0 : z2;   // max(zasięg², 2,0) (0x825784)
+    // typ+0x430 = 0 albo (typ+0x5D4 & 6) = 0 → prawda: pól typu nie odczytano – przyjęte ≠ 0 dla jednostek bojowych [H]
+    const double dx = f32(t.x - u.x), dy = f32(t.y - u.y);
+    if (f32(dx * dx + dy * dy) <= T) return true;          // 0x406D5E: kwadrat odległości pozycji
+    // garnizon/transport (+0x1D8) – brak w Core
+    const double los = double(b.p.pole_widzenia);
+    const double r = los > T ? los : T;
+    const int pol = int(std::ceil(r));
+    const int esi = 2 * pol;
+    const int W = teren_.szerokosc() - 1, H = teren_.wysokosc() - 1;
+    const int ax = int(u.komorka_x), ay = int(u.komorka_y), tx = int(t.komorka_x), ty = int(t.komorka_y);
+    const int x0 = std::max(0, std::min(ax, tx) - esi), y0 = std::max(0, std::min(ay, ty) - esi);
+    const int x1 = std::min(W - 1, std::max(ax, tx) + esi), y1 = std::min(H - 1, std::max(ay, ty) + esi);
+    const int d2p = (tx - ax) * (tx - ax) + (ty - ay) * (ty - ay);   // 0x409914: kwadrat odległości pól (całkowity)
+    const int budzet = std::min(2 * std::max(esi, d2p), 0x23);
+    ParametryAStar p;
+    p.limit_wywolania = -1;
+    p.limit_calkowity = budzet;
+    p.koniec_bez_testu_dostepnosci = true;   // maszyna Bounded (klucz 0xB) – koniec = najbliższy węzeł [W]
+    zalozenie("0x62D696: A* Bounded 0x4A189C jako AStarTitan z limitem całkowitym, bez modyfikatora celu [W]");
+    const auto w = AStarTitan::szukaj({ax, ay}, {tx, ty}, [&](int x, int y) {
+        return x >= x0 && x <= x1 && y >= y0 && y <= y1 && teren_.pole_przejezdne(x, y);
+    }, W, H, p);
+    ++diag_.osiagalnosc_astar;
+    if (w.trasa_od_celu.empty()) return false;
+    const Pole k = w.trasa_od_celu.front();   // pierwszy punkt wyniku = węzeł końcowy
+    const int d2k = (tx - k.x) * (tx - k.x) + (ty - k.y) * (ty - k.y);
+    return double(d2k) <= T;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Graf podsektorów (etap 40) – docs/titan/architektura_nawigacji.md § 5, walka.md § 30.
+
+int Swiat::prog_punktu_auto(int r) {
+    // 0x4243AC: [0x917DC8] wg rozmiaru mapy [W]
+    if (r <= 42) return 8;
+    if (r <= 58) return 10;
+    if (r <= 75) return 12;
+    if (r <= 105) return 14;
+    if (r <= 160) return 16;
+    if (r <= 220) return 18;
+    return 14;
+}
+
+std::vector<int> szukaj_w_grafie(const GrafPodsektorow& g, int start, int cel) {
+    auto pc = g.podsektory.find(cel), ps = g.podsektory.find(start);
+    if (pc == g.podsektory.end() || ps == g.podsektory.end()) return {};
+    const Podsektor& C = pc->second;
+    struct W { int id; int G; int F; int rodzic; std::uint64_t kolejnosc; bool zamkniety; };
+    std::map<int, W> w;
+    std::uint64_t licznik = 0;
+    auto H = [&](const Podsektor& p) { return 10 * (std::abs(p.sektor_i - C.sektor_i) + std::abs(p.sektor_j - C.sektor_j)); };
+    auto koszt = [](const Podsektor& a, const Podsektor& b) {  // 0x41E584
+        if (a.sektor_i == b.sektor_i && a.sektor_j == b.sektor_j) return 1;
+        if (a.sektor_i == b.sektor_i || a.sektor_j == b.sektor_j) return 10;
+        return 14;
+    };
+    w[start] = {start, 0, H(ps->second), -1, licznik++, false};
+    for (int it = 0; it < 100000; ++it) {
+        // zdjęcie najlepszego: najmniejsze F, przy remisie ostatnio wstawiony (LIFO) [H]
+        int best = -1;
+        for (const auto& [id, x] : w) {
+            if (x.zamkniety) continue;
+            if (best < 0 || x.F < w[best].F || (x.F == w[best].F && x.kolejnosc > w[best].kolejnosc)) best = id;
+        }
+        if (best < 0) return {};
+        W& b = w[best];
+        b.zamkniety = true;
+        const Podsektor& B = g.podsektory.at(best);
+        // test celu 0x41E3C0
+        bool koniec = best == cel;
+        if (!koniec && std::abs(B.sektor_i - C.sektor_i) <= 1 && std::abs(B.sektor_j - C.sektor_j) <= 1)
+            koniec = std::find(B.sasiedzi.begin(), B.sasiedzi.end(), cel) != B.sasiedzi.end();
+        if (koniec) {
+            std::vector<int> wynik;
+            if (best != cel) wynik.push_back(cel);
+            for (int x = best; x >= 0; x = w[x].rodzic) wynik.push_back(x);
+            return wynik;   // od celu do startu
+        }
+        for (auto s = B.sasiedzi.rbegin(); s != B.sasiedzi.rend(); ++s) {   // od końca (0x4A5859)
+            auto pn = g.podsektory.find(*s);
+            if (pn == g.podsektory.end()) continue;   // filtr rodzaju 0x41E5B6 – wszystkie rodzaje dozwolone [H]
+            const int Gn = b.G + koszt(B, pn->second);
+            auto e = w.find(*s);
+            if (e != w.end()) {
+                if (e->second.G <= Gn) continue;
+                e->second.G = Gn; e->second.F = Gn + H(pn->second); e->second.rodzic = best; e->second.zamkniety = false;
+                e->second.kolejnosc = licznik++;
+            } else {
+                w[*s] = {*s, Gn, Gn + H(pn->second), best, licznik++, false};
+            }
+        }
+    }
+    return {};
+}
+
+void Swiat::etap_grafu(Jednostka& u) {
+    // Prośba jednostki 0x4A1AFF: etap grafu, gdy bajt +0x1C = 1 – PrepareToMove 0x622431: cel bez +0x32 i z
+    // +0x1D = 0 (cel położenia oraz każdy inny cel). Wynik 0x4A26E3: +0x1D := 1; dla ścieżki n > 2 podsektorów
+    // punkty reprezentatywne podsektorów 0 … n − 3 (od celu) jako EEUGLocation (+0x32, kurs 0, pochodzenie z celu)
+    // na czoło kolejki (0x5F05BD) [W: kod; P: 624 – (163,5; 103,5) = punkt podsektora 472 z polem celu].
+    if (graf_.podsektory.empty() || u.kolejka_celow.empty()) return;
+    CelRuchu& c = u.kolejka_celow.front();
+    if (c.punkt_automatyczny || c.etap_grafu) return;
+    c.etap_grafu = true;
+    const int ps = graf_.podsektor_pola(u.komorka_x, u.komorka_y);
+    const int pc = graf_.podsektor_pola(podloga(c.x), podloga(c.y));
+    ++diag_.graf_prosby;
+    if (ps < 0 || pc < 0 || ps == pc) return;
+    const std::vector<int> sciezka = szukaj_w_grafie(graf_, ps, pc);
+    diag_.graf_ostatnia = sciezka;
+    if (sciezka.size() <= 2) return;
+    const bool od_gracza = c.od_gracza;
+    for (std::size_t i = 0; i + 2 < sciezka.size(); ++i) {
+        const Podsektor& p = graf_.podsektory.at(sciezka[i]);
+        CelRuchu l{TypCelu::miejsce, f32(p.punkt_x + 0.5), f32(p.punkt_y + 0.5), 0.0, od_gracza, true, 0};
+        u.kolejka_celow.push_front(l);
+        ++diag_.graf_punkty;
+    }
+    const CelRuchu& f = u.kolejka_celow.front();
+    u.cel = f.typ;
+    u.cel_od_gracza = f.od_gracza;
+    u.kurs_koncowy = f.kurs_koncowy;
+    u.trasa.clear();
+    u.dl_przed.clear();
+    u.dl_po.clear();
+    u.zdjete_punkty = 0;
+    u.trasa_gotowa = false;
 }
 
 }  // namespace openee

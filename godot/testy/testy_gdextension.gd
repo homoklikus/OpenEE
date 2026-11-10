@@ -131,6 +131,7 @@ func _testy() -> void:
 	_test_etapu37(dll)
 	_test_etapu38(dll)
 	_test_etapu39(dll)
+	_test_etapu40(dll)
 	_koniec()
 
 
@@ -403,3 +404,57 @@ func _test_etapu39(dll: String) -> void:
 			if str(e.rodzaj) == "EEUGAttackUnit": punkt = Vector2(float(e.x), float(e.y))
 	_wynik("zajętość miejsca podejścia (0x63234D): zajęte (13,975; 15,025) pominięte → (14,5; 15,025)",
 		absf(punkt.x - 14.5) < 1e-4 and absf(punkt.y - 15.025) < 1e-4, str(punkt))
+
+
+# etap 40: graf podsektorów (A* 0x4A5807, wynik 0x4A26E3) i osiągalność 0x62D696. Graf syntetyczny o układzie z 619
+# (start → podsektor pośredni → podsektor celu, cel nie jest sąsiadem startu) – test mechanizmu, nie zgodności z Titan.
+func _test_etapu40(dll: String) -> void:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	c.ustaw_wrogow(1, 5, true); c.ustaw_wrogow(5, 1, true)
+	# trzy podsektory: 1 (y 20–29), 2 (y 10–19), 3 (y 0–9); 1 i 3 nie są sąsiadami
+	var ps := []
+	for i in 3:
+		var pola := []
+		for x in range(0, 30): pola.append([x, 20 - 10 * i, 29 - 10 * i])
+		var sas: Array = [[2], [1, 3], [2]][i]
+		ps.append({"id": i + 1, "sektor": [0, 2 - i, i], "rodzaj": 1, "punkt_i32": [7, 25 - 10 * i], "sasiedzi": sas, "pola": pola})
+	_wynik("graf podsektorów ze słownika (tryb diagnostyczny)", c.ustaw_graf_podsektorow({"podsektory": ps}) == 3)
+	_wynik("A* grafu 0x4A5807: ścieżka od celu do startu [3, 2, 1]", c.sciezka_grafu(10, 25, 10, 5) == [3, 2, 1], str(c.sciezka_grafu(10, 25, 10, 5)))
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var gw := {"atak": 15.0, "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000, "klasa_trafienia": 13,
+		"rodzina_ataku": 48, "luk_ataku": 0.3490658700466156, "rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000,
+		"pole_ac": 0.6000000238418579, "typ_jednostki": 5, "ai_szuka_wrogow": 0}
+	var h: int = c.dodaj_jednostke(p, 10.5, 5.5, 0.0)
+	c.ustaw_walke(h, 5, false, {"rozmiar": 0.55, "pole_ac": 0.8, "hp_max": 1235, "ai_szuka_wrogow": 0}, 1235)
+	var k: int = c.dodaj_jednostke(p, 10.5, 25.5, 0.0)
+	c.ustaw_walke(k, 1, true, gw, 215)
+	c.rozkaz_ataku(k, h)
+	var q := ""
+	for t in 5:
+		c.takt(1)
+		if q == "":
+			var kk := ""
+			for e in c.walka(k).get("kolejka", []): kk += "%s(%.1f,%.1f);" % [str(e.rodzaj).substr(4, 3), float(e.x), float(e.y)]
+			if kk.begins_with("Loc"): q = kk
+	_wynik("0x4A26E3: punkt +0x32 podsektora celu przed EEUGAttackUnit (ścieżka 3 podsektorów)", q.begins_with("Loc(7.5,5.5);Att"), q)
+	# 0x62D696: atakujący na polu nieprzejezdnym (otoczony) – A* Bounded bez wyniku bliskiego celowi → fałsz → porzucenie
+	var c2: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c2.zaladuj_tablice(dll)["ok"]: c2.uzyj_tablic_przyblizonych()
+	c2.utworz_swiat("ee")
+	c2.ustaw_wrogow(1, 5, true); c2.ustaw_wrogow(5, 1, true)
+	for dx in range(-1, 2):
+		for dy in range(-1, 2): c2.ustaw_przejezdnosc(10 + dx, 25 + dy, false)
+	var h2: int = c2.dodaj_jednostke(p, 10.5, 10.5, 0.0)
+	c2.ustaw_walke(h2, 5, false, {"rozmiar": 0.55, "pole_ac": 0.8, "hp_max": 1235, "ai_szuka_wrogow": 0}, 1235)
+	var k2: int = c2.dodaj_jednostke(p, 10.5, 25.5, 0.0)
+	c2.ustaw_walke(k2, 1, true, gw, 215)
+	c2.rozkaz_ataku(k2, h2)
+	var stany := []
+	for t in 40:
+		c2.takt(1)
+		var st: int = int(c2.jednostka(k2)["stan"])
+		if stany.is_empty() or stany[-1] != st: stany.append(st)
+	_wynik("0x62D696: atakujący otoczony przeszkodami – 9006 → 5001 → 5002 → 2025 → 5000 (cel porzucony)",
+		stany.slice(stany.find(9006), stany.find(9006) + 5) == [9006, 5001, 5002, 2025, 5000] and c2.walka(k2).get("kolejka", []).is_empty(), str(stany))

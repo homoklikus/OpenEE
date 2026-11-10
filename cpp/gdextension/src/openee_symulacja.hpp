@@ -54,6 +54,8 @@ public:
     bool rozkaz_ataku(int64_t id, int64_t cel);
     double kat_rozkazu(const godot::Array& ids, double x, double y) const;
     void ustaw_modyfikator_wysokosci(bool wlaczony);
+    int64_t ustaw_graf_podsektorow(const godot::Dictionary& d);
+    godot::Array sciezka_grafu(int64_t x0, int64_t y0, int64_t x1, int64_t y1) const;
     int64_t ustaw_efekty_obszaru(const godot::Dictionary& d);
     void odtworz_efekty_obszaru();
     godot::Array morale(int64_t id) const;

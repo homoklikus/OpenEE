@@ -410,3 +410,33 @@ Oba zachowania wyglądają na zamierzone albo nieszkodliwe [H]. BO-1–BO-4 bez 
   - globalnie ok. 32 iteracji na takt;
   - limit na wywołanie rośnie przy zawieszeniu.
 - Przebudowa danych po zmianie mapy z opóźnieniem, tylko przy pustej kolejce grafu.
+
+## Etap 40 – graf podsektorów: odczyt z gry, A* grafu i punkty pośrednie
+
+**Struktury** [W: kod; P: odczyt Riverlands_MCP `podsektory`, e35_a – 1858 podsektorów, siatka 19 / 15 × 15,
+mapa 280 × 280, graf bez zmian po rozkazach]:
+
+| Obiekt | Pole | Znaczenie |
+|---|---|---|
+| `EEAIContinentManager` 0x917BC8 (vtable 0x8261FC) | +0x5C (początek +0x60, koniec +0x64) | wektor `EEAIPathSubSector*` |
+| | +0xE0 / +0xE8 / +0xEC | rozmiar komórki sektora, liczba komórek w poziomie i pionie |
+| `EEAIPathSubSector` (0x60 B, vtable 0x82647C, konstruktor 0x42E757) | +0x10 | `U2DSparseArrayPointContainer` – pola podsektora |
+| | +0x2C (początek +0x30, koniec +0x34) | sąsiedzi (wskaźniki) |
+| | +0x3C / +0x40 | punkt reprezentatywny – pole (int) |
+| | +0x44 | sektor (`EEAIPathSector`: +0x40/+0x44 komórka siatki, +0x48 id) |
+| | +0x50 / +0x54 | id (u16) / rodzaj (w e35_a 1 i 4) |
+| `U2DSparseArrayPointContainer` (Low-Level Engine.dll) | +0x08…+0x0C, +0x14, +0x18 | kubełki kolumn (x = +0x14 + indeks), lista przedziałów {y_min, y_max, …, +0xC następny}; liczba pól |
+
+Pole → podsektor: 0x42609F → 0x42602D (sektor pola 0x425FD4, lista podsektorów sektora +0x08, `Contains`).
+Podsektor nie musi być spójny w obrębie sektora (np. 253: kolumny y 114–117 i 129–131) [P odczyt]. Algorytm
+wydzielania (0x42434F/0x41E990) i wybór punktu reprezentatywnego – [N].
+
+**A* grafu 0x4A5807** [W: kod]: węzeł = podsektor, pozycja węzła = komórka sektora. Koszt krawędzi 0x41E584: ten sam
+sektor 1, sektor sąsiedni w osi 10, po przekątnej 14. H = 10·(|Δi| + |Δj|) komórek sektorów (0x4A6077). Sąsiedzi
+rozwijani od końca listy (0x4A5859), filtr rodzaju 0x41E5B6 (tablica celu +0x5C; rodzaj 0xE – dodatkowy warunek).
+Test celu 0x41E3C0: węzeł = cel albo sektor węzła w odległości ≤ 1 od sektora celu i cel na liście sąsiadów węzła.
+
+**Wynik 0x4A26E3** [P: 624]: lista od celu do startu; dla i = 0 … n − 3 punkt reprezentatywny + 0,5 jako
+EEUGLocation +0x32 na czoło kolejki. W e35_a: gwardia 0x1000858 z pola (162,118) (podsektor 523, rodzaj 4) do pola
+(163,105)/(164,105) (podsektor 472, punkt (163,103)) – ścieżka 472 ← 469 ← 523 (523 nie jest sąsiadem 472) → jeden
+punkt (163,5; 103,5). Gwardia 0x1000856 z (164,118) (podsektor 469, sąsiad 472) – ścieżka 2 podsektorów, bez punktu.

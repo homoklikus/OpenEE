@@ -48,6 +48,8 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("ustaw_efekty_obszaru", "dane"), &OpenEESymulacja::ustaw_efekty_obszaru);
     ClassDB::bind_method(D_METHOD("odtworz_efekty_obszaru"), &OpenEESymulacja::odtworz_efekty_obszaru);
     ClassDB::bind_method(D_METHOD("morale", "id"), &OpenEESymulacja::morale);
+    ClassDB::bind_method(D_METHOD("ustaw_graf_podsektorow", "dane"), &OpenEESymulacja::ustaw_graf_podsektorow);
+    ClassDB::bind_method(D_METHOD("sciezka_grafu", "x0", "y0", "x1", "y1"), &OpenEESymulacja::sciezka_grafu);
     ClassDB::bind_method(D_METHOD("walka", "id"), &OpenEESymulacja::walka);
     ClassDB::bind_method(D_METHOD("zdarzenia_walki"), &OpenEESymulacja::zdarzenia_walki);
     ClassDB::bind_method(D_METHOD("stan_jednostek"), &OpenEESymulacja::stan_jednostek);
@@ -56,7 +58,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.13.0 (etap 39, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.14.0 (etap 40, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -208,6 +210,12 @@ Dictionary OpenEESymulacja::diagnostyka() const {
         d["kroki_odpychania"] = int64_t(g.kroki_odpychania);
         d["objazdy_niezweryfikowane"] = int64_t(g.objazdy_niezweryfikowane);
         d["astar_iteracje"] = int64_t(g.ostatnia_trasa.iteracje);
+        d["graf_z_gry"] = swiat_->graf_podsektorow().z_gry;       // etap 40: tryb diagnostyczny
+        d["graf_prosby"] = int64_t(g.graf_prosby);
+        d["graf_punkty"] = int64_t(g.graf_punkty);
+        Array gs;
+        for (int id : g.graf_ostatnia) gs.push_back(id);
+        d["graf_ostatnia"] = gs;
     }
     Array ps;
     for (const auto& p : openee::podsystemy()) {
@@ -414,6 +422,46 @@ int64_t OpenEESymulacja::ustaw_efekty_obszaru(const Dictionary& d) {
         swiat_->dodaj_budynek(x, ef);
     }
     return bu.size();
+}
+
+// etap 40: graf podsektorów w formacie odczytu Riverlands_MCP `podsektory` (id, sektor [i, j, id], rodzaj,
+// punkt_i32, sasiedzi, pola [[x, y_min, y_max], …]) – tryb diagnostyczny „graf z gry”. Zwraca liczbę podsektorów.
+int64_t OpenEESymulacja::ustaw_graf_podsektorow(const Dictionary& d) {
+    if (!swiat_) return -1;
+    openee::GrafPodsektorow g;
+    g.z_gry = true;
+    const Array lst = d.get("podsektory", Array());
+    for (int64_t i = 0; i < lst.size(); ++i) {
+        const Dictionary e = lst[i];
+        openee::Podsektor p;
+        p.id = int(liczba(e, "id", 0));
+        const Array sek = e.get("sektor", Array());
+        if (sek.size() >= 2) { p.sektor_i = int(int64_t(sek[0])); p.sektor_j = int(int64_t(sek[1])); }
+        p.rodzaj = int(liczba(e, "rodzaj", 0));
+        const Array pt = e.get("punkt_i32", Array());
+        if (pt.size() >= 2) { p.punkt_x = int(int64_t(pt[0])); p.punkt_y = int(int64_t(pt[1])); }
+        const Array sas = e.get("sasiedzi", Array());
+        for (int64_t k = 0; k < sas.size(); ++k) if (sas[k].get_type() != Variant::NIL) p.sasiedzi.push_back(int(int64_t(sas[k])));
+        const Array pola = e.get("pola", Array());
+        for (int64_t k = 0; k < pola.size(); ++k) {
+            const Array r = pola[k];
+            if (r.size() < 3) continue;
+            const int64_t x = int64_t(r[0]);
+            for (int64_t y = int64_t(r[1]); y <= int64_t(r[2]); ++y) g.pole_podsektor[(x << 32) | (y & 0xffffffff)] = p.id;
+        }
+        g.podsektory[p.id] = std::move(p);
+    }
+    const int64_t n = int64_t(g.podsektory.size());
+    swiat_->ustaw_graf_podsektorow(std::move(g));
+    return n;
+}
+
+Array OpenEESymulacja::sciezka_grafu(int64_t x0, int64_t y0, int64_t x1, int64_t y1) const {
+    Array a;
+    if (!swiat_) return a;
+    const auto& g = swiat_->graf_podsektorow();
+    for (int id : openee::szukaj_w_grafie(g, g.podsektor_pola(x0, y0), g.podsektor_pola(x1, y1))) a.push_back(id);
+    return a;
 }
 
 void OpenEESymulacja::odtworz_efekty_obszaru() { if (swiat_) swiat_->odtworz_efekty_obszaru(); }

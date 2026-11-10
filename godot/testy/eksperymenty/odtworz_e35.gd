@@ -6,11 +6,13 @@ extends SceneTree
 ## Użycie: godot --headless --path godot --script res://testy/eksperymenty/odtworz_e35.gd -- --scn=e35_a.scn
 ##         --t0=<czas gry 1. próbki> --t-rozkazu=<czas gry ostatniej próbki przed rozkazem> [--ruch=x,y[,kat]]
 ##         (kat = kurs końcowy celu EEUGLocation +0x2C z nagrania – `kat` w kolejce MCP; etap 37)
-##         [--rozkazy=T:atak[:hero|cit[:A_GRD|K_GRD]];T:ruch:x:y[:kat]] [--pelny=1 --efekty=plik --wysokosc=0|1 --regen-ms=N] [--probki=N] [--wyjscie=plik.json] [--takty=N]
+##         [--rozkazy=T:atak[:hero|cit[:A_GRD|K_GRD]];T:ruch:x:y[:kat]] [--pelny=1 --efekty=plik --wysokosc=0|1 --regen-ms=N]
+##         [--graf=podsektory.json – graf podsektorów z gry, etap 40] [--probki=N] [--wyjscie=plik.json] [--takty=N]
 ## Dane wejściowe (SCN, nagranie) są lokalne – nie trafiają do repozytorium.
 
 const TAKT_MS := 1500.0 / 44.0
 var wynik_efekty := -1
+var wynik_graf := -1
 const RUCH_422 := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
 
 
@@ -104,6 +106,8 @@ func _start() -> void:
 		c.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
 			[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
 		if _arg("wysokosc", "1") == "1": c.ustaw_modyfikator_wysokosci(true)
+		var pg := _arg("graf", "")   # etap 40: graf podsektorów odczytany z gry (Riverlands_MCP `podsektory`) – tryb diagnostyczny
+		if pg != "": wynik_graf = c.ustaw_graf_podsektorow(JSON.parse_string(FileAccess.get_file_as_string(pg)))
 		var pe := _arg("efekty", "")
 		if pe != "":
 			wynik_efekty = c.ustaw_efekty_obszaru(JSON.parse_string(FileAccess.get_file_as_string(pe)))
@@ -117,7 +121,7 @@ func _start() -> void:
 			w += r + "\n"
 		print("POLA\n" + w)
 	var wynik := {"mapa": im.get("skrot", ""), "pole_celu_przejezdne": c.pole_przejezdne(160, 105), "przejscia": [],
-		"ids": ids, "budynki_efektow": wynik_efekty, "jednostki": {}}
+		"ids": ids, "budynki_efektow": wynik_efekty, "podsektory": wynik_graf, "jednostki": {}}
 	var T0 := float(_arg("t0", "9909"))
 	var takt_rozkazu := int(round((float(_arg("t-rozkazu", "40113")) - T0) / TAKT_MS))   # ostatnia próbka przed rozkazem
 	var ruch := _arg("ruch", "")
@@ -126,6 +130,15 @@ func _start() -> void:
 	for r in _arg("rozkazy", "").split(";", false):
 		var cz := r.split(":")
 		dalsze[int(round((float(cz[0]) - T0) / TAKT_MS))] = cz
+	if _arg("test-trasy", "") != "":   # etap 40: diagnostyka trasy jednostki K_GRD do punktu
+		var tt: PackedStringArray = _arg("test-trasy", "").split(",")
+		c.rozkaz_ruchu(ids["K_GRD"], float(tt[0]), float(tt[1]), null, false)
+		for q in 3:
+			c.takt(1)
+			var jk: Dictionary = c.jednostka(ids["K_GRD"])
+			print("TRASA ", q, " stan ", jk.get("stan"), " x ", jk.get("x"), " y ", jk.get("y"), " trasa ", jk.get("trasa", "?"), " diag ", c.diagnostyka().get("astar_iteracje"))
+		quit(0)
+		return
 	var prev := ""
 	var stary_cel := 0
 	for k in int(_arg("takty", "6300")):
