@@ -137,6 +137,7 @@ func _testy() -> void:
 	_test_etapu43(dll)
 	_test_etapu44(dll)
 	_test_etapu45(dll)
+	_test_etapu46(dll)
 	_koniec()
 
 
@@ -697,6 +698,25 @@ func _test_etapu44(dll: String) -> void:
 	_wynik("graf e35_a wyłącznie z SCN i baz gry: 43 obszary, 1135 regionów, 1857 podsektorów, punkty i sąsiedzi 1857/1857",
 		int(w.get("obszarow", 0)) == 43 and int(w.get("regionow", 0)) == 1135 and int(w.get("podsektorow", 0)) == 1857 and pk == 1857 and sk == 1857,
 		"obszary %d, regiony %d, podsektory %d, punkty %d, sąsiedzi %d" % [int(w.get("obszarow", 0)), int(w.get("regionow", 0)), int(w.get("podsektorow", 0)), pk, sk])
+	# etap 46 – dynamiczny graf (0x4288A7 → 0x4A36F3 → 0x4A3641): usunięcie budynku zgłasza zmianę, przebudowa raz po terminie
+	var bud := ""
+	for k in we["jednostki"]:
+		for e in we["jednostki"][k]:
+			var tf: Array = we["typy"].get(e[4], [])
+			if tf.size() == 4 and int(tf[1]) == 1: bud = e[0]; break
+		if bud != "": break
+	var d0: Dictionary = c2.diagnostyka()
+	var usun: bool = bud != "" and c2.usun_obiekt_mapy(bud.hex_to_int())
+	var d1: Dictionary = c2.diagnostyka()
+	c2.takt(1)
+	var d2: Dictionary = c2.diagnostyka()
+	c2.takt(10)
+	var d3: Dictionary = c2.diagnostyka()
+	_wynik("dynamiczny graf: usunięcie budynku → zgłoszenie (+0xD8, +0xD4 = teraz + 1 ms), jedna przebudowa po terminie, nie co takt",
+		usun and bool(d1.get("przebudowa_zaplanowana")) and int(d1.get("wersja_grafu")) == int(d0.get("wersja_grafu"))
+		and int(d2.get("przebudowy_grafu")) == 1 and int(d2.get("wersja_grafu")) == int(d0.get("wersja_grafu")) + 1
+		and int(d3.get("przebudowy_grafu")) == 1 and not bool(d3.get("przebudowa_zaplanowana")),
+		"obiekt %s, wersje %d → %d → %d, przebudowy %d" % [bud, int(d0.get("wersja_grafu", -1)), int(d2.get("wersja_grafu", -1)), int(d3.get("wersja_grafu", -1)), int(d3.get("przebudowy_grafu", -1))])
 
 
 func _test_etapu45(dll: String) -> void:
@@ -760,6 +780,117 @@ func _test_etapu45(dll: String) -> void:
 			break
 	_wynik("obywatel: FleeDanger po trafieniu w Idle – cel EEUGLocation (14,5; 6,5) jak w 638 (kierunek 7, odległość 4)",
 		skr_ok and cel.is_equal_approx(Vector2(14.5, 6.5)), "cel %s" % str(cel))
+
+
+func _test_etapu46(dll: String) -> void:
+	var mn := []
+	for i in 16: mn.append([1, 1, 1, 1, 1, 1])
+	var tr := {}
+	for i in 3:
+		var f := PackedFloat32Array(); f.resize(64); f[48] = [1.071, 1.5, 2.1][i]
+		var f8 := PackedFloat32Array(); f8.resize(64); f8[48] = [0.714, 1.0, 1.4][i]
+		tr[["08", "0C", "10"][i]] = {13: f, 8: f8}
+	var nowa := func() -> Object:
+		var c: Object = CoreCpp.nowa_symulacja()
+		if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+		c.utworz_swiat("ee")
+		c.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
+			[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
+		return c
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var pb := {"a": 2.0, "vmax": 0.8, "alfa": 6.98132, "wmax": 6.98132, "rozmiar": 0.55, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var g := {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,
+		"klasa_trafienia": 13, "rodzina_ataku": 48, "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156,
+		"rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000, "pole_ac": 0.6000000238418579, "typ_bazy": 422, "typ_jednostki": 5}
+	var gs := g.duplicate(); gs["ai_szuka_wrogow"] = 0; gs["hp_max"] = 215
+	var bh := {"atak": 14.0, "pancerz": [3, 0, 3, 0, 0, 0], "zasieg_max": 0.6, "pole_widzenia": 6.0, "przeladowanie_ms": 2000,
+		"rodzaj_ataku": 5, "wiersz_celu": 5, "klasa_trafienia": 8, "rodzina_ataku": 55, "luk_ataku": 0.3490658700466156, "rozmiar": 0.55,
+		"punktowy": 1, "szukanie_ms": 1000, "pole_ac": 0.8, "typ_bazy": 173, "typ_jednostki": 13, "ai_szuka_wrogow": 0,
+		"leczenie_hp": 50, "leczenie_prog": 1.0, "leczenie_zasieg": 4.0, "leczenie_okres": 1.0, "leczone_typy": [422], "reakcja_underattack": 1}
+	var stany := func(c: Object, id: int, n: int) -> Array:
+		var w := []
+		for k in n:
+			c.takt(1)
+			var j: Dictionary = c.jednostka(id)
+			w.append(int(j.stan))
+		return w
+	# 1) cykl leczenia [P: 644 – 16000 → 16002 → 16001, +50 HP co 30 taktów od wejścia w 16001, przy pełnym HP 2025 → 5000]
+	var c: Object = nowa.call()
+	var h: int = c.dodaj_jednostke(pb, 10.5, 10.5, 0.0)
+	var a: int = c.dodaj_jednostke(p, 10.5, 13.0, 0.0)
+	c.ustaw_walke(h, 1, true, bh, 1235); c.ustaw_walke(a, 1, true, gs, 150)
+	c.ustaw_skrypt_jednostki(h, "Military Healer Prophet")
+	var sek := []
+	var hp_t := {}
+	var e := -1
+	for k in 140:
+		c.takt(1)
+		var st := int(c.jednostka(h).stan)
+		if sek.is_empty() or sek[-1] != st: sek.append(st)
+		if st == 16001 and e < 0: e = k
+		var hp := -1
+		for d in c.stan_jednostek():
+			if int(d.id) == a: hp = int(d.get("hp", -1))
+		if not hp_t.has(hp): hp_t[hp] = k
+	var ok1: bool = sek.slice(0, 6) == [16000, 16002, 16001, 2025, 5000, 16000] and hp_t.get(200, -1) == e + 29 and hp_t.get(215, -1) == e + 58
+	_wynik("Healer.tai: 16000 → 16002 → 16001, +50 HP po 30 i 59 taktach, pełne HP → 2025 → 5000 (644)", ok1,
+		"stany %s, 16001 w %d, HP 200 w %d, 215 w %d" % [str(sek.slice(0, 8)), e, hp_t.get(200, -1), hp_t.get(215, -1)])
+	# 2) dwóch rannych o równym HP – wybór od końca kolejki (0x620A68) [P: 644 bohater2 – 0x1000857 po 0x1000856]
+	var c2: Object = nowa.call()
+	var h2: int = c2.dodaj_jednostke(pb, 10.5, 10.5, 0.0)
+	var a1: int = c2.dodaj_jednostke(p, 8.5, 12.5, 0.0)
+	var a2: int = c2.dodaj_jednostke(p, 12.5, 12.5, 0.0)
+	c2.ustaw_walke(h2, 1, true, bh, 1235); c2.ustaw_walke(a1, 1, true, gs, 199); c2.ustaw_walke(a2, 1, true, gs, 199)
+	c2.ustaw_skrypt_jednostki(h2, "Military Healer Prophet")
+	c2.takt(1)
+	var cel2 := 0
+	for q in c2.walka(h2).get("kolejka", []): cel2 = int(q.cel)
+	_wynik("Healer.tai: dwóch rannych (199/215) – cel z końca kolejki fizyki (0x620A68)", cel2 == a2, "cel %d (a1 %d, a2 %d)" % [cel2, a1, a2])
+	# 3) TakeDamage w Idle → UnderAttack (EEUC z 2018) → 5001 → 2025 → 5000 [P: 619, t = 79045]
+	var c3: Object = nowa.call()
+	c3.ustaw_wrogow(1, 5, true); c3.ustaw_wrogow(5, 1, true)
+	var hb: int = c3.dodaj_jednostke(pb, 10.5, 10.5, 0.0)
+	var wg: int = c3.dodaj_jednostke(p, 10.5, 11.2, 3.14159)
+	var bh5 := bh.duplicate(); bh5["leczenie_okres"] = 0.0
+	c3.ustaw_walke(hb, 5, false, bh5, 1235); c3.ustaw_walke(wg, 1, true, g, 215)
+	c3.ustaw_skrypt_jednostki(hb, "Military Healer Prophet")
+	c3.rozkaz_ataku(wg, hb)
+	var s3 := []
+	for k in 200:
+		c3.takt(1)
+		var st := int(c3.jednostka(hb).stan)
+		if s3.is_empty() or s3[-1] != st: s3.append(st)
+		if s3.size() >= 4: break
+	_wynik("TakeDamage w Idle: UnderAttack (EEUC z 2018) → ReacquireGoal 5001 → 2025 → 5000 (619)", s3 == [5000, 5001, 2025, 5000], str(s3))
+	# 4) I1/I3: migawka diagnostyczna i powtarzalność – dwa identyczne światy, 300 taktów → identyczne migawki
+	var migawki := []
+	for powt in 2:
+		var cx: Object = nowa.call()
+		cx.ustaw_wrogow(1, 5, true); cx.ustaw_wrogow(5, 1, true)
+		var x1: int = cx.dodaj_jednostke(p, 10.5, 13.5, 0.0)
+		var x2: int = cx.dodaj_jednostke(p, 10.5, 10.5, 0.0)
+		cx.ustaw_walke(x1, 1, true, g, 215); cx.ustaw_walke(x2, 5, false, g, 215)
+		cx.rozkaz_ataku(x1, x2)
+		cx.takt(300)
+		migawki.append(JSON.stringify(cx.migawka_diagnostyczna(true)))
+	_wynik("migawka diagnostyczna (takt, jednostki, kolejka fizyki, RNG, wersja grafu) i powtarzalność przebiegu (2 × 300 taktów)",
+		migawki[0] == migawki[1] and migawki[0].contains("kolejka_fizyki") and migawki[0].contains("rng_stan"), migawki[0].substr(0, 120))
+	# 5) I3: leczony ginie w trakcie leczenia → HealeeDestroyed → 2025 (bez błędów odwołań)
+	var c5: Object = nowa.call()
+	c5.ustaw_wrogow(1, 5, true); c5.ustaw_wrogow(5, 1, true)
+	var h5: int = c5.dodaj_jednostke(pb, 10.5, 10.5, 0.0)
+	var a5: int = c5.dodaj_jednostke(p, 10.5, 12.5, 0.0)
+	var w5: int = c5.dodaj_jednostke(p, 10.5, 13.2, 3.14159)
+	c5.ustaw_walke(h5, 1, true, bh, 1235); c5.ustaw_walke(a5, 1, true, gs, 20); c5.ustaw_walke(w5, 5, false, g, 215)
+	c5.ustaw_skrypt_jednostki(h5, "Military Healer Prophet")
+	c5.rozkaz_ataku(w5, a5)
+	var s5 := []
+	for k in 400:
+		c5.takt(1)
+		var st := int(c5.jednostka(h5).stan)
+		if s5.is_empty() or s5[-1] != st: s5.append(st)
+		if int(c5.jednostka(a5).stan) >= 6000 and st == 5000 and s5.has(16001): break
+	_wynik("leczony ginie podczas leczenia: HealUnit → 2025 → 5000 bez zawieszenia (I3)", s5.has(16001) and s5.has(2025) and s5[-1] == 5000, str(s5))
 
 
 ## Czasy stanów 6000/6001/6002 celu (takty) przy sekwencji umierania `klatki` × `ms` (etap 44).

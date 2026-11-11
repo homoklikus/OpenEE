@@ -62,6 +62,9 @@ public:
     bool ustaw_skrypt_jednostki(int64_t id, const godot::String& nazwa);
     void ustaw_stan_rng(int64_t stan);
     godot::Array kolejka_fizyki() const;
+    bool ustaw_faze_leczenia(int64_t id, int64_t takty);
+    bool usun_obiekt_mapy(int64_t id);
+    godot::Dictionary migawka_diagnostyczna(bool szczegoly) const;
     godot::Dictionary wejscie_regionow_z_mapy() const;
     godot::Dictionary wejscie_regionow_z_scn(const godot::Array& obiekty, const godot::Array& zestawy) const;
     godot::Dictionary podsektor(int64_t id) const;

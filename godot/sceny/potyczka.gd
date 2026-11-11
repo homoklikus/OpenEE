@@ -197,8 +197,18 @@ func nowa_bitwa() -> bool:
 		var wd: Dictionary = td.get("walka", {})
 		for k in wd: pw[k] = (1 if wd[k] else 0) if wd[k] is bool else wd[k]
 		if not pw.has("smierc_klatki"): pw.merge(ObiektyScnCore.parametry_smierci(typ, Zasoby))   # etap 44
-		core.ustaw_walke(id, g, g == gl, pw, int(td.get("hp", 1)))
 		var ob: Dictionary = _obiekty.get(typ, {})
+		# etap 46: leczenie z dbobjects; leczone typy = typy jednostek potyczki (zestaw +0x10C nieodczytany [N])
+		pw.merge(ObiektyScnCore.parametry_leczenia(ob, _typy_potyczki(uklad)), false)
+		core.ustaw_walke(id, g, g == gl, pw, int(td.get("hp", 1)))
+		# etap 46: skrypt .tai z danych typu (dbobjects „TAI Script”), interpretacja w Core; nieznany skrypt → skrypt
+		# świata (land) z ostrzeżeniem w raporcie
+		var skr := String(ob.get("TAI Script", ""))
+		if not core.ustaw_skrypt_jednostki(id, skr):
+			_raport_p["skrypty_nieznane"] = _raport_p.get("skrypty_nieznane", []) + [skr]
+		else:
+			_raport_p["skrypty"] = _raport_p.get("skrypty", {})
+			_raport_p["skrypty"][str(typ)] = skr
 		sym.zarejestruj(id, g, typ, maxf(0.15, float(ob.get("Circle selection size", 0.25))), String(ob.get("Name", "")))
 		var gid := grafika_obiektu(typ, g)
 		var gr: Dictionary = _grafiki.get(gid, {})
@@ -467,9 +477,24 @@ func _czekaj(s: float, kat: String, nazwa: String, przebieg: Dictionary) -> void
 
 
 func _koniec_automatu(kod: int) -> void:
+	# etap 46 (G3): przebieg AI z dziennika zdarzeń Core – rodzaje zdarzeń (trafienie, smierc, leczenie, ucieczka) i
+	# kolejka fizyki na końcu (martwe jednostki po 6003 usunięte)
+	if core != null and core.has_method("zdarzenia_walki_od"):
+		var licz := {}
+		for e in core.zdarzenia_walki_od(0): licz[str(e.rodzaj)] = int(licz.get(str(e.rodzaj), 0)) + 1
+		_raport_p["zdarzenia_core"] = licz
+		_raport_p["kolejka_fizyki_koniec"] = core.kolejka_fizyki()
 	var p := _arg("potyczka-raport", "")
 	if p != "":
 		var f := FileAccess.open(p, FileAccess.WRITE)
 		if f: f.store_string(JSON.stringify(raport, "  "))
 	if _arg("potyczka-demo", "") != "" or p != "":
 		get_tree().quit(kod)
+
+
+## Etap 46: typy jednostek układu potyczki (zestaw leczonych – przybliżenie do odczytu +0x10C [N]).
+func _typy_potyczki(uklad: Dictionary) -> Array:
+	var t := []
+	for jd in uklad.get("jednostki", []):
+		if not t.has(int(jd["typ"])): t.append(int(jd["typ"]))
+	return t

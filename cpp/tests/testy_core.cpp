@@ -1286,9 +1286,24 @@ int test_walka_swiat() {
         std::map<std::string, std::string> pierwsze;
         std::map<std::string, std::size_t> takt_pierwszej;
         std::map<std::string, std::pair<double, double>> poprz;   // pozycja Core z poprzedniego taktu
-        std::map<std::string, std::array<int, 3>> poprz_l;        // stan, HP, +0x2A0 Core z poprzedniego taktu
+        std::map<std::string, std::array<int, 3>> poprz_l;
+        std::map<std::string, double> poprz_w;                    // ω Core z poprzedniego taktu (etap 46)
+        int spoznione_w = 0;        // stan, HP, +0x2A0 Core z poprzedniego taktu
         int spoznione = 0;
+        // etap 46: rozkazy gracza z pomiaru (cel EEUGLocation z pochodzeniem 1 pojawiający się w oknie) – przed taktem
+        std::multimap<std::size_t, const Wartosc*> rozk;
+        if (const Wartosc* rz = j.znajdz("rozkazy"))
+            for (const auto& r : rz->t) rozk.emplace(std::size_t(r["takt"].n), &r);
         for (std::size_t k = 1; k < pr.size(); ++k) {
+            for (auto [it, kon] = rozk.equal_range(k); it != kon; ++it) {
+                const Wartosc& r = *it->second;
+                for (const auto& [ids, gid] : mid)
+                    if (ids == r["id"].s) {
+                        std::optional<double> kat;
+                        if (const Wartosc* kw = r.znajdz("kat"); kw && kw->typ == Wartosc::Typ::liczba && r.znajdz("obrot") && r["obrot"].b) kat = kw->n;
+                        sw.rozkaz_ruchu(gid, r["x"].n, r["y"].n, kat, false);
+                    }
+            }
             sw.takt();
             for (const auto& [ids, gid] : mid) {
                 const Wartosc& g2 = pr[k]["j"][ids];
@@ -1358,7 +1373,15 @@ int test_walka_swiat() {
                     const double dk = std::fabs(std::remainder(kc - gk->n, 2.0 * 3.14159265358979323846));
                     kmax = std::max(kmax, dk);
                     zap("kurs > 0,0002", dk > 2e-4, r_kurs);
-                    zap("omega", std::fabs(u.omega - g2["w"].n) > 1e-4, r_w);
+                    // etap 46: wyścig odczytu tylko w ω (jednostka stoi, kurs bez zmian): ω gry = ω gry z poprzedniej próbki
+                    // = ω Core z poprzedniego taktu, a ω Core bieżące inne – próbka spóźniona (to samo kryterium co wyżej)
+                    const double wprev = poprz_w.count(ids) ? poprz_w[ids] : u.omega;
+                    poprz_w[ids] = u.omega;
+                    const Wartosc& gpw = pr[k - 1]["j"][ids];
+                    const bool w_spozn = std::fabs(u.omega - g2["w"].n) > 1e-4 && gpw.znajdz("w") &&
+                                         std::fabs(gpw["w"].n - g2["w"].n) <= 1e-4 && std::fabs(wprev - g2["w"].n) <= 1e-4;
+                    if (w_spozn) ++spoznione_w;
+                    else zap("omega", std::fabs(u.omega - g2["w"].n) > 1e-4, r_w);
                 }
             }
         }
@@ -1367,6 +1390,7 @@ int test_walka_swiat() {
                     sw.diagnostyka().zalozenia_walki, sw.diagnostyka().ostatnie_zalozenie.c_str());
         std::printf("    kurs: różnych %d (maks. %.5f rad), ω: różnych %d, pozycja > 0,001: %d; próbek gry spóźnionych o takt (pominięte): %d\n",
                     r_kurs, kmax, r_w, r_poz, spoznione);
+        std::printf("    próbek ze spóźnionym tylko ω (pominięte w porównaniu ω): %d\n", spoznione_w);
         std::string naj;
         std::size_t tnaj = 0;
         for (const auto& [co, t] : takt_pierwszej)

@@ -108,6 +108,7 @@ func _start() -> void:
 	# etap 45: --rng-nagranie=PLIK – przed każdym taktem stan generatora z nagrania gry (próbka końca poprzedniego taktu);
 	# diagnostyka losowań w takcie (poza nagraniem gra losuje też w systemach nieodwzorowanych w Core)
 	var rng_gry := {}
+	var rng_tylko_start := false
 	if _arg("rng-nagranie", "") != "":
 		for p in JSON.parse_string(FileAccess.get_file_as_string(_arg("rng-nagranie", "")))["probki"]:
 			if p.has("rng"): rng_gry[int(round(float(p["t"])))] = int(p["rng"])
@@ -115,15 +116,21 @@ func _start() -> void:
 		var t_przed := int(round(T0 + TAKT_MS * k))
 		for dt in [0, -1, 1]:
 			if rng_gry.has(t_przed + dt):
-				c.ustaw_stan_rng(rng_gry[t_przed + dt]); break
+				c.ustaw_stan_rng(rng_gry[t_przed + dt])
+				# etap 46: --rng-tylko-start=1 – stan generatora z gry tylko raz (1. próbka), dalej Core losuje sam
+				if _arg("rng-tylko-start", "0") == "1":
+					rng_gry.clear(); rng_tylko_start = true
+				break
 		for r in rozkazy.get(k, []):
 			var kto: int = core_id[str(r["kto"])]
 			var w
 			if r["rodzaj"] == "atak": w = c.rozkaz_ataku(kto, core_id[str(r["cel"])])
 			else: w = c.rozkaz_ruchu(kto, float(r["x"]), float(r["y"]), float(r["kat"]) if r.get("kat") != null else null, false)
 			wynik.rozkazy.append([k, str(r["kto"]), str(r["rodzaj"]), w])
+		var n_rng0 := int(c.diagnostyka().get("rng_losowan", 0))
 		c.takt(1)
 		var pr := {}
+		if _arg("rng", "0") == "1": pr["rng_n"] = int(c.diagnostyka().get("rng_losowan", 0)) - n_rng0   # etap 46: losowania Core w takcie
 		for d in c.stan_jednostek():
 			var gid: String = gra_id.get(int(d.id), "")
 			if gid == "": continue
@@ -133,6 +140,9 @@ func _start() -> void:
 			pr[gid] = [int(d.stan), float(d.x), float(d.y), float(d.kurs), int(d.get("hp", -1)), gra_id.get(int(d.get("cel", 0)), "0"), kq, float(d.v), float(c.jednostka(int(d.id)).get("z", 0.0))]
 		if _arg("rng", "0") == "1": pr["rng"] = int(c.diagnostyka().get("rng_stan", 0))   # etap 45: stan generatora
 		wynik.probki.append([k, snappedf(T0 + TAKT_MS * (k + 1), 0.1), pr])
+	# etap 46 (I2): tryb porównania – zgodność „algorytmem” (własny stan generatora od ziarna) vs „ze stanem z nagrania”
+	wynik["tryb_rng"] = "stan_startowy_z_nagrania" if rng_tylko_start else ("z_nagrania_co_takt" if not rng_gry.is_empty() else "wlasny")
+	wynik["graf_autonomiczny"] = graf > 0
 	wynik["diag"] = c.diagnostyka()
 	wynik["zdarzenia"] = c.zdarzenia_walki_od(0)
 	var f := FileAccess.open(_arg("wyjscie", "user://odtworzenie.json"), FileAccess.WRITE); f.store_string(JSON.stringify(wynik))

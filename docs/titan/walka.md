@@ -871,4 +871,21 @@ z przejściem 6003. Wcześniej cel był zgodny do 2186/2084/2081 próbek.
   takt później) [W: 0x530896/0x530913/0x53066A; P: 641].
 - **Healer.tai** (bohater 173): HealSearchTimeElapsed = EEUC+0x4A4 ≠ 0 i licznik +0x22C = 0; licznik maleje o
   PH+0x98 · 0,001 s (0x600822); LookForHealee (0x61B57A) szuka celu 0x620A68 w LOS (lista od końca, 0x630E07:
-  HP/HPmax ≤ typ+0x49C, sojusznik, maska klas) i ustawia +0x22C = +0x4A4 [W]. W Core niewdrożone (RAPORT_ETAP_45 § 7).
+  HP/HPmax ≤ typ+0x49C, sojusznik, maska klas) i ustawia +0x22C = +0x4A4 [W]. W Core niewdrożone w etapie 45 (raporty/archiwum/RAPORT_ETAP_45 § 7); wdrożone w etapie 46 (§ 34).
+
+## 34. Etap 46 – TakeDamage, UnderAttack, Healer.tai i zagrożenie 0x62FE01
+
+- **TakeDamage 0x6172BC** [W; P: 619, 638, 644]: napastnik wrogi i typ spełnia 0x631A09 → +0x1DC := napastnik
+  (0x617917); ofiara w Idle i EEUC ofiary ma stan 2018 (+0x370, 0x622017) → UnderAttack (vt+0x74). EEUCLandPriest
+  (bohater 173) – tak [P: 5001 po trafieniu w 619]; EEUCLandCitizen (obywatel) – nie [P]. Gracz: statystyki
+  (EEPlayer 0x557147, EEComputerPlayer 0x43163C), alarm 0x55EDD2 – bez poleceń dla sojuszników [P: 644].
+- **UnderAttack** (Generic Attack): CanFlee → RunFromAttacker; allof(CanITargetEnemies, …) → RetaliateAgainstAttacker,
+  inaczej ReacquireGoal (5001) → (brak celu) ShouldIReturnToInitialContactLocation → Idle.
+- **0x62FE01** (zagrożenie dla FleeDanger) [W]: najbliższa (kwadrat odległości pól, 0x61680D) jednostka z bieżącym
+  celem EEUGAttackUnit/EEUGGather wskazującym obywatela, bez kontenera; nie „ostatni trafiający”.
+- **Healer.tai** [W; P: 619, 644; pamięć typu]: HealSearchTimeElapsed = +0x4A4 ≠ 0 i +0x22C = 0; licznik +0x22C
+  −f32(PH+0x98)·0,001 na takt (0x600822); LookForHealee 0x61B57A: 0x620A68 (LOS, lista od końca, 0x630E07, 0x5ECAD0) →
+  EEUGHeal, +0x22C := +0x4A4; TurnToFaceHealee – tryb 1; HealUnit 0x621019; leczenie 0x612EF8 (+0x3C += 34 ms; > 1000 →
+  +ulepszenie+0x150 HP do HPmax). Bohater 173: próg 1,0, zasięg 4,0, okres 1,0 s, 50 HP/s. Pomiar: koniec leczenia
+  w takcie po pełnym HP, brak celu przy pełnym HP – porównanie ostre (odczyt kodu sugeruje „≤” – [N]).
+- **Rozkazy MCP z opóźnieniem** [P]: 578 G3 takt 414 to rozkaz gracza (pochodzenie 1) dostarczony 84 s po kroku MCP.

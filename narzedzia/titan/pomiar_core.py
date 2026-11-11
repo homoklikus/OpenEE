@@ -229,6 +229,21 @@ def walka(d: dict, od: int, do: int, ids: list[str], tabele: dict, nazwa: str, m
             if p1[i]["stan"] == 2001 and p0[i]["stan"] != 2001:
                 wejscia.append({"takt": n, "id": i, "przeladowanie": _i32(p1[i], pola["r"]) + 34,
                                 "rng_przed": p0["rng"], "rng_po": p1["rng"]})
+    # etap 46: rozkazy gracza w oknie – nowy cel EEUGLocation z pochodzeniem 1 (+0x1C), który nie był w kolejce w
+    # poprzedniej próbce; rozkaz wchodzi przed taktem pierwszej próbki z celem (lockstep). 578 G3 e45, takt 414: cel
+    # 0x1000858 utworzony 94319 – rozkaz MCP wydany 84 s wcześniej i dostarczony z opóźnieniem [P].
+    rozkazy = []
+    for n in range(1, len(pr[od:do])):
+        p0, p1 = pr[od + n - 1], pr[od + n]
+        for i in ids:
+            def lok(p):
+                return {(c.get("adres"), c.get("czas_utworzenia")): c for poz in (p[i].get("kolejka") or {}).get("poziomy", [])
+                        for c in poz.get("cele", []) if c.get("klasa") == "EEUGLocation" and c.get("pochodzenie_1C") == 1}
+            stare, nowe = lok(p0), lok(p1)
+            for k, c in nowe.items():
+                if k not in stare:
+                    rozkazy.append({"takt": n, "id": i, "x": c["punkt"][0], "y": c["punkt"][1], "kat": c.get("kat"),
+                                    "obrot": bool(c.get("obrot")), "czas_utworzenia": c.get("czas_utworzenia")})
     tb = tabele.get("walka_tabele")
     pri = tabele.get("walka_priorytety")
     if not pri:
@@ -243,7 +258,7 @@ def walka(d: dict, od: int, do: int, ids: list[str], tabele: dict, nazwa: str, m
             "parametry_walki": {t: WALKA_PARAMETRY[t] for t in {u["typ"] for u in jedn}},
             "tabele": ({"trudnosc": tb["trudnosc"], "mnozniki": tb["mnozniki_0x8D2050"],
                         "trafienie": {k: (v or {}).get("klasy") for k, v in tb["tabele"].items()}} if tb else None),
-            "wagi": wagi, "start": jedn, "probki": probki, "walidacja": w, "wejscia_ataku": wejscia,
+            "wagi": wagi, "start": jedn, "probki": probki, "walidacja": w, "wejscia_ataku": wejscia, "rozkazy": rozkazy,
             "przeladowanie_aoc": tabele.get("walka_przeladowanie_aoc")}
 
 

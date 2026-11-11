@@ -57,6 +57,9 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("ustaw_skrypt_jednostki", "id", "nazwa"), &OpenEESymulacja::ustaw_skrypt_jednostki);
     ClassDB::bind_method(D_METHOD("ustaw_stan_rng", "stan"), &OpenEESymulacja::ustaw_stan_rng);
     ClassDB::bind_method(D_METHOD("kolejka_fizyki"), &OpenEESymulacja::kolejka_fizyki);
+    ClassDB::bind_method(D_METHOD("usun_obiekt_mapy", "id"), &OpenEESymulacja::usun_obiekt_mapy);
+    ClassDB::bind_method(D_METHOD("migawka_diagnostyczna", "szczegoly"), &OpenEESymulacja::migawka_diagnostyczna, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("ustaw_faze_leczenia", "id", "takty"), &OpenEESymulacja::ustaw_faze_leczenia);
     ClassDB::bind_method(D_METHOD("wejscie_regionow_z_mapy"), &OpenEESymulacja::wejscie_regionow_z_mapy);
     ClassDB::bind_method(D_METHOD("wejscie_regionow_z_scn", "obiekty", "zestawy"), &OpenEESymulacja::wejscie_regionow_z_scn);
     ClassDB::bind_method(D_METHOD("podsektor", "id"), &OpenEESymulacja::podsektor);
@@ -214,6 +217,11 @@ Dictionary OpenEESymulacja::diagnostyka() const {
         d["zegar_ms"] = int64_t(swiat_->zegar_ms());
         d["dt"] = swiat_->dt();
         d["rng_stan"] = int64_t(swiat_->generator().stan());
+        d["rng_losowan"] = int64_t(swiat_->generator().liczba_losowan());
+        d["wersja_grafu"] = int64_t(swiat_->wersja_grafu());              // etap 46
+        d["przebudowy_grafu"] = int64_t(swiat_->przebudowy_grafu());
+        d["przebudowa_zaplanowana"] = swiat_->przebudowa_zaplanowana();
+        d["termin_przebudowy"] = int64_t(swiat_->termin_przebudowy());   // etap 46: licznik od ostatniego ustawienia stanu
         d["rng_losowania"] = int64_t(swiat_->generator().liczba_losowan());
         d["jednostki"] = int64_t(swiat_->jednostki().size());
         const auto& g = swiat_->diagnostyka();
@@ -350,6 +358,15 @@ bool OpenEESymulacja::ustaw_walke(int64_t id, int64_t gracz, bool czlowiek, cons
     p.typ_bazy = int(liczba(d, "typ_bazy", 0));
     p.typ_jednostki = int(liczba(d, "typ_jednostki", 0));
     p.regeneracja = int(liczba(d, "regeneracja", 0));
+    p.reakcja_underattack = bool(liczba(d, "reakcja_underattack", 0));   // etap 46: EEUC +0x370 ma stan 2018
+    p.leczenie_hp = int(liczba(d, "leczenie_hp", 0));             // etap 46: Healer.tai
+    p.leczenie_prog = float(liczba(d, "leczenie_prog", 0.0));
+    p.leczenie_zasieg = float(liczba(d, "leczenie_zasieg", 0.0));
+    p.leczenie_okres_s = float(liczba(d, "leczenie_okres", 0.0));
+    if (d.has("leczone_typy")) {
+        const Array lt = d["leczone_typy"];
+        for (int64_t i = 0; i < lt.size(); ++i) p.leczone_typy.push_back(int(lt[i]));
+    }
     p.smierc_klatki = int(liczba(d, "smierc_klatki", 0));       // etap 44: dbgraphics gniazdo 4 – liczba klatek
     p.smierc_ms_klatki = int(liczba(d, "smierc_ms_klatki", 0)); // „wartość” sekwencji = ms na klatkę
     p.rozklad_ms = int(liczba(d, "rozklad_ms", 0));             // dbobjects „Rotting time” × 1000
@@ -551,6 +568,7 @@ Dictionary OpenEESymulacja::zbuduj_graf_z_wejscia(const Dictionary& d, int64_t k
     wyn["regiony"] = pr;
     wyn["przydzial"] = pp;
     swiat_->ustaw_graf_podsektorow(std::move(G));
+    swiat_->ustaw_wejscie_mapy(w, int(komorka), false);   // etap 46: wejście zachowane (dynamiczna przebudowa)
     return wyn;
 }
 
@@ -564,6 +582,39 @@ Array OpenEESymulacja::kolejka_fizyki() const {
         for (const auto& u : swiat_->jednostki())
             if (u.w_fizyce) a.push_back(int64_t(u.id));
     return a;
+}
+
+// etap 46 (I1): kompaktowa migawka diagnostyczna taktu – jednostki [id, stan, x, y, kurs, v, cel, hp] (szczegóły:
+// + tryb, ω, zdjęte punkty), kolejka fizyki, stan i liczba losowań RNG, wersja grafu, liczba zdarzeń walki
+Dictionary OpenEESymulacja::migawka_diagnostyczna(bool szczegoly) const {
+    Dictionary d;
+    if (!swiat_) return d;
+    Array j;
+    for (const auto& u : swiat_->jednostki()) {
+        Array e;
+        e.push_back(int64_t(u.id)); e.push_back(u.stan); e.push_back(u.x); e.push_back(u.y);
+        e.push_back(swiat_->matematyka().kurs_z_macierzy(u.orientacja)); e.push_back(u.v);
+        e.push_back(u.kolejka_celow.empty() ? int64_t(0) : int64_t(u.kolejka_celow.front().cel_jednostka));
+        e.push_back(u.boj ? u.boj->s.hp : -1);
+        if (szczegoly) { e.push_back(int(u.tryb)); e.push_back(u.omega); e.push_back(int64_t(u.zdjete_punkty)); }
+        j.push_back(e);
+    }
+    d["takt"] = int64_t(swiat_->takty());
+    d["jednostki"] = j;
+    d["kolejka_fizyki"] = kolejka_fizyki();
+    d["rng_stan"] = int64_t(swiat_->generator().stan());
+    d["rng_losowan"] = int64_t(swiat_->generator().liczba_losowan());
+    d["wersja_grafu"] = int64_t(swiat_->wersja_grafu());
+    d["zdarzen_walki"] = int64_t(swiat_->zdarzenia_walki().size());
+    return d;
+}
+
+bool OpenEESymulacja::usun_obiekt_mapy(int64_t id) {
+    return swiat_ && swiat_->usun_obiekt_mapy(std::uint32_t(id));
+}
+
+bool OpenEESymulacja::ustaw_faze_leczenia(int64_t id, int64_t takty) {
+    return swiat_ && swiat_->ustaw_faze_leczenia(openee::IdJednostki(id), int(takty));
 }
 
 // etap 45: stan generatora RTSPhysics (diagnostyka odtworzeń – synchronizacja z nagraniem gry)

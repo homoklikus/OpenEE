@@ -98,7 +98,12 @@ func _start() -> void:
 			"rodzaj_ataku": 5, "wiersz_celu": 5, "klasa_trafienia": 8, "rodzina_ataku": 55, "luk_ataku": 0.3490658700466156,
 			"rozmiar": 0.55, "punktowy": 1, "szukanie_ms": 1000, "pole_ac": 0.800000011920929, "typ_bazy": 173, "typ_jednostki": 13,
 			"regeneracja": 2, "regeneracja_ms": int(_arg("regen-ms", "898")), "ai_szuka_wrogow": 0}
+		if _arg("leczenie", "1") == "1":   # etap 46: Healer.tai (dbobjects bohatera „(heal)” [P: pamięć typu +0x49C/+0x4A0/+0x4A4])
+			bh.merge({"leczenie_hp": 50, "leczenie_prog": 1.0, "leczenie_zasieg": 4.0, "leczenie_okres": 1.0, "leczone_typy": [422, 32, 216],
+				"reakcja_underattack": 1})
 		bohater = c.dodaj_jednostke(ruch_b, 164.5, 104.5, -2.35810); c.ustaw_walke(bohater, 5, false, bh, 1235); ids["HERO"] = bohater
+		if _arg("leczenie", "1") == "1":
+			c.ustaw_skrypt_jednostki(bohater, "Military Healer Prophet")
 		# klasa 8 (bohater) × rodzina 48 (gwardia): 0,714 / 1,0 / 1,4 (odczyt zad. 621 [P])
 		for i in 3:
 			var f8 := PackedFloat32Array(); f8.resize(64); f8[48] = [0.714, 1.0, 1.4][i]
@@ -143,7 +148,16 @@ func _start() -> void:
 		print("POLA\n" + w)
 	var wynik := {"mapa": im.get("skrot", ""), "pole_celu_przejezdne": c.pole_przejezdne(160, 105), "przejscia": [],
 		"ids": ids, "budynki_efektow": wynik_efekty, "podsektory": wynik_graf, "jednostki": {}}
+	# etap 46: kolejność listy jak kolejka fizyki po wczytaniu (x, potem y rosnąco – etap 44/45 [P]); --kolejnosc=dodanie –
+	# dawna kolejność dodawania (etapy 36–45)
+	if _arg("kolejnosc", "pozycja") == "pozycja": c.uporzadkuj_wg_pozycji()
 	var T0 := float(_arg("t0", "9909"))
+	# etap 46: faza licznika +0x22C bohatera w chwili T0. W grze LookForHealee co 30 taktów od 1. taktu scenariusza
+	# [P: 619 i 620 – 16000 w 10249, 11272, …; 644 – 5147]; odtworzenie zaczyna się w T0, więc licznik ustawiany jak po
+	# wejściu w 16000 przed T0: 21 kroków dla T0 = 9909 (dopasowanie do pełnego cyklu 619), o takt mniej na każdy takt
+	# wcześniejszego T0
+	if bohater != 0 and _arg("leczenie", "1") == "1":
+		c.ustaw_faze_leczenia(bohater, int(_arg("leczenie-takty", str(21 - int(round((9909.0 - T0) / TAKT_MS))))))
 	var takt_rozkazu := int(round((float(_arg("t-rozkazu", "40113")) - T0) / TAKT_MS))   # ostatnia próbka przed rozkazem
 	var ruch := _arg("ruch", "")
 	# --rozkazy=T:atak;T:ruch:x:y;… – kolejne rozkazy gracza (czas gry ostatniej próbki przed rozkazem)

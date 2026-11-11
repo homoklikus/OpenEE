@@ -47,6 +47,15 @@ struct ParametryWalki {
     int smierc_ms_klatki = 0;
     int rozklad_ms = 0;
     int zasoby = 0;
+    // Etap 46 – leczenie (Healer.tai) [W: 0x630E07, 0x612C2F, 0x612EF8, 0x61BF25; dbobjects]:
+    int leczenie_hp = 0;              // ulepszenie +0x150 = „Healer heal amount” (HP co 1000 ms)
+    float leczenie_prog = 0.0f;       // typ +0x49C = „Unknown#50” (HP/HPmax ≤ próg – bohaterowie 1,0)
+    float leczenie_zasieg = 0.0f;     // typ +0x4A0 = „Healing range / Ability range”
+    float leczenie_okres_s = 0.0f;    // typ +0x4A4 = „Unknown#51” (okres szukania, s – bohaterowie 1,0)
+    // EEUC +0x370 zawiera stan 2018 (0x622017): TakeDamage w Idle → UnderAttack (0x617401–0x617431) [P: bohater 173
+    // = EEUCLandPriest (odczyt RTTI +0x2C), 619 – 5001 po trafieniu; obywatel EEUCLandCitizen bez reakcji – 638]
+    bool reakcja_underattack = false;
+    std::vector<int> leczone_typy;    // zestaw ulepszenia +0x10C (0x4A7618 – typy +0x4B8 w zestawie) [N: który zestaw]
 };
 
 /// Modyfikator wysokości 0x61E500 (EE; AoC 0x631918): konfiguracja reguł [0x917BB8] (AoC [0x92FCA8]) [W kod].

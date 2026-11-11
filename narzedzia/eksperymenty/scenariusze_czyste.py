@@ -25,15 +25,25 @@ def main():
     konf = mapy / "e42_czysta_troja.czyszczenie.json"
     konf.write_text(json.dumps(opis["baza"]["czyszczenie"]), encoding="utf-8")
     subprocess.run([sys.executable, str(TU / "scenariusz_czysty.py"), str(mapy / opis["baza"]["zrodlo"]), str(baza), str(konf)], check=True)
+    # etap 46: druga baza „bez_zwierzat” – ta sama oczyszczona mapa bez ruchomych obiektów Świata (zwierzęta, ryby), które
+    # losują z generatora RTSPhysics poza nagrywanymi jednostkami [P: lista fizyki 644 – 22 obiekty = 3 testowe + 19]
+    bazy = {"": baza}
+    if "baza_bez_zwierzat" in opis:
+        b2 = mapy / "e46_czysta_troja_bez_zwierzat.scn"
+        k2 = mapy / "e46_czysta_troja_bez_zwierzat.czyszczenie.json"
+        k2.write_text(json.dumps({**opis["baza"]["czyszczenie"], **opis["baza_bez_zwierzat"]["czyszczenie"]}), encoding="utf-8")
+        subprocess.run([sys.executable, str(TU / "scenariusz_czysty.py"), str(mapy / opis["baza"]["zrodlo"]), str(b2), str(k2)], check=True)
+        bazy["bez_zwierzat"] = b2
     wybrane = sys.argv[2:] or list(opis["warianty"])
     for nazwa in wybrane:
         grupy = {}
+        baza_w = bazy[opis.get("bazy_wariantow", {}).get(nazwa, "")]
         for g, (wzor, gracz, poz) in opis["warianty"][nazwa].items():
             grupy[g] = {"wzor": opis["wzory"][wzor], "zrodlo": str(mapy / opis["zrodlo_wzorow"]), "gracz": gracz,
                         "pozycje": poz}
         wej = mapy / f"e42_{nazwa}.uklad_wej.json"
         wej.write_text(json.dumps({"grupy": grupy}, indent=1), encoding="utf-8")
-        subprocess.run([sys.executable, str(TU / "scenariusz_testowy_kolizji.py"), "zbuduj", str(baza),
+        subprocess.run([sys.executable, str(TU / "scenariusz_testowy_kolizji.py"), "zbuduj", str(baza_w),
                         str(mapy / f"e42_{nazwa}.scn"), str(wej)], check=True)
 
 

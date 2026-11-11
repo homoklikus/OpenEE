@@ -3,6 +3,9 @@
  "baza": {"zrodlo": "kampanie/een1ve1s_wojna trojańska.scn",
           "czyszczenie": {"usun_graczy": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], "swiat_usun": [140, 85, 190, 135], "kawalek6_pusty": true}},
  "wzory": {"GRD": "0x100018b", "OBS": "0x100055d", "CIT": "0x100011a", "BLD": "0x1000039", "HERO": "0x100055c"},
+ "baza_bez_zwierzat": {"czyszczenie": {"swiat_usun_typy": [372, 326, 373, 261, 315]},
+                       "opis": "Etap 46: zwierzęta Świata (kura 372, koza 326, koń 373, jeleń 261) i ryby (315) usunięte z całej mapy – losowania RNG tylko od jednostek testowych [H do sprawdzenia]"},
+ "bazy_wariantow": {"e46_rng_1v1": "bez_zwierzat"},
  "zrodlo_wzorow": "e35_a.scn",
  "warianty": {
   "1v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
@@ -16,8 +19,19 @@
   "e45_cit_poscig": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
   "e45_cit_ruch": {"A_CIT": ["CIT", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 104.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
   "e45_bohater": {"A_HERO": ["HERO", 1, [[164.5, 115.5]]], "A_GRD": ["GRD", 1, [[164.5, 112.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]],
-                  "OBS": ["OBS", 1, [[172.5, 112.5]]]}
+                  "OBS": ["OBS", 1, [[172.5, 112.5]]]},
+  "e46_sojusz_blisko": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "S_GRD": ["GRD", 5, [[166.5, 106.5]]],
+                        "OBS": ["OBS", 1, [[170.5, 110.5]]]},
+  "e46_sojusz_daleko": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "S_GRD": ["GRD", 5, [[173.5, 103.5]]],
+                        "OBS": ["OBS", 1, [[168.5, 112.5]]]},
+  "e46_bohater2": {"A_HERO": ["HERO", 1, [[166.5, 115.5]]], "A_GRD": ["GRD", 1, [[164.5, 112.5], [168.5, 112.5]]],
+                   "T_GRD": ["GRD", 5, [[164.5, 108.5], [168.5, 108.5]]], "OBS": ["OBS", 1, [[174.5, 112.5]]]}
+,
+  "e46_rng_1v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
+  "e46_graf": {"A_GRD": ["GRD", 1, [[164.5, 115.5], [163.5, 115.5], [165.5, 115.5]]], "DOM": ["BLD", 5, [[164.5, 112.5]]],
+               "OBS": ["OBS", 1, [[170.5, 114.5]]]}
  },
+ "opis_etap46": "e46_sojusz_* – gwardia komputera atakowana, druga gwardia komputera w Idle blisko (2,8 pola) albo daleko (10 pól) – reakcja sojusznika (TakeDamage 0x6172BC → EEComputerPlayer vt+0x84 0x43163C); e46_bohater2 – bohater i dwie walczące gwardie (dwóch rannych); e46_graf – trzy gwardie niszczą dom (zgłoszenie zmiany mapy 0x4288A7, termin +0xD4/+0xD8 menedżera 0x917D00).",
  "opis_etap45": "e45_cit_poscig – obywatel ucieka (FleeDanger), gwardia dostaje rozkaz odejścia (pościg przerwany); e45_cit_ruch – obywatel gracza 1 idzie w pole widzenia gwardii komputera (trafienie w trakcie ruchu, potem w Idle); e45_bohater – bohater 173 (Military Healer Prophet, wzór 0x100055c z e35_a) przy gwardii walczącej z gwardią komputera (leczenie z atakującym, potem bez).",
  "opis_etap44": "e44_cit_1v1 – śmierć obywatela (czas stanu 6000 zależny od typu); e44_kontakt_590 – gwardie idące na siebie w walce (układ 590 G1: kontakt w trybie 1, rejestr push i kontaktów).",
  "niezrealizowane": {"cel_zmieniajacy_pole": "ruch celu wymaga rozkazu dla gracza 5 (komputer) – MCP wydaje rozkazy tylko graczowi 1; rekordy z trasą (L_pts) nie są obsługiwane przez narzędzie [N]"}

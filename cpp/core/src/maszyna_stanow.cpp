@@ -38,6 +38,10 @@ const NazwaNumer NAZWY[] = {
     // etap 44/45: rejestracja nazw 0x618E11 (push numer, push nazwa) [W]
     {"FleeDanger", 8019},
     {"MoveToRepairSite", 8018},
+    // etap 46: Healer.tai (rejestracja 0x6194D3/0x619914/0x6195A8) [W]
+    {"LookForHealee", 16000},
+    {"HealUnit", 16001},
+    {"TurnToFaceHealee", 16002},
 };
 }  // namespace
 
@@ -205,11 +209,12 @@ const StanSkryptu* SkryptStanow::stan(int numer) const {
     return nullptr;
 }
 
-SkryptStanow SkryptStanow::wbudowany_land() {
+namespace {
+const char* tekst_land() {
     // Odtworzone z tabeli docs/titan/skrypty_stanow.md § 4 (połączony land.tai: najpierw przejścia z części ataku,
     // potem ruchu). Własny zapis, nie kopia pliku gry. Etap 31: stany walki wręcz z Generic Attack (kolejność przejść
     // jak w połączonym skrypcie [P: przebiegi 564]) i stany śmierci; transport, eksploracja, FaceLocation – tylko nazwy.
-    static const char* TEKST = R"TAI(
+    return R"TAI(
 Idle { CanISeeEnemy true(CheckRange) }
 PrepareToMove {
   allof(GoalIsLoadContainer,ContainerInRange) true(WaitForTransport)
@@ -295,14 +300,55 @@ InitialAttackState {
 ReacquireEnemyUnit { EnemyUnitReachable true(CheckRange) false(ShouldIReturnToInitialContactLocation) }
 RetaliateAgainstAttacker { GoalIsUnit true(CheckRange) false(PrepareToMove) }
 RunFromAttacker { AlwaysTrue true(PrepareToMove) }
+UnderAttack {
+  CanFlee true(RunFromAttacker)
+  allof(CanITargetEnemies,UnitIdleOrAttackingDefenselessBuilding,IsAttackerInRetaliationRange,CanDamageAttacker,AttackerIsReachable) true(RetaliateAgainstAttacker) false(ReacquireGoal)
+}
 ReturnToInitialContactLocation { AlwaysTrue true(PrepareToMove) }
 Dying { DyingAnimationFinished true(ResourcesRotting) }
 ResourcesRotting { ResourcesRottedAway true(UnitRotting) }
 UnitRotting { UnitRottedAway true(Dead) }
 )TAI";
+}
+
+// Etap 46 – Healer.tai [W: plik skryptu; zdarzenia 18000–18006, stany 16000–16002]. Własny zapis. W skrypcie
+// „Military Healer Prophet” Healer.tai jest dołączany PRZED Military Prophet.tai (Generic Attack/Movement/Death),
+// więc jego przejścia stoją w każdym stanie przed przejściami ruchu i walki.
+const char* tekst_healer() {
+    return R"TAI(
+Idle { HealSearchTimeElapsed true(LookForHealee) }
+LookForEnemies { AttackMoveEnabled true(LookForHealee) }
+LookForHealee {
+  GoalIsHeal true(TurnToFaceHealee)
+  GoalIsLocation true(Advance) false(ShouldIReturnToInitialContactLocation)
+}
+TurnToFaceHealee {
+  anyof(HealeeDestroyed,UnitNotOnMap,HealeeNoLongerVisible) true(ShouldIReturnToInitialContactLocation)
+  HealeeInHealingRange false(PrepareToMove)
+  FacingHealee true(HealUnit)
+}
+HealUnit {
+  TargetNeedsHealing false(ShouldIReturnToInitialContactLocation)
+  anyof(HealeeDestroyed,UnitNotOnMap,HealeeNoLongerVisible) true(ShouldIReturnToInitialContactLocation)
+  HealeeInHealingRange false(PrepareToMove)
+}
+GetNextMoveWaypoint { HealeeInHealingRange true(TurnToFaceHealee) }
+ReacquireGoal { GoalIsHeal true(TurnToFaceHealee) }
+)TAI";
+}
+}  // namespace
+
+SkryptStanow SkryptStanow::wbudowany_land() {
     SkryptStanow s;
     std::string blad;
-    s.parsuj(TEKST, nullptr, blad);
+    s.parsuj(tekst_land(), nullptr, blad);
+    return s;
+}
+
+SkryptStanow SkryptStanow::wbudowany_uzdrowiciel() {
+    SkryptStanow s;
+    std::string blad;
+    s.parsuj(std::string(tekst_healer()) + tekst_land(), nullptr, blad);
     return s;
 }
 

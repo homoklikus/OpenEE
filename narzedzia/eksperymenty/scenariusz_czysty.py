@@ -16,7 +16,8 @@ Kontrola: ponowny odczyt całego kawałka 5 gramatyką, kontrola ramek pliku i k
 
 Użycie:
   python3 narzedzia/eksperymenty/scenariusz_czysty.py <wejście_231.scn> <wyjście.scn> <konfiguracja.json>
-konfiguracja: {"usun_graczy": [1, 2, ...], "swiat_usun": [x0, y0, x1, y1] | null, "kawalek6_pusty": true}
+konfiguracja: {"usun_graczy": [1, 2, ...], "swiat_usun": [x0, y0, x1, y1] | null, "kawalek6_pusty": true,
+               "swiat_usun_typy": [typy dbobjects] (etap 46: obiekty Świata tych typów z całej mapy – np. zwierzęta)}
 Wynik zostaje lokalnie (dane scenariusza z gry nie są publikowane).
 """
 import importlib.util
@@ -55,9 +56,10 @@ def wyczysc(wej, wyj, konf, riverlands):
     n_graczy = len(G.czytaj(bytes(d5), wersja))
     usun = sorted({int(n) for n in konf.get("usun_graczy", [])})
     swiat = konf.get("swiat_usun")
+    typy_usun = {int(t) for t in konf.get("swiat_usun_typy", [])}
     plan = []
     for nr in range(n_graczy):
-        if nr in usun or (nr == 0 and swiat):
+        if nr in usun or (nr == 0 and (swiat or typy_usun)):
             plan.append((nr, T._gracz_z_offsetami(bytes(d5), T._start_gracza(bytes(d5), nr, wersja), wersja)))
     raport = {}
     for nr, g in sorted(plan, key=lambda p: -p[1]["kubelki"][0]["offset"]):   # od końca – offsety stałe
@@ -69,10 +71,14 @@ def wyczysc(wej, wyj, konf, riverlands):
                 if nr in usun:
                     usuniete += 1
                     continue
-                x0, y0, x1, y1 = swiat
-                if x0 <= u.get("X", -1) <= x1 and y0 <= u.get("Y", -1) <= y1:
+                if typy_usun and u.get("type") in typy_usun:
                     usuniete += 1
                     continue
+                if swiat:
+                    x0, y0, x1, y1 = swiat
+                    if x0 <= u.get("X", -1) <= x1 and y0 <= u.get("Y", -1) <= y1:
+                        usuniete += 1
+                        continue
                 zost.append(bytes(d5[ra:rb]))
             nowe += struct.pack("<I", len(zost)) + b"".join(zost)
         d5[a:b] = nowe

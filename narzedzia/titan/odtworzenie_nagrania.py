@@ -84,6 +84,8 @@ def opis(nagr, uklad, wyj):
 
 
 def porownaj(ser_p, core_p, pomin=()):
+    """Etap 46 (I2): na końcu jedno podsumowanie – pierwszy rozbieżny takt, jednostka, pole, wartości gra/Core,
+    ostatnie zdarzenie walki Core przed nim, próbki nieaktualne, tryb RNG i graf."""
     ser = json.load(open(ser_p))['probki']; core = json.load(open(core_p))
     ct = [p[1] for p in core['probki']]
     def at(t):
@@ -129,11 +131,36 @@ def porownaj(ser_p, core_p, pomin=()):
     return wynik
 
 
+def podsumowanie(core, wynik):
+    naj = None
+    for gid, w in wynik.items():
+        for pole, (t, val) in w['pierwsze'].items():
+            if naj is None or t < naj[0]:
+                naj = (t, gid, pole, val)
+    nieakt = sum(w['nieaktualne'] for w in wynik.values())
+    tryb = core.get('tryb_rng', 'nieznany (plik sprzed etapu 46)')
+    graf = core.get('graf_autonomiczny', core.get('graf', -1) not in (-1, None))
+    if naj is None:
+        print(f"PODSUMOWANIE: brak rozbieżności; próbek nieaktualnych rejestratora {nieakt}; RNG: {tryb}; graf autonomiczny: {graf}")
+        return
+    t, gid, pole, val = naj
+    ost = None
+    for z in core.get('zdarzenia', []):
+        tz = z.get('takt') if isinstance(z, dict) else None
+        if tz is not None and core['probki'] and core['probki'][0][1] - TAKT_MS + TAKT_MS * (tz + 1) <= t:
+            ost = z
+    print(f"PODSUMOWANIE: 1. rozbieżność t={t} jednostka {gid} ({core['ids'].get(gid, '?')}) pole {pole}: gra/Core {val}; "
+          f"ostatnie zdarzenie walki Core przed nią: {ost}; próbek nieaktualnych {nieakt}; RNG: {tryb}"
+          + (" (zgodność wymaga stanu generatora z gry – nie jest odtworzeniem autonomicznym)" if tryb.startswith('z_nagrania') else '')
+          + f"; graf autonomiczny: {graf}")
+
+
 if __name__ == '__main__':
     a = sys.argv[1:]
     if a and a[0] == 'opis':
         opis(a[1], a[2], a[3])
     elif a and a[0] == 'porownaj':
-        porownaj(a[1], a[2], tuple(int(x) for x in a[3].split(',')) if len(a) > 3 and a[3] else ())
+        w = porownaj(a[1], a[2], tuple(int(x) for x in a[3].split(',')) if len(a) > 3 and a[3] else ())
+        podsumowanie(json.load(open(a[2])), w)
     else:
         raise SystemExit(__doc__)

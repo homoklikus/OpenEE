@@ -38,7 +38,7 @@ enum class TrybRuchu : std::uint8_t { jazda = 0, do_celu = 1, zatrzymanie = 2, s
 // tryb 1 (etap 31): EEPMLand vt+0x10 = EE 0x54DA82 – obrót do celu ataku (vt+0x1C z flagą broni), hamowanie v.
 
 /// Typ celu (kolejka celów, etap 21): rodzaj celu +5 – 1 miejsce (EEUGLocation), 2 jednostka (EEUGAttackUnit, etap 31).
-enum class TypCelu : std::uint8_t { brak = 0, miejsce = 1, jednostka = 2 };
+enum class TypCelu : std::uint8_t { brak = 0, miejsce = 1, jednostka = 2, leczenie = 3 };   // 3: EEUGHeal (etap 46; bajt rodzaju [N])
 
 struct Punkt2 {
     double x = 0, y = 0;  // f32 przechowywane jako double
@@ -94,11 +94,15 @@ struct BojJednostki {
     // etap 44: animacja umierania (+0x2FC – ms od ostatniej klatki, klatka, +0x337 – koniec sekwencji) i licznik +0x2A8
     // stanów 6001 (narastająco, co 4000 ms −1 zasób) / 6002 (odliczanie czasu rozkładu)
     int hp_29c = 0;                       // etap 45: EEUnit +0x29C – HP z aktualizacji typu (TakingLightDamage: +0x29C > HP)
-    std::uint32_t ostatni_atakujacy = 0;   // etap 45: atakujący dla FleeDanger (0x62FE01 – wybór uproszczony [H])
+    std::uint32_t ostatni_atakujacy = 0;
+    std::uint32_t atakujacy_1dc = 0;       // etap 46: EEUnit +0x1DC – napastnik zapisany w TakeDamage (0x617917)   // etap 45: atakujący dla FleeDanger (0x62FE01 – wybór uproszczony [H])
     int smierc_ms = 0, smierc_klatka = 0;
     bool smierc_koniec = false;
     int licznik_2a8 = 0;
     int zasoby = 0;
+    // etap 46 – Healer.tai: licznik +0x22C (f32, sekundy; 0x600822), akumulator celu EEUGHeal +0x3C (ms; 0x612EF8)
+    float licznik_22c = 0.0f;
+    int leczenie_akum = 0;
     int regeneracja_ms = 0;   // EEUnit +0x290: odliczanie do regeneracji HP (0x625B47; etap 38 [P: 619 – −34 ms/takt, 1000 po regeneracji])
 };
 

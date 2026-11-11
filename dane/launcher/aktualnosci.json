@@ -4,6 +4,18 @@
  "wiecej_url": "https://github.com/homoklikus/OpenEE/blob/main/raporty/README.md",
  "wpisy": [
   {
+   "data": "2026-11-12",
+   "tytul": {
+    "pl": "Etap 46: leczenie bohatera i reakcja na atak",
+    "en": "Stage 46: hero healing and reaction to attacks"
+   },
+   "tekst": {
+    "pl": "Bohater-uzdrowiciel szuka rannych sojuszników, podchodzi i leczy ich w tym samym rytmie co w Empire Earth, a po trafieniu reaguje tak jak w oryginale. Mapa tras przebudowuje się po zniszczeniu budynku zamiast w każdej klatce, a potyczka korzysta z właściwych skryptów jednostek.",
+    "en": "The healer hero now looks for wounded allies, walks over and heals them at the same pace as in Empire Earth, and reacts to being hit like the original. The route map is rebuilt after a building is destroyed instead of every frame, and skirmishes use the proper unit scripts."
+   },
+   "raport": "RAPORT_ETAP_46.md"
+  },
+  {
    "data": "2026-11-10",
    "tytul": {
     "pl": "Etap 45: kolejność symulacji i ucieczka obywatela",
@@ -13,7 +25,7 @@
     "pl": "OpenEE przetwarza jednostki w tej samej kolejności co oryginalna gra i usuwa martwe w tym samym takcie. Obywatel trafiony w spoczynku ucieka w to samo miejsce i tą samą drogą co w Empire Earth, a nowe pomiary walki gwardii zgadzają się z grą takt po takcie.",
     "en": "OpenEE now processes units in the same order as the original game and removes dead ones on the same tick. A citizen hit while idle flees to the same spot along the same path as in Empire Earth, and new guard combat measurements match the game tick by tick."
    },
-   "raport": "RAPORT_ETAP_45.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_45.md"
   },
   {
    "data": "2026-11-10",

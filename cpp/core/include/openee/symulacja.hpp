@@ -6,6 +6,7 @@
 #include <array>
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -188,6 +189,7 @@ public:
     void ustaw_skrypt(SkryptStanow s) { skrypt_ = std::move(s); }
     /// Etap 45: skrypt .tai typu jednostki ("land" – skrypt świata, "obywatel" – citizen.tai).
     bool ustaw_skrypt_jednostki(IdJednostki id, const std::string& nazwa);
+    bool ustaw_faze_leczenia(IdJednostki id, int takty_od_szukania);   // etap 46
 
     double dt() const { return dt_; }
     std::uint64_t takty() const { return takty_; }
@@ -258,6 +260,16 @@ public:
     /// Modyfikator wysokości obrażeń (konfiguracja reguł gry) i premia gracza +0xA3C.
     void ustaw_modyfikator_wysokosci(ModyfikatorWysokosci m) { mod_wys_ = m; }
     void ustaw_graf_podsektorow(GrafPodsektorow g) { graf_ = std::move(g); }
+    // etap 46 – dynamiczny graf [W: 0x4288A7 → 0x4A36F3 → 0x4A3641/0x4278C3]: wejście mapy zachowane w świecie,
+    // usunięcie obiektu pola zgłasza zmianę, przebudowa po terminie +0xD4 (nie co takt)
+    void ustaw_wejscie_mapy(WejscieRegionow w, int komorka, bool zbuduj = true);
+    bool usun_obiekt_mapy(std::uint32_t id);
+    void zglos_zmiane_mapy(const std::vector<int>& pola, bool natychmiast);
+    std::uint64_t wersja_grafu() const { return wersja_grafu_; }
+    std::uint64_t przebudowy_grafu() const { return przebudowy_grafu_; }
+    bool przebudowa_zaplanowana() const { return przebudowa_d8_; }
+    std::uint32_t termin_przebudowy() const { return termin_d4_; }
+    float opoznienie_przebudowy_s = 0.0f;   // *0x9183C0 (wartość z gry nieodczytana; w pliku 0) [N]
     const GrafPodsektorow& graf_podsektorow() const { return graf_; }
     /// N progu 9016 ShouldMoveToNextAutoWaypoint ([0x917DC8], 0x4243AC) z rozmiaru mapy
     static int prog_punktu_auto(int rozmiar_mapy);
@@ -284,6 +296,13 @@ public:
 
 private:
     GrafPodsektorow graf_;
+    std::optional<WejscieRegionow> wejscie_;
+    int komorka_grafu_ = 0;
+    std::vector<int> pola_zmienione_;          // 0x422DB6: posortowane, bez powtórzeń
+    bool przebudowa_d8_ = false;               // EEPathManager +0xD8
+    std::uint32_t termin_d4_ = 0;              // EEPathManager +0xD4
+    std::uint64_t wersja_grafu_ = 0, przebudowy_grafu_ = 0;
+    void krok_przebudowy();
     void krok_maszyny(Jednostka& u);
     std::optional<bool> zdarzenie(Jednostka& u, const std::string& nazwa);
     bool ocen_przejscie(Jednostka& u, const Przejscie& p);
@@ -339,6 +358,11 @@ private:
     const SkryptStanow& skr(const Jednostka& u) const { return u.skrypt ? *u.skrypt : skrypt_; }
     int losuj_zakres(int lo, int hi);
     void ucieczka(Jednostka& u);
+    Jednostka* zagrozenie_62fe01(const Jednostka& u);
+    void krok_licznika_22c(BojJednostki& b);
+    bool potrzebuje_leczenia(const Jednostka& u, const Jednostka& h) const;
+    bool w_zasiegu_leczenia(const Jednostka& u, const Jednostka& h) const;
+    Jednostka* szukaj_leczonego(Jednostka& u);
     Diagnostyka diag_;
     std::vector<Jednostka> jednostki_;
     IdJednostki nastepny_id_ = 1;

@@ -238,6 +238,20 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
                 u.zdjete_punkty = 0;
                 u.trasa_gotowa = false;
             }
+            if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::leczenie) {
+                // etap 46: cel EEUGHeal – punkt = pozycja leczonego, pole = jego pole [H: vt+0x08 celu niezbadane]
+                if (Jednostka* h = jednostka(u.kolejka_celow.front().cel_jednostka)) {
+                    u.kolejka_celow.front().x = f32(h->x);
+                    u.kolejka_celow.front().y = f32(h->y);
+                    u.kolejka_celow.front().pole_x = h->komorka_x;
+                    u.kolejka_celow.front().pole_y = h->komorka_y;
+                }
+                u.trasa.clear();
+                u.dl_przed.clear();
+                u.dl_po.clear();
+                u.zdjete_punkty = 0;
+                u.trasa_gotowa = false;
+            }
             // etap 40: etap grafu podsektorów prośby 0x4A1AFF (bajt +0x1C) i wynik 0x4A26E3 – może wstawić punkty +0x32
             // na czoło kolejki; licznik prób (+0x18) zwiększa się na celu z czoła po wstawieniu [P: 624 – EEUGLocation
             // proby 1, EEUGAttackUnit 0 w takcie wstawienia]
@@ -272,6 +286,37 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
                 u.boj->icl_y = u.y;
                 u.boj->icl_kurs = mat_.kurs_z_macierzy(u.orientacja);
             }
+            break;
+        case 16000:  // LookForHealee 0x61B57A: szukanie 0x620A68 w polu widzenia; cel EEUGHeal (0x5F05BD); +0x22C := +0x4A4
+            if (u.boj) {
+                if (Jednostka* h = szukaj_leczonego(u)) {
+                    CelRuchu c;
+                    c.typ = TypCelu::leczenie;
+                    c.x = f32(h->x);
+                    c.y = f32(h->y);
+                    c.od_gracza = false;   // pochodzenie 0 (AI) [H]
+                    c.cel_jednostka = h->id;
+                    c.pole_x = h->komorka_x;
+                    c.pole_y = h->komorka_y;
+                    u.kolejka_celow.push_front(c);
+                    u.cel = TypCelu::leczenie;
+                }
+                u.boj->licznik_22c = u.boj->p.leczenie_okres_s;
+                u.boj->leczenie_akum = 0;   // nowy cel EEUGHeal: +0x3C = 0 (konstruktor 0x612A8A) [W]
+            }
+            break;
+        case 16002:  // TurnToFaceHealee: cel vt+0x40 (jak FaceEnemyUnit) – tryb 1 do celu, trasa zdjęta [W: 0x61B5FA]
+            u.tryb = TrybRuchu::do_celu;
+            u.trasa.clear();
+            u.dl_przed.clear();
+            u.dl_po.clear();
+            u.zdjete_punkty = 0;
+            u.trasa_gotowa = false;
+            break;
+        case 16001:  // HealUnit 0x621019: w zasięgu (0x612C2F) – animacja 3 (0x5EFD6D(3, −1, 0)) [W]
+            if (u.boj && !u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::leczenie)
+                if (Jednostka* h = jednostka(u.kolejka_celow.front().cel_jednostka))
+                    if (w_zasiegu_leczenia(u, *h)) u.boj->animacja = 3;
             break;
         case 2012:  // FaceEnemyUnit (EEUGAttackUnit vt+0x40 = 0x60B26F): tryb 1, animacja ruchu gdy nie zwrócona; 0x5E9770
         case 2001:  // AttackEnemyUnit: tryb 1, animacja ataku, +0x2A0 := przeładowanie (AoC: losowe 0x5FEA22), +0x2AC := 0
@@ -388,6 +433,7 @@ void Swiat::takt() {
     for (auto& u : jednostki_)
         if (u.usun_z_fizyki) { u.usun_z_fizyki = false; u.w_fizyce = false; }
     rng_.krok();  // 0x547C09 w 0x547B6B, wywołanej z 0x546D4C – przed pętlą jednostek 0x547AAD (wywołanie 0x546D6B) [W]
+    krok_przebudowy();   // etap 46: takt EEPathManager 0x4A396B (EEPhysics vt+0x20, 0x546D56) – przebudowa 0x4A3641
     // Efekty obszarowe 0x547742 (AoC 0x553C59) – po menedżerze tras (0x4A396B), przed pętlą jednostek (0x547AAD):
     // +0x9C += +0x98 (f32, porównanie na stosie x87); ≥ 2000 → przebieg menedżera 0x663DBD i +0x9C −= 2000 [P: kod]
     {
@@ -412,6 +458,11 @@ void Swiat::takt() {
             if (Jednostka* t = cel_ataku(u)) {
                 u.cel_walki_x = t->x;
                 u.cel_walki_y = t->y;
+            } else if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::leczenie &&
+                       jednostka(u.kolejka_celow.front().cel_jednostka)) {   // etap 46: TurnToFaceHealee
+                const Jednostka* h = jednostka(u.kolejka_celow.front().cel_jednostka);
+                u.cel_walki_x = h->x;
+                u.cel_walki_y = h->y;
             } else if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::miejsce) {
                 // etap 38: cel EEUGLocation (rozkaz ruchu w trakcie ataku, tryb 1 z 2012/2001 jeszcze aktywny) – obrót do
                 // punktu celu (+0x30) [P: 622, takt 86682 – ω +0,4165 w stronę punktu ruchu, nie własnej pozycji]
@@ -939,6 +990,140 @@ bool Swiat::rozkaz_ataku(IdJednostki id, IdJednostki cel) {
     return true;
 }
 
+void Swiat::krok_licznika_22c(BojJednostki& b) {
+    // etap 46: licznik +0x22C (0x600822, z aktualizacji typu): > 0 → c − f32(PH+0x98)·0,001 (x87), poniżej 0 → 0 [W]
+    if (b.licznik_22c > 0.0f) {
+        const long double c = (long double)b.licznik_22c - (long double)f32(1000.0 * 1.5 / 44.0) * (long double)0.001f;
+        b.licznik_22c = c < 0.0L ? 0.0f : float(c);
+    }
+}
+
+bool Swiat::ustaw_faze_leczenia(IdJednostki id, int takty_od_szukania) {
+    // diagnostyka odtworzeń rozpoczynanych w trakcie gry: licznik jak po wejściu w LookForHealee `takty_od_szukania`
+    // taktów wcześniej (+0x22C := +0x4A4, potem tyle kroków 0x600822)
+    Jednostka* u = jednostka(id);
+    if (!u || !u->boj) return false;
+    u->boj->licznik_22c = u->boj->p.leczenie_okres_s;
+    for (int i = 0; i < takty_od_szukania; ++i) krok_licznika_22c(*u->boj);
+    return true;
+}
+
+bool Swiat::potrzebuje_leczenia(const Jednostka& u, const Jednostka& h) const {
+    // 18001 (0x612E9C) i 0x630E07: cel żyje, HP/HPmax (x87: fild/fidiv) wobec typ+0x49C (bohaterowie 1,0 – odczyt
+    // pamięci [P]), ten sam gracz albo sojusznik [W]. Kod czytany statycznie daje „≤” (pełne HP kwalifikuje), ale
+    // pomiar 644 (bohater) pokazuje: po leczeniu do pełnego HP następny takt 16001 → 2025, a szukanie przy pełnym HP
+    // sojusznika kończy się bez celu [P]. Core stosuje porównanie ostre (HP/HPmax < próg) zgodne z pomiarem;
+    // rozbieżność z odczytem kodu – [N] (BLEDY_ORYGINALU/otwarte problemy raportu 46).
+    if (!h.boj || h.boj->s.hp <= 0 || h.boj->p.hp_max <= 0) return false;
+    const long double r = (long double)h.boj->s.hp / (long double)h.boj->p.hp_max;
+    return (long double)u.boj->p.leczenie_prog > r && h.gracz == u.gracz;
+}
+
+bool Swiat::w_zasiegu_leczenia(const Jednostka& u, const Jednostka& h) const {
+    // 0x612C2F: GE3DPoint::DistanceToSquared (pozycje vt+0x5C z z) ≤ (typ+0x4A0)² w x87 [W]
+    const double dx = f32(h.x - u.x), dy = f32(h.y - u.y), dz = f32(h.z - u.z);
+    const double d2 = f32(dx * dx + dy * dy + dz * dz);
+    const long double r = (long double)u.boj->p.leczenie_zasieg;
+    return !(r * r < (long double)d2);
+}
+
+Jednostka* Swiat::szukaj_leczonego(Jednostka& u) {
+    // 0x620A68: zapytanie 0x635F39 (pozycja, promień = pole widzenia ulepszenia +0xA4), lista od KOŃCA; pierwszy
+    // kandydat spełniający 0x630E07 i osiągalność 0x5ECAD0 [W]. 0x630E07: zestaw leczenia (+0x10C) niepusty, cel żyje,
+    // HP/HPmax ≤ +0x49C, cel ≠ leczący, sojusznik, typ celu w zestawie. Kolejność i kształt zapytania 0x635F39 – [N];
+    // Core: koło o promieniu pola widzenia, lista jednostek od końca (jak pętla fizyki). Osiągalność – prawda [N].
+    if (!u.boj || u.boj->p.leczone_typy.empty()) return nullptr;
+    const double r = u.boj->p.pole_widzenia;
+    for (std::size_t i = jednostki_.size(); i-- > 0;) {
+        Jednostka& h = jednostki_[i];
+        if (h.id == u.id || !h.w_fizyce || !h.boj || h.boj->s.hp <= 0) continue;
+        if (h.gracz != u.gracz) continue;
+        if (std::find(u.boj->p.leczone_typy.begin(), u.boj->p.leczone_typy.end(), h.boj->p.typ_bazy) ==
+            u.boj->p.leczone_typy.end()) continue;
+        const double dx = f32(h.x - u.x), dy = f32(h.y - u.y);
+        if (dx * dx + dy * dy > r * r) continue;
+        if (!potrzebuje_leczenia(u, h)) continue;
+        return &h;
+    }
+    return nullptr;
+}
+
+void Swiat::ustaw_wejscie_mapy(WejscieRegionow w, int komorka, bool zbuduj) {
+    if (zbuduj) graf_ = zbuduj_graf_z_wejscia(w, komorka);
+    wejscie_ = std::move(w);
+    komorka_grafu_ = komorka;
+    pola_zmienione_.clear();
+    przebudowa_d8_ = false;
+    ++wersja_grafu_;
+}
+
+bool Swiat::usun_obiekt_mapy(std::uint32_t id) {
+    // 0x4288A7 [W]: zgłoszenie tylko dla obiektu nie-vt+0x58 z typ+0x600 ≠ 0 albo klasą +0x4B4 = 0x19; pola obiektu
+    // (0x635629) → lista zmian; przebudowa „natychmiast” (0x4A36F3(1, 1)). Wywołujący 0x555DFF/0x55C38C/0x55C539 [W].
+    if (!wejscie_) return false;
+    std::vector<int> pola;
+    bool zglos = false;
+    for (auto it = wejscie_->obiekty.begin(); it != wejscie_->obiekty.end();) {
+        auto& l = it->second;
+        for (auto o = l.begin(); o != l.end();) {
+            if (o->id == id) {
+                if (!o->vt58 && (o->flaga600 != 0 || o->klasa4b4 == 0x19)) zglos = true;
+                pola.push_back(it->first);
+                o = l.erase(o);
+            } else ++o;
+        }
+        if (l.empty()) it = wejscie_->obiekty.erase(it);
+        else ++it;
+    }
+    if (pola.empty()) return false;
+    if (zglos) zglos_zmiane_mapy(pola, true);
+    return true;
+}
+
+void Swiat::zglos_zmiane_mapy(const std::vector<int>& pola, bool natychmiast) {
+    // 0x422DB6: lista pól posortowana bez powtórzeń; 0x4A36F3: przebudowa już zlecona (+0xD8) → termin bez zmian, inaczej
+    // +0xD4 = teraz (PH+0xD0) + 1 ms albo + fistp(f32(*0x9183C0 · 10000)) [W]
+    pola_zmienione_.insert(pola_zmienione_.end(), pola.begin(), pola.end());
+    std::sort(pola_zmienione_.begin(), pola_zmienione_.end());
+    pola_zmienione_.erase(std::unique(pola_zmienione_.begin(), pola_zmienione_.end()), pola_zmienione_.end());
+    if (przebudowa_d8_) return;
+    termin_d4_ = natychmiast ? zegar_ms_ + 1u
+                             : zegar_ms_ + std::uint32_t(std::nearbyint(f32(double(opoznienie_przebudowy_s) * 10000.0)));
+    przebudowa_d8_ = true;
+}
+
+void Swiat::krok_przebudowy() {
+    // 0x4A3641 [W]: tylko gdy kolejka grafu pusta (Core: prośby synchroniczne – zawsze) i minął termin +0xD4. Zakres:
+    // 0x4278C3 przebudowuje sektory zgłoszonych pól – w Core pełna przebudowa z zachowanego wejścia [N: przyrostowy
+    // algorytm 0x4278C3 nieodtworzony]; trasy jednostek pozostają (ponowna prośba przy kolejnym przygotowaniu) [N].
+    if (!przebudowa_d8_ || !wejscie_ || zegar_ms_ < termin_d4_) return;
+    graf_ = zbuduj_graf_z_wejscia(*wejscie_, komorka_grafu_);
+    pola_zmienione_.clear();
+    przebudowa_d8_ = false;
+    ++wersja_grafu_;
+    ++przebudowy_grafu_;
+}
+
+Jednostka* Swiat::zagrozenie_62fe01(const Jednostka& u) {
+    // 0x62FE01 [W, etap 46]: przegląd listy uchwytów wskazujących jednostkę (+8 – kto trzyma do niej odwołanie),
+    // kandydat = jednostka (+0x30) bez kontenera (+0x1C0 = 0), której bieżący cel (+0x1F0) to EEUGAttackUnit z celem
+    // = u (albo EEUGGather z +0x38 = u – zbieranie poza Core); wybór: najmniejszy kwadrat odległości pola u od
+    // najbliższego pola obrysu kandydata (0x61680D, rozmiar +0x58C; jednostki – 1 pole), remis – pierwszy znaleziony
+    // (ścisłe „<”). Etap 45 zakładał „ostatni trafiający” [H – obalone kodem]. Kolejność listy uchwytów [N] – Core
+    // przegląda listę jednostek od początku.
+    Jednostka* w = nullptr;
+    std::int64_t naj = -1;
+    for (auto& o : jednostki_) {
+        if (o.id == u.id || !o.w_fizyce || !o.boj || o.boj->s.hp <= 0) continue;
+        if (o.kolejka_celow.empty() || o.kolejka_celow.front().typ != TypCelu::jednostka) continue;
+        if (o.kolejka_celow.front().cel_jednostka != u.id) continue;
+        const std::int64_t dx = u.komorka_x - o.komorka_x, dy = u.komorka_y - o.komorka_y;
+        const std::int64_t d2 = dx * dx + dy * dy;
+        if (naj == -1 || d2 < naj) { naj = d2; w = &o; }
+    }
+    return w;
+}
+
 Jednostka* Swiat::cel_ataku(const Jednostka& u) {
     if (u.kolejka_celow.empty() || u.kolejka_celow.front().typ != TypCelu::jednostka) return nullptr;
     return jednostka(u.kolejka_celow.front().cel_jednostka);
@@ -1217,6 +1402,21 @@ bool Swiat::szukaj_wroga(Jednostka& u) {
 }
 
 std::optional<bool> Swiat::zdarzenie_walki(Jednostka& u, const std::string& n) {
+    // etap 46 – Healer.tai [W]: 18000 (0x61BF25), 18001–18006 (cel EEUGHeal 0x612E0E)
+    if (n == "HealSearchTimeElapsed") return u.boj->p.leczenie_okres_s != 0.0f && u.boj->licznik_22c == 0.0f;
+    if (n == "GoalIsHeal") return !u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::leczenie;
+    if (n == "TargetNeedsHealing" || n == "HealeeInHealingRange" || n == "FacingHealee" || n == "HealeeDestroyed" ||
+        n == "HealeeNoLongerVisible") {
+        if (u.kolejka_celow.empty() || u.kolejka_celow.front().typ != TypCelu::leczenie) return false;
+        Jednostka* h = jednostka(u.kolejka_celow.front().cel_jednostka);
+        const bool zyje = h && h->boj && h->boj->s.hp > 0;
+        if (n == "HealeeDestroyed") return !zyje;                                   // 18005: HP celu ≤ 0
+        if (!h) return false;
+        if (n == "TargetNeedsHealing") return zyje && potrzebuje_leczenia(u, *h);  // 18001
+        if (n == "HealeeInHealingRange") return w_zasiegu_leczenia(u, *h);          // 18002 (0x612C2F)
+        if (n == "FacingHealee") return kat_do_celu_broni(u, *h) <= f32(0.0436332313);   // 18004: 0x61FC51(…, 0)
+        return !widoczny_dla(u.gracz, *h);                                          // 18006 (0x631B64)
+    }
     BojJednostki& b = *u.boj;
     const CelRuchu* g = u.kolejka_celow.empty() ? nullptr : &u.kolejka_celow.front();
     Jednostka* t = cel_ataku(u);
@@ -1244,6 +1444,7 @@ std::optional<bool> Swiat::zdarzenie_walki(Jednostka& u, const std::string& n) {
     }
     if (n == "HasValidInitialContactLocation") return b.icl_kurs != -10000.0;  // [W]
     if (n == "ReturnsToInitialContactLocation") return b.ai.wraca_do_icl;       // 0x61B968 (+9)
+    if (n == "CanFlee") return b.ai.ucieka;          // etap 46: UnderAttack (bajt AI +0xA [H: ten sam co ShouldIRun])
     if (n == "ShouldIRun") return false;           // 0x61C130: wymaga napastnika +0x1DC – nieodwzorowane [N]
     if (n == "ShouldIRetaliate") return false;     // 0x61C020: jw. [N]
     if (n == "TargetIsSpecialEnemy") return false;  // 0x60B175 [N]
@@ -1317,6 +1518,20 @@ void Swiat::liczniki_walki(Jednostka& u) {
     const int ms = 34;
     b.s.przeladowanie_ms = std::max(0, b.s.przeladowanie_ms - ms);
     b.szukanie_ms = std::max(0, b.szukanie_ms - ms);
+    krok_licznika_22c(b);
+    // etap 46: wykonanie leczenia – cel EEUGHeal 0x612EF8: w HealUnit (16001), cel żyje, sojusznik: +0x3C += ms taktu
+    // (PH+0xA4); > 1000 → HP celu = min(HP + ulepszenie+0x150, HP max), +0x3C −= 1000 [W]
+    if (u.stan == 16001 && !u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::leczenie) {
+        Jednostka* h = jednostka(u.kolejka_celow.front().cel_jednostka);
+        if (h && h->boj && h->boj->s.hp > 0 && h->gracz == u.gracz) {
+            b.leczenie_akum += ms;
+            if (b.leczenie_akum > 1000) {
+                h->boj->s.hp = std::min(h->boj->s.hp + b.p.leczenie_hp, h->boj->p.hp_max);
+                b.leczenie_akum -= 1000;
+                zdarzenia_walki_.push_back({takty_, u.id, h->id, "leczenie", b.p.leczenie_hp});
+            }
+        }
+    }
     b.hp_29c = b.s.hp;   // etap 45: aktualizacja typu (0x600664 i pokrewne) zapisuje +0x29C = HP po kroku maszyny [W]
     // etap 44: animacja umierania (0x62462B): +0x2FC += ms taktu; przy ≥ czasie klatki – kolejne klatki (reszta zostaje),
     // po ostatniej klatce +0x337 = 1 [W]. Stany rozkładu (0x5FB218): 6001 – +0x2A8 += ms, co 4000 ms −(+0x2A8/4000)
@@ -1369,9 +1584,17 @@ void Swiat::liczniki_walki(Jednostka& u) {
     // TakeDamage 0x6172BC → 0x664EA1: vt+0x30 każdego efektu z listy +0xF8 celu (morale: 0x6640BA) [P]
     const int obr = obrazenia_po_modyfikatorach(o.obrazenia, poziomy_morale(*t));
     zdarzenia_walki_.push_back({takty_, u.id, t->id, "trafienie", obr});
+    // etap 46 – TakeDamage 0x6172BC przed odjęciem HP [W]: napastnik wrogi (inny gracz, wrogość +0x9E4) i typ napastnika
+    // spełnia 0x631A09 (klasy 9/11/12/20 i kilka typów – nie; jednostki testowe – tak) → +0x1DC := napastnik (0x617917);
+    // ofiara w Idle (5000) i EEUC ofiary ma stan 2018 (0x622017) → UnderAttack + akcja wejścia (vt+0x74).
+    if (t->gracz != u.gracz && wrogowie(u.gracz, t->gracz) && t->boj->s.hp > 0) {
+        t->boj->atakujacy_1dc = u.id;
+        if (t->stan == 5000 && t->boj->p.reakcja_underattack)
+            if (const StanSkryptu* su = skr(*t).stan(2018)) wejdz_w_stan(*t, *su);
+    }
     t->boj->szukanie_ms = 0;   // TakeDamage 0x6172BC zeruje +0x2AC [W]
     // liczniki +0x2C4/+0x2C8 (0x5EDCA4) – w Core 0 [N]
-    t->boj->ostatni_atakujacy = u.id;   // etap 45: źródło dla FleeDanger (0x62FE01 [H])
+    t->boj->ostatni_atakujacy = u.id;   // etap 45 (diagnostyka); FleeDanger korzysta z 0x62FE01 (etap 46)
     if (przyjmij_obrazenia(t->boj->s, obr)) {
         ++b.s.zabicia;
         ++diag_.zgony;
@@ -1568,7 +1791,7 @@ void Swiat::ucieczka(Jednostka& u) {
     //  5) do 8 prób: pole = pole jednostki + krok kierunku 0x632E7C × odległość, przejezdne (0x62C7C8) – inaczej
     //  kierunek + 1 (mod 8); 6) cel EEUGLocation w punkcie (pole + część ułamkowa pozycji), stan 8000.
     auto idle = [&]() { if (const StanSkryptu* s = skr(u).stan(5000)) wejdz_w_stan(u, *s); };
-    Jednostka* a = (u.boj && u.boj->ostatni_atakujacy) ? jednostka(u.boj->ostatni_atakujacy) : nullptr;
+    Jednostka* a = zagrozenie_62fe01(u);
     if (!a) { idle(); return; }
     int d;
     if (u.gracz != 0) d = int(std::nearbyint(f32(f32(u.boj->p.pole_widzenia) * 1.5f)));
@@ -1601,6 +1824,7 @@ void Swiat::ucieczka(Jednostka& u) {
         u.dl_po.clear();
         u.zdjete_punkty = 0;
         u.trasa_gotowa = false;
+        zdarzenia_walki_.push_back({takty_, u.id, a->id, "ucieczka", okt});   // etap 46: dziennik (kierunek końcowy + 1)
         if (const StanSkryptu* s = skr(u).stan(8000)) wejdz_w_stan(u, *s);
         return;
     }
@@ -1610,11 +1834,15 @@ void Swiat::ucieczka(Jednostka& u) {
 bool Swiat::ustaw_skrypt_jednostki(IdJednostki id, const std::string& nazwa) {
     Jednostka* u = jednostka(id);
     if (!u) return false;
-    if (nazwa.empty() || nazwa == "land") { u->skrypt = nullptr; return true; }
+    // etap 46: „Land Patrolling” = Generic Attack + Generic Movement + Patrol + Generic Death [W: plik] – w Core skrypt
+    // świata (land); przejścia Patrol (cele patrolu) nie występują bez rozkazu patrolu
+    if (nazwa.empty() || nazwa == "land" || nazwa == "Land Patrolling") { u->skrypt = nullptr; return true; }
     auto it = skrypty_.find(nazwa);
     if (it == skrypty_.end()) {
         if (nazwa == "obywatel" || nazwa == "Citizen")   // dbobjects „TAI Script” = Citizen (typ 32 [P])
             it = skrypty_.emplace(nazwa, SkryptStanow::wbudowany_obywatel()).first;
+        else if (nazwa == "uzdrowiciel" || nazwa == "Military Healer Prophet")   // etap 46: bohaterowie „(heal)”
+            it = skrypty_.emplace(nazwa, SkryptStanow::wbudowany_uzdrowiciel()).first;
         else return false;
     }
     u->skrypt = &it->second;

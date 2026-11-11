@@ -581,3 +581,11 @@ Rozstrzygający pomiar (przygotowany, niewykonany – automatyzacja gry niedost�
 2. Rejestrator: +0xD4/+0xD8/+0x130 menedżerów 0x917D00 i 0x917BC8, podsektory pól domu i ich sąsiedzi co takt.
 3. Trzy gwardie gracza 1 niszczą dom. Przed zniszczeniem i po nim obserwator dostaje rozkaz ruchu przez przejście.
 4. Oczekiwane: zgłoszenie w takcie usunięcia domu, przebudowa po +0xD4, trasa przez przejście dopiero po przebudowie.
+
+## Etap 46 – pomiar terminu przebudowy i przebudowa w Core
+
+- [P: zad. 645] Trzy gwardie niszczą dom: Dying domu w t = 62010, EEPathManager (0x917D00) +0xD4 = 62011 (teraz + 1 ms,
+  „natychmiast”), +0xD8 = 0 w kolejnym odczycie (≤ 2 s). Zgłoszenie przy wejściu w 6000, nie przy usunięciu (6003).
+- Core: wejście floodu zachowane przy budowie grafu (`ustaw_wejscie_mapy`), `usun_obiekt_mapy` (warunek 0x4288A7),
+  `zglos_zmiane_mapy` (0x422DB6 + 0x4A36F3), `krok_przebudowy` w takcie menedżera (po drugim losowaniu, przed pętlą
+  jednostek). Przebudowa raz po terminie; zakres – cały graf [N: przyrostowy 0x4278C3]. Test GDExtension na e35_a.

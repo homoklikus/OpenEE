@@ -43,6 +43,20 @@ static func wejscie(core: Object, scn: ScenariuszEE, zasoby: Object) -> Dictiona
 ## Etap 44: parametry śmierci typu (Generic Death.tai) z baz gry – sekwencja umierania dbgraphics (gniazdo 4,
 ## podsekwencja 0: liczba klatek, „wartość” = ms na klatkę, typ +0x318), czas rozkładu dbobjects „Rotting time”
 ## (s → ms, typ +0x548). Zasoby niesione (+0x40) – 0. Interpretacja (przejścia 6000–6003) – w Core.
+## Etap 46: parametry leczenia (Healer.tai) z rekordu dbobjects typu: „Healer heal amount” (ulepszenie +0x150),
+## „Unknown#50” (typ +0x49C – próg HP), „Healing range / Ability range” (+0x4A0), „Unknown#51” (+0x4A4 – okres szukania)
+## [P: pamięć typu bohatera 173 = 1,0 / 4,0 / 1,0]. Zestaw leczonych typów (ulepszenie +0x10C) – nieodczytany [N]:
+## przekazywane `leczone_typy` (domyślnie pusty – brak leczenia). Reakcja UnderAttack (EEUC +0x370 ze stanem 2018)
+## [P: bohater-kapłan EEUCLandPriest] – przyjęta dla skryptu „Military Healer Prophet” [H dla innych typów].
+static func parametry_leczenia(ob: Dictionary, leczone_typy: Array = []) -> Dictionary:
+	if int(ob.get("Healer heal amount", 0)) <= 0: return {}
+	var w := {"leczenie_hp": int(ob.get("Healer heal amount", 0)), "leczenie_prog": float(ob.get("Unknown#50", 0.0)),
+		"leczenie_zasieg": float(ob.get("Healing range / Ability range", 0.0)), "leczenie_okres": float(ob.get("Unknown#51", 0.0)),
+		"leczone_typy": leczone_typy}
+	if String(ob.get("TAI Script", "")) == "Military Healer Prophet": w["reakcja_underattack"] = 1
+	return w
+
+
 static func parametry_smierci(typ: int, zasoby: Object) -> Dictionary:
 	var o := {}
 	for r in zasoby.tabela("dbobjects"):

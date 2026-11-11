@@ -3,10 +3,16 @@
  "ruch_uwaga": "Etap 45: obywatel 32 – a 1,2, vmax 0,5; prorok 216 – vmax 0,45 (dbobjects „Acceleration/Deceleration”, „Speed”; pomiar 638: Δv = 0,041/takt = 1,2·dt). Wcześniej skopiowane z gwardii.",
  "ruch": {
   "422": {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5},
+  "173": {"a": 2.0, "vmax": 0.8, "alfa": 6.98132, "wmax": 6.98132, "rozmiar": 0.55, "c4": 0.5, "c8": 0.08185, "t488": 0.5},
   "216": {"a": 2.0, "vmax": 0.45, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5},
   "32":  {"a": 1.2, "vmax": 0.5, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
  },
+ "walka_uwaga": "Etap 46: bohater 173 (dbobjects „(heal)”, HP 1235): walka z zad. 621 (walka.md); leczenie z dbobjects – Healer heal amount 50, Unknown#50 = próg 1,0, zasięg 4,0, Unknown#51 = okres 1,0 s (pamięć typu +0x49C/+0x4A0/+0x4A4 [P]); leczone_typy – zestaw ulepszenia +0x10C nieodczytany [N], przyjęte typy jednostek testowych (422 leczona w 644 [P]).",
  "walka": {
+  "173": {"hp": 1235, "p": {"atak": 14.0, "pancerz": [3, 0, 3, 0, 0, 0], "zasieg_max": 0.6, "pole_widzenia": 6.0, "przeladowanie_ms": 2000,
+          "rodzaj_ataku": 5, "wiersz_celu": 5, "klasa_trafienia": 8, "rodzina_ataku": 55, "luk_ataku": 0.3490658700466156, "rozmiar": 0.55,
+          "punktowy": 1, "szukanie_ms": 1000, "pole_ac": 0.800000011920929, "typ_bazy": 173, "typ_jednostki": 13, "regeneracja": 2,
+          "ai_szuka_wrogow": 0, "leczenie_hp": 50, "leczenie_prog": 1.0, "leczenie_zasieg": 4.0, "leczenie_okres": 1.0, "leczone_typy": [422, 32, 216]}},
   "422": {"hp": 215, "p": {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,
           "klasa_trafienia": 13, "rodzina_ataku": 48, "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156,
           "rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000, "pole_ac": 0.6000000238418579, "typ_bazy": 422, "typ_jednostki": 5}},
@@ -15,7 +21,7 @@
           "rodzina_ataku": 38, "rozmiar": 0.3, "punktowy": 0, "szukanie_ms": 2000, "pole_ac": 0.5, "typ_jednostki": 6}}
  },
  "tablice_walki": {
-  "trafienie": {"08": {"13": {"48": 1.071}}, "0C": {"13": {"48": 1.5}}, "10": {"13": {"48": 2.1}, "36": {"48": 2.8}}},
+  "trafienie": {"08": {"13": {"48": 1.071}, "8": {"48": 0.714}}, "0C": {"13": {"48": 1.5}, "8": {"48": 1.0}}, "10": {"13": {"48": 2.1}, "36": {"48": 2.8}, "8": {"48": 1.4}}},
   "ai": [[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]]
  },
  "dozwolone_teren": [1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0]
