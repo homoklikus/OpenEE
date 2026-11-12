@@ -1,5 +1,7 @@
 #include "openee_symulacja.hpp"
 
+#include "openee/ulepszenia.hpp"
+
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -26,6 +28,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("uzyj_tablic_przyblizonych"), &OpenEESymulacja::uzyj_tablic_przyblizonych);
     ClassDB::bind_method(D_METHOD("utworz_swiat", "wariant"), &OpenEESymulacja::utworz_swiat);
     ClassDB::bind_method(D_METHOD("dodaj_jednostke", "parametry", "x", "y", "kurs"), &OpenEESymulacja::dodaj_jednostke);
+    ClassDB::bind_method(D_METHOD("premia_predkosci", "parametry", "poziomy", "procent"), &OpenEESymulacja::premia_predkosci);
     ClassDB::bind_method(D_METHOD("nadaj_trase", "id", "punkty_xy", "kurs_koncowy", "start"),
                          &OpenEESymulacja::nadaj_trase);
     ClassDB::bind_method(D_METHOD("rozkaz_ruchu", "id", "x", "y", "kurs_koncowy", "shift"), &OpenEESymulacja::rozkaz_ruchu);
@@ -56,6 +59,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("zbuduj_graf_z_wejscia", "wejscie", "komorka"), &OpenEESymulacja::zbuduj_graf_z_wejscia);
     ClassDB::bind_method(D_METHOD("ustaw_z", "id", "z"), &OpenEESymulacja::ustaw_z);
     ClassDB::bind_method(D_METHOD("uporzadkuj_wg_pozycji"), &OpenEESymulacja::uporzadkuj_wg_pozycji);
+    ClassDB::bind_method(D_METHOD("odbuduj_kontakty_wszystkich"), &OpenEESymulacja::odbuduj_kontakty_wszystkich);
     ClassDB::bind_method(D_METHOD("ustaw_skrypt_jednostki", "id", "nazwa"), &OpenEESymulacja::ustaw_skrypt_jednostki);
     ClassDB::bind_method(D_METHOD("ustaw_stan_rng", "stan"), &OpenEESymulacja::ustaw_stan_rng);
     ClassDB::bind_method(D_METHOD("kolejka_fizyki"), &OpenEESymulacja::kolejka_fizyki);
@@ -80,7 +84,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.21.0 (etap 48, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.22.0 (etap 49, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -138,6 +142,19 @@ int64_t OpenEESymulacja::dodaj_jednostke(const Dictionary& p, double x, double y
     r.t488 = liczba(p, "t488", r.t488);
     r.pochyla = p.has("pochyla") ? bool(p["pochyla"]) : false;
     return int64_t(swiat_->dodaj_jednostke(r, x, y, kurs));
+}
+
+// etap 49: premia prędkości gracza (0x627030 + SetSpeed 0x628051) – parametry ruchu typu po ulepszeniu
+Dictionary OpenEESymulacja::premia_predkosci(const Dictionary& p, int64_t poziomy, double procent) const {
+    openee::ParametryRuchu r;
+    r.a = liczba(p, "a", r.a);
+    r.vmax = liczba(p, "vmax", r.vmax);
+    r.alfa = liczba(p, "alfa", r.alfa);
+    r.wmax = liczba(p, "wmax", r.wmax);
+    const openee::ParametryRuchu w = openee::z_premia_predkosci(r, openee::PremiaAtrybutu{int(poziomy), procent});
+    Dictionary d = p.duplicate();
+    d["a"] = w.a; d["vmax"] = w.vmax; d["alfa"] = w.alfa; d["wmax"] = w.wmax; d["c4"] = w.c4; d["c8"] = w.c8;
+    return d;
 }
 
 bool OpenEESymulacja::nadaj_trase(int64_t id, const PackedFloat64Array& xy, const Variant& kurs_koncowy,
@@ -255,6 +272,7 @@ Dictionary OpenEESymulacja::diagnostyka() const {
         d["wejscia_niewdrozone"] = int64_t(g.wejscia_niewdrozone);
         d["kolizje"] = int64_t(g.kolizje);
         d["kroki_odpychania"] = int64_t(g.kroki_odpychania);
+        d["omijania_atakujacych"] = int64_t(g.omijania_atakujacych);   // etap 49
         d["objazdy_niezweryfikowane"] = int64_t(g.objazdy_niezweryfikowane);
         d["astar_iteracje"] = int64_t(g.ostatnia_trasa.iteracje);
         d["astar_wywolania"] = int64_t(g.ostatnia_trasa.wywolania);
@@ -390,7 +408,8 @@ int64_t OpenEESymulacja::dodaj_budynek(const Dictionary& d) {
                                                  d.get("id_mapy", 0).get_type() == Variant::STRING
                                                      ? std::uint32_t(String(d["id_mapy"]).hex_to_int())
                                                      : std::uint32_t(int64_t(d.get("id_mapy", 0))),
-                                                 bool(liczba(d, "w_siatce", 0)));
+                                                 bool(liczba(d, "w_siatce", 0)),
+                                                 bool(liczba(d, "kolizja", 1)));   // etap 49: +0x2D8 („Collidable”)
     if (d.has("gruz_typ"))   // etap 48: dbobjects „Debris on death#2” (pozostałość przy śmierci)
         swiat_->ustaw_gruz_budynku(id, int(liczba(d, "gruz_typ", 0)), int(liczba(d, "gruz_kwadrat", 1)));
     return int64_t(id);
@@ -406,7 +425,8 @@ int64_t OpenEESymulacja::postaw_budynek(const Dictionary& d) {
                                            int(liczba(d, "Y", 0)), int(liczba(d, "kwadrat", 1)), x, y,
                                            d.has("z") ? liczba(d, "z", 0) : swiat_->teren().get_mesh_z(x, y), p, int(hp),
                                            std::uint32_t(int64_t(d.get("id_mapy", 0))), int(liczba(d, "flaga600", 1)),
-                                           int(liczba(d, "klasa4b4", 2)), int(liczba(d, "flaga612", 0)));
+                                           int(liczba(d, "klasa4b4", 2)), int(liczba(d, "flaga612", 0)),
+                                           bool(liczba(d, "kolizja", 1)));
     if (d.has("gruz_typ")) swiat_->ustaw_gruz_budynku(id, int(liczba(d, "gruz_typ", 0)), int(liczba(d, "gruz_kwadrat", 1)));
     return int64_t(id);
 }
@@ -779,6 +799,7 @@ bool OpenEESymulacja::ustaw_skrypt_jednostki(int64_t id, const String& nazwa) {
 }
 
 void OpenEESymulacja::uporzadkuj_wg_pozycji() { if (swiat_) swiat_->uporzadkuj_wg_pozycji(); }
+void OpenEESymulacja::odbuduj_kontakty_wszystkich() { if (swiat_) swiat_->odbuduj_kontakty_wszystkich(); }
 
 bool OpenEESymulacja::ustaw_z(int64_t id, double z) { return swiat_ && swiat_->ustaw_z(openee::IdJednostki(id), z); }
 

@@ -716,9 +716,14 @@ void Swiat::odbuduj_kontakty(Jednostka& u, double cx, double cy) {
     const std::int64_t xa = podloga(f32(cx - R)), xb = podloga(f32(cx + R)), ya = podloga(f32(cy - R)), yb = podloga(f32(cy + R));
     for (auto& o : jednostki_) {
         if (o.id == u.id) continue;
-        // etap 47: budynki nie trafiają na listę kontaktów [P: 645 – gwardia 0x1000855 z polem domu w oknie ma 2 kontakty
-        // (dwie gwardie), nie 3]; blokują przez przejezdność pola (TerenSiatka)
-        if (o.budynek || u.budynek) continue;
+        // etap 49 [W: 0x5E8F0E; P: 648 – dom 0x5000ad0 ma 2 kontakty (gwardie 856 i 857), +0x2D8 = 1 u domu, gwardii
+        // i proroka]: kandydat musi mieć +0x2D8 ≠ 0 i HP > 0 (+0x3C). Budynki uczestniczą w kontaktach jak jednostki.
+        // Pozostałe filtry 0x5E8F0E (vt+0x58 = 0, ta sama klasa vt+0x5C, grupa typu +0x4B4 ∈ {10, 27}, bit 4 typu +0x5D4)
+        // – jednakowe dla piechoty i budynków lądowych, nieodwzorowane [W].
+        // [Etap 47 – zastąpione: budynki poza listą kontaktów (645: 2 kontakty gwardii przy domu w oknie) – liczba
+        // kontaktów zależy od historii zmian komórek (para dopisywana tylko przy wejściu jednej ze stron na pole).]
+        if (!o.kolizyjny) continue;
+        if (o.boj && o.boj->s.hp <= 0) continue;
         if (o.komorka_x < xa || o.komorka_x > xb || o.komorka_y < ya || o.komorka_y > yb) continue;
         u.lista_kontaktow.push_back(o.id);
         o.lista_kontaktow.push_back(u.id);
@@ -764,6 +769,7 @@ void Swiat::krok_koncowy(Jednostka& u) {
                 ++diag_.cele_zajete;
             }
         }
+        if (!r.budzik_dla_o) omijanie_atakujacego(u, *o);
         if (r.budzik_dla_o) {
             // etap 48 [W: 0x549179]: budzik ustawia (0,001; 0,001) tylko wtedy, gdy obie składowe push o mają |·| < 0,001
             // (inaczej push o bez zmian); wcześniej Core dodawał 0,001 do składowych
@@ -784,6 +790,40 @@ void Swiat::krok_koncowy(Jednostka& u) {
         u.push_y = f32(u.push_y + r.push_u_y);
     }
     zastosuj_push(u);
+}
+
+void Swiat::omijanie_atakujacego(Jednostka& u, const Jednostka& o) {
+    // Etap 49 [W: 0x549179, 0x549353–0x54963B; P: 649 dom 3v1 t=74079 – gwardia 856 przy stojącej, przeładowującej
+    // gwardii 855: przesunięcie (−0,0070; +0,0002) w takcie, wzór daje (−0,0069; +0,0003) po przycięciu do vmax]:
+    // ru = ro, typ u +0x61A (atak wręcz / punktowy), o tego samego gracza albo nie wróg (gracz u +0x9E4[o]), v_u > 0,
+    // o przeładowuje (+0x2A0 ≠ 0), cele bieżące obu to EEUGAttackUnit (+5 = 2), odległość u od pozycji celu u
+    // (vt+0x28) < 2·ru + 4,0 (0x825988). Wtedy, gdy u jedzie w stronę o (v⃗·d > 0, v⃗ = v·przód macierzy znormalizowany,
+    // d = o − u znormalizowany – 0xB300B8 [H: Normalize]):  push_u −= v·przód(yaw) + (v⃗·d̂)·d̂  – u traci prędkość
+    // w kierunku o i omija go bokiem (zastosowanie 0x549A08 z przycięciem do vmax).
+    if (u.param.promien_kolizji != o.param.promien_kolizji || !u.boj || !u.boj->p.punktowy || !(u.v > 0.0)) return;
+    if (o.gracz != u.gracz && wrogowie(u.gracz, o.gracz)) return;
+    if (!o.boj || o.boj->s.przeladowanie_ms == 0) return;
+    const Jednostka* to = cel_ataku(o);
+    const Jednostka* tu = cel_ataku(u);
+    if (!to || !tu) return;
+    const double gx = tu->x - u.x, gy = tu->y - u.y, gz = tu->z - u.z;
+    if (!(std::sqrt(gx * gx + gy * gy + gz * gz) < f32(u.param.promien_kolizji) * 2.0 + 4.0)) return;
+    double dx = f32(o.x - u.x), dy = f32(o.y - u.y), dz = f32(o.z - u.z);
+    const double dl = std::sqrt(dx * dx + dy * dy + dz * dz);
+    if (dl > 0) { dx = f32(dx / dl); dy = f32(dy / dl); dz = f32(dz / dl); }
+    double fx = u.orientacja.m01(), fy = u.orientacja.m11(), fz = u.orientacja.m21();
+    const double fl = std::sqrt(fx * fx + fy * fy + fz * fz);
+    if (fl > 0) { fx = f32(fx / fl); fy = f32(fy / fl); fz = f32(fz / fl); }
+    fx = f32(fx * u.v); fy = f32(fy * u.v); fz = f32(fz * u.v);
+    const double il = f32(fz * dz + fy * dy + fx * dx);
+    if (!(il > 0.0)) return;
+    const Macierz3 M = mat_.set_orientation_ypr(f32(std::atan2(u.orientacja.m[3], u.orientacja.m[0])));
+    u.push_x = f32(u.push_x - f32(M.m01() * u.v));
+    u.push_y = f32(u.push_y - f32(M.m11() * u.v));
+    const double k = il / (dz * dz + dy * dy + dx * dx);
+    u.push_x = f32(u.push_x - dx * k);
+    u.push_y = f32(u.push_y - dy * k);
+    ++diag_.omijania_atakujacych;
 }
 
 void Swiat::zastosuj_push(Jednostka& u) {
@@ -1206,9 +1246,9 @@ void Swiat::krok_przebudowy() {
 
 IdJednostki Swiat::postaw_budynek(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
                                   const ParametryWalki& p, int hp, std::uint32_t id_mapy, int flaga600, int klasa4b4,
-                                  int flaga612) {
+                                  int flaga612, bool kolizyjny) {
     const bool blokuje = flaga600 != 0 || klasa4b4 == 0x19;
-    const IdJednostki id = dodaj_obiekt_budynku(gracz, typ_db, X, Y, n, x, y, z, p, hp, blokuje, id_mapy, false);
+    const IdJednostki id = dodaj_obiekt_budynku(gracz, typ_db, X, Y, n, x, y, z, p, hp, blokuje, id_mapy, false, kolizyjny);
     if (!wejscie_) return id;
     std::vector<int> pola;
     const int k = std::max(1, n);
@@ -1242,7 +1282,7 @@ bool Swiat::ustaw_gruz_budynku(IdJednostki id, int typ, int kwadrat) {
 
 IdJednostki Swiat::dodaj_obiekt_budynku(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
                                         const ParametryWalki& p, int hp, bool blokuje, std::uint32_t id_mapy,
-                                        bool w_siatce) {
+                                        bool w_siatce, bool kolizyjny) {
     Jednostka u;
     u.id = nastepny_id_++;
     u.wariant = wariant_;
@@ -1263,6 +1303,8 @@ IdJednostki Swiat::dodaj_obiekt_budynku(int gracz, int typ_db, int X, int Y, int
     u.v = 0.0;
     u.param.vmax = 0.0;
     u.param.rozmiar = p.rozmiar;
+    u.param.promien_kolizji = p.rozmiar;   // +0x244 = typ +0x474 „Size of collider” (0x5ED24B) [W]
+    u.kolizyjny = kolizyjny;
     u.gracz = gracz;
     BojJednostki b;
     b.p = p;
@@ -1277,7 +1319,18 @@ IdJednostki Swiat::dodaj_obiekt_budynku(int gracz, int typ_db, int X, int Y, int
         for (int dy = 0; dy < u.kwadrat; ++dy)
             for (int dx = 0; dx < u.kwadrat; ++dx) teren_.dodaj_blokade(X + dx, Y + dy);
     jednostki_.push_back(u);
+    // etap 49 [W: 0x5ED24B → 0x616F9D(X, Y, 0)]: obiekt przy utworzeniu ustawia komórkę i buduje listę kontaktów
+    // (okno 0x5E8F0E z własnego rozmiaru – dom 1,0 → ±1,0; koszary 2,0 → ±2,0)
+    if (kolizje_wlaczone_) odbuduj_kontakty(jednostki_.back(), jednostki_.back().x, jednostki_.back().y);
     return jednostki_.back().id;
+}
+
+void Swiat::odbuduj_kontakty_wszystkich() {
+    for (auto& u : jednostki_) {
+        u.lista_kontaktow.clear();
+        u.kontakty = 0;
+    }
+    for (auto& u : jednostki_) odbuduj_kontakty(u, u.x, u.y);
 }
 
 void Swiat::smierc_budynku(Jednostka& t) {
@@ -1433,36 +1486,43 @@ Punkt2 Swiat::punkt_podejscia(Jednostka& u, const Jednostka& t) {
         if (w_zasiegu_punktowy(odl2(u, t), u.boj->p.rozmiar, t.boj->p.rozmiar_jeden ? 1.0 : double(t.boj->p.rozmiar)))
             return Punkt2{u.x, u.y};
         if (t.budynek) {
-            // Etap 48 – miejsce podejścia przy budynku [P: zad. 650/651 – dom 1×1 i koszary 2×2, 4 punkty z gry; H: reguła
-            // ogólna]: miejsca 0,25·rozmiar_ja·2 (= połowa rozmiaru atakującego) za krawędzią obrysu X..X+n × Y..Y+n,
-            // po dwa na każde pole przylegające bokiem do obrysu (wzdłuż boku: pole + 0,75, potem pole + 0,25; bez narożników), pola pierścienia uporządkowane wg kwadratu odległości pól od pola atakującego (stabilnie, kolejność
-            // wstawiania: góra, prawo, dół, lewo), pierwsze przejezdne i wolne (jak 0x63234D). Pomiar: dom (164, 112) –
-            // (164,75; 113,25), przy zajętym – (164,25; 113,25); koszary (164…165, 112…113) – (164,75; 114,25) i (164,25; 114,25).
-            zalozenie("miejsce podejścia przy budynku: reguła z 4 pomiarów (strona południowa) [H]");
+            // Etap 49 – miejsce podejścia przy budynku [P: zad. 650/651/654 – 11 wyborów z gry: dom 1×1 z S (×2, w tym
+            // drugi przy zajętym), N, E, W, NE, SW, 3v1; koszary 2×2 z S (×2), N, W; W: 0x63234D – kandydaci posortowani,
+            // pierwszy przejezdny i wolny; H: klucz sortowania dopasowany do pomiarów]:
+            //  - kandydaci: po dwa na każde pole przylegające bokiem (pole + 0,25 i + 0,75, r = 0,5·rozmiar za krawędzią)
+            //    oraz 4 narożniki (X − r, Y − r) itd.; kolejność wstawiania – obchód zgodnie z ruchem wskazówek zegara od
+            //    lewego górnego rogu (y = Y − r: x rośnie; narożnik; x = X + n + r: y rośnie; narożnik; y = Y + n + r: x
+            //    maleje; narożnik; x = X − r: y maleje; narożnik);
+            //  - klucz: (1) odległość Czebyszewa pola kandydata od pola atakującego, (2) boki przed narożnikami,
+            //    (3) kwadrat odległości pól, (4) kolejność wstawiania.
+            //  Pomiar → wybór: dom (164,112): S (164,75; 113,25), N (164,25; 111,75), E (165,25; 112,25), W (163,75; 112,75),
+            //  NE narożnik (165,25; 111,75), SW narożnik (163,75; 113,25); koszary (164…165, 112…113): S (164,75; 114,25), przy
+            //  zajętym (164,25; 114,25), N (165,25; 111,75). Niezgodny: koszary z W (158,5; 113,5) – gra (163,75; 113,25),
+            //  reguła (163,75; 113,75) [N]. Miara kąta od środka (próba etapu 49) myliła 3v1 i koszary S – odrzucona.
+            // *[Etap 48 – zastąpione: bez narożników i w każdym boku najpierw pole + 0,75 – zgodne tylko ze stroną S.]*
+            zalozenie("miejsce podejścia przy budynku: obwód z narożnikami, klucz Czebyszew/bok/odległość/obchód [H]");
             const double r = f32(0.5 * double(u.boj->p.rozmiar));
             const int X = int(t.komorka_x), Y = int(t.komorka_y), n = std::max(1, t.kwadrat);
-            struct M { int px, py; Punkt2 p; };
+            struct M { Punkt2 p; std::int64_t ch, d2; int naroznik; };
             std::vector<M> m;
-            for (int x = X; x < X + n; ++x) {   // góra (y = Y + n)
-                m.push_back({x, Y + n, {f32(x + 0.75), f32(Y + n + r)}});
-                m.push_back({x, Y + n, {f32(x + 0.25), f32(Y + n + r)}});
-            }
-            for (int y = Y; y < Y + n; ++y) {   // prawo (x = X + n)
-                m.push_back({X + n, y, {f32(X + n + r), f32(y + 0.75)}});
-                m.push_back({X + n, y, {f32(X + n + r), f32(y + 0.25)}});
-            }
-            for (int x = X; x < X + n; ++x) {   // dół (y = Y − 1)
-                m.push_back({x, Y - 1, {f32(x + 0.75), f32(Y - r)}});
-                m.push_back({x, Y - 1, {f32(x + 0.25), f32(Y - r)}});
-            }
-            for (int y = Y; y < Y + n; ++y) {   // lewo (x = X − 1)
-                m.push_back({X - 1, y, {f32(X - r), f32(y + 0.75)}});
-                m.push_back({X - 1, y, {f32(X - r), f32(y + 0.25)}});
-            }
-            // narożniki pierścienia nie są miejscami [P: 650 – gwardia z pola (163, 119) bierze (164,75; 114,25), nie narożnik]
             const std::int64_t ax = u.komorka_x, ay = u.komorka_y;
-            std::stable_sort(m.begin(), m.end(), [&](const M& a, const M& b) {
-                return (a.px - ax) * (a.px - ax) + (a.py - ay) * (a.py - ay) < (b.px - ax) * (b.px - ax) + (b.py - ay) * (b.py - ay);
+            auto dodaj = [&](double x, double y, int naroznik) {
+                const std::int64_t px = podloga(f32(x)), py = podloga(f32(y));
+                const std::int64_t dx = px - ax, dy = py - ay;
+                m.push_back({{f32(x), f32(y)}, std::max(std::llabs(dx), std::llabs(dy)), dx * dx + dy * dy, naroznik});
+            };
+            for (int x = X; x < X + n; ++x) { dodaj(x + 0.25, Y - r, 0); dodaj(x + 0.75, Y - r, 0); }
+            dodaj(X + n + r, Y - r, 1);
+            for (int y = Y; y < Y + n; ++y) { dodaj(X + n + r, y + 0.25, 0); dodaj(X + n + r, y + 0.75, 0); }
+            dodaj(X + n + r, Y + n + r, 1);
+            for (int x = X + n - 1; x >= X; --x) { dodaj(x + 0.75, Y + n + r, 0); dodaj(x + 0.25, Y + n + r, 0); }
+            dodaj(X - r, Y + n + r, 1);
+            for (int y = Y + n - 1; y >= Y; --y) { dodaj(X - r, y + 0.75, 0); dodaj(X - r, y + 0.25, 0); }
+            dodaj(X - r, Y - r, 1);
+            std::stable_sort(m.begin(), m.end(), [](const M& a, const M& b) {
+                if (a.ch != b.ch) return a.ch < b.ch;
+                if (a.naroznik != b.naroznik) return a.naroznik < b.naroznik;
+                return a.d2 < b.d2;
             });
             const double s_ja = f32(double(u.boj->p.rozmiar));
             for (const auto& c : m) {
@@ -1775,7 +1835,10 @@ std::optional<bool> Swiat::zdarzenie_walki(Jednostka& u, const std::string& n) {
         // (cmp 25, [cel+0x18]; sbb; inc) [P: kod; 619 – 2013 przy +0x18 = 25, porzucenie przy 26, etap 37].
         // *[Etap 37 – zastąpione: „< 25” (etap 31).]*
         zalozenie("EnemyUnitReachable: 0x5ECAD0 (spójność regionów) = prawda [N]");
-        const bool r = t && t->boj && t->boj->s.hp > 0 && g->proby <= 25 && osiagalny_62d696(u, *t);
+        // etap 49 [W: 0x60B1EA bez testu HP; P: 649 koszary t=74966 – gwardia 856 w 5002 przy koszarach w 6000 przechodzi
+        // do 2013 CheckRange, a dopiero potem do 2025]: cel martwy (HP 0, Dying) nie jest tu odrzucany.
+        // *[Etap 31–48 – zastąpione: warunek HP > 0 (założenie Core).]*
+        const bool r = t && t->boj && g->proby <= 25 && osiagalny_62d696(u, *t);
         // ścieżka fałszu (0x60B241): cel wpisany do mapy nieosiągalnych na 30 s, o ile nie ma ważnego wpisu [P: kod]
         if (!r && t && !cel_nieosiagalny(u, *t, true)) oznacz_nieosiagalny(u, *t);
         return r;

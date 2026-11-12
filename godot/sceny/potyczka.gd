@@ -40,6 +40,7 @@ var _raport_p := {}
 var _budynki_dod: Array = []          # etap 47: budynki układu potyczki (spoza SCN) – obiekty Core z HP
 var _budynki_wejscie: Array = []      # te same budynki w formacie obiektów pól (wejście grafu)
 var _budynki_core := {}               # id Core budynku → id obiektu mapy
+var _gruz_znaczniki := {}             # etap 49: id gruzu Core → TYMCZASOWY znacznik diagnostyczny (brak legalnego modelu)
 var _typy_pol := {}                   # flagi typów obiektów pól z Core (+0x568, +0x600, +0x4B4, +0x612)
 
 
@@ -295,6 +296,7 @@ func _usun_warstwy() -> void:
 		if w != null and is_instance_valid(w):
 			remove_child(w); w.queue_free()
 	sterowanie = null; widok = null; zegar = null; sym = null; core = null
+	_gruz_znaczniki.clear()
 
 
 ## Zdarzenia walki z Core (po każdym takcie): HUD, podświetlenie trafionego, liczniki. Kolejność = kolejność Core.
@@ -322,6 +324,33 @@ func _ustaw_wynik(w: String) -> void:
 	_raport_p["wynik_%d" % bitwa] = {"wynik": w, "takt": sym.takt, "liczniki": licznik.duplicate(),
 		"zywe": {str(sym.gracz_lokalny): sym.liczba_zywych(sym.gracz_lokalny)}, "skrot": sym.skrot_stanu()}
 	Dziennik.info("potyczka", "Bitwa %d: %s w takcie %d (%s)" % [bitwa, w, sym.takt, JSON.stringify(licznik)])
+
+
+## Etap 49 – pozostałości budynków (Core: core.gruz(), dbobjects „Debris on death#2”, np. 361 1×1, 362 2×2).
+## TYMCZASOWY znacznik diagnostyczny: płaska szara płyta na polach X..X+n−1 × Y..Y+n−1 (model gruzu EE nie jest
+## kopiowany do projektu). Znacznik jest dzieckiem widoku – restart bitwy (nowy widok) usuwa go razem z widokiem.
+## Gruz nie zmienia przejezdności (Core nie blokuje pól gruzem – „Collidable” 0) i powstaje w takcie śmierci budynku.
+func _aktualizuj_gruz() -> void:
+	if core == null or widok == null: return
+	for g in core.gruz():
+		var gid := int(g.get("id", 0))
+		if _gruz_znaczniki.has(gid) and is_instance_valid(_gruz_znaczniki[gid]): continue
+		var n := maxi(1, int(g.get("kwadrat", 1)))
+		var p := Vector2(float(g.get("X", 0)) + 0.5 * n, float(g.get("Y", 0)) + 0.5 * n)
+		var m := MeshInstance3D.new(); m.name = "GruzDiag_%d_typ%d" % [gid, int(g.get("typ", 0))]
+		var b := BoxMesh.new(); b.size = Vector3(0.9 * n, 0.06, 0.9 * n); m.mesh = b
+		var mat := StandardMaterial3D.new(); mat.albedo_color = Color(0.45, 0.42, 0.38); m.material_override = mat
+		m.set_meta("tymczasowy", true); m.set_meta("typ", int(g.get("typ", 0)))
+		widok.add_child(m)
+		m.position = UkladEE.godot(p, sym.mapa.wysokosc(p) + 0.03)
+		_gruz_znaczniki[gid] = m
+
+
+func liczba_znacznikow_gruzu() -> int:   # etap 49: test integracyjny
+	var n := 0
+	for k in _gruz_znaczniki:
+		if is_instance_valid(_gruz_znaczniki[k]): n += 1
+	return n
 
 
 func _interfejs() -> void:
@@ -381,6 +410,7 @@ func _process(d: float) -> void:
 		if bud:
 			if int(sym.stan.get(id, 0)) >= 6003 and not widok.ukryta(id): widok.ukryj(id)
 		elif _smierc_t[id] >= ZNIKANIE_ZWLOK_S and not widok.ukryta(id): widok.ukryj(id)
+	_aktualizuj_gruz()
 	# zaznaczenie: martwe jednostki wypadają (jak w EE – zwłoki niewybieralne)
 	var zm := false
 	for id in widok.zaznaczone.duplicate():
@@ -563,7 +593,7 @@ func _demo_e47(sekundy: float) -> void:
 		for i in 10: await get_tree().process_frame
 		przebieg["koniec"] = {"stan_budynku": sym.stan.get(bud, -1), "ukryty": widok.ukryta(bud), "takt": sym.takt,
 			"w_fizyce": core.jednostka(bud).get("w_fizyce", null), "graf": core.stan_grafu(), "skrot": sym.skrot_stanu(),
-			"gruz": core.gruz()}   # etap 48: pozostałość budynku – obiekt mapy w Core ("Debris on death#2")
+			"gruz": core.gruz(), "znaczniki_gruzu": liczba_znacznikow_gruzu()}   # etap 48/49: pozostałość budynku (Core) i jej znacznik
 		wyniki.append(przebieg)
 	_raport_p["demo_e47"] = wyniki
 	_koniec_automatu(0)

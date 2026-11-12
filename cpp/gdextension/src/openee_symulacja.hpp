@@ -59,6 +59,8 @@ public:
     godot::Dictionary zbuduj_graf_z_wejscia(const godot::Dictionary& wejscie, int64_t komorka);
     bool ustaw_z(int64_t id, double z);
     void uporzadkuj_wg_pozycji();
+    godot::Dictionary premia_predkosci(const godot::Dictionary& p, int64_t poziomy, double procent) const;
+    void odbuduj_kontakty_wszystkich();
     bool ustaw_skrypt_jednostki(int64_t id, const godot::String& nazwa);
     void ustaw_stan_rng(int64_t stan);
     godot::Array kolejka_fizyki() const;

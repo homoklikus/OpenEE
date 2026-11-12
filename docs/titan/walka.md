@@ -943,3 +943,40 @@ z przejściem 6003. Wcześniej cel był zgodny do 2186/2084/2081 próbek.
   zgodne, pierwsze różnice pozycji gwardii 0,02 przy dojściu (47386 / 73295) [N]. Wcześniej Core brał środek budynku
   i wstawiał punkt grafu (różnica 1,7 s po rozkazie). Miejsca na pozostałych bokach i przy innych rozmiarach – [H].
 - **Pozostałość** – `architektura_nawigacji.md` (etap 48). **Mury**: obrażenia 4, `atakuje_mury` – bez zmian.
+
+## 37. Etap 49 – miejsca podejścia z czterech stron, EnemyUnitReachable przy martwym celu, budowa
+
+[P: zad. 650, 651, 654 – 11 wyborów miejsca z gry; W: 0x63234D, 0x60B1EA]
+
+**Miejsce podejścia przy budynku.** Wybór w grze (trasa rozkazu ataku, ostatni punkt):
+
+| Budynek | Atakujący z | Wybrane miejsce |
+|---|---|---|
+| dom (164,112) | S (164,5; 118,5) | (164,75; 113,25) |
+| dom | S, drugi przy zajętym | (164,25; 113,25) |
+| dom | N (164,5; 106,5) | (164,25; 111,75) |
+| dom | E (170,5; 112,5) | (165,25; 112,25) |
+| dom | W (158,5; 112,5) | (163,75; 112,75) |
+| dom | NE (169,5; 107,5) | narożnik (165,25; 111,75) |
+| dom | SW (159,5; 117,5) | narożnik (163,75; 113,25) |
+| dom (3v1) | (163,5; 118,5) | (164,75; 113,25) – nie narożnik |
+| koszary (164…165, 112…113) | S (163,5; 119,5) | (164,75; 114,25), drugi (164,25; 114,25) |
+| koszary | N (165,5; 106,5) | (165,25; 111,75) |
+| koszary | W (158,5; 113,5) | (163,75; 113,25) |
+
+Reguła Core (etap 49, [H]): kandydaci na obwodzie odsuniętym o 0,5·rozmiar atakującego – po dwa na pole boku
+(pole + 0,25 / + 0,75) i 4 narożniki; kolejność wstawiania – obchód zgodnie z ruchem wskazówek zegara od lewego górnego rogu;
+sortowanie stabilne: odległość Czebyszewa pól, boki przed narożnikami, kwadrat odległości pól. Zgodna z 10 z 11 wyborów;
+koszary z W – niezgodna (gra (163,75; 113,25), reguła (163,75; 113,75)) [N]. Odrzucona w etapie: miara kąta od środka
+budynku (myliła 3v1 i koszary S). Funkcja budynkowa nie jest 0x632A8B (ta filtruje kandydatów po stronie muru, typ
++0x4B4 = 0x19 albo +0x612) [W]. Odtworzenia 654: dom N/E/W/SW i koszary N – zgodne w całości; dom NE – miejsce i trasa
+zgodne, różnica kursu od pierwszego obrotu FaceEnemy przy różnicy kąta dokładnie π (kierunek obrotu przy remisie) [N].
+
+**EnemyUnitReachable (0x60B1EA) nie sprawdza HP celu** [W: kod; P: 649 koszary t = 74966 – gwardia w 5002 przy koszarach
+w 6000 przechodzi do 2013 CheckRange, dopiero potem do 2025]. Core usunął własne założenie HP > 0 – koszary 3v1 zgodne
+co próbkę do zapadania budynku.
+
+**Budowa (pakiet D)** – rozpoznane tylko klasy: komunikat `EEMBuildUnit` (vtable 0x824B40: 0x4C04FA, 0x401A2E, …,
+0x4B40EA, 0x4B6F26 – dwa ostatnie wpisy poza procedurami analizy Ghidra), cel `EEUGBuildRepair` (vtable 0x8319F0),
+akcja `EEABuild` (0x824AC4). Rozkazu budowy nie wydano – MCP nie ma ścieżki interfejsu budowy (przycisk, podgląd
+fundamentu, kliknięcie), a zapis pamięci wykluczają zasady etapu. Pomiaru nie ma [N].

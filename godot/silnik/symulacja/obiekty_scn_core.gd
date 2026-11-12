@@ -74,6 +74,7 @@ static func parametry_budynku(ob: Dictionary, db: Dictionary = {}) -> Dictionary
 		"rodzaj_ataku": int(ob.get("Weapon to hit ID", 0)), "wiersz_celu": int(ob.get("Weapon to hit ID", 0)),
 		"klasa_trafienia": int(ob.get("Family ID", 0)), "rodzina_ataku": int(ob.get("Family attack type", 0)),
 		"rozmiar": float(ob.get("Size of collider", 1.0)), "typ_jednostki": int(ob.get("Unit type", 0)),
+		"kolizja": int(ob.get("Collidable", 1)),   # etap 49: +0x2D8 z typu +0x606 [H: +0x606 = „Collidable”]
 		"typ_bazy": int(ob.get("ID", 0)), "rozklad_ms": int(round(float(ob.get("Rotting time", 0.0)) * 1000.0)), "zasoby": 0}
 
 

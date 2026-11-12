@@ -247,5 +247,18 @@
     }
    }
   }
- }
+ },
+ "premie_cywilizacji": {
+  "e42": {
+   "1": {
+    "216": {
+     "predkosc": [
+      1,
+      0.1
+     ]
+    }
+   }
+  }
+ },
+ "premie_cywilizacji_opis": "Etap 49: poziomy atrybutów cywilizacji gracza dla typu [poziomy, procent typu +0x410] – atrybut 14 „predkosc” (0x627078 → 0x627030 → SetSpeed 0x628051). e42: prorok (216) gracza 1 – 1 poziom [P: odczyt +0xAC 0,5 przy 0,45 w dbobjects; W: 0,45 + max(0,045; 0,05)]. Liczba poziomów z cywilizacji scenariusza – odczyt pamięci, nie z pliku SCN [N]."
 }

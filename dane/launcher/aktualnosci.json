@@ -6,6 +6,18 @@
   {
    "data": "2026-11-12",
    "tytul": {
+    "pl": "Etap 49: jednostki omijają mury i siebie nawzajem",
+    "en": "Stage 49: units steer around walls and each other"
+   },
+   "tekst": {
+    "pl": "Mury i budynki odpychają jednostki tak jak w Empire Earth, a gwardie atakujące budynek obchodzą swoich towarzyszy zamiast się z nimi zderzać. Prorok przechodzi obok muru dokładnie jak w oryginale, a jednostki podchodzą do budynków z każdej strony w te same miejsca co w grze. Dodaliśmy też mapę postępu: ile silnika już odtworzono i ile zostało.",
+    "en": "Walls and buildings now push units away as in Empire Earth, and guards attacking a building step around their comrades instead of bumping into them. A prophet walks past a wall exactly as in the original, and units approach buildings from every side at the same spots as in the game. We also added a progress map showing how much of the engine is rebuilt and how much remains."
+   },
+   "raport": "RAPORT_ETAP_49.md"
+  },
+  {
+   "data": "2026-11-12",
+   "tytul": {
     "pl": "Etap 48: prorok, przepychanie i większe budynki",
     "en": "Stage 48: prophets, pushing and bigger buildings"
    },
@@ -13,7 +25,7 @@
     "pl": "Prorok porusza się tak jak w Empire Earth – tą samą drogą i w tym samym tempie – a jednostki przepychają się przy ucieczce i ataku według reguł oryginału. Gwardie podchodzą do budynku w te same miejsca co w grze, większe budynki działają z mapą tras, a po zniszczeniu zostają gruzy.",
     "en": "Prophets now move as in Empire Earth – along the same path and at the same pace – and units push each other when fleeing and attacking by the original rules. Guards approach buildings at the same spots as in the game, larger buildings work with the route map, and destroyed buildings leave rubble."
    },
-   "raport": "RAPORT_ETAP_48.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_48.md"
   },
   {
    "data": "2026-11-12",

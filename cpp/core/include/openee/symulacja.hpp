@@ -42,6 +42,7 @@ struct Diagnostyka {
     bool ostatnia_bounded_sukces = false;
     int ostatnia_poprawa_poczatku = 0;   // etap 48: 0x4A2B29/0x4A3757 – 0 brak, 1 sukces, −1 porażka
     // --- walka (etap 31) ---
+    std::uint64_t omijania_atakujacych = 0;      // etap 49: gałąź 0x549353 (omijanie przeładowującego sojusznika)
     std::uint64_t szukania_wroga = 0;            // wywołania 0x61AC11 z przeglądem kandydatów
     std::uint64_t wybory_celu = 0;               // utworzone cele EEUGAttackUnit
     std::uint64_t trafienia = 0, zgony = 0;
@@ -302,9 +303,13 @@ public:
     /// zgłoszenie zmiany mapy z terminem „zwykłym” (+0xD4 = teraz + *0x9183C0·10000 ms, opoznienie_przebudowy_s [N]).
     IdJednostki postaw_budynek(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
                                const ParametryWalki& p, int hp, std::uint32_t id_mapy, int flaga600, int klasa4b4,
-                               int flaga612);
+                               int flaga612, bool kolizyjny = true);
     IdJednostki dodaj_obiekt_budynku(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
-                                     const ParametryWalki& p, int hp, bool blokuje, std::uint32_t id_mapy, bool w_siatce);
+                                     const ParametryWalki& p, int hp, bool blokuje, std::uint32_t id_mapy, bool w_siatce,
+                                     bool kolizyjny = true);
+    /// Etap 49 – listy kontaktów wszystkich obiektów od nowa, w bieżącej kolejności listy (jak tworzenie obiektów przy
+    /// wczytaniu: obiekt dopisuje wcześniejsze z własnego okna; odbudowa po kolei daje te same pary) [W: 0x5ED24B → 0x616F9D].
+    void odbuduj_kontakty_wszystkich();
     std::uint64_t wersja_grafu() const { return wersja_grafu_; }
     std::uint64_t przebudowy_grafu() const { return przebudowy_grafu_; }
     bool przebudowa_zaplanowana() const { return przebudowa_d8_; }
@@ -369,6 +374,7 @@ private:
     IdJednostki srodek_w_polu(std::int64_t ix, std::int64_t iy, IdJednostki pytajaca) const;
     // walka
     Jednostka* cel_ataku(const Jednostka& u);
+    void omijanie_atakujacego(Jednostka& u, const Jednostka& o);   // etap 49: 0x549179 (ru = ro, +0x61A)
     std::optional<bool> zdarzenie_walki(Jednostka& u, const std::string& n);
     bool szukaj_wroga(Jednostka& u);
     bool cel_nieosiagalny(Jednostka& u, const Jednostka& t, bool sprawdz_pola);   // 0x5EC9BB (etap 37)

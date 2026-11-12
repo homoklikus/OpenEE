@@ -25,6 +25,12 @@ W katalogu głównym OpenEE leży **tylko jeden raport – najnowszy**. Przy ko�
    - sprawdź, że trzy najnowsze wpisy prowadzą do istniejących plików, czyli do poprawnych linków GitHub
      (`repozytorium_url` + `raport`). Pilnują tego testy Godota „L aktualności”.
 
+6. Od etapu 49 każdy raport `RAPORT_ETAP_N.md` ma rozdział **„Postęp rekonstrukcji Titan – ile zostało do końca?”**:
+   stan rozpoznania (A), implementacji (B) i potwierdzonej zgodności (C), zmiana względem poprzedniego etapu,
+   największe nierozpoznane podsystemy i blokery, osiągnięcia, które najbardziej przybliżą koniec, orientacyjna
+   pozostała praca – bez udawanej precyzji (bez jednego „procentu ukończenia”). Źródłem jest trwały dokument
+   `docs/titan/POSTEP_REKONSTRUKCJI.md`; zmiany ocen uzasadniaj przyrostowo w jego „Historii ocen”.
+
 Nie twórz raportów bezpośrednio w `raporty/archiwum/`, chyba że chodzi o odzyskanie dokumentacji historycznej.
 Treści zarchiwizowanych raportów nie zmieniaj, poza odnośnikami potrzebnymi do nawigacji. Obalony wniosek oznacz
 adnotacją „[Etap … – zastąpione]” i nie usuwaj pierwotnej obserwacji.

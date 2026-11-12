@@ -26,6 +26,7 @@
 #include "openee/nawigacja.hpp"
 #include "openee/matematyka.hpp"
 #include "openee/symulacja.hpp"
+#include "openee/ulepszenia.hpp"
 #include "openee/tablice_dll.hpp"
 #include "openee/teren.hpp"
 
@@ -2027,6 +2028,48 @@ int test_budynki() {
         sprawdz(d8 > 0 && blok && !s8->przebudowa_zaplanowana() && s8->przebudowy_sektorow() == 1 &&
                     G.podsektor_pola(10, 10) != G.podsektor_pola(10, 11) && G.podsektory.size() == n0 + 1 && t0 == 0,
                 "postawiony budynek: pole zablokowane od razu, zgłoszenie, jeden przebieg sektora, pole budynku – osobny podsektor (jak dom w 647 przed zniszczeniem)");
+    }
+    // 8. etap 49 – budynek (+0x2D8) na liście kontaktów: jednostka mijająca mur (rozmiar 0,9) w odległości < 0,7 jest
+    //    odpychana (u.push −= 2·p, mur nieruchomy – bez przesunięcia); mur bez +0x2D8 („Collidable” 0) – brak kontaktu
+    for (int wariant = 0; wariant < 2; ++wariant) {
+        auto s9 = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        ParametryRuchu pr;
+        pr.vmax = 0.5;
+        ParametryWalki pm = dom_37();
+        pm.rozmiar = 0.9f;
+        pm.typ_bazy = 467;
+        const IdJednostki mur = s9->dodaj_obiekt_budynku(1, 467, 10, 10, 1, 10.5, 10.5, 0.0, pm, 7000, true, 0x600, false,
+                                                          wariant == 0);
+        const IdJednostki a = s9->dodaj_jednostke(pr, 9.9, 12.5, 3.14159265);
+        s9->rozkaz_ruchu(a, 9.9, 10.5);
+        bool kontakt = false;
+        double xmin = 9.9;
+        for (int k = 0; k < 600; ++k) {
+            s9->takt();
+            const Jednostka* u = s9->jednostka(a);
+            for (IdJednostki o : u->lista_kontaktow) kontakt |= (o == mur);
+            xmin = std::min(xmin, u->x);
+        }
+        const Jednostka* m = s9->jednostka(mur);
+        std::printf("  mur (+0x2D8 = %d): kontakt %d, kroki odpychania %llu, x min %.4f, mur (%.3f, %.3f)\n", int(wariant == 0),
+                    int(kontakt), (unsigned long long)s9->diagnostyka().kroki_odpychania, xmin, m->x, m->y);
+        if (wariant == 0)
+            sprawdz(kontakt && s9->diagnostyka().kroki_odpychania > 0 && xmin < 9.899 && m->x == 10.5 && m->y == 10.5,
+                    "budynek z +0x2D8 na liście kontaktów: odepchnięcie jednostki, budynek nieruchomy");
+        else
+            sprawdz(!kontakt && s9->diagnostyka().kroki_odpychania == 0, "budynek bez +0x2D8 („Collidable” 0) – poza listą kontaktów");
+    }
+    // 9. etap 49 – premia prędkości gracza (0x627030 + SetSpeed 0x628051) – prorok gracza 1 w 648–650 [P]
+    {
+        ParametryRuchu b;
+        b.a = 2.0; b.vmax = 0.45; b.alfa = 12.21731; b.wmax = 13.96264;
+        const ParametryRuchu r = z_premia_predkosci(b, PremiaAtrybutu{1, 0.1});
+        const ParametryRuchu r0 = z_premia_predkosci(b, PremiaAtrybutu{0, 0.1});
+        std::printf("  premia prędkości: vmax %.5f a %.5f α %.5f ωmax %.5f c4 %.5f c8 %.5f\n", r.vmax, r.a, r.alfa, r.wmax, r.c4, r.c8);
+        auto blisko = [](double x, double y) { return std::fabs(x - y) < 2e-5; };
+        sprawdz(blisko(r.vmax, 0.5) && blisko(r.a, 2.22222) && blisko(r.alfa, 13.57478) && blisko(r.wmax, 15.51404) &&
+                    blisko(r.c4, 0.45) && blisko(r.c8, 0.07367) && r0.vmax == b.vmax,
+                "1 poziom prędkości: 0,45 + max(0,045; 0,05) = 0,5; a, α, ωmax ×10/9; c4 = 1/a, c8 = 1/α (odczyt pamięci 648)");
     }
     return bledy ? FAIL : PASS;
 }

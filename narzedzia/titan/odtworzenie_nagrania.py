@@ -9,6 +9,7 @@
   porownaj <seria.json> <core.json> [pomijane_stany]
       Porównanie wszystkich jednostek co próbkę: stan .tai, HP, pozycja (|Δ| > 0,002), kurs (|Δ| > 0,002 rad), cel.
       Próbka nieaktualna rejestratora (gra = poprzednia próbka, następna znów zgodna) liczona osobno – nie jest różnicą.
+      Etap 49: także próbka rozdarta (stan z bieżącego taktu, pozycja z poprzedniego; następna zgodna).
 Dane (nagrania, scenariusze) są lokalne."""
 import base64, bisect, json, math, struct, sys
 
@@ -95,7 +96,7 @@ def porownaj(ser_p, core_p, pomin=()):
     wynik = {}
     for gid in core['ids']:
         g = [(q['t'], q[gid]) for q in ser if gid in q]
-        n = stale = 0; zg = 0; pierwsze = {}
+        n = stale = rozdarte = 0; zg = 0; pierwsze = {}
         for j, (t, u) in enumerate(g):
             c = at(t)
             if not c or gid not in c[2]:
@@ -120,13 +121,21 @@ def porownaj(ser_p, core_p, pomin=()):
                         and nast[2][gid][0] == g[j + 1][1]['stan'] and abs(nast[2][gid][1] - g[j + 1][1]['x']) <= 0.002
                         and abs(nast[2][gid][2] - g[j + 1][1]['y']) <= 0.002):
                     stale += 1; continue
+                # etap 49: próbka rozdarta – rejestrator czyta pola jednostki kolejno w czasie działania gry, więc
+                # stan/kurs mogą być już z bieżącego taktu, a pozycja jeszcze z poprzedniego [P: 649 dom 3v1, t=47386 –
+                # stan 5002 z taktu, pozycja = próbka 47352, następna próbka znów zgodna co do 0,0001]
+                if (cp and gid in cp[2] and not roz['hp'][0] and (u['stan'] == cs or u['stan'] == cp[2][gid][0])
+                        and abs(cp[2][gid][1] - u['x']) <= 0.002 and abs(cp[2][gid][2] - u['y']) <= 0.002
+                        and nast and gid in nast[2] and nast[2][gid][0] == g[j + 1][1]['stan']
+                        and abs(nast[2][gid][1] - g[j + 1][1]['x']) <= 0.002 and abs(nast[2][gid][2] - g[j + 1][1]['y']) <= 0.002):
+                    stale += 1; rozdarte += 1; continue
             for k, (b, val) in roz.items():
                 if b and k not in pierwsze:
                     pierwsze[k] = (t, val)
             if not pierwsze:
                 zg += 1
-        wynik[gid] = {'probek': n, 'zgodnych_do_1_roznicy': zg, 'nieaktualne': stale, 'pierwsze': pierwsze}
-        print(f"{gid} ({core['ids'][gid]}): próbek {n}, zgodnych do 1. różnicy {zg}, nieaktualnych {stale}; " +
+        wynik[gid] = {'probek': n, 'zgodnych_do_1_roznicy': zg, 'nieaktualne': stale, 'rozdarte': rozdarte, 'pierwsze': pierwsze}
+        print(f"{gid} ({core['ids'][gid]}): próbek {n}, zgodnych do 1. różnicy {zg}, nieaktualnych {stale} (w tym rozdartych {rozdarte}); " +
               '; '.join(f"{k} t={v[0]} gra/Core {v[1]}" for k, v in sorted(pierwsze.items(), key=lambda kv: kv[1][0])))
     return wynik
 

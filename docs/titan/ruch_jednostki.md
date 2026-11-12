@@ -361,3 +361,17 @@ Szczegóły i dowody: `walka.md` § 15.
 - Wpis w tabeli wyżej „tryb 4: … ruch naprzód o v′·dt po dotychczasowym kursie” [Etap 32 – zastąpione: po nowym
   kursie, gdy ω ≠ 0].
 - [N] Reguła obrotu AoC (0x554738) przy Δ = 0 – w 580 G1 widoczna ta sama oscylacja, Core jeszcze się różni (takt 36).
+
+## Etap 49 – premie cywilizacji dla parametrów ruchu (źródło ×10/9 proroka)
+
+[W: 0x627078, 0x627030, 0x626FB0, 0x628051; P: 652 e49_prorok5 – odczyt EEUnitClassUpgrade +0x34]
+
+- Prorok gracza 1: +0xAC (vmax) 0,5, +0xA8 2,22222, HP 240; prorok gracza 5 w tym samym scenariuszu: 0,45, 2,0, HP 150
+  (= dbobjects). Gwardia gracza 1 i 5: bez zmian. Premia zależy więc od gracza (cywilizacji), nie od typu ani scenariusza [P].
+- 0x627078(typ, ulepszenie, atrybut, poziomy): poziomy atrybutu u gracza (+4 + 4·atrybut), wartość' = wartość +
+  poziomy·max(baza(typ, atrybut)·procent, minimum) (0x627030); procent z tabeli typu +0x410 (+8 + 8·atrybut, 0 → 0,1),
+  minimum prędkości (atrybut 14) 0,05 (0x825508), innych 1,0. Prędkość: 0,45 + max(0,045; 0,05) = 0,5 (1 poziom) [W + P].
+- SetSpeed 0x628051: vmax' = wartość', a, α, ωmax i +0xB8 mnożone przez vmax'/v_typu (+0x430), odwrotności +0xC4 = 1/a
+  (Core c4), +0xC8 = 1/α (Core c8), +0xCC = 1/ωmax, +0xD0 = 1/vmax. Stąd ×10/9 dla a, α, ωmax.
+- Core: `openee/ulepszenia.hpp` (`z_premia_predkosci`), GDExtension `premia_predkosci`, dane
+  `parametry_jednostek_ee.json → premie_cywilizacji`. Liczba poziomów u gracza (cywilizacja w SCN) i baza 0x626834 – [N].

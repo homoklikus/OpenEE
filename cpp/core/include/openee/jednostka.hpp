@@ -136,6 +136,7 @@ struct Jednostka {
     // (rekord SCN X, Y = +0x1C/+0x20) i kwadrat n × n („Square occupied”).
     bool budynek = false;
     int kwadrat = 1;
+    bool kolizyjny = true;          // +0x2D8 (0x5ED24B: typ +0x606 „Collidable” ≠ 0 i nie wyjątki) – uczestnik list kontaktów
     bool blokuje_pola = false;      // typ +0x600 – pola X..X+n−1 × Y..Y+n−1 nieprzejezdne, dopóki HP > 0
     std::uint32_t id_mapy = 0;      // identyfikator obiektu na listach pól (wejście grafu, WejscieRegionow)
     int typ_db = -1;                // dbobjects ID (+0x4B8)

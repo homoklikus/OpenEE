@@ -377,3 +377,36 @@ następnej aktualizacji fizyki. Po poprawce 634 – 6413/6413 próbek wszystkich
   typ +0x4B4 ∈ {10, 27} po obu stronach albo po żadnej, ten sam bit 4 typu +0x5D4. W Core budynki nie są kontaktami
   (etap 47) i mur w odtworzeniu jest obiektem mapy, nie jednostką – pierwsza brakująca operacja 648 [N: które budynki
   mają +0x2D8].
+
+## Etap 49 – budynki na listach kontaktów, flaga +0x2D8, omijanie przeładowującego sojusznika
+
+[W: kod 0x5ED24B, 0x5E8F0E, 0x5498C4, 0x549179; P: 648, 649 dom 3v1, 652 e49_mur_rog, 652 e49_prorok5]
+
+- **+0x2D8** (uczestnik list kontaktów) ustawia inicjalizacja obiektu 0x5ED24B: 1, gdy typ +0x606 ≠ 0 i nie zachodzi
+  żaden wyjątek: (typ +0x5D4 bit 0 i vt+0x5C() = 0) albo typ +0x620 ≠ 0 albo typ +0x4B8 = 0x104; inaczej 0. Odczyt typów
+  (652): mur 467, dom 37, wieża 461, koszary 34, gwardia 422, prorok 216 – +0x606 = 1, +0x620 = 0; +0x2D8 = 1 u wszystkich
+  (surowe bajty jednostek) [P]. +0x606 = dbobjects „Collidable” [H: zgodne dla 9 typów, gruz 361/362 – 0].
+- **Budynki są zwykłymi uczestnikami listy kontaktów** (odp. na pytanie A1 zadania: wariant 1). 0x5E8F0E bierze kandydatów
+  z list pól okna ±R (R z typu +0x474: dom 1,0 → ±1,0, koszary 2,0 → ±2,0, mur 0,9 → ±0,5), z +0x2D8 ≠ 0 i HP > 0, i wpisuje
+  parę symetrycznie. Budynek tworzy listę przy utworzeniu (0x616F9D w 0x5ED24B), potem nigdy się nie przemieszcza, więc
+  dopisują go jednostki wchodzące na pole. Pomiar: 648 – dom 0x5000ad0 ma 2 kontakty (gwardie 856 i 857), lista gwardii
+  zgodna z historią zmian pól [P]; 652 e49_mur_rog – mur 0x1000857 na liście kontaktów gwardii po wejściu na pole
+  (159, 111) (nowe pole rejestratora `kontakty_lista`, głowa +0xC4, węzeł [obiekt, ?, następny]) [P].
+- **Odpychanie od budynku** – ta sama funkcja 0x549179: ro (+0x244 = typ +0x474) > ru → budzik budynku (bez skutku,
+  budynek się nie rusza: v = 0, vmax = 0) i u.push −= 2·p (wariant 3 pytania A1: budynek wpływa na wektor jednostki,
+  sam nie dostaje impulsu). 648: prorok (ru 0,5) przy murze (ro 0,9), S = 0,7 – licznik +0x248 od 63510 = kroki
+  odepchnięcia; Core po zmianie: 3585/3585 próbek proroka do końca ruchu [P].
+- [Etap 47 – zastąpione: „budynki nie trafiają na listę kontaktów” (645, 2 kontakty gwardii przy domu w oknie). Lista
+  zależy od historii: para powstaje tylko przy wejściu jednej ze stron na pole, a dom nie był w oknie gwardii w chwili
+  jej wejścia na pole.]
+- **Gałąź omijania (0x549353–0x54963B)**, gdy ru = ro: typ u +0x61A (atak wręcz, dbobjects „Melee attack” [H]), o tego
+  samego gracza albo nie wróg (tablica gracza u +0x9E4[gracz o]), v_u > 0, o przeładowuje (+0x2A0 ≠ 0 – licznik
+  przeładowania, malejący co takt [P: surowe bajty 649]), cele bieżące obu – EEUGAttackUnit, odległość u od pozycji celu u
+  (vt+0x28) < 2·ru + 4,0 (0x825988). Przy v⃗·d̂ > 0 (u jedzie w stronę o): push_u −= v·przód(yaw) + (v⃗·d̂)·d̂ – jednostka
+  traci składową prędkości w stronę sojusznika i mija go bokiem (po przycięciu do vmax w 0x549A08). 649 dom 3v1, t = 74079:
+  przesunięcie gwardii 856 (−0,0070; +0,0002), wzór (−0,0069; +0,0003) [P]; po wdrożeniu dom 3v1 i koszary 3v1 zgodne
+  co próbkę do śmierci budynku.
+- Obiekty Świata (drzewa 338–341, „Collidable” 1, „Unit type” 1) – czy są na listach kontaktów, nie sprawdzono; Core
+  dodaje w odtworzeniach tylko budynki graczy („Unit type” 2 i brama 25) [N].
+- Kolejność w liście 0x5498C4: pierwszy kontakt, dla którego vt+0x3C zwróci prawdę, kończy pętlę; 0x549179 zawsze
+  zwraca fałsz, więc dla małych jednostek przetwarzane są wszystkie kontakty [W].

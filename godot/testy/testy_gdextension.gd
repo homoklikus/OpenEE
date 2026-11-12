@@ -140,6 +140,7 @@ func _testy() -> void:
 	_test_etapu46(dll)
 	_test_etapu47(dll)
 	_test_etapu48(dll)
+	_test_etapu49(dll)
 	_koniec()
 
 
@@ -1011,3 +1012,24 @@ func _test_etapu48(dll: String) -> void:
 		and int(gz[0].takt) == smierc and c.pole_przejezdne(10, 10)
 	_wynik("gruz budynku: obiekt 361 na polu domu w takcie śmierci, pole przejezdne", ok_g, JSON.stringify(gz) + " śmierć %d" % smierc)
 	_wynik("trasa jednostki w jednostka()[\"trasa\"]", trasa is Array, JSON.stringify(trasa))
+
+
+## Etap 49: premia prędkości gracza (0x627030 + SetSpeed) i budynek na liście kontaktów (+0x2D8, odepchnięcie od muru).
+func _test_etapu49(dll: String) -> void:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	var baza := {"a": 2.0, "vmax": 0.45, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "t488": 0.5}
+	var pr: Dictionary = c.premia_predkosci(baza, 1, 0.1)
+	var ok_p: bool = absf(float(pr.vmax) - 0.5) < 1e-5 and absf(float(pr.a) - 2.22222) < 2e-5 and absf(float(pr.wmax) - 15.51404) < 2e-5 \
+		and absf(float(pr.c4) - 0.45) < 1e-5 and absf(float(c.premia_predkosci(baza, 0, 0.1).vmax) - 0.45) < 1e-6
+	_wynik("premia prędkości gracza: prorok 0,45 → 0,5, a/α/ωmax ×10/9 (odczyt 648)", ok_p, JSON.stringify(pr))
+	var mur := {"gracz": 1, "typ": 467, "X": 10, "Y": 10, "kwadrat": 1, "x": 10.5, "y": 10.5, "z": 0.0, "hp": 7000, "hp_max": 7000,
+		"rozmiar": 0.9, "typ_jednostki": 2, "typ_bazy": 467, "blokuje": 1, "id_mapy": "0x600", "w_siatce": 0, "kolizja": 1}
+	var m: int = c.dodaj_budynek(mur)
+	var u: int = c.dodaj_jednostke(pr, 9.9, 12.5, 3.14159265)
+	c.rozkaz_ruchu(u, 9.9, 10.5, null, false)
+	for k in 600: c.takt(1)
+	var d: Dictionary = c.diagnostyka()
+	_wynik("mur z +0x2D8: kontakt i odepchnięcie jednostki, mur nieruchomy", int(d.get("kroki_odpychania", 0)) > 0 \
+		and float(c.jednostka(m).x) == 10.5, "kroki %d" % int(d.get("kroki_odpychania", 0)))

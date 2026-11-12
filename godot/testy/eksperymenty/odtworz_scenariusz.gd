@@ -40,6 +40,7 @@ func _start() -> void:
 	for r in Z.tabela("dbobjects"): ob[int(r.ID)] = r
 	var potyczka = load("res://sceny/potyczka.gd")
 	var rek := {}   # etap 47: rekordy SCN wg id (kotwica X, Y budynków)
+	var rek_g := {}   # etap 49: gracz rekordu
 	var n := 0
 	for g in range(s.gracze.size()):
 		for u in s.gracze[g].jednostki:
@@ -47,6 +48,7 @@ func _start() -> void:
 			var o: Dictionary = ob.get(int(u.type), {})
 			if o.is_empty() or int(u.get("valid", 0)) == 0: continue
 			rek["0x%x" % int(u.get("id", 0))] = u
+			rek_g["0x%x" % int(u.get("id", 0))] = g
 			if int(o.get("Unit type", -1)) in [5, 6, 13, 16, 23, 4, 18, 21, 22] and float(o.get("Speed", 0)) > 0: continue
 			c.dodaj_obiekt_mapy({"id": int(u.get("id", 0x7000000 + n)), "typ": int(u.type), "gracz": g, "X": int(u.get("X", 0)),
 				"Y": int(u.get("Y", 0)), "kwadrat": maxi(1, int(o.get("Square occupied", 1))), "blokuje": potyczka._blokuje(int(u.type), o)})
@@ -108,6 +110,9 @@ func _start() -> void:
 		# --ulepszenia=<klucz mapy>: parametry ruchu z ulepszenia gracza odczytane w grze (parametry_jednostek_ee.json → ruch_ulepszenia)
 		var ul: Dictionary = par.get("ruch_ulepszenia", {}).get(_arg("ulepszenia", ""), {}).get(str(int(j["gracz"])), {})
 		if ul.has(ty): pr.merge(ul[ty], true)
+		# etap 49: --premie=<klucz>: poziomy atrybutów cywilizacji gracza → parametry ruchu liczone w Core (premia prędkości)
+		var pc: Dictionary = par.get("premie_cywilizacji", {}).get(_arg("premie", ""), {}).get(str(int(j["gracz"])), {}).get(ty, {})
+		if pc.has("predkosc"): pr = c.premia_predkosci(pr, int(pc["predkosc"][0]), float(pc["predkosc"][1]))
 		if j.has("ruch"): pr.merge(j["ruch"], true)
 		var id: int = c.dodaj_jednostke(pr, float(j["x"]), float(j["y"]), float(j["kurs"]))
 		var pw: Dictionary = par["walka"][ty]["p"].duplicate()
@@ -117,7 +122,25 @@ func _start() -> void:
 		if _arg("skrypty", "1") == "1":   # etap 45: skrypt .tai typu (dbobjects „TAI Script”), interpretacja w Core
 			c.ustaw_skrypt_jednostki(id, String(ob.get(int(ty), {}).get("TAI Script", "")))
 		core_id[str(j["id"])] = id; gra_id[id] = str(j["id"])
+	# etap 49: pozostałe budynki z SCN (np. mury) jako obiekty Core – uczestnicy list kontaktów (+0x2D8) i cele;
+	# blokada pól już w siatce (obiekty mapy). --budynki-scn=0 – tylko obiekty z opisu (stan etapu 48)
+	if _arg("budynki-scn", "1") == "1":
+		for rid in rek:
+			if core_id.has(rid): continue
+			var u: Dictionary = rek[rid]
+			var obt: Dictionary = ob.get(int(u.type), {})
+			# tylko budynki graczy („Unit type” 2 – EEUCBuilding, 25 – brama); drzewa i obiekty Świata (UT 1 itd.) – [N]
+			if int(obt.get("Is building?", 0)) == 0 or not int(obt.get("Unit type", 0)) in [2, 25]: continue
+			var pb := ObiektyScnCore.parametry_budynku(obt, ob)
+			pb["rozmiar_jeden"] = int(wm.get("typy", {}).get("typ:%d" % int(u.type), [0, 0, 0, 0])[3])
+			var g: int = rek_g[rid]
+			var X := int(u.get("X", 0)); var Y := int(u.get("Y", 0)); var kw := maxi(1, int(obt.get("Square occupied", 1)))
+			pb.merge({"gracz": g, "typ": int(u.type), "X": X, "Y": Y, "kwadrat": kw, "x": X + 0.5 * kw, "y": Y + 0.5 * kw,
+				"hp": int(obt.get("Health", 0)), "blokuje": 1, "id_mapy": rid, "w_siatce": 1}, true)
+			var bid: int = c.dodaj_budynek(pb)
+			core_id[rid] = bid; gra_id[bid] = rid
 	if kol == "pozycja": c.uporzadkuj_wg_pozycji()   # etap 44: kolejka fizyki po wczytaniu (Core)
+	if _arg("kontakty-wczytanie", "0") == "1": c.odbuduj_kontakty_wszystkich()   # etap 49: kolejność tworzenia = lista
 	var T0 := float(opis["T0"])
 	# etap 43: symulacja od czasu gry 0 (start scenariusza – jednostki tworzone przy wczytaniu; w 629 pierwszy wybór celu
 	# w 34 ms [P]), żeby fazy liczników (szukanie celu, regeneracja) odpowiadały grze; --od-startu=0 – od 1. próbki
