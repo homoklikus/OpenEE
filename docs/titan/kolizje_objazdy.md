@@ -355,3 +355,25 @@ następnej aktualizacji fizyki. Po poprawce 634 – 6413/6413 próbek wszystkich
 - **Pierwszy etap różnicy w nagraniu kontaktu** (przed korektą kolejności): punkt przechwycenia 0x62C963 w PrepareToMove
   gwardii AI (t = 46363). Gra liczy go z pozycji celu z poprzedniego taktu: obliczenie ręczne daje (164,563; 106,21433)
   do 5 cyfr. Core miał kolejność odwrotną. Przyczyną jest więc kolejność aktualizacji, nie wzór odpychania ani integracja.
+
+## Etap 48 – odepchnięcie celu ataku i budzik (0x549179)
+
+[W: kod 0x549179; P: 644 pościg – 4148/4148 próbek po poprawce]
+
+- **Cel ataku pchany słabiej.** Gdy cel bieżący u (+0x1F0) to EEUGAttackUnit (+5 = 2), a jego cel (+0x30) to o, wektor
+  dodawany do push o jest mnożony przez 0,25 (stała 0x825450). Gwardia atakująca obywatela pcha go więc z czynnikiem
+  0,25·(ru/ro) = 0,4167 zamiast 5/3. Dopasowanie do nagrania 644 (wszystkie takty kontaktu, składowe x i y): własny
+  współczynnik obywatela 1,185 (teoria 2·ru/ro = 1,2), współczynnik gwardii 0,43 (teoria 0,417).
+- **Budzik** (gałąź ru < ro albo o nieruchoma): push o := (0,001; 0,001) tylko, gdy obie składowe mają |·| < 0,001;
+  w przeciwnym razie push o bez zmian (Core wcześniej dodawał 0,001 do każdej składowej).
+- Skutek w 644: pierwsze odepchnięcie obywatela w takcie kończącym się 63783 (suma |vx| + |vy| = 0,0198 < 0,02 w takcie
+  63749 – brak ruchu), dalej zgodnie co próbkę do końca nagrania. Kolejność kolejki fizyki (od końca: gwardia, potem
+  obywatel) była już poprawna.
+- Pole +0x244 to rozmiar kolizji typu (+0x474); 0x5498C4 wybiera wariant małej kolizji (vt+0x3C) przy +0x244 < 1,0 u którejś
+  ze stron albo przy zerowym wyniku 0x46123F [W].
+- **Kontakt z budynkiem** (648, prorok przy murze gracza 1): licznik +0x248 proroka rośnie od taktu 63510, gdy pole muru
+  (160, 111) jest w oknie kontaktów – odepchnięcie od muru (ro = 0,9 z „Size of collider”) [P: nagranie; W: 0x549179].
+  Filtry 0x5E8F0E: obiekt z flagą +0x2D8, HP > 0, vt+0x58 = 0, ta sama klasa vt+0x5C (Building i Land – obie 0),
+  typ +0x4B4 ∈ {10, 27} po obu stronach albo po żadnej, ten sam bit 4 typu +0x5D4. W Core budynki nie są kontaktami
+  (etap 47) i mur w odtworzeniu jest obiektem mapy, nie jednostką – pierwsza brakująca operacja 648 [N: które budynki
+  mają +0x2D8].

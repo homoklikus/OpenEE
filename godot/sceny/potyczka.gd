@@ -247,7 +247,7 @@ func nowa_bitwa() -> bool:
 	_budynki_core.clear()
 	for e in _budynki_dod:
 		var ob: Dictionary = _obiekty.get(int(e.typ), {})
-		var pb := ObiektyScnCore.parametry_budynku(ob)
+		var pb := ObiektyScnCore.parametry_budynku(ob, _obiekty)
 		pb["rozmiar_jeden"] = int(_typy_pol.get("typ:%d" % int(e.typ), [0, 0, 0, 0])[3])
 		var nb: int = int(e.kwadrat)
 		pb.merge({"gracz": e.gracz, "typ": e.typ, "X": e.X, "Y": e.Y, "kwadrat": nb, "x": float(e.X) + nb * 0.5,
@@ -562,7 +562,8 @@ func _demo_e47(sekundy: float) -> void:
 			t += get_process_delta_time()
 		for i in 10: await get_tree().process_frame
 		przebieg["koniec"] = {"stan_budynku": sym.stan.get(bud, -1), "ukryty": widok.ukryta(bud), "takt": sym.takt,
-			"w_fizyce": core.jednostka(bud).get("w_fizyce", null), "graf": core.stan_grafu(), "skrot": sym.skrot_stanu()}
+			"w_fizyce": core.jednostka(bud).get("w_fizyce", null), "graf": core.stan_grafu(), "skrot": sym.skrot_stanu(),
+			"gruz": core.gruz()}   # etap 48: pozostałość budynku – obiekt mapy w Core ("Debris on death#2")
 		wyniki.append(przebieg)
 	_raport_p["demo_e47"] = wyniki
 	_koniec_automatu(0)

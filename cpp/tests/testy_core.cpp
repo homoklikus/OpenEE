@@ -1953,6 +1953,7 @@ int test_budynki() {
         const IdJednostki a = s5->dodaj_jednostke(pr, 10.5, 13.5, 3.14159265);
         s5->ustaw_walke(a, 1, true, g, 215);
         const IdJednostki bar = s5->dodaj_obiekt_budynku(5, 34, 10, 10, 2, 11.0, 11.0, 0.0, b, 14, true, 0x600, false);
+        s5->ustaw_gruz_budynku(bar, 362, 2);   // etap 48: koszary – „Debris on death#2” = 362 („Amb - Debris 2x”, 2 × 2)
         s5->ustaw_wejscie_mapy(wejscie_syntetyczne(21, {{0x600, 10, 10, 2}}), 7);
         int bl0 = 0;
         for (int x = 10; x < 12; ++x) for (int y = 10; y < 12; ++y) bl0 += s5->teren().blokady(x, y);
@@ -1960,6 +1961,23 @@ int test_budynki() {
         int bl1 = 0;
         for (int x = 10; x < 12; ++x) for (int y = 10; y < 12; ++y) bl1 += s5->teren().blokady(x, y);
         sprawdz(bl0 == 4 && bl1 == 0 && s5->jednostka(bar)->stan == 6000, "2 × 2: 4 pola zablokowane, po śmierci wszystkie wolne");
+        // etap 48 – pozostałość: obiekt mapy w takcie śmierci na 4 polach, na początku list pól, bez blokady i bez zgłoszenia
+        {
+            const auto& gz = s5->gruz();
+            const auto* w = s5->wejscie_mapy();
+            bool na_polach = w != nullptr;
+            for (int x = 10; x < 12 && na_polach; ++x)
+                for (int y = 10; y < 12 && na_polach; ++y) {
+                    auto it = w->obiekty.find(x * w->N + y);
+                    na_polach = it != w->obiekty.end() && !it->second.empty() && it->second.front().hp == 1 &&
+                                gz.size() == 1 && it->second.front().id == gz[0].id;
+                }
+            const auto d4 = s5->termin_przebudowy();
+            for (int k = 0; k < 10; ++k) s5->takt();
+            sprawdz(gz.size() == 1 && gz[0].typ == 362 && gz[0].X == 10 && gz[0].Y == 10 && gz[0].kwadrat == 2 && na_polach &&
+                        s5->teren().pole_przejezdne(10, 10) && s5->termin_przebudowy() == d4,
+                    "gruz 362 (2 × 2) na polach budynku od taktu śmierci, przejezdny, bez dodatkowej przebudowy");
+        }
         auto s6 = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
         s6->dodaj_obiekt_budynku(5, 34, 10, 10, 2, 11.0, 11.0, 0.0, b, 14, true, 0x600, false);
         s6->ustaw_wejscie_mapy(wejscie_syntetyczne(21, {{0x600, 10, 10, 2}}), 7);
@@ -1989,6 +2007,26 @@ int test_budynki() {
         std::printf("  trasa przed: %zu punktów (przez pole domu: %d), po nowym rozkazie: %zu (przez pole: %d)\n", przed.size(),
                     int(przez), s7->jednostka(a)->trasa.size(), int(przez2));
         sprawdz(!przez && przez2 && przed2.size() == przed.size(), "stara trasa bez zmian po zmianie mapy; nowy rozkaz – przez zwolnione pole");
+    }
+    // 7. etap 48 – budynek postawiony w trakcie gry zamyka przejście: blokada od razu, zgłoszenie z terminem zwykłym,
+    //    przebudowa sektora po terminie, nowy rozkaz omija pole; stara trasa bez zmian
+    {
+        auto s8 = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        s8->ustaw_wejscie_mapy(wejscie_syntetyczne(21, {}), 7);
+        const auto n0 = s8->graf_podsektorow().podsektory.size();
+        s8->opoznienie_przebudowy_s = 0.0f;
+        const std::uint32_t t0 = s8->termin_przebudowy();
+        const IdJednostki d8 = s8->postaw_budynek(5, 37, 10, 10, 1, 10.5, 10.5, 0.0, dom_37(), 500, 0x700, 1, 2, 0);
+        const bool blok = !s8->teren().pole_przejezdne(10, 10) && s8->przebudowa_zaplanowana();
+        int k = 0;
+        while (s8->przebudowa_zaplanowana() && k < 20) { s8->takt(); ++k; }
+        const auto& G = s8->graf_podsektorow();
+        std::printf("  postawiony: d8 %u blok %d plan %d przebiegi %llu podsektor(10,10) %d n0 %zu n %zu t0 %u k %d\n", unsigned(d8), int(blok),
+                    int(s8->przebudowa_zaplanowana()), (unsigned long long)s8->przebudowy_sektorow(), G.podsektor_pola(10, 10), n0,
+                    G.podsektory.size(), unsigned(t0), k);
+        sprawdz(d8 > 0 && blok && !s8->przebudowa_zaplanowana() && s8->przebudowy_sektorow() == 1 &&
+                    G.podsektor_pola(10, 10) != G.podsektor_pola(10, 11) && G.podsektory.size() == n0 + 1 && t0 == 0,
+                "postawiony budynek: pole zablokowane od razu, zgłoszenie, jeden przebieg sektora, pole budynku – osobny podsektor (jak dom w 647 przed zniszczeniem)");
     }
     return bledy ? FAIL : PASS;
 }

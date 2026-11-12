@@ -1,46 +1,1247 @@
 {
  "opis": "Etap 42: warianty czystej mapy testowej EE (kopia „Wojny trojańskiej” SCN 231 oczyszczona narzędziem scenariusz_czysty.py). Wzory rekordów: gracz 1 scenariusza e35_a (gwardia 0x100018b, prorok 0x100055d, obywatel 0x100011a, dom 0x1000039). Prorok-obserwator (pole widzenia 8, atak 0) jest konieczny: cel widoczny tylko w polu widzenia gwardii (4), a wtedy gwardia atakuje sama w 34 ms [P: zad. 629–630].",
- "baza": {"zrodlo": "kampanie/een1ve1s_wojna trojańska.scn",
-          "czyszczenie": {"usun_graczy": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], "swiat_usun": [140, 85, 190, 135], "kawalek6_pusty": true}},
- "wzory": {"GRD": "0x100018b", "OBS": "0x100055d", "CIT": "0x100011a", "BLD": "0x1000039", "HERO": "0x100055c", "WALL": "0x10001b3"},
- "baza_bez_zwierzat": {"czyszczenie": {"swiat_usun_typy": [372, 326, 373, 261, 315]},
-                       "opis": "Etap 46: zwierzęta Świata (kura 372, koza 326, koń 373, jeleń 261) i ryby (315) usunięte z całej mapy – losowania RNG tylko od jednostek testowych [H do sprawdzenia]"},
- "bazy_wariantow": {"e46_rng_1v1": "bez_zwierzat", "e47_dom1": "bez_zwierzat", "e47_mur": "bez_zwierzat", "e47_przejscie": "bez_zwierzat", "e47_przejscie2": "bez_zwierzat", "e47_rng_bez_p5": "bez_zwierzat"},
+ "baza": {
+  "zrodlo": "kampanie/een1ve1s_wojna trojańska.scn",
+  "czyszczenie": {
+   "usun_graczy": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+   ],
+   "swiat_usun": [
+    140,
+    85,
+    190,
+    135
+   ],
+   "kawalek6_pusty": true
+  }
+ },
+ "wzory": {
+  "GRD": "0x100018b",
+  "OBS": "0x100055d",
+  "CIT": "0x100011a",
+  "BLD": "0x1000039",
+  "HERO": "0x100055c",
+  "WALL": "0x10001b3",
+  "BARR": "0x100010e",
+  "TOWER": "0x1000176"
+ },
+ "baza_bez_zwierzat": {
+  "czyszczenie": {
+   "swiat_usun_typy": [
+    372,
+    326,
+    373,
+    261,
+    315
+   ]
+  },
+  "opis": "Etap 46: zwierzęta Świata (kura 372, koza 326, koń 373, jeleń 261) i ryby (315) usunięte z całej mapy – losowania RNG tylko od jednostek testowych [H do sprawdzenia]"
+ },
+ "bazy_wariantow": {
+  "e46_rng_1v1": "bez_zwierzat",
+  "e47_dom1": "bez_zwierzat",
+  "e47_mur": "bez_zwierzat",
+  "e47_przejscie": "bez_zwierzat",
+  "e47_przejscie2": "bez_zwierzat",
+  "e47_rng_bez_p5": "bez_zwierzat",
+  "e48_prorok": "bez_zwierzat",
+  "e48_dom_t0": "bez_zwierzat",
+  "e48_dom_3v1": "bez_zwierzat",
+  "e48_koszary": "bez_zwierzat",
+  "e48_wieza": "bez_zwierzat",
+  "e48_mur_gruz": "bez_zwierzat",
+  "e48_kontakt3": "bez_zwierzat",
+  "e48_widzi": "bez_zwierzat",
+  "e48_widzi_ruch": "bez_zwierzat"
+ },
  "zrodlo_wzorow": "e35_a.scn",
  "warianty": {
-  "1v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
-  "2v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5], [162.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
-  "3v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5], [162.5, 118.5], [166.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
-  "blokada_podejscia": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]], "BLOK": ["CIT", 1, [[164.5, 109.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
-  "cel_otoczony": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]],
-                   "PRZESZKODY": ["BLD", 5, [[162.5, 108.5], [166.5, 108.5], [164.5, 106.5], [164.5, 110.5]]], "OBS": ["OBS", 1, [[170.5, 104.5]]]},
-  "e44_cit_1v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
-  "e44_kontakt_590": {"A_GRD": ["GRD", 1, [[163.5, 108.5]]], "T_GRD": ["GRD", 5, [[164.5, 104.5]]], "OBS": ["OBS", 1, [[170.5, 106.5]]]},
-  "e45_cit_poscig": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_CIT": ["CIT", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
-  "e45_cit_ruch": {"A_CIT": ["CIT", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 104.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
-  "e45_bohater": {"A_HERO": ["HERO", 1, [[164.5, 115.5]]], "A_GRD": ["GRD", 1, [[164.5, 112.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]],
-                  "OBS": ["OBS", 1, [[172.5, 112.5]]]},
-  "e46_sojusz_blisko": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "S_GRD": ["GRD", 5, [[166.5, 106.5]]],
-                        "OBS": ["OBS", 1, [[170.5, 110.5]]]},
-  "e46_sojusz_daleko": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "S_GRD": ["GRD", 5, [[173.5, 103.5]]],
-                        "OBS": ["OBS", 1, [[168.5, 112.5]]]},
-  "e46_bohater2": {"A_HERO": ["HERO", 1, [[166.5, 115.5]]], "A_GRD": ["GRD", 1, [[164.5, 112.5], [168.5, 112.5]]],
-                   "T_GRD": ["GRD", 5, [[164.5, 108.5], [168.5, 108.5]]], "OBS": ["OBS", 1, [[174.5, 112.5]]]}
-,
-  "e46_rng_1v1": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "T_GRD": ["GRD", 5, [[164.5, 108.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]},
-  "e46_graf": {"A_GRD": ["GRD", 1, [[164.5, 115.5], [163.5, 115.5], [165.5, 115.5]]], "DOM": ["BLD", 5, [[164.5, 112.5]]],
-               "OBS": ["OBS", 1, [[170.5, 114.5]]]},
-  "e47_dom1": {"A_GRD": ["GRD", 1, [[164.5, 114.5]]], "OBS": ["OBS", 1, [[170.5, 114.5]]], "DOM": ["BLD", 5, [[164.5, 112.5]], {"u3c": 0.3}]},
-  "e47_mur": {"A_GRD": ["GRD", 1, [[164.5, 114.5]]], "OBS": ["OBS", 1, [[170.5, 114.5]]], "MUR": ["WALL", 5, [[164.5, 112.5]], {"u3c": 0.02}]},
-  "e47_przejscie": {"A_GRD": ["GRD", 1, [[163.5, 113.5], [164.5, 113.5], [165.5, 113.5]]], "A_OBS": ["OBS", 1, [[164.5, 116.5]]],
-                    "MUR": ["WALL", 1, [[160.5, 111.5], [161.5, 111.5], [162.5, 111.5], [163.5, 111.5], [165.5, 111.5], [166.5, 111.5], [167.5, 111.5], [168.5, 111.5], [169.5, 111.5], [170.5, 111.5]]], "DOM": ["BLD", 5, [[164.5, 111.5]], {"u3c": 0.2}]},
-  "e47_przejscie2": {"A_GRD": ["GRD", 1, [[163.5, 113.5], [164.5, 113.5], [165.5, 113.5]]], "A_OBS": ["OBS", 1, [[164.5, 116.5]]],
-                     "MUR": ["WALL", 1, [[160.5, 111.5], [161.5, 111.5], [162.5, 111.5], [163.5, 111.5], [165.5, 111.5], [166.5, 111.5], [167.5, 111.5], [168.5, 111.5], [169.5, 111.5], [170.5, 111.5]]], "DOM": ["BLD", 5, [[164.5, 111.5]]]},
-  "e47_rng_bez_p5": {"A_GRD": ["GRD", 1, [[164.5, 118.5]]], "OBS": ["OBS", 1, [[170.5, 108.5]]]}
+  "1v1": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      108.5
+     ]
+    ]
+   ]
+  },
+  "2v1": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ],
+     [
+      162.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      108.5
+     ]
+    ]
+   ]
+  },
+  "3v1": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ],
+     [
+      162.5,
+      118.5
+     ],
+     [
+      166.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      108.5
+     ]
+    ]
+   ]
+  },
+  "blokada_podejscia": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_CIT": [
+    "CIT",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "BLOK": [
+    "CIT",
+    1,
+    [
+     [
+      164.5,
+      109.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      108.5
+     ]
+    ]
+   ]
+  },
+  "cel_otoczony": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_CIT": [
+    "CIT",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "PRZESZKODY": [
+    "BLD",
+    5,
+    [
+     [
+      162.5,
+      108.5
+     ],
+     [
+      166.5,
+      108.5
+     ],
+     [
+      164.5,
+      106.5
+     ],
+     [
+      164.5,
+      110.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      104.5
+     ]
+    ]
+   ]
+  },
+  "e44_cit_1v1": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_CIT": [
+    "CIT",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      108.5
+     ]
+    ]
+   ]
+  },
+  "e44_kontakt_590": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      163.5,
+      108.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      104.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      106.5
+     ]
+    ]
+   ]
+  },
+  "e45_cit_poscig": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_CIT": [
+    "CIT",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      108.5
+     ]
+    ]
+   ]
+  },
+  "e45_cit_ruch": {
+   "A_CIT": [
+    "CIT",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      104.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      108.5
+     ]
+    ]
+   ]
+  },
+  "e45_bohater": {
+   "A_HERO": [
+    "HERO",
+    1,
+    [
+     [
+      164.5,
+      115.5
+     ]
+    ]
+   ],
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      112.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      172.5,
+      112.5
+     ]
+    ]
+   ]
+  },
+  "e46_sojusz_blisko": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "S_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      166.5,
+      106.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      110.5
+     ]
+    ]
+   ]
+  },
+  "e46_sojusz_daleko": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "S_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      173.5,
+      103.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      168.5,
+      112.5
+     ]
+    ]
+   ]
+  },
+  "e46_bohater2": {
+   "A_HERO": [
+    "HERO",
+    1,
+    [
+     [
+      166.5,
+      115.5
+     ]
+    ]
+   ],
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      112.5
+     ],
+     [
+      168.5,
+      112.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ],
+     [
+      168.5,
+      108.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      174.5,
+      112.5
+     ]
+    ]
+   ]
+  },
+  "e46_rng_1v1": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      108.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      108.5
+     ]
+    ]
+   ]
+  },
+  "e46_graf": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      115.5
+     ],
+     [
+      163.5,
+      115.5
+     ],
+     [
+      165.5,
+      115.5
+     ]
+    ]
+   ],
+   "DOM": [
+    "BLD",
+    5,
+    [
+     [
+      164.5,
+      112.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      114.5
+     ]
+    ]
+   ]
+  },
+  "e47_dom1": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      114.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      114.5
+     ]
+    ]
+   ],
+   "DOM": [
+    "BLD",
+    5,
+    [
+     [
+      164.5,
+      112.5
+     ]
+    ],
+    {
+     "u3c": 0.3
+    }
+   ]
+  },
+  "e47_mur": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      114.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      114.5
+     ]
+    ]
+   ],
+   "MUR": [
+    "WALL",
+    5,
+    [
+     [
+      164.5,
+      112.5
+     ]
+    ],
+    {
+     "u3c": 0.02
+    }
+   ]
+  },
+  "e47_przejscie": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      163.5,
+      113.5
+     ],
+     [
+      164.5,
+      113.5
+     ],
+     [
+      165.5,
+      113.5
+     ]
+    ]
+   ],
+   "A_OBS": [
+    "OBS",
+    1,
+    [
+     [
+      164.5,
+      116.5
+     ]
+    ]
+   ],
+   "MUR": [
+    "WALL",
+    1,
+    [
+     [
+      160.5,
+      111.5
+     ],
+     [
+      161.5,
+      111.5
+     ],
+     [
+      162.5,
+      111.5
+     ],
+     [
+      163.5,
+      111.5
+     ],
+     [
+      165.5,
+      111.5
+     ],
+     [
+      166.5,
+      111.5
+     ],
+     [
+      167.5,
+      111.5
+     ],
+     [
+      168.5,
+      111.5
+     ],
+     [
+      169.5,
+      111.5
+     ],
+     [
+      170.5,
+      111.5
+     ]
+    ]
+   ],
+   "DOM": [
+    "BLD",
+    5,
+    [
+     [
+      164.5,
+      111.5
+     ]
+    ],
+    {
+     "u3c": 0.2
+    }
+   ]
+  },
+  "e47_przejscie2": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      163.5,
+      113.5
+     ],
+     [
+      164.5,
+      113.5
+     ],
+     [
+      165.5,
+      113.5
+     ]
+    ]
+   ],
+   "A_OBS": [
+    "OBS",
+    1,
+    [
+     [
+      164.5,
+      116.5
+     ]
+    ]
+   ],
+   "MUR": [
+    "WALL",
+    1,
+    [
+     [
+      160.5,
+      111.5
+     ],
+     [
+      161.5,
+      111.5
+     ],
+     [
+      162.5,
+      111.5
+     ],
+     [
+      163.5,
+      111.5
+     ],
+     [
+      165.5,
+      111.5
+     ],
+     [
+      166.5,
+      111.5
+     ],
+     [
+      167.5,
+      111.5
+     ],
+     [
+      168.5,
+      111.5
+     ],
+     [
+      169.5,
+      111.5
+     ],
+     [
+      170.5,
+      111.5
+     ]
+    ]
+   ],
+   "DOM": [
+    "BLD",
+    5,
+    [
+     [
+      164.5,
+      111.5
+     ]
+    ]
+   ]
+  },
+  "e47_rng_bez_p5": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      108.5
+     ]
+    ]
+   ]
+  },
+  "e48_prorok": {
+   "A_OBS": [
+    "OBS",
+    1,
+    [
+     [
+      164.5,
+      116.5
+     ]
+    ]
+   ],
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      170.5,
+      116.5
+     ]
+    ]
+   ]
+  },
+  "e48_dom_t0": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      168.5,
+      113.5
+     ]
+    ]
+   ],
+   "DOM": [
+    "BLD",
+    5,
+    [
+     [
+      164.5,
+      112.5
+     ]
+    ],
+    {
+     "u3c": 0.1
+    }
+   ]
+  },
+  "e48_dom_3v1": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      163.5,
+      118.5
+     ],
+     [
+      164.5,
+      118.5
+     ],
+     [
+      165.5,
+      118.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      168.5,
+      113.5
+     ]
+    ]
+   ],
+   "DOM": [
+    "BLD",
+    5,
+    [
+     [
+      164.5,
+      112.5
+     ]
+    ],
+    {
+     "u3c": 0.2
+    }
+   ]
+  },
+  "e48_koszary": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      163.5,
+      119.5
+     ],
+     [
+      164.5,
+      119.5
+     ],
+     [
+      165.5,
+      119.5
+     ]
+    ]
+   ],
+   "A_OBS": [
+    "OBS",
+    1,
+    [
+     [
+      168.5,
+      113.5
+     ]
+    ]
+   ],
+   "KOSZ": [
+    "BARR",
+    5,
+    [
+     [
+      165.0,
+      113.0
+     ]
+    ],
+    {
+     "X": 164,
+     "Y": 112,
+     "u3c": 0.05
+    }
+   ]
+  },
+  "e48_wieza": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      163.5,
+      119.5
+     ],
+     [
+      164.5,
+      119.5
+     ],
+     [
+      165.5,
+      119.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      168.5,
+      113.5
+     ]
+    ]
+   ],
+   "WIEZA": [
+    "TOWER",
+    5,
+    [
+     [
+      164.5,
+      112.5
+     ]
+    ],
+    {
+     "u3c": 0.05
+    }
+   ]
+  },
+  "e48_mur_gruz": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      114.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      114.5
+     ]
+    ]
+   ],
+   "MUR": [
+    "WALL",
+    5,
+    [
+     [
+      164.5,
+      112.5
+     ]
+    ],
+    {
+     "u3c": 0.01
+    }
+   ]
+  },
+  "e48_kontakt3": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      113.5
+     ],
+     [
+      165.1,
+      113.9
+     ],
+     [
+      164.5,
+      117.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      117.5
+     ]
+    ]
+   ]
+  },
+  "e48_widzi": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      114.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      114.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      111.5
+     ]
+    ]
+   ]
+  },
+  "e48_widzi_ruch": {
+   "A_GRD": [
+    "GRD",
+    1,
+    [
+     [
+      164.5,
+      118.5
+     ]
+    ]
+   ],
+   "OBS": [
+    "OBS",
+    1,
+    [
+     [
+      170.5,
+      118.5
+     ]
+    ]
+   ],
+   "T_GRD": [
+    "GRD",
+    5,
+    [
+     [
+      164.5,
+      111.5
+     ]
+    ]
+   ]
+  }
  },
  "opis_etap47": "e47_dom1 – jedna gwardia niszczy dom (HP rekordu u3c = 0,3); e47_mur – gwardia atakuje mur 467 (u3c = 0,02); e47_przejscie – mur gracza 1 w y = 111 (x = 160…170) z domem gracza 5 w przejściu (164, 111), trzy gwardie niszczą dom, prorok A idzie z (164,5; 116,5) na drugą stronę (ponowne wyznaczanie trasy po zmianie mapy); e47_przejscie2 – jak e47_przejscie z pełnym HP domu (zniszczenie po rozkazie ruchu); e47_rng_bez_p5 – jak e46_rng_1v1 bez jednostek gracza 5 (losowania AI komputera). Czwarty element grupy = nadpisanie pól rekordu.",
  "opis_etap46": "e46_sojusz_* – gwardia komputera atakowana, druga gwardia komputera w Idle blisko (2,8 pola) albo daleko (10 pól) – reakcja sojusznika (TakeDamage 0x6172BC → EEComputerPlayer vt+0x84 0x43163C); e46_bohater2 – bohater i dwie walczące gwardie (dwóch rannych); e46_graf – trzy gwardie niszczą dom (zgłoszenie zmiany mapy 0x4288A7, termin +0xD4/+0xD8 menedżera 0x917D00).",
  "opis_etap45": "e45_cit_poscig – obywatel ucieka (FleeDanger), gwardia dostaje rozkaz odejścia (pościg przerwany); e45_cit_ruch – obywatel gracza 1 idzie w pole widzenia gwardii komputera (trafienie w trakcie ruchu, potem w Idle); e45_bohater – bohater 173 (Military Healer Prophet, wzór 0x100055c z e35_a) przy gwardii walczącej z gwardią komputera (leczenie z atakującym, potem bez).",
  "opis_etap44": "e44_cit_1v1 – śmierć obywatela (czas stanu 6000 zależny od typu); e44_kontakt_590 – gwardie idące na siebie w walce (układ 590 G1: kontakt w trybie 1, rejestr push i kontaktów).",
- "niezrealizowane": {"cel_zmieniajacy_pole": "ruch celu wymaga rozkazu dla gracza 5 (komputer) – MCP wydaje rozkazy tylko graczowi 1; rekordy z trasą (L_pts) nie są obsługiwane przez narzędzie [N]"}
+ "niezrealizowane": {
+  "cel_zmieniajacy_pole": "ruch celu wymaga rozkazu dla gracza 5 (komputer) – MCP wydaje rozkazy tylko graczowi 1; rekordy z trasą (L_pts) nie są obsługiwane przez narzędzie [N]"
+ },
+ "opis_etap48": "e48_prorok – prorok bez zmiany mapy (parametry ruchu z pamięci typu i ulepszenia gracza), rozkaz ruchu; e48_dom_t0 / e48_dom_3v1 – jedna / trzy gwardie poza polem widzenia domu (HP rekordu 0,1 / 0,2), atak rozkazem PPM od początku nagrania (faza ataku co takt); e48_koszary – koszary 2×2 (wzór 0x100010e, kotwica X, Y = lewy dolny róg, środek X + 1) niszczone przez trzy gwardie, potem rozkaz proroka przez zwolnione pola; e48_wieza / e48_mur_gruz – wieża i mur (pozostałości po zniszczeniu); e48_kontakt3 – trzecia gwardia wchodzi między dwie stojące (kontakt trzech jednostek); e48_widzi – wróg w polu widzenia od wczytania (pierwsze CanISeeEnemy); e48_widzi_ruch – wróg poza polem widzenia, wykrycie po rozkazie ruchu. Poprawka po zad. 650: prorok-obserwator w (168,5; 113,5) – w pierwszej wersji cel był poza jego polem widzenia (8,49 > 8) i atak PPM nie mógł wskazać budynku (lista renderu)."
 }

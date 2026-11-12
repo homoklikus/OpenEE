@@ -6,6 +6,18 @@
   {
    "data": "2026-11-12",
    "tytul": {
+    "pl": "Etap 48: prorok, przepychanie i większe budynki",
+    "en": "Stage 48: prophets, pushing and bigger buildings"
+   },
+   "tekst": {
+    "pl": "Prorok porusza się tak jak w Empire Earth – tą samą drogą i w tym samym tempie – a jednostki przepychają się przy ucieczce i ataku według reguł oryginału. Gwardie podchodzą do budynku w te same miejsca co w grze, większe budynki działają z mapą tras, a po zniszczeniu zostają gruzy.",
+    "en": "Prophets now move as in Empire Earth – along the same path and at the same pace – and units push each other when fleeing and attacking by the original rules. Guards approach buildings at the same spots as in the game, larger buildings work with the route map, and destroyed buildings leave rubble."
+   },
+   "raport": "RAPORT_ETAP_48.md"
+  },
+  {
+   "data": "2026-11-12",
+   "tytul": {
     "pl": "Etap 47: budynki, które można zniszczyć",
     "en": "Stage 47: buildings that can be destroyed"
    },
@@ -13,7 +25,7 @@
     "pl": "Budynki są teraz pełnoprawnymi obiektami symulacji: jednostki je atakują, budynek zapada się w ziemię jak w Empire Earth, a mapa tras odświeża tylko zmieniony fragment, tak jak oryginał. W potyczce gwardia niszczy dom i przechodzi przez zwolnione miejsce.",
     "en": "Buildings are now full simulation objects: units attack them, a destroyed building sinks into the ground as in Empire Earth, and the route map refreshes only the changed area, like the original. In the skirmish, guards destroy a house and walk through the freed space."
    },
-   "raport": "RAPORT_ETAP_47.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_47.md"
   },
   {
    "data": "2026-11-12",

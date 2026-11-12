@@ -921,3 +921,25 @@ z przejściem 6003. Wcześniej cel był zgodny do 2186/2084/2081 próbek.
 - Core (etap 47): `Swiat::dodaj_obiekt_budynku`, skrypt `SkryptStanow::wbudowany_budynek()`, `smierc_budynku`,
   `krok_budynku`, kontakty i punkty podejścia pomijają budynki. Godot: budynki potyczki jako obiekty Core
   (`potyczka_e47.json`).
+
+## 36. Etap 48 – prorok, kontakt celu ataku, budynki 2×2 i pozostałości
+
+- **Parametry ruchu z ulepszenia gracza** [P: zad. 650, odczyt +0x34 jednostki]: prorok 216 gracza 1 na czystej mapie e42
+  ma +0xA8 a = 2,22222, +0xAC vmax = 0,5, +0xB0 α = 13,57478, +0xB4 ωmax = 15,51404, +0xC8 c8 = 0,07367, +0xC4 c4 = 0,45
+  (dbobjects: 2,0 / 0,45 / 12,217 / 13,963 / 0,08185 / 0,5) – ×10/9 dla a, vmax, α, ωmax; c8 = 1/α. Gwardia 422 bez zmian.
+  Źródło mnożnika – [N]. Dane: `parametry_jednostek_ee.json` → `ruch_ulepszenia.e42`; `odtworz_scenariusz.gd --ulepszenia=e42`.
+- **648 (prorok)**: przy parametrach z ulepszenia, skrypcie Prophet.tai i przekazaniu trasy 0x4A2B29 zgodność od rozkazu
+  (48068) do t = 63510 – stan, pozycja i kurs (1688 próbek, wcześniej 1241). Trasa A* identyczna z grą (8 punktów).
+  Pierwsza różnica: odepchnięcie od muru gracza 1 (kontakt z budynkiem – `kolizje_objazdy.md`, etap 48) [N w Core].
+- **644 pościg rozwiązany** [W: 0x549179; P]: push od atakującego na cel ×0,25 i budzik tylko przy |push| < 0,001 –
+  4148/4148 próbek wszystkich jednostek (wcześniej do t = 63817).
+- **Atak na budynek od początku** (e48_dom_t0 1v1, e48_dom_3v1, e48_koszary; zad. 650/651) [P: 5 miejsc z gry; reguła
+  ogólna – H]: przy PrepareToMove gra zamienia punkt celu na **miejsce podejścia przy budynku**: 0,25 (połowa rozmiaru
+  gwardii) za krawędzią obrysu, po dwa miejsca na pole przylegające bokiem (pole + 0,75, potem pole + 0,25), pola
+  uporządkowane wg kwadratu odległości pól od pola atakującego (bez narożników), pierwsze wolne. Dom (164, 112):
+  (164,75; 113,25), przy zajętym (164,25; 113,25); koszary 2×2: (164,75; 114,25) i (164,25; 114,25). Core (etap 48,
+  `punkt_podejscia` dla budynku): dom 1v1 zgodny co próbkę od rozkazu przez podejście, wszystkie trafienia i HP do śmierci
+  domu (67635), dalej tylko drganie zapadania (losowania RNG spoza Core); 3v1 i koszary – trafienia, HP i takt śmierci
+  zgodne, pierwsze różnice pozycji gwardii 0,02 przy dojściu (47386 / 73295) [N]. Wcześniej Core brał środek budynku
+  i wstawiał punkt grafu (różnica 1,7 s po rozkazie). Miejsca na pozostałych bokach i przy innych rozmiarach – [H].
+- **Pozostałość** – `architektura_nawigacji.md` (etap 48). **Mury**: obrażenia 4, `atakuje_mury` – bez zmian.

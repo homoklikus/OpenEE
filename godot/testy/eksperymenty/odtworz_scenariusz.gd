@@ -91,7 +91,7 @@ func _start() -> void:
 		var obt: Dictionary = ob.get(int(ty), {})
 		if int(obt.get("Is building?", 0)) != 0:   # etap 47: budynek – obiekt Core z rekordu SCN i dbobjects
 			var r: Dictionary = rek.get(str(j["id"]), {})
-			var pb := ObiektyScnCore.parametry_budynku(obt)
+			var pb := ObiektyScnCore.parametry_budynku(obt, ob)
 			pb["rozmiar_jeden"] = int(wm.get("typy", {}).get("typ:%d" % int(ty), [0, 0, 0, 0])[3])   # +0x612 (zestaw 9)
 			pb.merge({"gracz": int(j["gracz"]), "typ": int(ty), "X": int(r.get("X", floor(float(j["x"])))),
 				"Y": int(r.get("Y", floor(float(j["y"])))), "kwadrat": maxi(1, int(obt.get("Square occupied", 1))),
@@ -103,7 +103,13 @@ func _start() -> void:
 			continue
 		if not par["ruch"].has(ty) or not par["walka"].has(ty):
 			print("BŁĄD: brak parametrów typu ", ty); quit(1); return
-		var id: int = c.dodaj_jednostke(par["ruch"][ty], float(j["x"]), float(j["y"]), float(j["kurs"]))
+		var pr: Dictionary = (par["ruch"][ty] as Dictionary).duplicate()
+		# etap 48: parametry ruchu jednostki z pamięci gry (ulepszenie gracza +0x34) – nadpisują wartości typu z dbobjects
+		# --ulepszenia=<klucz mapy>: parametry ruchu z ulepszenia gracza odczytane w grze (parametry_jednostek_ee.json → ruch_ulepszenia)
+		var ul: Dictionary = par.get("ruch_ulepszenia", {}).get(_arg("ulepszenia", ""), {}).get(str(int(j["gracz"])), {})
+		if ul.has(ty): pr.merge(ul[ty], true)
+		if j.has("ruch"): pr.merge(j["ruch"], true)
+		var id: int = c.dodaj_jednostke(pr, float(j["x"]), float(j["y"]), float(j["kurs"]))
 		var pw: Dictionary = par["walka"][ty]["p"].duplicate()
 		if _arg("smierc", "1") == "1": pw.merge(ObiektyScnCore.parametry_smierci(int(ty), Z))   # etap 44: z dbgraphics i dbobjects
 		c.ustaw_walke(id, int(j["gracz"]), int(j["gracz"]) == 1, pw, int(j["hp"]) if j["hp"] != null else int(par["walka"][ty]["hp"]))
@@ -131,6 +137,9 @@ func _start() -> void:
 	if _arg("rng-nagranie", "") != "":
 		for p in JSON.parse_string(FileAccess.get_file_as_string(_arg("rng-nagranie", "")))["probki"]:
 			if p.has("rng"): rng_gry[int(round(float(p["t"])))] = int(p["rng"])
+	var ostatnie_trasy := {}
+	var diag_rozkazu := []
+	wynik["trasy"] = []
 	for k in takty:
 		var t_przed := int(round(T0 + TAKT_MS * k))
 		for dt in [0, -1, 1]:
@@ -146,8 +155,13 @@ func _start() -> void:
 			if r["rodzaj"] == "atak": w = c.rozkaz_ataku(kto, core_id[str(r["cel"])])
 			else: w = c.rozkaz_ruchu(kto, float(r["x"]), float(r["y"]), float(r["kat"]) if r.get("kat") != null else null, false)
 			wynik.rozkazy.append([k, str(r["kto"]), str(r["rodzaj"]), w])
+			if _arg("diag-trasy", "0") == "1":   # etap 48: wynik A* prośby przy rozkazie (po pierwszym takcie poniżej)
+				diag_rozkazu.append(k)
 		var n_rng0 := int(c.diagnostyka().get("rng_losowan", 0))
 		c.takt(1)
+		if k in diag_rozkazu or (k - 1) in diag_rozkazu:
+			var dg: Dictionary = c.diagnostyka()
+			print("diag takt ", k, ": bounded_sukces=", dg.get("bounded_sukces"), " iteracje=", dg.get("astar_iteracje"), " wywolania=", dg.get("astar_wywolania"))
 		var pr := {}
 		if _arg("rng", "0") == "1": pr["rng_n"] = int(c.diagnostyka().get("rng_losowan", 0)) - n_rng0   # etap 46: losowania Core w takcie
 		for d in c.stan_jednostek():
@@ -157,6 +171,11 @@ func _start() -> void:
 			for e in c.walka(int(d.id)).get("kolejka", []):
 				kq += "%s(%.4f,%.4f,%s);" % [str(e.rodzaj).substr(4, 3), float(e.x), float(e.y), gra_id.get(int(e.cel), "0")]
 			pr[gid] = [int(d.stan), float(d.x), float(d.y), float(d.kurs), int(d.get("hp", -1)), gra_id.get(int(d.get("cel", 0)), "0"), kq, float(d.v), float(c.jednostka(int(d.id)).get("z", 0.0))]
+			# etap 48: trasa (pozostałe punkty) zapisywana przy każdej zmianie – porównanie z polem `trasa` rejestratora
+			var trs := JSON.stringify(c.jednostka(int(d.id)).get("trasa", []))
+			if ostatnie_trasy.get(gid, "") != trs:
+				ostatnie_trasy[gid] = trs
+				wynik.trasy.append([snappedf(T0 + TAKT_MS * (k + 1), 0.1), gid, JSON.parse_string(trs)])
 		if _arg("rng", "0") == "1": pr["rng"] = int(c.diagnostyka().get("rng_stan", 0))   # etap 45: stan generatora
 		if _arg("graf-scn", "0") == "1":   # etap 47: menedżer przebudowy (termin, flaga, zmienione sektory) i kolejka fizyki
 			var sg: Dictionary = c.stan_grafu()

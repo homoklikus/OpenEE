@@ -336,6 +336,86 @@ GetNextMoveWaypoint { HealeeInHealingRange true(TurnToFaceHealee) }
 ReacquireGoal { GoalIsHeal true(TurnToFaceHealee) }
 )TAI";
 }
+
+// Etap 48 – Prophet.tai [W: plik skryptu; P: 648 – prorok 0x1000858 przechodzi GetNextMoveWaypoint (9000) → Advance
+// (10003) bez LookForEnemies (2015), gwardia (Land Patrolling) z 2015]. Własny zapis w kolejności dołączeń:
+// część proroka (bez Generic Attack – Idle reaguje tylko na AmIUnderAttack), Generic Movement, nadpisanie
+// GetNextMoveWaypoint/Advance (0x618ED9: przejście z tym samym pojedynczym zdarzeniem zastępowane w miejscu), Generic
+// Death, na końcu ReacquireGoal { AlwaysTrue true(Idle) }. Klątwy (calamity) – w Core brak celu klątwy (fałsz).
+const char* tekst_prorok() {
+    return R"TAI(
+Idle { AmIUnderAttack true(UnderAttack) }
+UnderAttack {
+  CanFlee true(RunFromAttacker)
+  AlwaysTrue true(ReacquireGoal)
+}
+RunFromAttacker { AlwaysTrue true(PrepareToMove) }
+FaceEnemyUnit {
+  EnemyUnitDestroyed true(Idle)
+  allof(GoalIsCalamity,FacingEnemyUnit) true(CalamityPreCast)
+}
+CalamityPreCast { CalamityTargetStillValid true(CastCalamity) false(Idle) }
+PrepareToCastCalamity { AlwaysTrue true(CastCalamity) }
+ReacquireGoal {
+  EnemyUnitDestroyed true(Idle)
+  allof(GoalIsCalamity,UnitInWeaponRange) true(CalamityPreCast)
+  GoalIsCalamity true(PrepareToMove)
+}
+CastCalamity {
+  allof(OwnerIsHuman,OneAndAHalfSecondsElapsed) true(Idle)
+  allof(OwnerIsComputer,OneAndAHalfSecondsElapsed) true(PostCalamityFlee)
+}
+PrepareToMove { allof(GoalIsCalamity,UnitInWeaponRange) true(FaceEnemyUnit) }
+GetNextMoveWaypoint {
+  EnemyUnitDestroyed true(Idle)
+  allof(GoalIsCalamity,NextWaypointRetrieved,UnitInWeaponRange) true(FaceEnemyUnit)
+}
+PostCalamityFlee { AlwaysTrue true(Idle) }
+PrepareToMove {
+  allof(GoalIsLoadContainer,ContainerInRange) true(WaitForTransport)
+  NoMoreWaypoints true(TurnToUnitFacing)
+  MovePreparationComplete true(LookForEnemies)
+}
+Advance {
+  ArrivedAtMoveWaypoint true(GetNextMoveWaypoint)
+  ObstacleDetected true(RepathAroundObstacle)
+  allof(OneWaypointRemaining,GoalIsUnit) true(ReacquireEnemyUnit)
+}
+RepathAroundObstacle { MovePreparationComplete true(Advance) false(ShouldIReturnToInitialContactLocation) }
+GetNextAutoWaypoint { UnitHasGoal true(PrepareToMove) false(ShouldIReturnToInitialContactLocation) }
+GetNextMoveWaypoint {
+  allof(GoalIsLoadContainer,NextWaypointRetrieved) true(GetContainerProgress)
+  ShouldMoveToNextAutoWaypoint true(GetNextAutoWaypoint)
+  NextWaypointRetrieved true(LookForEnemies) false(TurnToUnitFacing)
+}
+TurnToUnitFacing {
+  GoalIsLoadContainer true(GetContainerProgress)
+  anyof(UnitFacingNotRequired,CompletedUnitFacing) true(ReacquireGoal)
+  UnitHasGoal false(ReacquireGoal)
+}
+ShouldIReturnToInitialContactLocation {
+  allof(HasValidInitialContactLocation,ReturnsToInitialContactLocation,GoalIsNotPlayerInitiated) true(ReturnToInitialContactLocation) false(Idle)
+}
+ReturnToInitialContactLocation { AlwaysTrue true(PrepareToMove) }
+LookForEnemies {
+  allof(CanITargetEnemies,GoalIsPatrol,EnemyUnitSpotted) true(CheckRange)
+  allof(GoalIsLocation,AttackMoveEnabled,EnemyUnitSpotted) true(CheckRange)
+  allof(CanITargetEnemies,GoalIsNotPlayerInitiated,GoalIsNotAttack,EnemyUnitSpotted) true(CheckRange) false(Advance)
+}
+ReacquireGoal {
+  GoalIsLocation true(Idle)
+  GoalIsExplore true(FindUnexploredArea)
+  GoalIsLoadContainer true(ReacquireLoadContainer)
+  UnitHasGoal false(ShouldIReturnToInitialContactLocation)
+}
+GetNextMoveWaypoint { NextWaypointRetrieved true(Advance) false(TurnToUnitFacing) }
+Advance { allof(OneWaypointRemaining,GoalIsUnit) true(TurnToUnitFacing) }
+Dying { DyingAnimationFinished true(ResourcesRotting) }
+ResourcesRotting { ResourcesRottedAway true(UnitRotting) }
+UnitRotting { UnitRottedAway true(Dead) }
+ReacquireGoal { AlwaysTrue true(Idle) }
+)TAI";
+}
 }  // namespace
 
 SkryptStanow SkryptStanow::wbudowany_land() {
@@ -349,6 +429,13 @@ SkryptStanow SkryptStanow::wbudowany_uzdrowiciel() {
     SkryptStanow s;
     std::string blad;
     s.parsuj(std::string(tekst_healer()) + tekst_land(), nullptr, blad);
+    return s;
+}
+
+SkryptStanow SkryptStanow::wbudowany_prorok() {
+    SkryptStanow s;
+    std::string blad;
+    s.parsuj(tekst_prorok(), nullptr, blad);
     return s;
 }
 

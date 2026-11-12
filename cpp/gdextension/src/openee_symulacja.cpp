@@ -64,6 +64,8 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("stan_grafu"), &OpenEESymulacja::stan_grafu);
     ClassDB::bind_method(D_METHOD("graf_okno", "x0", "x1", "y0", "y1"), &OpenEESymulacja::graf_okno);
     ClassDB::bind_method(D_METHOD("blokady_pola", "x", "y"), &OpenEESymulacja::blokady_pola);
+    ClassDB::bind_method(D_METHOD("gruz"), &OpenEESymulacja::gruz);
+    ClassDB::bind_method(D_METHOD("postaw_budynek", "parametry"), &OpenEESymulacja::postaw_budynek);
     ClassDB::bind_method(D_METHOD("usun_obiekt_mapy", "id"), &OpenEESymulacja::usun_obiekt_mapy);
     ClassDB::bind_method(D_METHOD("migawka_diagnostyczna", "szczegoly"), &OpenEESymulacja::migawka_diagnostyczna, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("ustaw_faze_leczenia", "id", "takty"), &OpenEESymulacja::ustaw_faze_leczenia);
@@ -78,7 +80,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.20.0 (etap 47, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.21.0 (etap 48, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -209,6 +211,13 @@ Dictionary OpenEESymulacja::jednostka(int64_t id) const {
     d["macierz"] = m;
     d["zdjete_punkty"] = int64_t(u->zdjete_punkty);
     d["pozostalo_punktow"] = int64_t(u->pozostalo_punktow());
+    {   // etap 48: pozostałe punkty trasy (jak +0x7C gry po zdjęciu zaliczonych)
+        Array tr;
+        for (std::size_t i = u->zdjete_punkty; i < u->trasa.size(); ++i) {
+            Array q; q.push_back(u->trasa[i].x); q.push_back(u->trasa[i].y); tr.push_back(q);
+        }
+        d["trasa"] = tr;
+    }
     d["budynek"] = u->budynek;   // etap 47
     d["w_fizyce"] = u->w_fizyce;
     if (u->budynek) {
@@ -248,6 +257,9 @@ Dictionary OpenEESymulacja::diagnostyka() const {
         d["kroki_odpychania"] = int64_t(g.kroki_odpychania);
         d["objazdy_niezweryfikowane"] = int64_t(g.objazdy_niezweryfikowane);
         d["astar_iteracje"] = int64_t(g.ostatnia_trasa.iteracje);
+        d["astar_wywolania"] = int64_t(g.ostatnia_trasa.wywolania);
+        d["bounded_sukces"] = g.ostatnia_bounded_sukces;   // etap 48
+        d["poprawa_poczatku"] = g.ostatnia_poprawa_poczatku;
         d["graf_z_gry"] = swiat_->graf_podsektorow().z_gry;       // etap 40: tryb diagnostyczny
         d["graf_zrodlo"] = gtekst(swiat_->graf_podsektorow().zrodlo);
         d["graf_prosby"] = int64_t(g.graf_prosby);
@@ -379,7 +391,36 @@ int64_t OpenEESymulacja::dodaj_budynek(const Dictionary& d) {
                                                      ? std::uint32_t(String(d["id_mapy"]).hex_to_int())
                                                      : std::uint32_t(int64_t(d.get("id_mapy", 0))),
                                                  bool(liczba(d, "w_siatce", 0)));
+    if (d.has("gruz_typ"))   // etap 48: dbobjects „Debris on death#2” (pozostałość przy śmierci)
+        swiat_->ustaw_gruz_budynku(id, int(liczba(d, "gruz_typ", 0)), int(liczba(d, "gruz_kwadrat", 1)));
     return int64_t(id);
+}
+
+// etap 48: budynek postawiony w trakcie gry – rejestracja na polach, blokada i zgłoszenie mapy w Core (0x55C315 → 0x4288A7)
+int64_t OpenEESymulacja::postaw_budynek(const Dictionary& d) {
+    if (!swiat_) return -1;
+    const int64_t hp = int64_t(liczba(d, "hp", 0));
+    const openee::ParametryWalki p = parametry_walki(d, hp);
+    const double x = liczba(d, "x", 0), y = liczba(d, "y", 0);
+    const auto id = swiat_->postaw_budynek(int(liczba(d, "gracz", 0)), int(liczba(d, "typ", -1)), int(liczba(d, "X", 0)),
+                                           int(liczba(d, "Y", 0)), int(liczba(d, "kwadrat", 1)), x, y,
+                                           d.has("z") ? liczba(d, "z", 0) : swiat_->teren().get_mesh_z(x, y), p, int(hp),
+                                           std::uint32_t(int64_t(d.get("id_mapy", 0))), int(liczba(d, "flaga600", 1)),
+                                           int(liczba(d, "klasa4b4", 2)), int(liczba(d, "flaga612", 0)));
+    if (d.has("gruz_typ")) swiat_->ustaw_gruz_budynku(id, int(liczba(d, "gruz_typ", 0)), int(liczba(d, "gruz_kwadrat", 1)));
+    return int64_t(id);
+}
+
+Array OpenEESymulacja::gruz() const {   // etap 48: pozostałości budynków (obiekty mapy Core)
+    Array a;
+    if (!swiat_) return a;
+    for (const auto& g : swiat_->gruz()) {
+        Dictionary d;
+        d["id"] = int64_t(g.id); d["typ"] = g.typ; d["X"] = g.X; d["Y"] = g.Y; d["kwadrat"] = g.kwadrat;
+        d["takt"] = int64_t(g.takt); d["budynek"] = int64_t(g.budynek);
+        a.push_back(d);
+    }
+    return a;
 }
 
 void OpenEESymulacja::ustaw_przebudowe_pelna(bool p) { if (swiat_) swiat_->ustaw_przebudowe_pelna(p); }

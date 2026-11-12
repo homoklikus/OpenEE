@@ -615,3 +615,24 @@ Rozstrzygający pomiar (przygotowany, niewykonany – automatyzacja gry niedost�
 - Wydajność (Core, `wydajnosc_grafu.gd`, 10 usuniętych obiektów): e35_a – budowa 22 ms, przebieg przyrostowy 5,7 ms,
   pełny 13 ms; e13_para – 14 ms / 3,6 ms / 8,1 ms. Podział pól na podsektory po 10 zmianach identyczny w obu trybach
   (różni się tylko numeracja). Zapytanie grafu e35_a 0,10–0,12 ms przed i po.
+
+## Etap 48 – budynek 2×2, gruz i dodanie przeszkody
+
+- **Koszary 2×2** (wzór 0x100010e, kotwica X, Y = lewy dolny róg, środek X + 1; zad. 650 `e48_koszary`) [P]: obiekt na
+  liście każdego z 4 pól; przed zniszczeniem 4 pola tworzą osobny podsektor (428), po zniszczeniu wszystkie zwalniane
+  w tym samym takcie, przebudowa jednego sektora (+0xD4 = śmierć + 1), wolne id [428]. Core (`porownaj_zmiane_grafu.gd`)
+  – id, pola, punkty, sąsiedzi, wolne id i największe id identyczne z grą (3/3 przed, 2/2 po). Rozkaz proroka po
+  zniszczeniu: trasa i pozycje zgodne z grą do końcowego obrotu (3088 próbek).
+- **Gruz** [P: 647, 648, 650 – dom, mur, wieża, koszary]: obiekt typu „Debris on death#2” (361 dla 1×1, 362 „Debris 2x”
+  dla koszar) z HP 1 na wszystkich polach budynku od taktu śmierci (na początku listy pola), bez stanu `.tai`, trwa po
+  6003, bez zgłoszenia mapy (+0xD4/+0xD8 bez zmian). Core: `Gruz`, `Swiat::gruz()`, wpis na listy pól wejścia grafu bez
+  blokady i bez przebudowy (CTest, GDExtension).
+- **Dodanie przeszkody** [W: 0x55C315 – dodanie jednostki gracza: obiekt z +0x600 ≠ 0 albo +0x4B4 = 0x19 → 0x4288A7(obiekt, 0)]:
+  zgłoszenie przy utworzeniu obiektu budynku (fundament jest tym samym obiektem), termin zwykły
+  (+0xD4 = teraz + fistp(*0x9183C0·10000), wartość *0x9183C0 w czasie gry – [N]). Pole budynku tworzy po przebudowie osobny
+  podsektor (jak dom przed zniszczeniem w 647). Core: `Swiat::postaw_budynek` (rejestracja na polach, blokada od razu,
+  zgłoszenie zwykłe) – test CTest. Pomiar w grze niewykonany: stawianie budynku wymaga obywatela i interfejsu budowy,
+  których sterowanie MCP nie obsługuje – zablokowane [N].
+- **Przekazanie trasy po porażce Bounded** (0x4A2B29 → 0x4A3757, `astar_wyniki.md` § 11) – Core wdrożone; 648 zgodne.
+- Wydajność (Core, 10 zmian): e35_a – budowa 26 ms, przyrostowa 6,2 ms, pełna 15,6 ms na zmianę; e13_para – 14 ms /
+  3,2 ms / 7,8 ms; koszary 2×2 w e48 – 5,2 ms. Podział pól identyczny w obu trybach.

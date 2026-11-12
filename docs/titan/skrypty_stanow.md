@@ -216,3 +216,25 @@ cel atakowany:  UnderAttack 2018 ──▶ RetaliateAgainstAttacker 2020 / RunFr
   0x64138B): środek prostokąta zaznaczonych jednostek w chwili kliknięcia → punkt kliknięcia, UMArcTan2(−Δx, Δy)
   [P: kod; 616 – 2,7300477 z pozycji (164,5; 118,5) i punktu (159,2415; 106,4529)]. Z tym kursem 620 kończy 9006
   w 3 taktach jak gra (Core = gra co takt, kurs do 4·10⁻⁵ rad).
+
+## 10. Aktualizacja etapu 48 – Prophet.tai
+
+[W: plik skryptu; P: zad. 648 i 650 (e48_prorok)]
+
+- dbobjects 216 „Prophet”: „TAI Script” = Prophet, „Unit type” 13 (EEUC z 0x6055E5 – klasa kapłańska, vt+0x5C jak Land).
+- Skład pliku w kolejności: własne stany proroka (klątwy: FaceEnemyUnit, CalamityPreCast, CastCalamity, PostCalamityFlee,
+  PrepareToMove/ReacquireGoal/GetNextMoveWaypoint z GoalIsCalamity), `#include("Generic Movement.tai")`, nadpisanie
+  `GetNextMoveWaypoint { NextWaypointRetrieved true(Advance) false(TurnToUnitFacing) }` i
+  `Advance { allof(OneWaypointRemaining,GoalIsUnit) true(TurnToUnitFacing) }`, `#include("Generic Death.tai")`,
+  na końcu `ReacquireGoal { AlwaysTrue true(Idle) }`.
+- **Brak Generic Attack**: Idle ma tylko `AmIUnderAttack true(UnderAttack)` – prorok nie szuka wrogów (CanISeeEnemy).
+- Nadpisanie z pojedynczym zdarzeniem zastępuje przejście w miejscu (0x618ED9), więc w GetNextMoveWaypoint
+  `NextWaypointRetrieved` prowadzi do Advance (10003), a nie do LookForEnemies (2015) jak w Land Patrolling.
+  Pomiar 648: prorok 9000 → 10003 bez 2015; gwardia 9000 → 2015 → 10003 [P].
+- `allof(OneWaypointRemaining,GoalIsUnit)` w Advance nie jest pojedynczym zdarzeniem – dopisywane po przejściu Generic
+  Movement (ReacquireEnemyUnit) i nieosiągalne dla celu-jednostki tą drogą (pierwsze przejście wygrywa).
+- Core: `SkryptStanow::wbudowany_prorok()` (własny zapis tekstu w kolejności dołączeń), przypisanie z „TAI Script”
+  (`ustaw_skrypt_jednostki("Prophet")`). Zdarzenia klątw (GoalIsCalamity, CalamityTargetStillValid) – fałsz, bo Core nie
+  ma celu klątwy; AmIUnderAttack – fałsz (przejście do UnderAttack wykonuje TakeDamage, etap 46) [H].
+- Wynik: e48_prorok (ruch bez zmiany mapy) – 2704/2704 próbek zgodnych (stan, pozycja, kurs); 648 – zgodność od rozkazu
+  do t = 63510 (patrz `walka.md` § 36).

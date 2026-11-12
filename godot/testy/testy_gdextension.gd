@@ -139,6 +139,7 @@ func _testy() -> void:
 	_test_etapu45(dll)
 	_test_etapu46(dll)
 	_test_etapu47(dll)
+	_test_etapu48(dll)
 	_koniec()
 
 
@@ -968,3 +969,45 @@ func _test_etapu47(dll: String) -> void:
 	var c2: Object = nowa.call()
 	var b2: int = c2.dodaj_budynek(dom)
 	_wynik("restart: nowy świat – budynek z pełnym HP układu i blokadą pola", int(c2.jednostka(b2).get("hp", 0)) == 21 and not c2.pole_przejezdne(10, 10))
+
+
+## Etap 48: pozostałość budynku (Core: „Debris on death#2” jako obiekt mapy w takcie śmierci, bez blokady i bez przebudowy)
+## i trasa jednostki (GDExtension: `jednostka()["trasa"]`).
+func _test_etapu48(dll: String) -> void:
+	var mn := []
+	for i in 16: mn.append([1, 1, 1, 1, 1, 1])
+	var tr := {}
+	for i in 3:
+		var f := PackedFloat32Array(); f.resize(64); f[48] = [1.071, 1.5, 2.1][i]
+		var f3 := PackedFloat32Array(); f3.resize(64); f3[48] = [0.23562, 0.33, 0.462][i]
+		tr[["08", "0C", "10"][i]] = {13: f, 3: f3}
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	c.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
+		[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var g := {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,
+		"klasa_trafienia": 13, "rodzina_ataku": 48, "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156,
+		"rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000, "pole_ac": 0.6000000238418579, "typ_bazy": 422, "typ_jednostki": 5,
+		"ai_szuka_wrogow": 0}
+	var dom := {"gracz": 5, "typ": 37, "X": 10, "Y": 10, "kwadrat": 1, "x": 10.5, "y": 10.5, "z": 0.0, "hp": 14, "hp_max": 500,
+		"pole_widzenia": 2.0, "wiersz_celu": 3, "rodzaj_ataku": 3, "klasa_trafienia": 3, "rodzina_ataku": 9, "rozmiar": 1.0,
+		"typ_jednostki": 2, "typ_bazy": 37, "rozklad_ms": 2000, "blokuje": 1, "id_mapy": "0x500", "w_siatce": 0,
+		"gruz_typ": 361, "gruz_kwadrat": 1}
+	var a: int = c.dodaj_jednostke(p, 10.5, 13.0, 3.14159265)
+	c.ustaw_walke(a, 1, true, g, 215)
+	var b: int = c.dodaj_budynek(dom)
+	c.rozkaz_ataku(a, b)
+	c.takt(1)
+	var trasa: Array = c.jednostka(a).get("trasa", [])
+	var przed: Array = c.gruz()
+	var smierc := -1; var gz: Array = []
+	for k in 900:
+		c.takt(1)
+		if smierc < 0 and int(c.jednostka(b).stan) == 6000:
+			smierc = int(c.diagnostyka().get("takty", 0)); gz = c.gruz(); break
+	var ok_g: bool = przed.is_empty() and gz.size() == 1 and int(gz[0].typ) == 361 and int(gz[0].X) == 10 and int(gz[0].Y) == 10 \
+		and int(gz[0].takt) == smierc and c.pole_przejezdne(10, 10)
+	_wynik("gruz budynku: obiekt 361 na polu domu w takcie śmierci, pole przejezdne", ok_g, JSON.stringify(gz) + " śmierć %d" % smierc)
+	_wynik("trasa jednostki w jednostka()[\"trasa\"]", trasa is Array, JSON.stringify(trasa))

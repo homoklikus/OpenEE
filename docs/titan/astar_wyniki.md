@@ -212,3 +212,22 @@ Model potwierdza algorytm dla przypadków A–E w EE i A, E w AoC. Przypadku F n
   rozwijania węzłów, trasie, liczbie iteracji i wywołań. Obejmują ściany, pułapki, cele nieosiągalne, kary, limit
   całkowity, Bounded i losowe mapy 48×48.
 - Na mapie z gry (lokalnie): trasy A i C identyczne z grą, E: 145 iteracji w 8 wywołaniach = gra [P].
+
+## 11. Aktualizacja etapu 48 – przekazanie pełnego A* po porażce Bounded (0x4A2B29, 0x4A3757)
+
+[W: kod 0x4A1AFF, 0x4A24E1, 0x4A327E, 0x4A2B29; P: 648 – prorok, trasa = A* od pola jednostki]
+
+1. PrepareToMove (0x6222A8) zawsze próbuje Bounded (argument 0 dla 0x4A1AFF). Prostokąt wokół startu, limit
+   m = d + min(zawieszone + 4, 11) – jak w § 6.
+2. Porażka: 0x4A32C0 przekazuje jednostce prefiks Bounded; pełna maszyna startuje z końca Bounded (+4/+8 maszyny).
+   Wynik pełnej maszyny idzie przez 0x4A2B29.
+3. 0x4A2B29, gdy jednostka ma już trasę (+0x8C ≥ 1), a nowa trasa ma n ≥ 5 pól: punkt P = k-te pole nowej trasy od strony
+   startu (k = min(n, 10)); maszyna Bounded 0x4A3757 od pola jednostki do P w kwadracie ±26 pól z limitem 50 iteracji
+   (+0xA4 = 0x32). Sukces → 0x4A37A7 skleja wynik Bounded z resztą nowej trasy (od k), trasa jednostki czyszczona
+   (0x5E9770), zapis 0x5EE4E6(…, 1). Porażka → szukanie wspólnego punktu w pierwszych 10 polach, inaczej łączenie
+   0x4A239F (prefiks + reszta).
+4. 648: Bounded (m = 14) kończy na (162, 112); pełne A* z (162, 112) daje 7 pól; poprawa początku: A* od (164, 116) do celu
+   (162, 108) – 39 iteracji < 50 – trasa optymalna (163, 115) … (162, 108), dokładnie jak w grze. Wcześniejszy model Core
+   (prefiks + reszta) dawał objazd o koszcie 134 zamiast 112.
+5. Nieodwzorowane w Core: gałąź 0x4A2214 (n-ty od końca punkt < 3 od jednostki), gałąź n < 5 (0x671DF6), szukanie
+   wspólnego punktu po porażce poprawy [N]. Pomiar E (§ 6) nie rozróżniał modeli – obie trasy są tam identyczne.

@@ -69,6 +69,8 @@ public:
     godot::Dictionary stan_grafu() const;
     godot::Array graf_okno(int64_t x0, int64_t x1, int64_t y0, int64_t y1) const;
     int64_t blokady_pola(int64_t x, int64_t y) const;
+    godot::Array gruz() const;   // etap 48
+    int64_t postaw_budynek(const godot::Dictionary& parametry);   // etap 48
     godot::Dictionary migawka_diagnostyczna(bool szczegoly) const;
     godot::Dictionary wejscie_regionow_z_mapy() const;
     godot::Dictionary wejscie_regionow_z_scn(const godot::Array& obiekty, const godot::Array& zestawy) const;

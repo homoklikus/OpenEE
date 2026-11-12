@@ -62,8 +62,11 @@ static func parametry_leczenia(ob: Dictionary, leczone_typy: Array = []) -> Dict
 ## domu 37 gracza 5 w zad. 647 [P]: HP maks. 500 = „Health”, pancerz 0, pole widzenia 2,0, +0x4C0 = 3 („Weapon to hit
 ## ID”), +0x4C4 = 3 („Family ID”), +0x4C8 = 9 („Family attack type”), +0x474 = 1,0 („Size of collider”), +0x612 = 0,
 ## +0x61A = 0, +0x4B4 = 2 („Unit type”)). Ulepszenia z technologii epok – poza Core [N]: wartości z rekordu typu.
-static func parametry_budynku(ob: Dictionary) -> Dictionary:
-	return {"hp_max": int(ob.get("Health", 0)), "atak": float(ob.get("Attack", 0)),
+static func parametry_budynku(ob: Dictionary, db: Dictionary = {}) -> Dictionary:
+	# etap 48: pozostałość przy śmierci – „Debris on death#2” (np. 361 „Amb - Debris 1x”, 362 „2x”) i jej „Square occupied”
+	var gt := int(ob.get("Debris on death#2", 0))
+	var gk := int((db.get(gt, {}) as Dictionary).get("Square occupied", 1)) if gt > 0 else 1
+	return {"gruz_typ": gt, "gruz_kwadrat": maxi(1, gk), "hp_max": int(ob.get("Health", 0)), "atak": float(ob.get("Attack", 0)),
 		"pancerz": [float(ob.get("Shock armor", 0)), float(ob.get("Arrow armor", 0)), float(ob.get("Pierce armor", 0)),
 			float(ob.get("Gun armor", 0)), float(ob.get("Laser armor", 0)), float(ob.get("Missile armor", 0))],
 		"pole_widzenia": float(ob.get("Line of sight", 0.0)), "zasieg_max": float(ob.get("Max range", 0.0)),

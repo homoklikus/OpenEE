@@ -2,7 +2,7 @@
 
 ## Aktualny raport
 
-[`RAPORT_ETAP_47.md`](../RAPORT_ETAP_47.md) – etap 47: budynki jako obiekty symulacji Core (obrażenia, śmierć EEPMBuilding, zwolnienie pól), przyrostowa przebudowa sektora grafu 0x4278C3 zgodna z grą (647/648), trasy po zniszczeniu przeszkody, diagnostyka MCP pól i grafu, potyczka_e47 z niszczalnym domem, próg leczenia, wydajność grafu.
+[`RAPORT_ETAP_48.md`](../RAPORT_ETAP_48.md) – etap 48: Prophet.tai i parametry ruchu z ulepszenia gracza (648 – trasa i ruch jak w grze do kontaktu z murem), poprawa początku trasy 0x4A2B29, odepchnięcie celu ataku ×0,25 (644 zgodne w całości), miejsce podejścia przy budynku (atak na dom zgodny do śmierci), koszary 2×2 i gruz, budynek stawiany w grze, izolacja testów Riverlands_MCP.
 Leży w katalogu głównym repozytorium.
 
 Bieżący stan projektu bez czytania raportów: [`docs/ARCHITEKTURA_OPENEE.md`](../docs/ARCHITEKTURA_OPENEE.md).
@@ -69,6 +69,7 @@ oznacza się adnotacją „[Etap … – zastąpione]”, bez usuwania pierwotny
 | [`RAPORT_ETAP_44.md`](archiwum/RAPORT_ETAP_44.md) | etap 44 | etap 44: klify z kodu 0x51241D/0x512FB0 (39 480/39 480, druga mapa 22 725/22 725), obiekty pól z SCN i +0x612 (zestaw dbunitset 9), graf podsektorów w Core wyłącznie z SCN i baz gry (e35_a 1857/1857, e13_para 1320/1320; 619/620 jak gra) włączony w potyczce, śmierć 6000–6003 z danych typu (631/633/634 zgodne do końca), kolejność taktu z kolejki fizyki 0x918DDC (nagranie kontaktu 590 zgodne co takt). |
 | [`RAPORT_ETAP_45.md`](archiwum/RAPORT_ETAP_45.md) | etap 45 | etap 45: kolejka fizyki 0x918DDC z kodu (dodanie na koniec, usunięcie w następnym takcie, bez zmian kolejności – nowe pomiary 590/578), nowe 590 G1 zgodne w całości i 578 G3 do taktu 414, skrypt obywatela i FleeDanger 0x620687 (638 zgodne 4264/4264 przy stanie generatora z nagrania), tryb 2 przy śmierci, animacje Godot w ms na klatkę, analiza Healer.tai i przebudowy grafu. |
 | [`RAPORT_ETAP_46.md`](archiwum/RAPORT_ETAP_46.md) | etap 46 | etap 46: TakeDamage → UnderAttack i brak reakcji sojuszników (644), 578 G3 takt 414 = opóźniony rozkaz MCP, Healer.tai w Core (619/620 zgodne w całości), zagrożenie 0x62FE01, losowania od zwierząt Świata, termin przebudowy grafu po zniszczeniu domu (645), skrypty .tai w potyczce |
+| [`RAPORT_ETAP_47.md`](archiwum/RAPORT_ETAP_47.md) | etap 47 | etap 47: budynki jako obiekty Core (obrażenia, śmierć EEPMBuilding, zwolnienie pól), przyrostowa przebudowa sektora 0x4278C3 zgodna z grą (647/648), trasy po zniszczeniu przeszkody, diagnostyka MCP pól i grafu, potyczka_e47 |
 | [`RAPORT_ETAP_39.md`](archiwum/RAPORT_ETAP_39.md) | etap 39 | etap 39: zajętość miejsc podejścia (0x63234D) w Core, 578 G3 bliżej gry, pośrednie EEUGLocation jako etap grafu podsektorów, potwierdzanie rozkazów MCP stanem gry, scenariusz e39_a |
 | [`RAPORT_ETAP_38.md`](archiwum/RAPORT_ETAP_38.md) | etap 38 | etap 38: pełne odtworzenie e35_a z bohaterem, regeneracja HP (0x625B47), obrót trybu 1 do EEUGLocation, gwardia zgodna co takt w całych 616/619/620/622, eksperyment B1 |
 | [`RAPORT_ETAP_37.md`](archiwum/RAPORT_ETAP_37.md) | etap 37 | etap 37: przyczyna rozbieżności stanu 9006 (tryb 5 i 9014 zależne od rodzaju celu, kurs końcowy PPM = kąt szyku), ponowny wybór nieosiągalnego celu (licznik ≤ 25, mapa celów nieosiągalnych na 30 s); Core zgodny co takt z 616/619/620 znacznie dłużej |

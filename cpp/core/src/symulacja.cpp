@@ -125,6 +125,9 @@ void Swiat::nieobslugiwane(const std::string& n) {
 std::optional<bool> Swiat::zdarzenie(Jednostka& u, const std::string& n) {
     const bool miejsce = u.cel == TypCelu::miejsce;
     if (n == "AlwaysTrue") return true;
+    // etap 48 (Prophet.tai): w Core brak celu klątwy (EEUGCalamity) – zdarzenia klątw fałszywe [W]; AmIUnderAttack –
+    // przejście Idle → UnderAttack wykonuje TakeDamage (etap 46, EEUC z 2018), samo zdarzenie w Core fałszywe [H]
+    if (n == "GoalIsCalamity" || n == "CalamityTargetStillValid" || n == "AmIUnderAttack") return false;
     if (u.boj) {  // etap 31: zdarzenia walki i celów-jednostek (tylko jednostki ze stanem bojowym)
         if (auto w = zdarzenie_walki(u, n)) return w;
     }
@@ -629,6 +632,35 @@ bool Swiat::przygotuj_trase(Jednostka& u, int okno) {
             pola = pb_pola;
             std::vector<Pole> reszta(diag_.ostatnia_trasa.trasa_od_celu.rbegin(), diag_.ostatnia_trasa.trasa_od_celu.rend());
             for (std::size_t i = (reszta.empty() ? 0 : 1); i < reszta.size(); ++i) pola.push_back(reszta[i]);
+            // Etap 48 – 0x4A2B29 (przekazanie wyniku pełnego A*) [W: kod; P: 648 – prorok, trasa = A* od pola jednostki].
+            // Jednostka ma już prefiks z Bounded (0x4A32C0, bez pola startu); gdy nowa trasa ma n ≥ 5 pól, gra liczy
+            // maszyną Bounded (0x4A3757) trasę od pola jednostki do k-tego pola nowej trasy (k = min(n, 10), licząc od
+            // strony startu) w kwadracie ±26 pól z limitem 50 iteracji; przy sukcesie wynik zastępuje prefiks i k pól
+            // nowej trasy (0x4A37A7), a trasa jednostki jest czyszczona (0x5E9770). Przy porażce – łączenie 0x4A239F
+            // (prefiks + reszta, jak dotąd). Gałęzie 0x4A2214 (gdy n-ty od końca punkt leży < 3 od jednostki) i n < 5
+            // (0x671DF6) – nieodwzorowane [N]: zostaje łączenie.
+            const std::size_t cnt = pb_pola.size() > 1 ? pb_pola.size() - 1 : pb_pola.size();
+            const std::size_t n = reszta.size();
+            diag_.ostatnia_poprawa_poczatku = 0;
+            if (cnt >= 1 && n >= 5) {
+                const std::size_t k = n > 9 ? 10 : n;
+                const Pole P = reszta[k - 1];
+                const int ax0 = std::max(0, start.x - 26), ax1 = std::min(W - 1, start.x + 26);
+                const int ay0 = std::max(0, start.y - 26), ay1 = std::min(H - 1, start.y + 26);
+                ParametryAStar p50;
+                p50.limit_wywolania = -1;
+                p50.limit_calkowity = 50;
+                p50.koniec_bez_testu_dostepnosci = true;
+                p50.kara = kara;
+                const auto b50 = AStarTitan::szukaj(start, P, [&](int x, int y) {
+                    return x >= ax0 && x <= ax1 && y >= ay0 && y <= ay1 && teren_.pole_przejezdne(x, y);
+                }, W, H, p50);
+                diag_.ostatnia_poprawa_poczatku = b50.koniec_najblizszy ? -1 : 1;
+                if (!b50.koniec_najblizszy) {
+                    pola.assign(b50.trasa_od_celu.rbegin(), b50.trasa_od_celu.rend());
+                    for (std::size_t i = k; i < n; ++i) pola.push_back(reszta[i]);
+                }
+            }
         }
     }
     // 0x5EE4E6: pomiń pole startu, gdy jednostka na nim stoi – tylko gdy trasa ma więcej niż 1 pole (lista n > 1;
@@ -732,8 +764,22 @@ void Swiat::krok_koncowy(Jednostka& u) {
                 ++diag_.cele_zajete;
             }
         }
-        o->push_x = f32(o->push_x + r.push_o_x);
-        o->push_y = f32(o->push_y + r.push_o_y);
+        if (r.budzik_dla_o) {
+            // etap 48 [W: 0x549179]: budzik ustawia (0,001; 0,001) tylko wtedy, gdy obie składowe push o mają |·| < 0,001
+            // (inaczej push o bez zmian); wcześniej Core dodawał 0,001 do składowych
+            if (std::fabs(o->push_x) < double(0.001f) && std::fabs(o->push_y) < double(0.001f)) {
+                o->push_x = double(0.001f);
+                o->push_y = double(0.001f);
+            }
+        } else {
+            // etap 48 [W: 0x549179 – cel bieżący u (+0x1F0) to EEUGAttackUnit (+5 = 2) z celem o (+0x30) → push o ·0,25
+            // (0x825450); P: 644 pościg – gwardia atakująca obywatela, dopasowanie 0,43 ≈ 0,25·5/3 zamiast 5/3]
+            const bool atak_na_o = cel_ataku(u) == o;
+            const double kx = atak_na_o ? f32(r.push_o_x * 0.25) : r.push_o_x;
+            const double ky = atak_na_o ? f32(r.push_o_y * 0.25) : r.push_o_y;
+            o->push_x = f32(o->push_x + kx);
+            o->push_y = f32(o->push_y + ky);
+        }
         u.push_x = f32(u.push_x + r.push_u_x);
         u.push_y = f32(u.push_y + r.push_u_y);
     }
@@ -1158,6 +1204,42 @@ void Swiat::krok_przebudowy() {
     }
 }
 
+IdJednostki Swiat::postaw_budynek(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
+                                  const ParametryWalki& p, int hp, std::uint32_t id_mapy, int flaga600, int klasa4b4,
+                                  int flaga612) {
+    const bool blokuje = flaga600 != 0 || klasa4b4 == 0x19;
+    const IdJednostki id = dodaj_obiekt_budynku(gracz, typ_db, X, Y, n, x, y, z, p, hp, blokuje, id_mapy, false);
+    if (!wejscie_) return id;
+    std::vector<int> pola;
+    const int k = std::max(1, n);
+    for (int dy = 0; dy < k; ++dy)
+        for (int dx = 0; dx < k; ++dx) {
+            const int xx = X + dx, yy = Y + dy;
+            if (xx < 0 || yy < 0 || xx >= wejscie_->N || yy >= wejscie_->N) continue;
+            ObiektPolaRegionu o;
+            o.id = id_mapy;
+            o.hp = hp;
+            o.gracz = gracz;
+            o.flaga600 = flaga600;
+            o.klasa4b4 = klasa4b4;
+            o.flaga612 = flaga612;
+            auto& l = wejscie_->obiekty[xx * wejscie_->N + yy];
+            l.insert(l.begin(), o);
+            pola.push_back(xx * wejscie_->N + yy);
+        }
+    // 0x4288A7: warunek vt+0x58 = 0 i (typ +0x600 ≠ 0 albo +0x4B4 = 0x19); termin zwykły (argument 0)
+    if (blokuje && graf_.podsektory.size() > 0) zglos_zmiane_mapy(pola, false);
+    return id;
+}
+
+bool Swiat::ustaw_gruz_budynku(IdJednostki id, int typ, int kwadrat) {
+    Jednostka* u = jednostka(id);
+    if (!u || !u->budynek) return false;
+    u->gruz_typ = typ;
+    u->gruz_kwadrat = std::max(1, kwadrat);
+    return true;
+}
+
 IdJednostki Swiat::dodaj_obiekt_budynku(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
                                         const ParametryWalki& p, int hp, bool blokuje, std::uint32_t id_mapy,
                                         bool w_siatce) {
@@ -1211,6 +1293,33 @@ void Swiat::smierc_budynku(Jednostka& t) {
     if (t.blokuje_pola)
         for (int dy = 0; dy < t.kwadrat; ++dy)
             for (int dx = 0; dx < t.kwadrat; ++dx) teren_.zdejmij_blokade(t.komorka_x + dx, t.komorka_y + dy);
+    // Etap 48 – pozostałość (dbobjects „Debris on death#2”) [P: 647 dom1 – obiekt 0x24ac (HP 1) na liście pola domu
+    // w takcie śmierci (52261), przed domem; 648 – mur, ten sam typ; obiekt trwa po 6003; brak zgłoszenia mapy: +0xD4
+    // i +0xD8 bez zmian po jego powstaniu]. Typ Świata (gracz 0, „Unit type” 0, nieprzejezdność – nie, „Collidable” 0):
+    // wpis na pola X..X+n−1 × Y..Y+n−1 jak obiekty SCN (początek listy), bez blokady i bez przebudowy grafu.
+    if (t.gruz_typ > 0) {
+        Gruz g;
+        g.id = nastepny_gruz_++;
+        g.typ = t.gruz_typ;
+        g.X = int(t.komorka_x);
+        g.Y = int(t.komorka_y);
+        g.kwadrat = std::max(1, t.gruz_kwadrat);
+        g.takt = takty_;
+        g.budynek = t.id;
+        gruz_.push_back(g);
+        if (wejscie_) {
+            for (int dy = 0; dy < g.kwadrat; ++dy)
+                for (int dx = 0; dx < g.kwadrat; ++dx) {
+                    const int x = g.X + dx, y = g.Y + dy;
+                    if (x < 0 || y < 0 || x >= wejscie_->N || y >= wejscie_->N) continue;
+                    ObiektPolaRegionu o;
+                    o.id = g.id;
+                    o.hp = 1;
+                    auto& l = wejscie_->obiekty[x * wejscie_->N + y];
+                    l.insert(l.begin(), o);
+                }
+        }
+    }
     if (!wejscie_) return;
     std::vector<int> pola;
     bool zglos = false;
@@ -1323,6 +1432,53 @@ Punkt2 Swiat::punkt_podejscia(Jednostka& u, const Jednostka& t) {
     if (u.boj && t.boj && u.boj->p.punktowy) {
         if (w_zasiegu_punktowy(odl2(u, t), u.boj->p.rozmiar, t.boj->p.rozmiar_jeden ? 1.0 : double(t.boj->p.rozmiar)))
             return Punkt2{u.x, u.y};
+        if (t.budynek) {
+            // Etap 48 – miejsce podejścia przy budynku [P: zad. 650/651 – dom 1×1 i koszary 2×2, 4 punkty z gry; H: reguła
+            // ogólna]: miejsca 0,25·rozmiar_ja·2 (= połowa rozmiaru atakującego) za krawędzią obrysu X..X+n × Y..Y+n,
+            // po dwa na każde pole przylegające bokiem do obrysu (wzdłuż boku: pole + 0,75, potem pole + 0,25; bez narożników), pola pierścienia uporządkowane wg kwadratu odległości pól od pola atakującego (stabilnie, kolejność
+            // wstawiania: góra, prawo, dół, lewo), pierwsze przejezdne i wolne (jak 0x63234D). Pomiar: dom (164, 112) –
+            // (164,75; 113,25), przy zajętym – (164,25; 113,25); koszary (164…165, 112…113) – (164,75; 114,25) i (164,25; 114,25).
+            zalozenie("miejsce podejścia przy budynku: reguła z 4 pomiarów (strona południowa) [H]");
+            const double r = f32(0.5 * double(u.boj->p.rozmiar));
+            const int X = int(t.komorka_x), Y = int(t.komorka_y), n = std::max(1, t.kwadrat);
+            struct M { int px, py; Punkt2 p; };
+            std::vector<M> m;
+            for (int x = X; x < X + n; ++x) {   // góra (y = Y + n)
+                m.push_back({x, Y + n, {f32(x + 0.75), f32(Y + n + r)}});
+                m.push_back({x, Y + n, {f32(x + 0.25), f32(Y + n + r)}});
+            }
+            for (int y = Y; y < Y + n; ++y) {   // prawo (x = X + n)
+                m.push_back({X + n, y, {f32(X + n + r), f32(y + 0.75)}});
+                m.push_back({X + n, y, {f32(X + n + r), f32(y + 0.25)}});
+            }
+            for (int x = X; x < X + n; ++x) {   // dół (y = Y − 1)
+                m.push_back({x, Y - 1, {f32(x + 0.75), f32(Y - r)}});
+                m.push_back({x, Y - 1, {f32(x + 0.25), f32(Y - r)}});
+            }
+            for (int y = Y; y < Y + n; ++y) {   // lewo (x = X − 1)
+                m.push_back({X - 1, y, {f32(X - r), f32(y + 0.75)}});
+                m.push_back({X - 1, y, {f32(X - r), f32(y + 0.25)}});
+            }
+            // narożniki pierścienia nie są miejscami [P: 650 – gwardia z pola (163, 119) bierze (164,75; 114,25), nie narożnik]
+            const std::int64_t ax = u.komorka_x, ay = u.komorka_y;
+            std::stable_sort(m.begin(), m.end(), [&](const M& a, const M& b) {
+                return (a.px - ax) * (a.px - ax) + (a.py - ay) * (a.py - ay) < (b.px - ax) * (b.px - ax) + (b.py - ay) * (b.py - ay);
+            });
+            const double s_ja = f32(double(u.boj->p.rozmiar));
+            for (const auto& c : m) {
+                if (!teren_.pole_przejezdne(podloga(c.p.x), podloga(c.p.y))) continue;
+                bool wolne = true;
+                for (const auto& o : jednostki_) {
+                    if (o.id == u.id || o.budynek || !o.boj || o.boj->s.hp <= 0) continue;
+                    const double A = f32(f32(double(o.boj->p.rozmiar) + s_ja) * 0.5);
+                    const double dx = f32(o.x - c.p.x), dy = f32(o.y - c.p.y);
+                    const double d2 = f32(dx * dx + dy * dy);
+                    if (f32(A * A) > f32(f32(0.1f * float(s_ja)) + d2)) { wolne = false; break; }
+                }
+                if (wolne) return c.p;
+            }
+            return poz_celu;
+        }
         if (t.boj->p.pole_ac > 0.0f) {
             // 8 miejsc wokół celu w odległości R = 0,5·s_ja + 0,5·s_cel (kolejność wstawiania z kodu), sortowanie wg
             // odległości od atakującego, pierwsze przejezdne (budynki blokujące – brak w Core) [W]
@@ -1989,6 +2145,8 @@ bool Swiat::ustaw_skrypt_jednostki(IdJednostki id, const std::string& nazwa) {
             it = skrypty_.emplace(nazwa, SkryptStanow::wbudowany_obywatel()).first;
         else if (nazwa == "uzdrowiciel" || nazwa == "Military Healer Prophet")   // etap 46: bohaterowie „(heal)”
             it = skrypty_.emplace(nazwa, SkryptStanow::wbudowany_uzdrowiciel()).first;
+        else if (nazwa == "prorok" || nazwa == "Prophet")   // etap 48: dbobjects „TAI Script” = Prophet (typ 216 [P])
+            it = skrypty_.emplace(nazwa, SkryptStanow::wbudowany_prorok()).first;
         else return false;
     }
     u->skrypt = &it->second;

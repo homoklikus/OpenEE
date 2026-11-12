@@ -40,6 +40,7 @@ struct Diagnostyka {
     std::uint64_t cele_zajete = 0;                // reguła (a)
     WynikAStar ostatnia_trasa;                    // ostatnie pełne A* (diagnostyka)
     bool ostatnia_bounded_sukces = false;
+    int ostatnia_poprawa_poczatku = 0;   // etap 48: 0x4A2B29/0x4A3757 – 0 brak, 1 sukces, −1 porażka
     // --- walka (etap 31) ---
     std::uint64_t szukania_wroga = 0;            // wywołania 0x61AC11 z przeglądem kandydatów
     std::uint64_t wybory_celu = 0;               // utworzone cele EEUGAttackUnit
@@ -148,6 +149,14 @@ void zbuduj_obszary(WejscieRegionow& w);
 /// powyżej → 15.
 int komorka_sektora(int brzeg_d);
 /// Etap 44 – obiekt scenariusza do rejestracji na polach mapy (kawałek 5 SCN + dbobjects).
+/// Etap 48 – pozostałość budynku (dbobjects „Debris on death#2”, np. 361 „Amb - Debris 1x”, 362 „2x”) [P: 647, 648 –
+/// obiekt HP 1 na polu budynku od taktu śmierci, na początku listy pola; bez zgłoszenia mapy; trwa po 6003].
+struct Gruz {
+    std::uint32_t id = 0;
+    int typ = 0, X = 0, Y = 0, kwadrat = 1;
+    std::uint64_t takt = 0;
+    IdJednostki budynek = 0;
+};
 struct ObiektScnPola {
     std::uint32_t id = 0;
     int gracz = 0, X = 0, Y = 0;   // pole rekordu SCN (X, Y)
@@ -286,12 +295,21 @@ public:
     /// Etap 47 – budynek jako obiekt symulacji (ta sama lista jednostek, cele, obrażenia, stany, kolejka fizyki).
     /// X, Y – kotwica (rekord SCN), n – „Square occupied”, (x, y, z) – pozycja; w_siatce: blokada pól już naliczona przez
     /// MapaTitan::siatka (obiekt mapy) – wtedy bez ponownego dodania. Skrypt: Simple Building (Generic Death).
+    const std::vector<Gruz>& gruz() const { return gruz_; }
+    bool ustaw_gruz_budynku(IdJednostki id, int typ, int kwadrat);
+    /// Etap 48 – budynek postawiony w trakcie gry (EEPlayer – dodanie jednostki 0x55C315 → 0x4288A7(obiekt, 0)) [W]:
+    /// rejestracja na polach (początek list, jak obiekty SCN), blokada pól od razu (fundament = ten sam obiekt) i
+    /// zgłoszenie zmiany mapy z terminem „zwykłym” (+0xD4 = teraz + *0x9183C0·10000 ms, opoznienie_przebudowy_s [N]).
+    IdJednostki postaw_budynek(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
+                               const ParametryWalki& p, int hp, std::uint32_t id_mapy, int flaga600, int klasa4b4,
+                               int flaga612);
     IdJednostki dodaj_obiekt_budynku(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
                                      const ParametryWalki& p, int hp, bool blokuje, std::uint32_t id_mapy, bool w_siatce);
     std::uint64_t wersja_grafu() const { return wersja_grafu_; }
     std::uint64_t przebudowy_grafu() const { return przebudowy_grafu_; }
     bool przebudowa_zaplanowana() const { return przebudowa_d8_; }
     std::uint32_t termin_przebudowy() const { return termin_d4_; }
+    const WejscieRegionow* wejscie_mapy() const { return wejscie_ ? &*wejscie_ : nullptr; }   // etap 48
     float opoznienie_przebudowy_s = 0.0f;   // *0x9183C0 (wartość z gry nieodczytana; w pliku 0) [N]
     const GrafPodsektorow& graf_podsektorow() const { return graf_; }
     /// N progu 9016 ShouldMoveToNextAutoWaypoint ([0x917DC8], 0x4243AC) z rozmiaru mapy
@@ -327,6 +345,8 @@ private:
     std::uint64_t przebudowy_sektorow_ = 0;
     std::vector<int> ostatnie_nowe_;
     std::vector<IdJednostki> kolejka_dodan_;   // etap 47: kolejka dodań fizyki +0xAF0
+    std::vector<Gruz> gruz_;                    // etap 48: pozostałości budynków (obiekty mapy Świata)
+    std::uint32_t nastepny_gruz_ = 0x7F000000u;
     void smierc_budynku(Jednostka& t);
     void krok_budynku(Jednostka& u);
     bool przebudowa_d8_ = false;               // EEPathManager +0xD8

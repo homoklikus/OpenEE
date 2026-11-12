@@ -44,6 +44,7 @@ public:
     static SkryptStanow wbudowany_obywatel();
     static SkryptStanow wbudowany_uzdrowiciel();   // etap 46: Healer.tai + land
     static SkryptStanow wbudowany_budynek();       // etap 47: Simple Building (Generic Death)
+    static SkryptStanow wbudowany_prorok();        // etap 48: Prophet.tai (bez Generic Attack)
 
     const StanSkryptu* stan(int numer) const;
     const std::map<std::string, StanSkryptu>& stany() const { return stany_; }

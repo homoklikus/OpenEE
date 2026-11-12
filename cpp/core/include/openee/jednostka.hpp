@@ -139,6 +139,7 @@ struct Jednostka {
     bool blokuje_pola = false;      // typ +0x600 – pola X..X+n−1 × Y..Y+n−1 nieprzejezdne, dopóki HP > 0
     std::uint32_t id_mapy = 0;      // identyfikator obiektu na listach pól (wejście grafu, WejscieRegionow)
     int typ_db = -1;                // dbobjects ID (+0x4B8)
+    int gruz_typ = 0, gruz_kwadrat = 1;   // etap 48: dbobjects „Debris on death#2” i jego „Square occupied”
 
     // --- trasa: kolejka punktów (+0x7C) i suma długości ---
     std::vector<Punkt2> trasa;
