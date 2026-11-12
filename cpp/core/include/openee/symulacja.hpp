@@ -86,6 +86,11 @@ struct Podsektor {
     std::vector<int> sasiedzi;  // +0x2C…+0x34 (kolejność z pamięci; pętla grafu przechodzi od końca)
 };
 struct GrafPodsektorow {
+    // etap 47 – stan przyrostowy 0x4278C3 [W]: listy podsektorów sektorów (lista sektora +0x08, kolejność tworzenia),
+    // największe id (+0x10E menedżera) i wolne id (+0xBC; 0x425E8D bierze ostatni, inaczej ++największe)
+    std::map<std::pair<int, int>, std::vector<int>> sektory;
+    int maks_id = 0;
+    std::vector<int> wolne_id;
     bool z_gry = false;         // dane odczytane z pamięci gry (nie zbudowane w Core)
     std::string zrodlo = "brak";   // etap 41: „gra (odczyt)”, „Core z przydziału pól”; etap 42: „Core z wejścia mapy”
     std::map<int, Podsektor> podsektory;
@@ -173,6 +178,13 @@ SiatkaRegionow zbuduj_siatke_regionow(const WejscieRegionow& w);
 std::vector<int> zbuduj_przydzial_podsektorow(const SiatkaRegionow& r, int komorka);
 /// Pełny graf z wejścia mapy: regiony → przydział → zbuduj_graf_z_przydzialu (+ rodzaje podsektorów).
 GrafPodsektorow zbuduj_graf_z_wejscia(const WejscieRegionow& w, int komorka);
+/// Etap 47 – przyrostowa przebudowa jednego sektora (0x4278C3) [W: kod 0x4278C3, 0x42809D, 0x425E8D, 0x424DDD]:
+/// regiony liczone od nowa z bieżącego wejścia (budowniczy 0x4290A2 → 0x429B6D, jak w budowie pełnej); podsektory sektora
+/// (si, sj) usuwane (id na koniec listy wolnych, w kolejności listy sektora; usunięcie z list sąsiadów), flood w
+/// prostokącie sektora (x malejąco, y malejąco) z id z listy wolnych (od końca) albo ++maks_id; punkty reprezentatywne
+/// tylko nowych; sąsiedzi z przeglądu okna sektora powiększonego o 1 pole (x↑, y↑, reguła 0x4246E8, dopisanie na koniec
+/// bez powtórzeń). Pozostałe podsektory i ich id bez zmian. Zwraca id nowych podsektorów.
+std::vector<int> przebuduj_sektor(GrafPodsektorow& G, const WejscieRegionow& w, int komorka, int si, int sj);
 /// Punkt reprezentatywny 0x42C2D5 dla listy pól w kolejności kontenera (kolumny od ostatniej, przedziały y rosnąco).
 std::pair<int, int> punkt_reprezentatywny(const std::vector<std::pair<int, int>>& pola);
 
@@ -265,6 +277,17 @@ public:
     void ustaw_wejscie_mapy(WejscieRegionow w, int komorka, bool zbuduj = true);
     bool usun_obiekt_mapy(std::uint32_t id);
     void zglos_zmiane_mapy(const std::vector<int>& pola, bool natychmiast);
+    /// Etap 47: tryb przebudowy – przyrostowy (0x4278C3, jeden sektor na wywołanie, kolejne po 100 ms) albo pełny
+    /// (wariant zastępczy etapu 46 – cały graf z wejścia, do porównań i pomiarów wydajności).
+    void ustaw_przebudowe_pelna(bool p) { przebudowa_pelna_ = p; }
+    std::size_t zmienione_sektory() const { return zmienione_sektory_.size(); }
+    std::uint64_t przebudowy_sektorow() const { return przebudowy_sektorow_; }
+    const std::vector<int>& ostatnie_nowe_podsektory() const { return ostatnie_nowe_; }
+    /// Etap 47 – budynek jako obiekt symulacji (ta sama lista jednostek, cele, obrażenia, stany, kolejka fizyki).
+    /// X, Y – kotwica (rekord SCN), n – „Square occupied”, (x, y, z) – pozycja; w_siatce: blokada pól już naliczona przez
+    /// MapaTitan::siatka (obiekt mapy) – wtedy bez ponownego dodania. Skrypt: Simple Building (Generic Death).
+    IdJednostki dodaj_obiekt_budynku(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
+                                     const ParametryWalki& p, int hp, bool blokuje, std::uint32_t id_mapy, bool w_siatce);
     std::uint64_t wersja_grafu() const { return wersja_grafu_; }
     std::uint64_t przebudowy_grafu() const { return przebudowy_grafu_; }
     bool przebudowa_zaplanowana() const { return przebudowa_d8_; }
@@ -299,6 +322,13 @@ private:
     std::optional<WejscieRegionow> wejscie_;
     int komorka_grafu_ = 0;
     std::vector<int> pola_zmienione_;          // 0x422DB6: posortowane, bez powtórzeń
+    std::map<std::pair<int, int>, std::vector<std::pair<int, int>>> zmienione_sektory_;   // etap 47: +0x10 (klucz – sektor)
+    bool przebudowa_pelna_ = false;
+    std::uint64_t przebudowy_sektorow_ = 0;
+    std::vector<int> ostatnie_nowe_;
+    std::vector<IdJednostki> kolejka_dodan_;   // etap 47: kolejka dodań fizyki +0xAF0
+    void smierc_budynku(Jednostka& t);
+    void krok_budynku(Jednostka& u);
     bool przebudowa_d8_ = false;               // EEPathManager +0xD8
     std::uint32_t termin_d4_ = 0;              // EEPathManager +0xD4
     std::uint64_t wersja_grafu_ = 0, przebudowy_grafu_ = 0;

@@ -41,6 +41,7 @@ func zarejestruj(id: int, gracz: int, typ: int, promien: float, nazwa: String = 
 	gracz_jednostki[id] = gracz
 	_odczytaj_wszystko()
 	j.pozycja_poprz = j.pozycja; j.kurs_poprz = j.kurs
+	j.z0 = j.z; j.z_poprz = j.z
 	return j
 
 
@@ -50,7 +51,7 @@ func krok() -> void:
 	zdarzenia.clear()
 	for id in jednostki:
 		var j: JednostkaSym = jednostki[id]
-		j.pozycja_poprz = j.pozycja; j.kurs_poprz = j.kurs
+		j.pozycja_poprz = j.pozycja; j.kurs_poprz = j.kurs; j.z_poprz = j.z
 	takt = int(core.takt(1))
 	_odczytaj_wszystko()
 	for e in core.zdarzenia_walki_od(_indeks_zdarzen):
@@ -67,6 +68,8 @@ func _odczytaj_wszystko() -> void:
 		if j == null: continue
 		j.pozycja = Vector2(float(d["x"]), float(d["y"]))
 		j.kurs = float(d["kurs"])
+		j.z = float(d.get("z", 0.0))                  # etap 47: wysokość Core (zapadanie się budynku w Dying)
+		j.budynek = bool(d.get("budynek", false))
 		var st := int(d["stan"])
 		stan[id] = st
 		hp[id] = int(d.get("hp", 0))

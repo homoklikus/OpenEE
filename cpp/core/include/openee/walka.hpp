@@ -33,6 +33,8 @@ struct ParametryWalki {
     float rozmiar = 0.5f;                   // typ +0x474 – rozmiar do zasięgu wręcz 0x631501
     bool rozmiar_jeden = false;             // typ +0x612 ≠ 0: jako cel liczony z rozmiarem 1,0 (0x631935)
     bool punktowy = false;                  // typ +0x61A ≠ 0: zasięg 0x631935, pozycje zamiast punktu celowania
+    bool atakuje_mury = false;              // etap 47: typ +0x61E – bez niego kandydat z +0x612 (mury, zestaw 9) odrzucany
+                                            // w wyborze celu 0x6399CA (0x639AC3) [W; P: 647 – gwardia nie atakuje muru]
     int szukanie_ms = 0;                    // typ +0x564: okres szukania wroga (+0x2AC := ta wartość po szukaniu)
     float zasieg_min = 0.0f;                // typ +0x41C (kwadrat → funktor +0x3C)
     float pole_ac = 0.0f;                   // ulepszenie +0xAC – używane tylko w ocenie celu (znaczenie [N])

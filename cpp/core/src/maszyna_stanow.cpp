@@ -352,6 +352,19 @@ SkryptStanow SkryptStanow::wbudowany_uzdrowiciel() {
     return s;
 }
 
+SkryptStanow SkryptStanow::wbudowany_budynek() {
+    // Etap 47 [W: simple building.tai = #include("Generic Death.tai")]: Idle bez przejść, Dying → ResourcesRotting →
+    // UnitRotting → Dead. Zdarzenie DyingAnimationFinished budynku – EEUCBuilding vt[39] 0x601A4B (z < −2,0).
+    const SkryptStanow l = wbudowany_land();
+    SkryptStanow s;
+    s.stany_["Idle"] = StanSkryptu{"Idle", 5000, {}};
+    for (const char* n : {"Dying", "ResourcesRotting", "UnitRotting", "Dead"}) {
+        auto it = l.stany_.find(n);
+        if (it != l.stany_.end()) s.stany_[n] = it->second;
+    }
+    return s;
+}
+
 SkryptStanow SkryptStanow::wbudowany_obywatel() {
     // Etap 45 [W: citizen.tai – #include Gather.tai (Idle { TakingLightDamage true(FleeDanger) }), własne Idle
     // { BuildingInBuildQueue true(MoveToRepairSite); TakingLightDamage true(FleeDanger) }, potem Generic Attack /

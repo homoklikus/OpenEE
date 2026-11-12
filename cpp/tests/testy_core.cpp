@@ -1784,10 +1784,219 @@ int test_podsystemy() {
 
 }  // namespace
 
+// Etap 47 – budynki jako obiekty Core, śmierć budynku, zmiana mapy i przyrostowa przebudowa grafu (0x4278C3).
+namespace {
+WejscieRegionow wejscie_syntetyczne(int N, const std::vector<std::array<int, 4>>& obiekty) {   // {id, x, y, n}
+    WejscieRegionow w;
+    w.N = N;
+    w.rodzaj_pola.assign(std::size_t(N) * N, 0);
+    w.wysokosc.assign(std::size_t(N) * N, 0);
+    w.brzeg_e0 = w.brzeg_e1 = w.brzeg_e2 = -1000;
+    for (const auto& o : obiekty)
+        for (int dx = 0; dx < o[3]; ++dx)
+            for (int dy = 0; dy < o[3]; ++dy) {
+                ObiektPolaRegionu q;
+                q.id = std::uint32_t(o[0]); q.hp = 500; q.gracz = 5; q.flaga600 = 1; q.klasa4b4 = 2;
+                auto& l = w.obiekty[(o[1] + dx) * N + (o[2] + dy)];
+                l.insert(l.begin(), q);
+            }
+    zbuduj_obszary(w);
+    return w;
+}
+ParametryWalki dom_37() {   // odczyt pamięci domu gracza 5, zad. 647 [P]
+    ParametryWalki p;
+    p.hp_max = 500; p.pole_widzenia = 2.0f; p.wiersz_celu = 3; p.rodzaj_ataku = 3; p.klasa_trafienia = 3;
+    p.rodzina_ataku = 9; p.rozmiar = 1.0f; p.typ_jednostki = 2; p.typ_bazy = 37; p.rozklad_ms = 2000;
+    return p;
+}
+}  // namespace
+
+int test_budynki() {
+    // 1. przyrostowa przebudowa sektora bez świata: dom (pole (10,10)) dzieli sektor (1,1) na dwa podsektory (ląd + tryb 0xC)
+    {
+        WejscieRegionow w = wejscie_syntetyczne(21, {{0x500, 10, 10, 1}});
+        GrafPodsektorow G = zbuduj_graf_z_wejscia(w, 7);
+        const std::size_t n0 = G.podsektory.size();
+        const auto lista = G.sektory[{1, 1}];
+        std::printf("  graf: %zu podsektorów, sektor (1,1): %zu, maks id %d\n", n0, lista.size(), G.maks_id);
+        sprawdz(n0 == 10 && lista.size() == 2, "9 sektorów lądu + pole domu jako osobny podsektor (region trybu 0xC)");
+        for (auto& [i, l] : w.obiekty) for (auto& o : l) o.hp = 0;   // śmierć: HP = 0 (regiony – tylko HP > 0)
+        const auto nowe = przebuduj_sektor(G, w, 7, 1, 1);
+        std::printf("  po przebudowie: %zu podsektorów, nowe %zu (id %d), wolne %zu (id %d)\n", G.podsektory.size(), nowe.size(),
+                    nowe.empty() ? -1 : nowe[0], G.wolne_id.size(), G.wolne_id.empty() ? -1 : G.wolne_id[0]);
+        sprawdz(G.podsektory.size() == 9 && nowe.size() == 1 && nowe[0] == lista.back() && G.wolne_id.size() == 1 &&
+                    G.wolne_id[0] == lista.front(), "0x42809D/0x425E8D: id zwolnione w kolejności listy sektora, nowe z końca listy wolnych");
+        const GrafPodsektorow P = zbuduj_graf_z_wejscia(w, 7);
+        bool rowny = true;
+        for (const auto& [k, id] : P.pole_podsektor)
+            if (G.podsektor_pola(k >> 32, k & 0xffffffff) < 0) { rowny = false; break; }
+        int sas = 0, sas_p = 0;
+        for (const auto& [id, p] : G.podsektory) sas += int(p.sasiedzi.size());
+        for (const auto& [id, p] : P.podsektory) sas_p += int(p.sasiedzi.size());
+        sprawdz(rowny && G.pole_podsektor.size() == P.pole_podsektor.size() && sas == sas_p,
+                "podział pól i liczba krawędzi jak po pełnej przebudowie");
+        bool stale = true;
+        const GrafPodsektorow G0 = zbuduj_graf_z_wejscia(wejscie_syntetyczne(21, {{0x500, 10, 10, 1}}), 7);
+        for (const auto& [id, p] : G0.podsektory)
+            if (!(p.sektor_i == 1 && p.sektor_j == 1) && (!G.podsektory.count(id) || G.podsektory.at(id).punkt_x != p.punkt_x)) stale = false;
+        sprawdz(stale, "podsektory innych sektorów: te same id i punkty reprezentatywne");
+    }
+    // 2. świat: gwardia niszczy dom (cel EEUGAttackUnit, obrażenia, Dying, kolejka fizyki, pola, termin i przebudowa)
+    auto tab = tablice_lub_skip();
+    if (!tab) return bledy ? FAIL : SKIP;
+    auto tablice = [] {
+        TabliceObrazen t = tablice_syntetyczne();
+        std::vector<float> w(64, 0.0f);
+        w[48] = 0.23562f; t.trafienie[0][3] = w;
+        w[48] = 0.33f; t.trafienie[1][3] = w;
+        w[48] = 0.462f; t.trafienie[2][3] = w;   // człowiek → komputer, klasa 3, rodzina 48 [P: walka_tabele]
+        return t;
+    };
+    const ParametryWalki g = gwardia_ee_pelna();
+    auto swiat = [&](int liczba_gwardii, int hp_domu, std::vector<IdJednostki>& gw, IdJednostki& dom) {
+        auto sw = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        sw->ustaw_tablice_walki(tablice(), wagi_ee_575());
+        ParametryRuchu pr;
+        for (int i = 0; i < liczba_gwardii; ++i) {
+            const IdJednostki a = sw->dodaj_jednostke(pr, 9.5 + i, 12.5, 3.14159265);
+            sw->ustaw_walke(a, 1, true, g, 215);
+            gw.push_back(a);
+        }
+        dom = sw->dodaj_obiekt_budynku(5, 37, 10, 10, 1, 10.5, 10.5, 0.0, dom_37(), hp_domu, true, 0x500, false);
+        sw->ustaw_wejscie_mapy(wejscie_syntetyczne(21, {{0x500, 10, 10, 1}}), 7);
+        return sw;
+    };
+    std::vector<IdJednostki> gw;
+    IdJednostki dom = 0;
+    auto sw = swiat(1, 30, gw, dom);
+    sprawdz(!sw->teren().pole_przejezdne(10, 10) && sw->teren().blokady(10, 10) == 1, "dom blokuje swoje pole (licznik blokad)");
+    sprawdz(!sw->jednostka(dom)->w_fizyce, "żywy budynek poza kolejką fizyki [P: 645]");
+    std::uint64_t t_smierci = 0, t_6001 = 0, t_6002 = 0, t_6003 = 0;
+    std::vector<int> obrazenia;
+    bool w_fizyce_po = false, przejezdne_przy_smierci = false, d8_przy_smierci = false, przebudowa_nast = false;
+    std::uint32_t d4 = 0, zegar_smierci = 0;
+    double z_po_1 = 0.0;
+    for (int k = 0; k < 2000 && !t_6003; ++k) {
+        const auto n0 = sw->zdarzenia_walki().size();
+        sw->takt();
+        for (std::size_t i = n0; i < sw->zdarzenia_walki().size(); ++i)
+            if (sw->zdarzenia_walki()[i].rodzaj == "trafienie" && sw->zdarzenia_walki()[i].cel == dom)
+                obrazenia.push_back(sw->zdarzenia_walki()[i].wartosc);
+        const Jednostka* d = sw->jednostka(dom);
+        if (!t_smierci && d->stan == 6000) {
+            t_smierci = sw->takty(); zegar_smierci = sw->zegar_ms();
+            przejezdne_przy_smierci = sw->teren().pole_przejezdne(10, 10);
+            d8_przy_smierci = sw->przebudowa_zaplanowana(); d4 = sw->termin_przebudowy();
+        } else if (t_smierci && sw->takty() == t_smierci + 1) {
+            w_fizyce_po = d->w_fizyce && sw->jednostki().back().id == dom;
+            przebudowa_nast = !sw->przebudowa_zaplanowana() && sw->przebudowy_sektorow() == 1;
+            z_po_1 = d->z;
+        }
+        if (!t_6001 && d->stan == 6001) t_6001 = sw->takty();
+        if (!t_6002 && d->stan == 6002) t_6002 = sw->takty();
+        if (!t_6003 && d->stan == 6003) t_6003 = sw->takty();
+    }
+    sw->takt();
+    std::printf("  obrażenia %zu × %d, śmierć w takcie %llu, 6001 +%llu, 6002 +%llu, 6003 +%llu, z po 1 takcie %.7f\n",
+                obrazenia.size(), obrazenia.empty() ? -1 : obrazenia[0], (unsigned long long)t_smierci,
+                (unsigned long long)(t_6001 - t_smierci), (unsigned long long)(t_6002 - t_6001), (unsigned long long)(t_6003 - t_6002), z_po_1);
+    sprawdz(!obrazenia.empty() && obrazenia[0] == 7 && obrazenia.size() == 5, "gwardia sama wybiera dom; 15 · 0,462 = 6,93 → 7 HP (30 HP → 5 trafień)");
+    sprawdz(przejezdne_przy_smierci && sw->teren().blokady(10, 10) == 0, "HP = 0 zwalnia pole od razu (martwy obiekt nie blokuje)");
+    sprawdz(d8_przy_smierci && d4 == zegar_smierci + 1, "zgłoszenie zmiany mapy przy śmierci: +0xD4 = czas + 1 ms [P: 645/647]");
+    sprawdz(w_fizyce_po, "budynek dodany do kolejki fizyki w następnym takcie, na koniec (przetwarzany pierwszy)");
+    sprawdz(przebudowa_nast, "przebudowa jednego sektora w pierwszym takcie po terminie [P: 647 – +0xD8 = 0 w 52295]");
+    sprawdz(std::fabs(z_po_1 - double(f32(0.0 - double(f32(1.5 / 44.0)) * double(f32(0.13))))) < 1e-9, "zapadanie się: z −= dt · 0,13 (0x54BF34)");
+    sprawdz(t_6001 - t_smierci == 453 && t_6002 - t_6001 == 1 && t_6003 - t_6002 == 59,
+            "Dying do z < −2,0 (0x601A4B: 452 kroki od z = 0, zdarzenie w kolejnym takcie), ResourcesRotting 1 takt, rozkład 2000 ms (59 taktów)");
+    sprawdz(!sw->jednostka(dom)->w_fizyce, "Dead: poza kolejką fizyki w następnym takcie");
+    sprawdz(sw->jednostka(gw[0])->stan == 5000 && sw->jednostka(gw[0])->kolejka_celow.empty(), "gwardia bez celu wraca do Idle (2025 → 5000)");
+    // 3. atak grupowy: trzy gwardie, bez zakleszczeń, wszystkie w Idle po zniszczeniu
+    {
+        std::vector<IdJednostki> g3;
+        IdJednostki d3 = 0;
+        auto s3 = swiat(3, 60, g3, d3);
+        int k = 0;
+        for (; k < 3000 && s3->jednostka(d3)->stan != 6003; ++k) s3->takt();
+        for (int i = 0; i < 5; ++i) s3->takt();
+        bool idle = true;
+        for (auto a : g3) idle = idle && s3->jednostka(a)->stan == 5000;
+        int traf = 0;
+        for (const auto& z : s3->zdarzenia_walki()) traf += z.rodzaj == "trafienie" && z.cel == d3;
+        std::printf("  trzy gwardie: %d trafień, Dead po %d taktach\n", traf, k);
+        sprawdz(idle && traf == 9 && k < 3000, "trzy gwardie: 60 HP / 7 = 9 trafień, po śmierci wszystkie w Idle");
+    }
+    // 4. dwa zgłoszenia w jednym takcie (dwa sektory): jeden sektor na przebieg, kolejny po 100 ms
+    {
+        auto s4 = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        s4->ustaw_wejscie_mapy(wejscie_syntetyczne(21, {{0x500, 10, 10, 1}, {0x501, 3, 3, 2}}), 7);
+        s4->takt();
+        sprawdz(s4->usun_obiekt_mapy(0x500) && s4->usun_obiekt_mapy(0x501), "dwa obiekty usunięte w jednym takcie");
+        const std::uint32_t t0 = s4->zegar_ms();
+        const auto d4a = s4->termin_przebudowy();
+        int k = 0;
+        std::vector<std::uint64_t> przebiegi;
+        for (; k < 20 && s4->przebudowa_zaplanowana(); ++k) { s4->takt(); przebiegi.push_back(s4->przebudowy_sektorow()); }
+        std::printf("  dwa sektory: termin %u (t %u), %d taktów do końca\n", d4a, t0, k);
+        sprawdz(d4a == t0 + 1 && s4->przebudowy_sektorow() == 2 && s4->przebudowy_grafu() == 1 && k == 4 && przebiegi[0] == 1,
+                "jeden termin dla obu zgłoszeń, 2 przebiegi sektorów (drugi po +100 ms – 3 takty później), jedna zakończona przebudowa");
+        s4->usun_obiekt_mapy(0x999);
+        sprawdz(!s4->przebudowa_zaplanowana(), "brak obiektu – bez zgłoszenia");
+    }
+    // 5. budynek 2 × 2: śmierć zwalnia wszystkie 4 pola; ponowny start (nowy świat) przywraca blokady i graf
+    {
+        auto s5 = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        s5->ustaw_tablice_walki(tablice(), wagi_ee_575());
+        ParametryWalki b = dom_37();
+        b.hp_max = 1500;
+        b.rozmiar = 2.0f;   // koszary 34: „Size of collider” 2,0 (+0x474) – miejsca podejścia poza obrysem 2 × 2
+        ParametryRuchu pr;
+        const IdJednostki a = s5->dodaj_jednostke(pr, 10.5, 13.5, 3.14159265);
+        s5->ustaw_walke(a, 1, true, g, 215);
+        const IdJednostki bar = s5->dodaj_obiekt_budynku(5, 34, 10, 10, 2, 11.0, 11.0, 0.0, b, 14, true, 0x600, false);
+        s5->ustaw_wejscie_mapy(wejscie_syntetyczne(21, {{0x600, 10, 10, 2}}), 7);
+        int bl0 = 0;
+        for (int x = 10; x < 12; ++x) for (int y = 10; y < 12; ++y) bl0 += s5->teren().blokady(x, y);
+        for (int k = 0; k < 600 && s5->jednostka(bar)->stan == 5000; ++k) s5->takt();
+        int bl1 = 0;
+        for (int x = 10; x < 12; ++x) for (int y = 10; y < 12; ++y) bl1 += s5->teren().blokady(x, y);
+        sprawdz(bl0 == 4 && bl1 == 0 && s5->jednostka(bar)->stan == 6000, "2 × 2: 4 pola zablokowane, po śmierci wszystkie wolne");
+        auto s6 = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        s6->dodaj_obiekt_budynku(5, 34, 10, 10, 2, 11.0, 11.0, 0.0, b, 14, true, 0x600, false);
+        s6->ustaw_wejscie_mapy(wejscie_syntetyczne(21, {{0x600, 10, 10, 2}}), 7);
+        sprawdz(s6->teren().blokady(10, 10) == 1 && s6->graf_podsektorow().podsektory.size() == 10, "restart: blokady i graf jak przed zniszczeniem");
+    }
+    // 6. trasa: rozkaz przez pole domu – przed zniszczeniem objazd, po zniszczeniu (nowy rozkaz) przez zwolnione pole
+    {
+        auto s7 = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        for (int x = 3; x <= 17; ++x) if (x != 10) s7->teren_edycja().ustaw_przejezdnosc(x, 10, false);   // mur w y = 10
+        ParametryRuchu pr;
+        const IdJednostki a = s7->dodaj_jednostke(pr, 10.5, 13.5, 0.0);
+        s7->ustaw_walke(a, 1, true, g, 215);
+        const IdJednostki d7 = s7->dodaj_obiekt_budynku(5, 37, 10, 10, 1, 10.5, 10.5, 0.0, dom_37(), 7, true, 0x500, false);
+        s7->rozkaz_ruchu(a, 10.5, 7.5);
+        s7->takt();
+        const auto przed = s7->jednostka(a)->trasa;
+        bool przez = false;
+        for (const auto& p : przed) przez = przez || (podloga(p.x) == 10 && podloga(p.y) == 10);
+        s7->jednostka(d7)->boj->s.hp = 0;   // śmierć poza walką – tylko do testu trasy
+        s7->teren_edycja().zdejmij_blokade(10, 10);
+        s7->takt();
+        const auto przed2 = s7->jednostka(a)->trasa;
+        s7->rozkaz_ruchu(a, 10.5, 7.5);
+        s7->takt();
+        bool przez2 = false;
+        for (const auto& p : s7->jednostka(a)->trasa) przez2 = przez2 || (podloga(p.x) == 10 && podloga(p.y) == 10);
+        std::printf("  trasa przed: %zu punktów (przez pole domu: %d), po nowym rozkazie: %zu (przez pole: %d)\n", przed.size(),
+                    int(przez), s7->jednostka(a)->trasa.size(), int(przez2));
+        sprawdz(!przez && przez2 && przed2.size() == przed.size(), "stara trasa bez zmian po zmianie mapy; nowy rozkaz – przez zwolnione pole");
+    }
+    return bledy ? FAIL : PASS;
+}
+
 int main(int argc, char** argv) {
     const std::map<std::string, std::function<int()>> grupy = {
         {"trygonometria", test_trygonometria}, {"rng", test_rng}, {"teren", test_teren}, {"ruch", test_ruch},
-        {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka}, {"walka_swiat", test_walka_swiat}, {"morale", test_morale},
+        {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka}, {"walka_swiat", test_walka_swiat}, {"morale", test_morale}, {"budynki", test_budynki},
         {"podsystemy", test_podsystemy}};
     std::vector<std::string> wybrane;
     for (int i = 1; i < argc; ++i) wybrane.push_back(argv[i]);

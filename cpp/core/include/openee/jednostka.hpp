@@ -128,6 +128,17 @@ struct Jednostka {
     // obiekt jest w kolejce od dodania (koniec kolejki) do zatwierdzenia usunięcia na początku następnego taktu.
     bool w_fizyce = true;
     bool usun_z_fizyki = false;   // kolejka usunięć +0xB04 (zatwierdzana w 0x53066A)
+    bool dodaj_do_fizyki = false; // etap 47: kolejka dodań +0xAF0 (Kill 0x5ED43F → 0x5ED494 → 0x530896)
+
+    // --- etap 47: budynek (typ +0x600 „Is building?”) – ta sama klasa EEUnit (vtable 0x831494 jak gwardia [P: 645]),
+    // EEUC z „Unit type” (2 → EEUCBuilding 0x8335A8, fabryka 0x62188D [W]), fizyka EEPMBuilding (0x82CCC0).
+    // Żywy budynek nie jest w kolejce fizyki (dodanie dopiero przy śmierci) [P: 645 – lista fizyki]. Pola: kotwica
+    // (rekord SCN X, Y = +0x1C/+0x20) i kwadrat n × n („Square occupied”).
+    bool budynek = false;
+    int kwadrat = 1;
+    bool blokuje_pola = false;      // typ +0x600 – pola X..X+n−1 × Y..Y+n−1 nieprzejezdne, dopóki HP > 0
+    std::uint32_t id_mapy = 0;      // identyfikator obiektu na listach pól (wejście grafu, WejscieRegionow)
+    int typ_db = -1;                // dbobjects ID (+0x4B8)
 
     // --- trasa: kolejka punktów (+0x7C) i suma długości ---
     std::vector<Punkt2> trasa;

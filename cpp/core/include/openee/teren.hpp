@@ -50,6 +50,12 @@ public:
     void ustaw_przejezdnosc(std::int64_t ix, std::int64_t iy, bool p);
     /// Komórka istnieje, nie leży na linii brzegu rombu i jest przejezdna (teren + obiekty stałe).
     bool pole_przejezdne(std::int64_t ix, std::int64_t iy) const;
+    /// Etap 47 – żywe obiekty blokujące na liście pola (typ +0x600, test 0x41D36A → vt+0x48 [W]): licznik na pole, żeby
+    /// zniszczenie jednego obiektu (HP = 0 – obiekt martwy nie blokuje [W: astar_pola.md § 7]) zwalniało pole tylko
+    /// wtedy, gdy nie stoi na nim inny. Przejezdność terenu (ustaw_przejezdnosc) pozostaje osobno.
+    void dodaj_blokade(std::int64_t ix, std::int64_t iy);
+    bool zdejmij_blokade(std::int64_t ix, std::int64_t iy);
+    int blokady(std::int64_t ix, std::int64_t iy) const;
     /// Linie brzegu rombu mapy (EEMap +0x1816EC/F0/F4): x + y = a, x + y = b, |y − x| = c. Wyłączone, gdy brak.
     void ustaw_romb(int a, int b, int c) { romb_ = {a, b, c}; romb_aktywny_ = true; }
     bool na_brzegu_rombu(std::int64_t ix, std::int64_t iy) const {
@@ -60,6 +66,7 @@ private:
     int szer_ = 0, wys_ = 0;
     std::vector<float> z_;
     std::vector<std::uint8_t> przejezdne_;
+    std::vector<std::uint16_t> blokady_;   // etap 47
     std::vector<std::uint8_t> istnieje_;
     std::array<int, 3> romb_{0, 0, 0};
     bool romb_aktywny_ = false;

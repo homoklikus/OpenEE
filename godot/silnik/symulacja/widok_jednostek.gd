@@ -188,7 +188,11 @@ func transformacja(j: JednostkaSym, alfa: float) -> Transform3D:
 	var k := j.kurs_poprz + UkladEE.roznica_katow(j.kurs, j.kurs_poprz) * alfa
 	var e: Dictionary = _jedn.get(j.id, {})
 	var s: float = e.get("skala", 1.0)
-	return Transform3D(UkladEE.baza(UkladEE.R_z_kata(k)) * s, UkladEE.godot(p, sym.mapa.wysokosc(p)))
+	var h: float = sym.mapa.wysokosc(p)
+	if j.budynek:   # etap 47: przesunięcie wysokości budynku z Core (Dying – zapadanie się), skala wysokości mapy
+		var kf := get_node_or_null("/root/Konfiguracja")   # autoload z drzewa (skrypt kompilowany też w testach bez autoloadów)
+		h += (lerpf(j.z_poprz, j.z, alfa) - j.z0) * (float(kf.skala_wysokosci) if kf else 1.0)
+	return Transform3D(UkladEE.baza(UkladEE.R_z_kata(k)) * s, UkladEE.godot(p, h))
 
 
 func _aktualizuj_transformacje(wszystkie: bool) -> void:

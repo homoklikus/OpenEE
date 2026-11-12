@@ -39,12 +39,14 @@ func _start() -> void:
 	var ob := {}
 	for r in Z.tabela("dbobjects"): ob[int(r.ID)] = r
 	var potyczka = load("res://sceny/potyczka.gd")
+	var rek := {}   # etap 47: rekordy SCN wg id (kotwica X, Y budynków)
 	var n := 0
 	for g in range(s.gracze.size()):
 		for u in s.gracze[g].jednostki:
 			n += 1
 			var o: Dictionary = ob.get(int(u.type), {})
 			if o.is_empty() or int(u.get("valid", 0)) == 0: continue
+			rek["0x%x" % int(u.get("id", 0))] = u
 			if int(o.get("Unit type", -1)) in [5, 6, 13, 16, 23, 4, 18, 21, 22] and float(o.get("Speed", 0)) > 0: continue
 			c.dodaj_obiekt_mapy({"id": int(u.get("id", 0x7000000 + n)), "typ": int(u.type), "gracz": g, "X": int(u.get("X", 0)),
 				"Y": int(u.get("Y", 0)), "kwadrat": maxi(1, int(o.get("Square occupied", 1))), "blokuje": potyczka._blokuje(int(u.type), o)})
@@ -69,7 +71,11 @@ func _start() -> void:
 		for g2 in gracze:
 			if g1 != g2: c.ustaw_wrogow(g1, g2, true)
 	var graf := -1
-	if _arg("graf-wejscie", "") != "":
+	var wm: Dictionary = ObiektyScnCore.wejscie(c, s, Z)   # etap 47: obiekty pól z SCN (też flagi typów budynków, +0x612)
+	if _arg("graf-scn", "0") == "1":   # etap 47: graf z samego SCN i baz gry (etap 44), wejście zachowane w świecie
+		graf = c.zbuduj_graf_z_wejscia(wm, int(wm.get("komorka", 19))).get("podsektorow", -1)
+		if _arg("przebudowa-pelna", "0") == "1": c.ustaw_przebudowe_pelna(true)
+	elif _arg("graf-wejscie", "") != "":
 		graf = c.zbuduj_graf_z_wejscia(JSON.parse_string(FileAccess.get_file_as_string(_arg("graf-wejscie", ""))), 19).get("podsektorow", -1)
 	var core_id := {}   # id gry → id Core
 	var gra_id := {}
@@ -82,6 +88,19 @@ func _start() -> void:
 
 	for j in lista:
 		var ty := str(int(j["typ"]))
+		var obt: Dictionary = ob.get(int(ty), {})
+		if int(obt.get("Is building?", 0)) != 0:   # etap 47: budynek – obiekt Core z rekordu SCN i dbobjects
+			var r: Dictionary = rek.get(str(j["id"]), {})
+			var pb := ObiektyScnCore.parametry_budynku(obt)
+			pb["rozmiar_jeden"] = int(wm.get("typy", {}).get("typ:%d" % int(ty), [0, 0, 0, 0])[3])   # +0x612 (zestaw 9)
+			pb.merge({"gracz": int(j["gracz"]), "typ": int(ty), "X": int(r.get("X", floor(float(j["x"])))),
+				"Y": int(r.get("Y", floor(float(j["y"])))), "kwadrat": maxi(1, int(obt.get("Square occupied", 1))),
+				"x": float(j["x"]), "y": float(j["y"]), "z": float(j["z"]) if j.get("z") != null else 0.0,
+				"hp": int(j["hp"]) if j["hp"] != null else int(obt.get("Health", 0)), "blokuje": 1,
+				"id_mapy": str(j["id"]), "w_siatce": 1}, true)
+			var bid: int = c.dodaj_budynek(pb)
+			core_id[str(j["id"])] = bid; gra_id[bid] = str(j["id"])
+			continue
 		if not par["ruch"].has(ty) or not par["walka"].has(ty):
 			print("BŁĄD: brak parametrów typu ", ty); quit(1); return
 		var id: int = c.dodaj_jednostke(par["ruch"][ty], float(j["x"]), float(j["y"]), float(j["kurs"]))
@@ -139,6 +158,10 @@ func _start() -> void:
 				kq += "%s(%.4f,%.4f,%s);" % [str(e.rodzaj).substr(4, 3), float(e.x), float(e.y), gra_id.get(int(e.cel), "0")]
 			pr[gid] = [int(d.stan), float(d.x), float(d.y), float(d.kurs), int(d.get("hp", -1)), gra_id.get(int(d.get("cel", 0)), "0"), kq, float(d.v), float(c.jednostka(int(d.id)).get("z", 0.0))]
 		if _arg("rng", "0") == "1": pr["rng"] = int(c.diagnostyka().get("rng_stan", 0))   # etap 45: stan generatora
+		if _arg("graf-scn", "0") == "1":   # etap 47: menedżer przebudowy (termin, flaga, zmienione sektory) i kolejka fizyki
+			var sg: Dictionary = c.stan_grafu()
+			pr["graf"] = [int(sg["d4"]), bool(sg["d8"]), int(sg["zmienione_sektory"]), int(sg["przebudowy_sektorow"]), int(sg["maks_id"])]
+			pr["fizyka"] = c.kolejka_fizyki().map(func(v): return gra_id.get(int(v), "?"))
 		wynik.probki.append([k, snappedf(T0 + TAKT_MS * (k + 1), 0.1), pr])
 	# etap 46 (I2): tryb porównania – zgodność „algorytmem” (własny stan generatora od ziarna) vs „ze stanem z nagrania”
 	wynik["tryb_rng"] = "stan_startowy_z_nagrania" if rng_tylko_start else ("z_nagrania_co_takt" if not rng_gry.is_empty() else "wlasny")

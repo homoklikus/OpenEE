@@ -235,6 +235,11 @@ def zbuduj(wej, wyj, uklad_plik, riverlands):
                 struct.pack_into("<f", rec, t + 12, float(x)); struct.pack_into("<f", rec, t + 28, float(y))
                 if "z" in grp:
                     struct.pack_into("<f", rec, t + 44, float(grp["z"]))
+                # etap 47: nadpisanie pól rekordu (np. "u3c" – część HP przy wczytaniu, "type" – typ obiektu z tym samym
+                # układem rekordu); format pola z gramatyki jednostki
+                for pole, wart in grp.get("pola", {}).items():
+                    fmt = next(el[0] for el in G.GRAMATYKA_JEDNOSTKI if len(el) > 1 and el[1] == pole)
+                    struct.pack_into("<" + fmt, rec, off[pole], float(wart) if fmt == "f" else int(wart))
                 wstawki.setdefault(nast % G.KUBELKI, []).append(bytes(rec))
                 ids.append(hex(nid))
                 nast += 1

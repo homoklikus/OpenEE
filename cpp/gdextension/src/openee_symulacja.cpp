@@ -4,7 +4,9 @@
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+#include <algorithm>
 #include <array>
+#include <map>
 #include <cstdio>
 
 using namespace godot;
@@ -57,6 +59,11 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("ustaw_skrypt_jednostki", "id", "nazwa"), &OpenEESymulacja::ustaw_skrypt_jednostki);
     ClassDB::bind_method(D_METHOD("ustaw_stan_rng", "stan"), &OpenEESymulacja::ustaw_stan_rng);
     ClassDB::bind_method(D_METHOD("kolejka_fizyki"), &OpenEESymulacja::kolejka_fizyki);
+    ClassDB::bind_method(D_METHOD("dodaj_budynek", "parametry"), &OpenEESymulacja::dodaj_budynek);   // etap 47
+    ClassDB::bind_method(D_METHOD("ustaw_przebudowe_pelna", "pelna"), &OpenEESymulacja::ustaw_przebudowe_pelna);
+    ClassDB::bind_method(D_METHOD("stan_grafu"), &OpenEESymulacja::stan_grafu);
+    ClassDB::bind_method(D_METHOD("graf_okno", "x0", "x1", "y0", "y1"), &OpenEESymulacja::graf_okno);
+    ClassDB::bind_method(D_METHOD("blokady_pola", "x", "y"), &OpenEESymulacja::blokady_pola);
     ClassDB::bind_method(D_METHOD("usun_obiekt_mapy", "id"), &OpenEESymulacja::usun_obiekt_mapy);
     ClassDB::bind_method(D_METHOD("migawka_diagnostyczna", "szczegoly"), &OpenEESymulacja::migawka_diagnostyczna, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("ustaw_faze_leczenia", "id", "takty"), &OpenEESymulacja::ustaw_faze_leczenia);
@@ -71,7 +78,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.19.0 (etap 45, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.20.0 (etap 47, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -202,6 +209,15 @@ Dictionary OpenEESymulacja::jednostka(int64_t id) const {
     d["macierz"] = m;
     d["zdjete_punkty"] = int64_t(u->zdjete_punkty);
     d["pozostalo_punktow"] = int64_t(u->pozostalo_punktow());
+    d["budynek"] = u->budynek;   // etap 47
+    d["w_fizyce"] = u->w_fizyce;
+    if (u->budynek) {
+        d["kwadrat"] = u->kwadrat;
+        d["X"] = int64_t(u->komorka_x);
+        d["Y"] = int64_t(u->komorka_y);
+        d["typ"] = u->typ_db;
+    }
+    if (u->boj) { d["hp"] = u->boj->s.hp; d["hp_max"] = u->boj->p.hp_max; d["gracz"] = u->gracz; }
     return d;
 }
 
@@ -329,8 +345,109 @@ bool OpenEESymulacja::pole_przejezdne(int64_t x, int64_t y) const { return swiat
 
 // ---------------------------------------------------------------------------------------------- walka (etap 31)
 
+namespace {
+openee::ParametryWalki parametry_walki(const Dictionary& d, int64_t hp);
+}
+
 bool OpenEESymulacja::ustaw_walke(int64_t id, int64_t gracz, bool czlowiek, const Dictionary& d, int64_t hp) {
     if (!swiat_) return false;
+    const openee::ParametryWalki p = parametry_walki(d, hp);
+    openee::UstawieniaAI ai;   // etap 38: ustawienia AI typu/postawy (domyślne jak dotąd; pola z d – dane wejściowe)
+    ai.szuka_wrogow = bool(liczba(d, "ai_szuka_wrogow", 1));
+    ai.poscig_poza_icl = bool(liczba(d, "ai_poscig_poza_icl", 1));
+    ai.wraca_do_icl = bool(liczba(d, "ai_wraca_do_icl", 0));
+    ai.moze_swobodnie = bool(liczba(d, "ai_moze_swobodnie", 1));
+    if (!swiat_->ustaw_walke(openee::IdJednostki(id), int(gracz), czlowiek, p, int(hp), ai)) return false;
+    // stan licznika +0x290 w chwili startu (odczyt z nagrania; domyślnie 0 = regeneracja w pierwszym takcie) [P: kod]
+    swiat_->jednostka(openee::IdJednostki(id))->boj->regeneracja_ms = int(liczba(d, "regeneracja_ms", 0));
+    return true;
+}
+
+// etap 47: budynek jako obiekt Core (dbobjects + rekord SCN); logika obrażeń, śmierci i mapy w Core
+int64_t OpenEESymulacja::dodaj_budynek(const Dictionary& d) {
+    if (!swiat_) return -1;
+    const int64_t hp = int64_t(liczba(d, "hp", 0));
+    const openee::ParametryWalki p = parametry_walki(d, hp);
+    const auto id = swiat_->dodaj_obiekt_budynku(int(liczba(d, "gracz", 0)), int(liczba(d, "typ", -1)), int(liczba(d, "X", 0)),
+                                                 int(liczba(d, "Y", 0)), int(liczba(d, "kwadrat", 1)), liczba(d, "x", 0),
+                                                 liczba(d, "y", 0),
+                                                 d.has("z") ? liczba(d, "z", 0)   // z zapisu scenariusza albo GetMeshZ terenu
+                                                            : swiat_->teren().get_mesh_z(liczba(d, "x", 0), liczba(d, "y", 0)),
+                                                 p, int(hp),
+                                                 bool(liczba(d, "blokuje", 1)),
+                                                 d.get("id_mapy", 0).get_type() == Variant::STRING
+                                                     ? std::uint32_t(String(d["id_mapy"]).hex_to_int())
+                                                     : std::uint32_t(int64_t(d.get("id_mapy", 0))),
+                                                 bool(liczba(d, "w_siatce", 0)));
+    return int64_t(id);
+}
+
+void OpenEESymulacja::ustaw_przebudowe_pelna(bool p) { if (swiat_) swiat_->ustaw_przebudowe_pelna(p); }
+
+Dictionary OpenEESymulacja::stan_grafu() const {
+    Dictionary d;
+    if (!swiat_) return d;
+    const auto& g = swiat_->graf_podsektorow();
+    d["podsektorow"] = int64_t(g.podsektory.size());
+    d["maks_id"] = g.maks_id;
+    Array w;
+    for (int v : g.wolne_id) w.push_back(v);
+    d["wolne_id"] = w;
+    d["zmienione_sektory"] = int64_t(swiat_->zmienione_sektory());
+    d["przebudowy_sektorow"] = int64_t(swiat_->przebudowy_sektorow());
+    d["przebudowy_grafu"] = int64_t(swiat_->przebudowy_grafu());
+    d["wersja_grafu"] = int64_t(swiat_->wersja_grafu());
+    d["d8"] = swiat_->przebudowa_zaplanowana();
+    d["d4"] = int64_t(swiat_->termin_przebudowy());
+    Array n;
+    for (int v : swiat_->ostatnie_nowe_podsektory()) n.push_back(v);
+    d["ostatnie_nowe"] = n;
+    return d;
+}
+
+// podsektory z co najmniej jednym polem w prostokącie [x0, x1] × [y0, y1]: id, pola (przebiegi [x, y0, y1] w kolejności
+// kontenera), punkt, sąsiedzi, rodzaj – format odczytu `mapa_obszar`/`podsektory` z gry
+Array OpenEESymulacja::graf_okno(int64_t x0, int64_t x1, int64_t y0, int64_t y1) const {
+    Array a;
+    if (!swiat_) return a;
+    const auto& g = swiat_->graf_podsektorow();
+    std::map<int, std::vector<std::pair<int, int>>> pola;
+    for (const auto& [k, id] : g.pole_podsektor) pola[id].push_back({int(k >> 32), int(k & 0xffffffff)});
+    for (const auto& [id, p] : g.podsektory) {
+        auto& L = pola[id];
+        bool w = false;
+        for (const auto& q : L) if (q.first >= x0 && q.first <= x1 && q.second >= y0 && q.second <= y1) { w = true; break; }
+        if (!w) continue;
+        std::sort(L.begin(), L.end());   // jak odczyt gry: kolumny x rosnąco (kubełki kontenera), przebiegi y
+        Array runs;
+        for (std::size_t i = 0; i < L.size();) {
+            std::size_t j = i;
+            while (j + 1 < L.size() && L[j + 1].first == L[i].first && L[j + 1].second == L[j].second + 1) ++j;
+            Array r; r.push_back(L[i].first); r.push_back(L[i].second); r.push_back(L[j].second);
+            runs.push_back(r);
+            i = j + 1;
+        }
+        Dictionary e;
+        e["id"] = id;
+        Array pkt; pkt.push_back(p.punkt_x); pkt.push_back(p.punkt_y);
+        e["punkt"] = pkt;
+        Array sas;
+        for (int q : p.sasiedzi) sas.push_back(q);
+        e["sasiedzi"] = sas;
+        e["rodzaj"] = p.rodzaj;
+        Array sek; sek.push_back(p.sektor_i); sek.push_back(p.sektor_j);
+        e["sektor"] = sek;
+        e["pola"] = runs;
+        e["liczba_pol"] = int64_t(L.size());
+        a.push_back(e);
+    }
+    return a;
+}
+
+int64_t OpenEESymulacja::blokady_pola(int64_t x, int64_t y) const { return swiat_ ? swiat_->teren().blokady(x, y) : -1; }
+
+namespace {
+openee::ParametryWalki parametry_walki(const Dictionary& d, int64_t hp) {
     openee::ParametryWalki p;
     p.hp_max = int(liczba(d, "hp_max", double(hp)));
     p.atak = float(liczba(d, "atak", 0));
@@ -352,6 +469,7 @@ bool OpenEESymulacja::ustaw_walke(int64_t id, int64_t gracz, bool czlowiek, cons
     p.rozmiar = float(liczba(d, "rozmiar", 0.5));
     p.rozmiar_jeden = bool(liczba(d, "rozmiar_jeden", 0));
     p.punktowy = bool(liczba(d, "punktowy", 0));
+    p.atakuje_mury = bool(liczba(d, "atakuje_mury", 0));   // etap 47: typ +0x61E
     p.szukanie_ms = int(liczba(d, "szukanie_ms", 0));
     p.zasieg_min = float(liczba(d, "zasieg_min", 0));
     p.pole_ac = float(liczba(d, "pole_ac", 0));
@@ -371,16 +489,9 @@ bool OpenEESymulacja::ustaw_walke(int64_t id, int64_t gracz, bool czlowiek, cons
     p.smierc_ms_klatki = int(liczba(d, "smierc_ms_klatki", 0)); // „wartość” sekwencji = ms na klatkę
     p.rozklad_ms = int(liczba(d, "rozklad_ms", 0));             // dbobjects „Rotting time” × 1000
     p.zasoby = int(liczba(d, "zasoby", 0));
-    openee::UstawieniaAI ai;   // etap 38: ustawienia AI typu/postawy (domyślne jak dotąd; pola z d – dane wejściowe)
-    ai.szuka_wrogow = bool(liczba(d, "ai_szuka_wrogow", 1));
-    ai.poscig_poza_icl = bool(liczba(d, "ai_poscig_poza_icl", 1));
-    ai.wraca_do_icl = bool(liczba(d, "ai_wraca_do_icl", 0));
-    ai.moze_swobodnie = bool(liczba(d, "ai_moze_swobodnie", 1));
-    if (!swiat_->ustaw_walke(openee::IdJednostki(id), int(gracz), czlowiek, p, int(hp), ai)) return false;
-    // stan licznika +0x290 w chwili startu (odczyt z nagrania; domyślnie 0 = regeneracja w pierwszym takcie) [P: kod]
-    swiat_->jednostka(openee::IdJednostki(id))->boj->regeneracja_ms = int(liczba(d, "regeneracja_ms", 0));
-    return true;
+    return p;
 }
+}  // namespace
 
 bool OpenEESymulacja::ustaw_tablice_walki(const Dictionary& d, const Array& wagi) {
     if (!swiat_) return false;
@@ -826,6 +937,7 @@ Array OpenEESymulacja::stan_jednostek() const {
         d["stan"] = u.stan;
         d["tryb"] = int(u.tryb);
         d["gracz"] = u.gracz;
+        d["budynek"] = u.budynek;   // etap 47
         if (u.boj) {
             d["hp"] = u.boj->s.hp;
             d["hp_max"] = u.boj->p.hp_max;

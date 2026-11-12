@@ -6,6 +6,18 @@
   {
    "data": "2026-11-12",
    "tytul": {
+    "pl": "Etap 47: budynki, które można zniszczyć",
+    "en": "Stage 47: buildings that can be destroyed"
+   },
+   "tekst": {
+    "pl": "Budynki są teraz pełnoprawnymi obiektami symulacji: jednostki je atakują, budynek zapada się w ziemię jak w Empire Earth, a mapa tras odświeża tylko zmieniony fragment, tak jak oryginał. W potyczce gwardia niszczy dom i przechodzi przez zwolnione miejsce.",
+    "en": "Buildings are now full simulation objects: units attack them, a destroyed building sinks into the ground as in Empire Earth, and the route map refreshes only the changed area, like the original. In the skirmish, guards destroy a house and walk through the freed space."
+   },
+   "raport": "RAPORT_ETAP_47.md"
+  },
+  {
+   "data": "2026-11-12",
+   "tytul": {
     "pl": "Etap 46: leczenie bohatera i reakcja na atak",
     "en": "Stage 46: hero healing and reaction to attacks"
    },
@@ -13,7 +25,7 @@
     "pl": "Bohater-uzdrowiciel szuka rannych sojuszników, podchodzi i leczy ich w tym samym rytmie co w Empire Earth, a po trafieniu reaguje tak jak w oryginale. Mapa tras przebudowuje się po zniszczeniu budynku zamiast w każdej klatce, a potyczka korzysta z właściwych skryptów jednostek.",
     "en": "The healer hero now looks for wounded allies, walks over and heals them at the same pace as in Empire Earth, and reacts to being hit like the original. The route map is rebuilt after a building is destroyed instead of every frame, and skirmishes use the proper unit scripts."
    },
-   "raport": "RAPORT_ETAP_46.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_46.md"
   },
   {
    "data": "2026-11-10",

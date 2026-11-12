@@ -373,6 +373,15 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
             if (u.boj) u.boj->licznik_2a8 = 0;
             break;
         case 6003:  // Dead: obiekt do usunięcia z kolejki fizyki (0x530913) – zatwierdzenie w następnym takcie
+            // etap 47: budynek znika z list pól; bez ponownego zgłoszenia zmiany mapy [P: 645 – +0xD4 = 62011 także po
+            // 6003 w t = 87342]
+            if (u.budynek && wejscie_) {
+                for (auto it = wejscie_->obiekty.begin(); it != wejscie_->obiekty.end();) {
+                    auto& l = it->second;
+                    l.erase(std::remove_if(l.begin(), l.end(), [&](const ObiektPolaRegionu& o) { return o.id == u.id_mapy; }), l.end());
+                    if (l.empty()) it = wejscie_->obiekty.erase(it); else ++it;
+                }
+            }
             // [P: 641 – 578: 0x5000ad0 stan 6003 w t = 105945, poza kolejką od t = 105979; 0x5000ad3 138164 → 138198;
             //  590: analogicznie]; wywołujący z grupy 0x5EED94/0x5EF968/0x5F120A/0x6163E3 [N: który]
             u.usun_z_fizyki = true;
@@ -430,6 +439,15 @@ void Swiat::takt() {
     rng_.krok();  // 0x546CE9 (0x546C63)
     // etap 45: zatwierdzenie kolejek dodań/usunięć fizyki 0x53066A (wywołanie 0x546D35): nowe obiekty na koniec (w Core
     // już przy dodaniu – vector), usunięte znikają z kolejki; kolejność pozostałych bez zmian [W; P: 641]
+    // etap 47: dodania (Kill → 0x530896): obiekt nieobecny w kolejce → na koniec (pętla od końca – przetwarzany pierwszy)
+    for (const IdJednostki id : kolejka_dodan_) {
+        auto it = std::find_if(jednostki_.begin(), jednostki_.end(), [&](const Jednostka& j) { return j.id == id; });
+        if (it == jednostki_.end() || it->w_fizyce) continue;
+        it->dodaj_do_fizyki = false;
+        it->w_fizyce = true;
+        std::rotate(it, it + 1, jednostki_.end());
+    }
+    kolejka_dodan_.clear();
     for (auto& u : jednostki_)
         if (u.usun_z_fizyki) { u.usun_z_fizyki = false; u.w_fizyce = false; }
     rng_.krok();  // 0x547C09 w 0x547B6B, wywołanej z 0x546D4C – przed pętlą jednostek 0x547AAD (wywołanie 0x546D6B) [W]
@@ -453,6 +471,12 @@ void Swiat::takt() {
     for (std::size_t i = jednostki_.size(); i-- > 0;) {  // od końca listy (0x547AAD)
         Jednostka& u = jednostki_[i];
         if (!u.w_fizyce) continue;   // poza kolejką 0x918DDC – bez maszyny stanów i fizyki (0x547E0E)
+        if (u.budynek) {   // etap 47: EEPMBuilding – tryb 2 (0x54BF34) w Dying, poza nim nic (tryb 6, gałąź domyślna)
+            krok_maszyny(u);
+            if (u.stan == 6000) krok_budynku(u);
+            if (u.boj) liczniki_walki(u);
+            continue;
+        }
         krok_maszyny(u);
         if (u.tryb == TrybRuchu::do_celu) {  // tryb 1: pozycja celu ataku (cel +0x30 → +0x13C/+0x14C) w chwili fizyki
             if (Jednostka* t = cel_ataku(u)) {
@@ -660,6 +684,9 @@ void Swiat::odbuduj_kontakty(Jednostka& u, double cx, double cy) {
     const std::int64_t xa = podloga(f32(cx - R)), xb = podloga(f32(cx + R)), ya = podloga(f32(cy - R)), yb = podloga(f32(cy + R));
     for (auto& o : jednostki_) {
         if (o.id == u.id) continue;
+        // etap 47: budynki nie trafiają na listę kontaktów [P: 645 – gwardia 0x1000855 z polem domu w oknie ma 2 kontakty
+        // (dwie gwardie), nie 3]; blokują przez przejezdność pola (TerenSiatka)
+        if (o.budynek || u.budynek) continue;
         if (o.komorka_x < xa || o.komorka_x > xb || o.komorka_y < ya || o.komorka_y > yb) continue;
         u.lista_kontaktow.push_back(o.id);
         o.lista_kontaktow.push_back(u.id);
@@ -1009,14 +1036,15 @@ bool Swiat::ustaw_faze_leczenia(IdJednostki id, int takty_od_szukania) {
 }
 
 bool Swiat::potrzebuje_leczenia(const Jednostka& u, const Jednostka& h) const {
-    // 18001 (0x612E9C) i 0x630E07: cel żyje, HP/HPmax (x87: fild/fidiv) wobec typ+0x49C (bohaterowie 1,0 – odczyt
-    // pamięci [P]), ten sam gracz albo sojusznik [W]. Kod czytany statycznie daje „≤” (pełne HP kwalifikuje), ale
-    // pomiar 644 (bohater) pokazuje: po leczeniu do pełnego HP następny takt 16001 → 2025, a szukanie przy pełnym HP
-    // sojusznika kończy się bez celu [P]. Core stosuje porównanie ostre (HP/HPmax < próg) zgodne z pomiarem;
-    // rozbieżność z odczytem kodu – [N] (BLEDY_ORYGINALU/otwarte problemy raportu 46).
-    if (!h.boj || h.boj->s.hp <= 0 || h.boj->p.hp_max <= 0) return false;
+    // 18001 (0x612E9C) i 0x630E07 [W: kod; P: 644 – koniec leczenia przy pełnym HP, brak celu przy pełnym HP]:
+    //  1) 0x5EDC82: HP > 0 i HP < HP maks. (+0x144 ulepszenia, porównanie całkowite ostre) i bajt +0x340 ≠ 0;
+    //  2) HP/HP maks. (x87 fild/fidiv) ≤ typ+0x49C (fcompp, jb → odrzucenie przy progu < ilorazie);
+    //  3) ten sam gracz albo sojusznik [W]. Etap 47: rozbieżność z etapu 46 wyjaśniona – pełne HP odrzuca warunek 1
+    //  (wcześniej Core stosował ostre „iloraz < próg”, co przy progu 1,0 dawało ten sam wynik). Bajt +0x340 (rekord SCN
+    //  c340 = 1 dla jednostek testowych) – w Core zawsze 1 [H].
+    if (!h.boj || h.boj->s.hp <= 0 || h.boj->p.hp_max <= 0 || h.boj->s.hp >= h.boj->p.hp_max) return false;
     const long double r = (long double)h.boj->s.hp / (long double)h.boj->p.hp_max;
-    return (long double)u.boj->p.leczenie_prog > r && h.gracz == u.gracz;
+    return !((long double)u.boj->p.leczenie_prog < r) && h.gracz == u.gracz;
 }
 
 bool Swiat::w_zasiegu_leczenia(const Jednostka& u, const Jednostka& h) const {
@@ -1053,6 +1081,7 @@ void Swiat::ustaw_wejscie_mapy(WejscieRegionow w, int komorka, bool zbuduj) {
     wejscie_ = std::move(w);
     komorka_grafu_ = komorka;
     pola_zmienione_.clear();
+    zmienione_sektory_.clear();
     przebudowa_d8_ = false;
     ++wersja_grafu_;
 }
@@ -1081,11 +1110,21 @@ bool Swiat::usun_obiekt_mapy(std::uint32_t id) {
 }
 
 void Swiat::zglos_zmiane_mapy(const std::vector<int>& pola, bool natychmiast) {
-    // 0x422DB6: lista pól posortowana bez powtórzeń; 0x4A36F3: przebudowa już zlecona (+0xD8) → termin bez zmian, inaczej
-    // +0xD4 = teraz (PH+0xD0) + 1 ms albo + fistp(f32(*0x9183C0 · 10000)) [W]
+    // 0x422DB6: lista pól posortowana bez powtórzeń, pogrupowana wg sektora (0x425FD4 → id sektora +0x48) w mapie +0x10
+    // menedżera (std::map – sektory rosnąco); 0x4A36F3: przebudowa już zlecona (+0xD8) → termin bez zmian, inaczej
+    // +0xD4 = teraz (PH+0xD0) + 1 ms albo + fistp(f32(*0x9183C0 · 10000)) [W; P: 645 – +0xD4 = t śmierci + 1]
     pola_zmienione_.insert(pola_zmienione_.end(), pola.begin(), pola.end());
     std::sort(pola_zmienione_.begin(), pola_zmienione_.end());
     pola_zmienione_.erase(std::unique(pola_zmienione_.begin(), pola_zmienione_.end()), pola_zmienione_.end());
+    if (wejscie_ && wejscie_->N > 0 && komorka_grafu_ > 0) {
+        std::vector<int> p = pola;
+        std::sort(p.begin(), p.end());
+        p.erase(std::unique(p.begin(), p.end()), p.end());
+        for (std::size_t k = p.size(); k-- > 0;) {   // 0x422DB6: od ostatniego pola
+            const int x = p[k] / wejscie_->N, y = p[k] % wejscie_->N;
+            zmienione_sektory_[{x / komorka_grafu_, y / komorka_grafu_}].push_back({x, y});
+        }
+    }
     if (przebudowa_d8_) return;
     termin_d4_ = natychmiast ? zegar_ms_ + 1u
                              : zegar_ms_ + std::uint32_t(std::nearbyint(f32(double(opoznienie_przebudowy_s) * 10000.0)));
@@ -1093,15 +1132,113 @@ void Swiat::zglos_zmiane_mapy(const std::vector<int>& pola, bool natychmiast) {
 }
 
 void Swiat::krok_przebudowy() {
-    // 0x4A3641 [W]: tylko gdy kolejka grafu pusta (Core: prośby synchroniczne – zawsze) i minął termin +0xD4. Zakres:
-    // 0x4278C3 przebudowuje sektory zgłoszonych pól – w Core pełna przebudowa z zachowanego wejścia [N: przyrostowy
-    // algorytm 0x4278C3 nieodtworzony]; trasy jednostek pozostają (ponowna prośba przy kolejnym przygotowaniu) [N].
+    // 0x4A3641 [W]: tylko gdy kolejka próśb grafu pusta (+0x80; Core: prośby synchroniczne – zawsze) i minął termin +0xD4.
+    // Etap 47 – 0x4278C3: jeden wpis mapy zmienionych sektorów na wywołanie (licznik < 1), przebudowa tego sektora
+    // (przebuduj_sektor), usunięcie wpisu (0x428283); wynik = mapa pusta → +0xD8 := 0, inaczej +0xD4 = teraz + 100 ms
+    // (0x4A367A). Trasy i cele jednostek nie są zmieniane (0x4278C3 nie dotyka jednostek) – nowa trasa dopiero przy
+    // kolejnym przygotowaniu (PrepareToMove) [W].
     if (!przebudowa_d8_ || !wejscie_ || zegar_ms_ < termin_d4_) return;
-    graf_ = zbuduj_graf_z_wejscia(*wejscie_, komorka_grafu_);
-    pola_zmienione_.clear();
-    przebudowa_d8_ = false;
+    if (przebudowa_pelna_ || zmienione_sektory_.empty()) {
+        graf_ = zbuduj_graf_z_wejscia(*wejscie_, komorka_grafu_);   // wariant zastępczy (etap 46) – cały graf
+        zmienione_sektory_.clear();
+        ostatnie_nowe_.clear();
+    } else {
+        const auto it = zmienione_sektory_.begin();
+        ostatnie_nowe_ = przebuduj_sektor(graf_, *wejscie_, komorka_grafu_, it->first.first, it->first.second);
+        zmienione_sektory_.erase(it);
+        ++przebudowy_sektorow_;
+    }
     ++wersja_grafu_;
-    ++przebudowy_grafu_;
+    if (zmienione_sektory_.empty()) {
+        pola_zmienione_.clear();
+        przebudowa_d8_ = false;
+        ++przebudowy_grafu_;
+    } else {
+        termin_d4_ = zegar_ms_ + 100u;
+    }
+}
+
+IdJednostki Swiat::dodaj_obiekt_budynku(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
+                                        const ParametryWalki& p, int hp, bool blokuje, std::uint32_t id_mapy,
+                                        bool w_siatce) {
+    Jednostka u;
+    u.id = nastepny_id_++;
+    u.wariant = wariant_;
+    u.budynek = true;
+    u.kwadrat = std::max(1, n);
+    u.blokuje_pola = blokuje;
+    u.id_mapy = id_mapy;
+    u.typ_db = typ_db;
+    u.x = f32(x);
+    u.y = f32(y);
+    u.z = f32(z);
+    u.orientacja = mat_.set_orientation_ypr(0.0);
+    u.stan = 5000;
+    u.tryb = TrybRuchu::spoczynek;
+    u.komorka_x = X;
+    u.komorka_y = Y;
+    u.w_fizyce = false;   // [P: 645 – żywy dom poza listą fizyki]
+    u.v = 0.0;
+    u.param.vmax = 0.0;
+    u.param.rozmiar = p.rozmiar;
+    u.gracz = gracz;
+    BojJednostki b;
+    b.p = p;
+    b.s.hp = hp;
+    b.hp_29c = hp;
+    b.ai.szuka_wrogow = false;
+    u.boj = b;
+    auto it = skrypty_.find("budynek");
+    if (it == skrypty_.end()) it = skrypty_.emplace("budynek", SkryptStanow::wbudowany_budynek()).first;
+    u.skrypt = &it->second;
+    if (blokuje && !w_siatce)
+        for (int dy = 0; dy < u.kwadrat; ++dy)
+            for (int dx = 0; dx < u.kwadrat; ++dx) teren_.dodaj_blokade(X + dx, Y + dy);
+    jednostki_.push_back(u);
+    return jednostki_.back().id;
+}
+
+void Swiat::smierc_budynku(Jednostka& t) {
+    // Etap 47 – śmierć budynku (TakeDamage → Kill 0x5ED43F) [W/P]:
+    //  - dodanie do kolejki fizyki (0x5ED494 → 0x530896), zatwierdzenie w następnym takcie [P: 645 – na liście od 62044];
+    //  - HP = 0: martwy obiekt nie blokuje pola w teście A* (0x41D36A → vt+0x48) i nie liczy się w regionach (HP > 0,
+    //    0x41B9C9) [W] – pola zwalniane od razu (TerenSiatka, wejście grafu);
+    //  - zgłoszenie zmiany mapy (gracz → 0x4288A7, typ +0x600 ≠ 0) z terminem „natychmiast” [P: 645 – +0xD4 = 62011].
+    if (!t.dodaj_do_fizyki && !t.w_fizyce) {
+        t.dodaj_do_fizyki = true;
+        kolejka_dodan_.push_back(t.id);
+    }
+    if (t.blokuje_pola)
+        for (int dy = 0; dy < t.kwadrat; ++dy)
+            for (int dx = 0; dx < t.kwadrat; ++dx) teren_.zdejmij_blokade(t.komorka_x + dx, t.komorka_y + dy);
+    if (!wejscie_) return;
+    std::vector<int> pola;
+    bool zglos = false;
+    for (auto& [i, l] : wejscie_->obiekty)
+        for (auto& o : l)
+            if (t.id_mapy != 0 && o.id == t.id_mapy) {
+                o.hp = 0;
+                pola.push_back(i);
+                if (!o.vt58 && (o.flaga600 != 0 || o.klasa4b4 == 0x19)) zglos = true;
+            }
+    if (zglos && graf_.podsektory.size() > 0) zglos_zmiane_mapy(pola, true);
+}
+
+void Swiat::krok_budynku(Jednostka& u) {
+    // Etap 47 – EEPMBuilding vt+0x30 (tryb 2) 0x54BF34 [W: kod; P: 645 – Δz = −0,0044318 na takt, 2 losowania na takt]:
+    //  x' = f32(x + (0,5 − r₁)·0,01f), y' = f32(y + (0,5 − r₂)·0,01f) (generator RTSPhysics 0x4446A5), z' = f32(z − dt·0,13f);
+    //  nowa translacja tylko, gdy floor(x') = floor(x) i floor(y') = floor(y) (inaczej bez zmian, także z).
+    //  Przechył macierzy (typ +0x4B8 ≠ 0x42: obrót o dt·0,07 rad/s) – tylko wygląd, w Core pominięty [N].
+    const double r1 = rng_.losuj();
+    const double nx = f32(double((0.5L - (long double)r1) * (long double)f32(0.01) + (long double)u.x));
+    const double r2 = rng_.losuj();
+    const double ny = f32(double((0.5L - (long double)r2) * (long double)f32(0.01) + (long double)u.y));
+    const double nz = f32(double((long double)u.z - (long double)f32(1.5 / 44.0) * (long double)f32(0.13)));
+    if (podloga(nx) == podloga(u.x) && podloga(ny) == podloga(u.y)) {
+        u.x = nx;
+        u.y = ny;
+        u.z = nz;
+    }
 }
 
 Jednostka* Swiat::zagrozenie_62fe01(const Jednostka& u) {
@@ -1207,6 +1344,7 @@ Punkt2 Swiat::punkt_podejscia(Jednostka& u, const Jednostka& t) {
             const double rr = f32(R + 2.0);
             std::vector<const Jednostka*> blisko;
             for (const auto& o : jednostki_) {
+                if (o.budynek) continue;   // etap 47: budynki – przez przejezdność pola (0x62C7C8) [W]
                 const double dx = f32(o.x - tx), dy = f32(o.y - ty);
                 if (f32(dx * dx + dy * dy) <= f32(rr * rr)) blisko.push_back(&o);
             }
@@ -1353,6 +1491,8 @@ bool Swiat::szukaj_wroga(Jednostka& u) {
             if (c.id == u.id || !c.boj || c.gracz == u.gracz || !wrogowie(u.gracz, c.gracz)) continue;  // 0x639993
             if (c.boj->s.hp <= 0) continue;
             if (c.komorka_x < cx - r || c.komorka_x > cx + r || c.komorka_y < cy - r || c.komorka_y > cy + r) continue;
+            // etap 47 – 0x639AC3: kandydat z typ +0x612 (mury) tylko dla szukającego z typ +0x61E [W; P: 647 e47_mur]
+            if (c.boj->p.rozmiar_jeden && !p.atakuje_mury) continue;
             double d2 = odl2(u, c);
             if (!srodek_wlasny) {
                 const double px = double(cx) + 0.5, py = double(cy) + 0.5, dx = px - c.x, dy = py - c.y;
@@ -1502,6 +1642,9 @@ std::optional<bool> Swiat::zdarzenie_walki(Jednostka& u, const std::string& n) {
     // etap 44 – Generic Death.tai (0x61B677): 6000 DyingAnimationFinished: +0x337 ≠ 0 (koniec sekwencji, 0x62462B) albo
     // czas klatki typu = 1; 6001 ResourcesRottedAway: zasoby +0x40 = 0; 6002 UnitRottedAway: +0x2A8 = 0 [W]
     if (n == "DyingAnimationFinished") {
+        // etap 47: EEUCBuilding vt[39] 0x601A4B – zdarzenie 6000: z (+0x15C) < [0x83166C] = −2,0 (wartość bezwzględna, nie
+        // względem terenu) [W: kod; P: 645 – 6001 w takcie po z = −2,00189]
+        if (u.budynek) return f32(u.z) < -2.0;
         if (b.p.smierc_klatki <= 0) return std::nullopt;
         return b.smierc_koniec || b.p.smierc_ms_klatki == 1;
     }
@@ -1602,6 +1745,7 @@ void Swiat::liczniki_walki(Jednostka& u) {
         auto it = skr(*t).stany().find("Dying");
         if (it != skr(*t).stany().end()) wejdz_w_stan(*t, it->second);
         else t->stan = 6000;
+        if (t->budynek) smierc_budynku(*t);
     }
 }
 
@@ -1695,6 +1839,8 @@ GrafPodsektorow zbuduj_graf_z_przydzialu(const std::vector<int>& g, int W, int H
         p.id = c;
         p.sektor_i = komorka > 0 ? L.front().first / komorka : 0;
         p.sektor_j = komorka > 0 ? L.front().second / komorka : 0;
+        G.sektory[{p.sektor_i, p.sektor_j}].push_back(c);   // etap 47: kolejność tworzenia = id rosnąco (flood 0x42434F)
+        G.maks_id = std::max(G.maks_id, c);
         const auto r = punkt_reprezentatywny(L);
         p.punkt_x = r.first;
         p.punkt_y = r.second;
@@ -2054,6 +2200,110 @@ GrafPodsektorow zbuduj_graf_z_wejscia(const WejscieRegionow& w, int komorka) {
         }
     G.zrodlo = "Core z wejścia mapy";
     return G;
+}
+
+std::vector<int> przebuduj_sektor(GrafPodsektorow& G, const WejscieRegionow& w, int K, int si, int sj) {
+    const int N = w.N;
+    if (N <= 0 || K <= 0) return {};
+    const int x0 = si * K, x1 = std::min(si * K + K - 1, N - 1), y0 = sj * K, y1 = std::min(sj * K + K - 1, N - 1);
+    // 0x42809D: usunięcie podsektorów sektora (lista sektora od początku): z list sąsiadów (0x42EB94), wpis wektora := 0,
+    // pola siatki +0xF8 := 0, id na listę zwolnionych → na koniec listy wolnych (0x429DE0 – wstawienie przed end()).
+    auto& lista = G.sektory[{si, sj}];
+    for (const int id : lista) {
+        auto it = G.podsektory.find(id);
+        if (it == G.podsektory.end()) continue;
+        for (const int s : it->second.sasiedzi) {
+            auto q = G.podsektory.find(s);
+            if (q == G.podsektory.end()) continue;
+            auto& l = q->second.sasiedzi;
+            l.erase(std::remove(l.begin(), l.end(), id), l.end());
+        }
+        G.podsektory.erase(it);
+        G.wolne_id.push_back(id);
+    }
+    lista.clear();
+    for (int x = x0; x <= x1; ++x)
+        for (int y = y0; y <= y1; ++y) G.pole_podsektor.erase((std::int64_t(x) << 32) | std::uint32_t(y));
+    // budowniczy 0x4290A2: regiony od nowa z bieżących danych mapy (0x429B6D – pierwszy flood liczy siatkę regionów)
+    const SiatkaRegionow R = zbuduj_siatke_regionow(w);
+    // flood w prostokącie sektora (x malejąco, y malejąco – pętla 0x4278C3 jak 0x424565), id z 0x425E8D
+    const int sx = x1 - x0 + 1, sy = y1 - y0 + 1;
+    std::vector<int> g(std::size_t(sx) * sy, 0);
+    std::vector<int> nowe;
+    std::vector<std::pair<int, int>> stos;
+    for (int x = x1; x >= x0; --x)
+        for (int y = y1; y >= y0; --y) {
+            const int reg = R.etykieta[std::size_t(x) * N + y];
+            if (!reg || g[std::size_t(x - x0) * sy + (y - y0)]) continue;
+            const int rk = reg < int(R.rodzaj.size()) ? R.rodzaj[std::size_t(reg)] : 0;
+            const bool flaga = !(rk == 3 || rk == 5 || rk == 6 || rk == 12 || rk == 13 || rk == 14);   // 0x41EAE7
+            auto ok = [&](int a, int b) { return a >= x0 && a <= x1 && b >= y0 && b <= y1 && R.etykieta[std::size_t(a) * N + b] == reg; };
+            int id;
+            if (!G.wolne_id.empty()) { id = G.wolne_id.back(); G.wolne_id.pop_back(); }
+            else id = ++G.maks_id;
+            nowe.push_back(id);
+            g[std::size_t(x - x0) * sy + (y - y0)] = id;
+            stos.assign(1, {x, y});
+            while (!stos.empty()) {
+                const auto [a, b] = stos.back();
+                stos.pop_back();
+                for (int dx = -1; dx <= 1; ++dx)
+                    for (int dy = -1; dy <= 1; ++dy) {
+                        if (!dx && !dy) continue;
+                        const int c = a + dx, d = b + dy;
+                        if (!ok(c, d) || g[std::size_t(c - x0) * sy + (d - y0)]) continue;
+                        if (dx && dy && flaga && !(ok(a + dx, b) || ok(a, b + dy))) continue;
+                        g[std::size_t(c - x0) * sy + (d - y0)] = id;
+                        stos.push_back({c, d});
+                    }
+            }
+            (void)rk;
+        }
+    // nowe podsektory: pola w kolejności kontenera (kolumny od ostatniej, y rosnąco), punkt 0x42C2D5, rodzaj, sektor,
+    // dopisanie do listy sektora (0x42C65D) w kolejności tworzenia
+    std::map<int, std::vector<std::pair<int, int>>> pola;
+    for (int x = x1; x >= x0; --x)
+        for (int y = y0; y <= y1; ++y)
+            if (const int c = g[std::size_t(x - x0) * sy + (y - y0)]) {
+                pola[c].push_back({x, y});
+                G.pole_podsektor[(std::int64_t(x) << 32) | std::uint32_t(y)] = c;
+            }
+    for (const int id : nowe) {
+        const auto& L = pola[id];
+        Podsektor p;
+        p.id = id;
+        p.sektor_i = si;
+        p.sektor_j = sj;
+        const auto r = punkt_reprezentatywny(L);
+        p.punkt_x = r.first;
+        p.punkt_y = r.second;
+        const int reg = R.etykieta[std::size_t(L.front().first) * N + L.front().second];
+        p.rodzaj = R.rodzaj[std::size_t(reg)];
+        G.podsektory[id] = std::move(p);
+        lista.push_back(id);
+    }
+    // 0x424DDD: okno sektora powiększone o 1 pole (x od x0−1, y od y0−1, do x1+1 / y1+1, w granicach mapy), x↑, y↑,
+    // pary jak 0x4246E8; dopisanie wzajemne na koniec listy, bez powtórzeń (0x423255)
+    auto id_pola = [&](int x, int y) { return G.podsektor_pola(x, y) < 0 ? 0 : G.podsektor_pola(x, y); };
+    auto lacz = [&](int a, int b) {
+        auto& la = G.podsektory[a].sasiedzi;
+        if (std::find(la.begin(), la.end(), b) == la.end()) la.push_back(b);
+        auto& lb = G.podsektory[b].sasiedzi;
+        if (std::find(lb.begin(), lb.end(), a) == lb.end()) lb.push_back(a);
+    };
+    const int xk = std::min(x1 + 2, N);
+    for (int x = std::max(0, x0 - 1); x < xk; ++x)
+        for (int y = std::max(0, y0 - 1); y < std::min(y1 + 2, N); ++y) {
+            const int c = id_pola(x, y);
+            if (!c) continue;
+            const int q[4][2] = {{x - 1, y}, {x, y - 1}, {x - 1, y - 1}, {x + 1, y - 1}};
+            for (const auto& e : q) {
+                if (e[0] < 0 || e[1] < 0 || e[0] >= xk) continue;   // (x+1, y−1): x+1 < koniec okna (0x424DDD)
+                const int d = id_pola(e[0], e[1]);
+                if (d && d != c) lacz(c, d);
+            }
+        }
+    return nowe;
 }
 
 std::vector<int> szukaj_w_grafie(const GrafPodsektorow& g, int start, int cel) {

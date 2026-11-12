@@ -261,7 +261,7 @@ TerenSiatka MapaTitan::siatka(const std::array<std::uint8_t, 16>& dozw, bool z_o
         for (const auto& o : obiekty_) {
             if (!o.blokuje || !o.zywy) continue;
             for (int dy = 0; dy < o.kwadrat; ++dy)
-                for (int dx = 0; dx < o.kwadrat; ++dx) s.ustaw_przejezdnosc(o.pole_x + dx, o.pole_y + dy, false);
+                for (int dx = 0; dx < o.kwadrat; ++dx) s.dodaj_blokade(o.pole_x + dx, o.pole_y + dy);   // etap 47: licznik
         }
     return s;
 }

@@ -64,6 +64,11 @@ public:
     godot::Array kolejka_fizyki() const;
     bool ustaw_faze_leczenia(int64_t id, int64_t takty);
     bool usun_obiekt_mapy(int64_t id);
+    int64_t dodaj_budynek(const godot::Dictionary& parametry);   // etap 47
+    void ustaw_przebudowe_pelna(bool pelna);
+    godot::Dictionary stan_grafu() const;
+    godot::Array graf_okno(int64_t x0, int64_t x1, int64_t y0, int64_t y1) const;
+    int64_t blokady_pola(int64_t x, int64_t y) const;
     godot::Dictionary migawka_diagnostyczna(bool szczegoly) const;
     godot::Dictionary wejscie_regionow_z_mapy() const;
     godot::Dictionary wejscie_regionow_z_scn(const godot::Array& obiekty, const godot::Array& zestawy) const;

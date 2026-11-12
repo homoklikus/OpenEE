@@ -43,6 +43,7 @@ public:
     /// Etap 45: obywatel (citizen.tai) – Idle z ucieczką TakingLightDamage → FleeDanger (8019).
     static SkryptStanow wbudowany_obywatel();
     static SkryptStanow wbudowany_uzdrowiciel();   // etap 46: Healer.tai + land
+    static SkryptStanow wbudowany_budynek();       // etap 47: Simple Building (Generic Death)
 
     const StanSkryptu* stan(int numer) const;
     const std::map<std::string, StanSkryptu>& stany() const { return stany_; }

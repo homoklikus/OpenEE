@@ -138,6 +138,7 @@ func _testy() -> void:
 	_test_etapu44(dll)
 	_test_etapu45(dll)
 	_test_etapu46(dll)
+	_test_etapu47(dll)
 	_koniec()
 
 
@@ -912,3 +913,58 @@ func _czasy_smierci(sym: Object, g: Dictionary, klatki: int, ms: int) -> Array:
 		prev = st
 	return [int(wejscia.get(6001, -1)) - int(wejscia.get(6000, 0)), int(wejscia.get(6002, -1)) - int(wejscia.get(6001, 0)),
 		int(wejscia.get(6003, -1)) - int(wejscia.get(6002, 0))]
+
+
+## Etap 47: budynek jako obiekt Core przez GDExtension – dodanie (HP, blokada pola), rozkaz ataku, śmierć (Dying,
+## kolejka fizyki, zapadanie się), zwolnienie pola i przyrostowa przebudowa sektora grafu, restart (nowy świat).
+func _test_etapu47(dll: String) -> void:
+	var mn := []
+	for i in 16: mn.append([1, 1, 1, 1, 1, 1])
+	var tr := {}
+	for i in 3:
+		var f := PackedFloat32Array(); f.resize(64); f[48] = [1.071, 1.5, 2.1][i]
+		var f3 := PackedFloat32Array(); f3.resize(64); f3[48] = [0.23562, 0.33, 0.462][i]
+		tr[["08", "0C", "10"][i]] = {13: f, 3: f3}
+	var nowa := func() -> Object:
+		var c: Object = CoreCpp.nowa_symulacja()
+		if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+		c.utworz_swiat("ee")
+		c.ustaw_tablice_walki({"trudnosc": 0, "mnozniki": mn, "trafienie": tr},
+			[[2, 1, 50, 1, 1, 0, 1, 50, -500, 50], [15, 20, 30, 6, 6, 0, 1, 2, -500, 15], [10, 15, 50, 4, 4, 0, 1, 0, -500, 15]])
+		return c
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var g := {"atak": 15.0, "pancerz": [0, 6, 0, 0, 0, 0], "zasieg_max": 0.5, "pole_widzenia": 4.0, "przeladowanie_ms": 2000,
+		"klasa_trafienia": 13, "rodzina_ataku": 48, "opoznienie_trafienia_ms": 1122, "luk_ataku": 0.3490658700466156,
+		"rozmiar": 0.5, "punktowy": 1, "szukanie_ms": 2000, "pole_ac": 0.6000000238418579, "typ_bazy": 422, "typ_jednostki": 5,
+		"ai_szuka_wrogow": 0}
+	var dom := {"gracz": 5, "typ": 37, "X": 10, "Y": 10, "kwadrat": 1, "x": 10.5, "y": 10.5, "z": 0.0, "hp": 21, "hp_max": 500,
+		"pole_widzenia": 2.0, "wiersz_celu": 3, "rodzaj_ataku": 3, "klasa_trafienia": 3, "rodzina_ataku": 9, "rozmiar": 1.0,
+		"typ_jednostki": 2, "typ_bazy": 37, "rozklad_ms": 2000, "blokuje": 1, "id_mapy": "0x500", "w_siatce": 0}
+	var c: Object = nowa.call()
+	var a: int = c.dodaj_jednostke(p, 10.5, 13.0, 3.14159265)
+	c.ustaw_walke(a, 1, true, g, 215)
+	var b: int = c.dodaj_budynek(dom)
+	var j0: Dictionary = c.jednostka(b)
+	var ok0: bool = b > 0 and bool(j0.get("budynek", false)) and not bool(j0.get("w_fizyce", true)) and int(j0.get("hp", 0)) == 21 \
+		and not c.pole_przejezdne(10, 10) and int(c.blokady_pola(10, 10)) == 1
+	_wynik("budynek Core: HP, poza kolejką fizyki, blokada pola", ok0, JSON.stringify(j0))
+	var przyjety: bool = c.rozkaz_ataku(a, b)
+	var stany := []
+	var smierc := -1; var w_fiz := false; var przej := false
+	for k in 900:
+		c.takt(1)
+		var j: Dictionary = c.jednostka(b)
+		if stany.is_empty() or stany[-1] != int(j.stan): stany.append(int(j.stan))
+		if smierc < 0 and int(j.stan) == 6000:
+			smierc = k; przej = c.pole_przejezdne(10, 10)
+		elif smierc >= 0 and k == smierc + 1:
+			w_fiz = bool(j.get("w_fizyce", false))
+		if int(j.stan) == 6003: break
+	var traf := 0
+	for e in c.zdarzenia_walki_od(0):
+		if String(e.rodzaj) == "trafienie" and int(e.cel) == b: traf += 1
+	_wynik("rozkaz ataku na budynek → 3 trafienia po 7 HP, Dying → 6001 → 6002 → 6003, pole wolne przy śmierci, kolejka fizyki takt później",
+		przyjety and traf == 3 and stany == [5000, 6000, 6001, 6002, 6003] and przej and w_fiz, "stany %s, trafienia %d, przejezdne %s, w_fizyce %s" % [str(stany), traf, przej, w_fiz])
+	var c2: Object = nowa.call()
+	var b2: int = c2.dodaj_budynek(dom)
+	_wynik("restart: nowy świat – budynek z pełnym HP układu i blokadą pola", int(c2.jednostka(b2).get("hp", 0)) == 21 and not c2.pole_przejezdne(10, 10))

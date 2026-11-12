@@ -889,3 +889,35 @@ z przejściem 6003. Wcześniej cel był zgodny do 2186/2084/2081 próbek.
   +ulepszenie+0x150 HP do HPmax). Bohater 173: próg 1,0, zasięg 4,0, okres 1,0 s, 50 HP/s. Pomiar: koniec leczenia
   w takcie po pełnym HP, brak celu przy pełnym HP – porównanie ostre (odczyt kodu sugeruje „≤” – [N]).
 - **Rozkazy MCP z opóźnieniem** [P]: 578 G3 takt 414 to rozkaz gracza (pochodzenie 1) dostarczony 84 s po kroku MCP.
+
+## 35. Etap 47 – budynki jako cele ataku, śmierć budynku, próg leczenia
+
+- **Model obiektu** [W; P: zad. 645, 647]: budynek to `EEUnit` (vtable 0x831494, jak gwardia); klasa EEUC z pola
+  „Unit type” przez fabrykę 0x62188D (2/0x13 Building 0x8335A8, 0x19 Gate, 0x1d Fortress, 0x18 Mining, 6 Citizen,
+  5/8/15 Land, 0 Ambient); klasa fizyki EEPMBuilding 0x82CCC0. Żywy budynek **nie jest** w kolejce fizyki 0x918DDC
+  [P: 645/647 – 2 kontakty gwardii przy domu, nie 3]; Kill dopisuje go na koniec kolejki, zatwierdzenie w następnym
+  takcie. Skrypt: „Simple Building.tai” = tylko Generic Death. Pamięć typu domu 37 [P: 647]: HP 500, pancerz 0, LOS 2,
+  rodzina +0x4C4 = 3, +0x4C8 = 9, +0x612 = 0, +0x600 = 1, +0x4B4 = 2, „Size of collider” +0x474. Mur 467: +0x4C4 = 44,
+  +0x474 = 0,9, +0x612 = 1.
+- **Obrażenia** [P: 647, 648]: zwykła ścieżka EEUGAttackUnit/TakeDamage. Gwardia → dom: 6 na trafienie – modyfikator
+  wysokości (z rekordu domu 1,0206 przy z gwardii 0 → r = 0,8; min(0,8·6,93; 5,93) → 6); gwardia → mur: 4 (m = 0,35,
+  tablica 0x10, rodzina 44). Wiersze tablicy trafień rodziny 3: 0x08 0,23562, 0x0C 0,33, 0x10 0,462; rodziny 44:
+  0,1785 / 0,25 / 0,35. Pole rekordu SCN u3c = ułamek HP [P].
+- **Mury nie są celem samoczynnym** [W: 0x639AC3 – kandydat z typem +0x612 odrzucony, chyba że szukający ma +0x61E;
+  P: 647 – gwardia stoi przy murze w Idle]. Core: `ParametryWalki::atakuje_mury`.
+- **Śmierć budynku** [W; P: 645 682/682 próbek, 647 674/676]:
+  - EEPMBuilding tryb 2 (0x54BF34): x += (0,5 − r1)·0,01f, y += (0,5 − r2)·0,01f (dwa losowania), z −= dt·0,13f; zmiana
+    stosowana tylko gdy floor(x), floor(y) się nie zmieniają;
+  - DyingAnimationFinished budynku – EEUCBuilding vt[39] 0x601A4B: z < −2,0 (bezwzględnie, [0x83166C]); 645: 683 takty
+    do 6001 (z = −2,00189);
+  - 6001 → 6002 → 6003 jak Generic Death (6002 – 59 taktów w 645); po 6003 brak nowej rejestracji w grafie [P];
+  - na polu domu pojawia się obiekt gruzu (np. 0x24ac, HP 1), który nie blokuje [P: 647 `mapa_obszar`].
+- **Zgłoszenie mapy** [P: 647 – śmierć 52261, +0xD4 = 52262, +0xD8 = 0 w odczycie 52295] przy wejściu w 6000.
+- **Przerwany atak** [P: 647 `dom1_przerwany`]: gwardia z rozkazem ruchu w trakcie cyklu 2012/2001/2021 (trafienie co
+  2045 ms, 6 HP) przechodzi 2015 → 10003; dom zostaje z HP 12, bez regeneracji i bez ponownego wyboru (dom poza LOS).
+- **Próg leczenia rozstrzygnięty** [W: 0x5EDC82, 0x630E07]: kandydat wymaga HP > 0, HP < HPmax i +0x340; dopiero potem
+  porównanie HP/HPmax ≤ próg (fcompp, jb). Warunek „HP < HPmax” wyjaśnia pomiar 644 (brak celu przy pełnym HP) bez
+  zmiany kierunku porównania progu – rozbieżność etapu 46 usunięta. Core: `potrzebuje_leczenia`.
+- Core (etap 47): `Swiat::dodaj_obiekt_budynku`, skrypt `SkryptStanow::wbudowany_budynek()`, `smierc_budynku`,
+  `krok_budynku`, kontakty i punkty podejścia pomijają budynki. Godot: budynki potyczki jako obiekty Core
+  (`potyczka_e47.json`).

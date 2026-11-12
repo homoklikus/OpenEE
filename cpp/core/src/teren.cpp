@@ -28,7 +28,28 @@ void TerenSiatka::ustaw_przejezdnosc(std::int64_t ix, std::int64_t iy, bool p) {
 
 bool TerenSiatka::pole_przejezdne(std::int64_t ix, std::int64_t iy) const {
     if (!komorka_istnieje(ix, iy) || na_brzegu_rombu(ix, iy)) return false;
-    return przejezdne_.empty() || przejezdne_[std::size_t(iy) * std::size_t(szer_) + std::size_t(ix)] != 0;
+    const std::size_t i = std::size_t(iy) * std::size_t(szer_) + std::size_t(ix);
+    if (!blokady_.empty() && blokady_[i] != 0) return false;
+    return przejezdne_.empty() || przejezdne_[i] != 0;
+}
+
+void TerenSiatka::dodaj_blokade(std::int64_t ix, std::int64_t iy) {
+    if (!komorka_istnieje(ix, iy)) return;
+    if (blokady_.empty()) blokady_.assign(std::size_t(szer_) * std::size_t(wys_), 0);
+    ++blokady_[std::size_t(iy) * std::size_t(szer_) + std::size_t(ix)];
+}
+
+bool TerenSiatka::zdejmij_blokade(std::int64_t ix, std::int64_t iy) {
+    if (!komorka_istnieje(ix, iy) || blokady_.empty()) return false;
+    auto& b = blokady_[std::size_t(iy) * std::size_t(szer_) + std::size_t(ix)];
+    if (b == 0) return false;
+    --b;
+    return true;
+}
+
+int TerenSiatka::blokady(std::int64_t ix, std::int64_t iy) const {
+    if (!komorka_istnieje(ix, iy) || blokady_.empty()) return 0;
+    return blokady_[std::size_t(iy) * std::size_t(szer_) + std::size_t(ix)];
 }
 
 double TerenSiatka::h(std::int64_t ix, std::int64_t iy) const {

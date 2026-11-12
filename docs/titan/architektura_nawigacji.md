@@ -589,3 +589,29 @@ Rozstrzygający pomiar (przygotowany, niewykonany – automatyzacja gry niedost�
 - Core: wejście floodu zachowane przy budowie grafu (`ustaw_wejscie_mapy`), `usun_obiekt_mapy` (warunek 0x4288A7),
   `zglos_zmiane_mapy` (0x422DB6 + 0x4A36F3), `krok_przebudowy` w takcie menedżera (po drugim losowaniu, przed pętlą
   jednostek). Przebudowa raz po terminie; zakres – cały graf [N: przyrostowy 0x4278C3]. Test GDExtension na e35_a.
+
+## Etap 47 – przyrostowa przebudowa sektora (0x4278C3) i blokady pól
+
+[W; P: zad. 647, 648 – `mapa_obszar` przed/po, 4 przypadki]
+
+| Krok | EE | Działanie |
+|---|---|---|
+| kolejka zmian | menedżer +0x10 (std::map, klucz = id sektora), +0x18 liczba wpisów | 0x422DB6 grupuje pola zgłoszonego obiektu według sektora |
+| przebieg | 0x4A3641 → 0x4278C3 | **jeden wpis sektora na wywołanie**; gdy zostały wpisy – +0xD4 = teraz + 100 (0x4A367A), gdy pusto – +0xD8 := 0 |
+| zwolnienie | 0x42809D | podsektory sektora zwalniane w kolejności listy sektora; ich id dopisywane na koniec wektora wolnych (+0xBC) |
+| nowe id | 0x425E8D | zdjęcie ostatniego wolnego id, inaczej ++największe (+0x10E) |
+| regiony i podsektory | 0x4290A2 / 0x429B6D | flood w prostokącie sektora (+0x34 xmin, +0x38 xmax, +0x3C ymin, +0x30 ymax), x malejąco, y malejąco; nowe punkty reprezentatywne |
+| sąsiedzi | 0x424DDD | okno sektora ±1; (x+1, y−1) ograniczone końcem okna |
+
+- Przebudowa następuje w pierwszym takcie po +0xD4 (647: śmierć 52261, +0xD4 = 52262, +0xD8 = 0 w 52295) [P].
+- Trasy jednostek nie są unieważniane [W; P: 648 – prorok kończy stary objazd po zniszczeniu domu]; nowy rozkaz
+  przechodzi przez zwolnione pole [P: 647 S5].
+- Siatka podsektorów +0xF8 w grze jest pusta (wskaźnik 0) – podsektor pola czytany z list sektora.
+- Core: `przebuduj_sektor`, `GrafPodsektorow::sektory/maks_id/wolne_id`, `krok_przebudowy` przyrostowy (jeden sektor
+  na przebieg), pełna przebudowa jako jawny wariant (`ustaw_przebudowe_pelna`). Blokady pól: licznik `Teren::blokady`
+  (u16 na pole) – kilka obiektów na polu, zdjęcie jednego nie odblokowuje pola.
+- Zgodność z grą (`porownaj_zmiane_grafu.gd`, odczyty MCP): e47_647_dom1, 647 przejscie_a, 648 przejscie2, 648 mur –
+  id podsektorów, pola, punkty reprezentatywne, kolejność sąsiadów, wolne id [428] i największe id identyczne [P].
+- Wydajność (Core, `wydajnosc_grafu.gd`, 10 usuniętych obiektów): e35_a – budowa 22 ms, przebieg przyrostowy 5,7 ms,
+  pełny 13 ms; e13_para – 14 ms / 3,6 ms / 8,1 ms. Podział pól na podsektory po 10 zmianach identyczny w obu trybach
+  (różni się tylko numeracja). Zapytanie grafu e35_a 0,10–0,12 ms przed i po.

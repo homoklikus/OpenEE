@@ -38,9 +38,11 @@ def main():
     for nazwa in wybrane:
         grupy = {}
         baza_w = bazy[opis.get("bazy_wariantow", {}).get(nazwa, "")]
-        for g, (wzor, gracz, poz) in opis["warianty"][nazwa].items():
+        for g, (wzor, gracz, poz, *reszta) in opis["warianty"][nazwa].items():
             grupy[g] = {"wzor": opis["wzory"][wzor], "zrodlo": str(mapy / opis["zrodlo_wzorow"]), "gracz": gracz,
                         "pozycje": poz}
+            if reszta:   # etap 47: nadpisanie pól rekordu (np. {"u3c": 0,3} – część HP)
+                grupy[g]["pola"] = reszta[0]
         wej = mapy / f"e42_{nazwa}.uklad_wej.json"
         wej.write_text(json.dumps({"grupy": grupy}, indent=1), encoding="utf-8")
         subprocess.run([sys.executable, str(TU / "scenariusz_testowy_kolizji.py"), "zbuduj", str(baza_w),

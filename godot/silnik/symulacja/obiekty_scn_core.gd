@@ -36,8 +36,9 @@ static func zestawy(zasoby: Object) -> Array:
 
 
 ## Pełne wejście floodu regionów z danych lokalnych (mapa SCN musi być już wczytana do `core`).
-static func wejscie(core: Object, scn: ScenariuszEE, zasoby: Object) -> Dictionary:
-	return core.wejscie_regionow_z_scn(obiekty(scn, zasoby), zestawy(zasoby))
+static func wejscie(core: Object, scn: ScenariuszEE, zasoby: Object, dodatkowe: Array = []) -> Dictionary:
+	# etap 47: obiekty spoza SCN (budynki potyczki) dopisane po rekordach scenariusza – format jak obiekty()
+	return core.wejscie_regionow_z_scn(obiekty(scn, zasoby) + dodatkowe, zestawy(zasoby))
 
 
 ## Etap 44: parametry śmierci typu (Generic Death.tai) z baz gry – sekwencja umierania dbgraphics (gniazdo 4,
@@ -55,6 +56,22 @@ static func parametry_leczenia(ob: Dictionary, leczone_typy: Array = []) -> Dict
 		"leczone_typy": leczone_typy}
 	if String(ob.get("TAI Script", "")) == "Military Healer Prophet": w["reakcja_underattack"] = 1
 	return w
+
+
+## Etap 47: parametry budynku jako obiektu Core z rekordu dbobjects (wartości typu i ulepszenia gracza – odczyt pamięci
+## domu 37 gracza 5 w zad. 647 [P]: HP maks. 500 = „Health”, pancerz 0, pole widzenia 2,0, +0x4C0 = 3 („Weapon to hit
+## ID”), +0x4C4 = 3 („Family ID”), +0x4C8 = 9 („Family attack type”), +0x474 = 1,0 („Size of collider”), +0x612 = 0,
+## +0x61A = 0, +0x4B4 = 2 („Unit type”)). Ulepszenia z technologii epok – poza Core [N]: wartości z rekordu typu.
+static func parametry_budynku(ob: Dictionary) -> Dictionary:
+	return {"hp_max": int(ob.get("Health", 0)), "atak": float(ob.get("Attack", 0)),
+		"pancerz": [float(ob.get("Shock armor", 0)), float(ob.get("Arrow armor", 0)), float(ob.get("Pierce armor", 0)),
+			float(ob.get("Gun armor", 0)), float(ob.get("Laser armor", 0)), float(ob.get("Missile armor", 0))],
+		"pole_widzenia": float(ob.get("Line of sight", 0.0)), "zasieg_max": float(ob.get("Max range", 0.0)),
+		"przeladowanie_ms": int(round(float(ob.get("Attack reload time", 0.0)) * 1000.0)),
+		"rodzaj_ataku": int(ob.get("Weapon to hit ID", 0)), "wiersz_celu": int(ob.get("Weapon to hit ID", 0)),
+		"klasa_trafienia": int(ob.get("Family ID", 0)), "rodzina_ataku": int(ob.get("Family attack type", 0)),
+		"rozmiar": float(ob.get("Size of collider", 1.0)), "typ_jednostki": int(ob.get("Unit type", 0)),
+		"typ_bazy": int(ob.get("ID", 0)), "rozklad_ms": int(round(float(ob.get("Rotting time", 0.0)) * 1000.0)), "zasoby": 0}
 
 
 static func parametry_smierci(typ: int, zasoby: Object) -> Dictionary:

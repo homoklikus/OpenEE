@@ -37,6 +37,10 @@ var _miganie := {}                    # id → czas do końca podświetlenia
 var _smierc_t := {}                   # id → czas od śmierci
 var _info_tablic := ""
 var _raport_p := {}
+var _budynki_dod: Array = []          # etap 47: budynki układu potyczki (spoza SCN) – obiekty Core z HP
+var _budynki_wejscie: Array = []      # te same budynki w formacie obiektów pól (wejście grafu)
+var _budynki_core := {}               # id Core budynku → id obiektu mapy
+var _typy_pol := {}                   # flagi typów obiektów pól z Core (+0x568, +0x600, +0x4B4, +0x612)
 
 
 func _arg(nazwa: String, dom: String) -> String:
@@ -102,7 +106,9 @@ func _po_zbudowaniu() -> void:
 			for x in range(okno.y, okno.y + okno.z): l += "." if core.pole_przejezdne(x, y) else "#"
 			w.append("%d %s" % [y, l])
 		_raport_p["siatka_od_x"] = okno.y; _raport_p["siatka"] = w
-	if _arg("potyczka-demo", "") != "":
+	if _arg("potyczka-demo", "") != "" and uklad.has("demo_e47"):
+		await _demo_e47(float(_arg("potyczka-demo", "90")))
+	elif _arg("potyczka-demo", "") != "":
 		await _demo(float(_arg("potyczka-demo", "60")))
 	elif _arg("potyczka-raport", "") != "":
 		_koniec_automatu(0)
@@ -129,6 +135,22 @@ func _przygotuj_mape_core() -> void:
 			_obiekty_core.append({"id": int(u.get("id", 0x7000000 + nr)), "typ": int(u.type), "gracz": g,
 				"X": int(u.get("X", 0)), "Y": int(u.get("Y", 0)),
 				"kwadrat": maxi(1, int(ob.get("Square occupied", 1))), "blokuje": _blokuje(int(u.type), ob)})
+	# etap 47: budynki układu (np. dom w przejściu muru) – obiekty pól (blokada, wejście grafu) i obiekty Core z HP
+	_budynki_dod.clear(); _budynki_wejscie.clear()
+	var i := 0
+	for b in uklad.get("budynki", []):
+		var ob: Dictionary = _obiekty.get(int(b["typ"]), {})
+		if ob.is_empty(): continue
+		var n := maxi(1, int(ob.get("Square occupied", 1)))
+		var e := {"id": 0x7100000 + i, "typ": int(b["typ"]), "gracz": int(b["gracz"]), "X": int(b["X"]), "Y": int(b["Y"]),
+			"kwadrat": n, "blokuje": _blokuje(int(b["typ"]), ob), "kurs": float(b.get("kurs", 0.0)),
+			"hp": int(b["hp"]) if b.has("hp") else int(ob.get("Health", 0))}
+		_obiekty_core.append(e)
+		_budynki_dod.append(e)
+		_budynki_wejscie.append({"id": e.id, "gracz": e.gracz, "X": e.X, "Y": e.Y, "typ": e.typ, "kwadrat": n,
+			"hp": int(ob.get("Health", 0)), "zasob": int(ob.get("Resource type", 0)), "budynek": int(ob.get("Is building?", 0)),
+			"unit_type": int(ob.get("Unit type", 0))})
+		i += 1
 
 
 ## Blokada pola (typ +0x600) = dbobjects „Is building?” [P etap 44: e35_a 70/70 typów z odczytu pamięci, m.in. obiekty
@@ -166,7 +188,8 @@ func nowa_bitwa() -> bool:
 	# etap 44: graf podsektorów Titan budowany w Core wyłącznie z danych lokalnych (mapa SCN, kawałek 5, dbobjects,
 	# dbunitset) – klasyfikacja pól 0x516E8C/0x512FB0, obiekty pól, regiony 0x4240D3, podsektory 0x42434F
 	if not "--bez-grafu" in OS.get_cmdline_user_args():
-		var we: Dictionary = ObiektyScnCore.wejscie(core, scn, Zasoby)
+		var we: Dictionary = ObiektyScnCore.wejscie(core, scn, Zasoby, _budynki_wejscie)
+		_typy_pol = we.get("typy", {})
 		var gw: Dictionary = core.zbuduj_graf_z_wejscia(we, int(we.get("komorka", 19)))
 		_raport_p["graf"] = {"podsektorow": gw.get("podsektorow", -1), "regionow": gw.get("regionow", -1),
 			"obszarow": gw.get("obszarow", -1), "zrodlo": "SCN + bazy gry (Core)"}
@@ -219,6 +242,29 @@ func nowa_bitwa() -> bool:
 		widok.dodaj(id, model, tex, _kolor_gracza(g), skala, SekwencjeAnimacji.z_rekordu(gr))
 		widok.ustaw_grafike_id(id, gid)
 		n += 1
+	# etap 47: budynki układu jako obiekty Core (HP, obrażenia, Dying, zapadanie się, zmiana mapy – wszystko w Core);
+	# Godot tylko rysuje model w pozycji i wysokości z Core
+	_budynki_core.clear()
+	for e in _budynki_dod:
+		var ob: Dictionary = _obiekty.get(int(e.typ), {})
+		var pb := ObiektyScnCore.parametry_budynku(ob)
+		pb["rozmiar_jeden"] = int(_typy_pol.get("typ:%d" % int(e.typ), [0, 0, 0, 0])[3])
+		var nb: int = int(e.kwadrat)
+		pb.merge({"gracz": e.gracz, "typ": e.typ, "X": e.X, "Y": e.Y, "kwadrat": nb, "x": float(e.X) + nb * 0.5,
+			"y": float(e.Y) + nb * 0.5, "hp": e.hp, "blokuje": 1 if e.blokuje else 0, "id_mapy": int(e.id), "w_siatce": 1}, true)
+		var bid: int = core.dodaj_budynek(pb)
+		if bid <= 0: continue
+		_budynki_core[bid] = int(e.id)
+		sym.zarejestruj(bid, int(e.gracz), int(e.typ), maxf(0.5, float(ob.get("Circle selection size", 1.0))), String(ob.get("Name", "")))
+		var gidb := grafika_obiektu(int(e.typ), int(e.gracz))
+		var grb: Dictionary = _grafiki.get(gidb, {})
+		if grb.is_empty() or String(grb.get("Model path", "")) == "": continue
+		var mb := String(grb["Model path"]).to_lower().replace("\\", "/") + ".cem"
+		var tb2 := String(grb.get("Texture path", "")).to_lower().replace("\\", "/")
+		var sk := float(ob.get("Graphic size", 1.0)); if sk <= 0: sk = 1.0
+		widok.dodaj(bid, mb, tb2, _kolor_gracza(int(e.gracz)), sk, SekwencjeAnimacji.z_rekordu(grb))
+		widok.ustaw_grafike_id(bid, gidb)
+	_raport_p["budynki_core"] = _budynki_core.size()
 	core.uporzadkuj_wg_pozycji()   # etap 44: kolejność taktu jak kolejka fizyki EE po wczytaniu (Core)
 	var wb := widok.zbuduj(Zasoby)
 	var start_zle: Array = []          # kontrola danych układu: jednostka na polu nieprzejezdnym (Core)
@@ -330,7 +376,11 @@ func _process(d: float) -> void:
 		if not sym.zywa(id) and not _smierc_t.has(id): _smierc_t[id] = 0.0
 	for id in _smierc_t.keys():
 		_smierc_t[id] += d
-		if _smierc_t[id] >= ZNIKANIE_ZWLOK_S and not widok.ukryta(id): widok.ukryj(id)
+		var bud: bool = sym.jednostki.has(id) and sym.jednostki[id].budynek
+		# etap 47: budynek znika w chwili Dead (6003) z Core – wcześniej widoczne zapadanie się (z z Core)
+		if bud:
+			if int(sym.stan.get(id, 0)) >= 6003 and not widok.ukryta(id): widok.ukryj(id)
+		elif _smierc_t[id] >= ZNIKANIE_ZWLOK_S and not widok.ukryta(id): widok.ukryj(id)
 	# zaznaczenie: martwe jednostki wypadają (jak w EE – zwłoki niewybieralne)
 	var zm := false
 	for id in widok.zaznaczone.duplicate():
@@ -437,6 +487,84 @@ func _demo(sekundy: float) -> void:
 		for id in sym.jednostki: przebieg.hp[str(id)] = sym.hp[id]
 		demo.append(przebieg)
 	_raport_p["demo"] = demo
+	_koniec_automatu(0)
+
+
+## Etap 47: demonstrator zniszczenia przeszkody (wejście jak od gracza przez SterowanieRTS): ramka nad gwardiami, PPM na
+## budynku w przejściu (rozkaz ataku w Core), czekanie na Dying i przebudowę grafu, PPM za przejściem (rozkaz ruchu),
+## dojście przez zwolnione pole; potem R (restart) i powtórka – raport porównuje oba przebiegi (HP, pola, graf, skrót).
+func _demo_e47(sekundy: float) -> void:
+	var kat := _arg("potyczka-zrzuty", "")
+	if kat != "": DirAccess.make_dir_recursive_absolute(kat)
+	var cfg: Dictionary = uklad["demo_e47"]
+	var cel_r := Vector2(float(cfg["cel_ruchu"][0]), float(cfg["cel_ruchu"][1]))
+	var px := int(cfg["pole_przejscia"][0]); var py := int(cfg["pole_przejscia"][1])
+	var wyniki := []
+	for nr in int(cfg.get("powtorzenia", 2)):
+		if nr > 0:
+			for wc in [true, false]:
+				var k := InputEventKey.new(); k.keycode = KEY_R; k.physical_keycode = KEY_R; k.pressed = wc
+				Input.parse_input_event(k); await get_tree().process_frame
+		for i in 5: await get_tree().process_frame
+		var bud := -1
+		for bid in _budynki_core:
+			var jd: Dictionary = core.jednostka(int(bid))
+			if int(jd.get("X", -1)) == px and int(jd.get("Y", -1)) == py: bud = int(bid)
+		var przebieg := {"bitwa": bitwa, "budynek": bud, "kroki": [],
+			"start": {"hp": sym.hp.get(bud, -1), "blokady": core.blokady_pola(px, py), "przejezdne": core.pole_przejezdne(px, py),
+				"graf": core.stan_grafu(), "w_fizyce": core.jednostka(bud).get("w_fizyce", null)}}
+		var pk: Array = []
+		var wlasne: Array = []
+		for j in sym.lista():
+			if j.wlasciciel == sym.gracz_lokalny and not j.budynek:
+				pk.append(_kamera.unproject_position(UkladEE.godot(j.pozycja, mapa.wysokosc(j.pozycja) + 0.5))); wlasne.append(j.id)
+		var r := Rect2(pk[0], Vector2.ZERO)
+		for p in pk: r = r.expand(p)
+		r = r.grow(20)
+		await _przeciagnij(r.position, r.end)
+		przebieg["zaznaczone"] = widok.zaznaczone.size()
+		await _czekaj(0.5, kat, "e47_b%d_start" % bitwa, przebieg)
+		var jb: JednostkaSym = sym.jednostki[bud]
+		await _klik(MOUSE_BUTTON_RIGHT, _kamera.unproject_position(UkladEE.godot(jb.pozycja, mapa.wysokosc(jb.pozycja) + 0.6)))
+		przebieg["atak"] = {"komunikat": sterowanie.komunikat, "cele": widok.zaznaczone.map(func(i): return int(sym.cel_walki[i]))}
+		var hp_hist := []
+		var t := 0.0
+		var nr_z := 0
+		while t < sekundy and int(sym.stan.get(bud, 0)) < 6000:
+			await _czekaj(1.0, kat if nr_z % 4 == 0 else "", "e47_b%d_atak_%02d" % [bitwa, nr_z], przebieg)
+			hp_hist.append(sym.hp.get(bud, -1)); t += 1.0; nr_z += 1
+		przebieg["hp"] = hp_hist
+		przebieg["smierc_takt"] = sym.takt
+		przebieg["smierc_stan"] = sym.stan.get(bud, -1)
+		await _czekaj(0.5, kat, "e47_b%d_dying" % bitwa, przebieg)
+		przebieg["po_smierci"] = {"przejezdne": core.pole_przejezdne(px, py), "blokady": core.blokady_pola(px, py),
+			"graf": core.stan_grafu(), "w_fizyce": core.jednostka(bud).get("w_fizyce", null), "z": core.jednostka(bud).get("z", 0.0)}
+		await _klik(MOUSE_BUTTON_RIGHT, _kamera.unproject_position(UkladEE.godot(cel_r, mapa.wysokosc(cel_r))))
+		przebieg["ruch"] = {"komunikat": sterowanie.komunikat}
+		var przez := {}
+		t = 0.0
+		var doszli := false
+		while t < sekundy and not doszli:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+			doszli = true
+			for id in wlasne:
+				var j: JednostkaSym = sym.jednostki[id]
+				if int(floor(j.pozycja.x)) == px and int(floor(j.pozycja.y)) == py: przez[str(id)] = true
+				if j.pozycja.distance_to(cel_r) > 2.0: doszli = false
+		przebieg["doszli"] = doszli
+		przebieg["przez_pole"] = przez.keys()
+		przebieg["czas_ruchu_s"] = snappedf(t, 0.01)
+		await _czekaj(0.5, kat, "e47_b%d_po_przejsciu" % bitwa, przebieg)
+		t = 0.0
+		while t < 40.0 and int(sym.stan.get(bud, 0)) < 6003:
+			await get_tree().process_frame
+			t += get_process_delta_time()
+		for i in 10: await get_tree().process_frame
+		przebieg["koniec"] = {"stan_budynku": sym.stan.get(bud, -1), "ukryty": widok.ukryta(bud), "takt": sym.takt,
+			"w_fizyce": core.jednostka(bud).get("w_fizyce", null), "graf": core.stan_grafu(), "skrot": sym.skrot_stanu()}
+		wyniki.append(przebieg)
+	_raport_p["demo_e47"] = wyniki
 	_koniec_automatu(0)
 
 

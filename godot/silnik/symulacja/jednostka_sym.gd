@@ -27,6 +27,11 @@ var polityka: PolitykaRuchu
 var stan_animacji: String = "bezczynnosc"
 var ostatni_powod: String = ""     # diagnostyka ostatniego rozkazu
 var przebyta_droga: float = 0.0
+# etap 47: budynek Core – wysokość z Core (Dying: zapadanie się EEPMBuilding 0x54BF34), z0 – wysokość przy rejestracji
+var budynek: bool = false
+var z: float = 0.0
+var z_poprz: float = 0.0
+var z0: float = 0.0
 
 
 ## Dane jednostki ze scenariusza – niezmienne (zapisu na dysk brak; pozycje zmieniają się tylko w JednostkaSym).
