@@ -6,6 +6,18 @@
   {
    "data": "2026-11-12",
    "tytul": {
+    "pl": "Etap 51: budowa kosztuje, obywatel zbiera drewno",
+    "en": "Stage 51: building costs resources, a citizen gathers wood"
+   },
+   "tekst": {
+    "pl": "Budowa w OpenEE pobiera teraz surowce tak jak w Empire Earth: dom kosztuje 50 drewna i 40 kamienia, koszary 225 drewna. Kilku obywateli buduje szybciej według tego samego wzoru co w oryginale, a obywatel ścina drzewo, nosi po 15 drewna do Centrum Miasta i wraca – zgodnie z pomiarem w grze w każdym takcie.",
+    "en": "Building in OpenEE now costs resources just like in Empire Earth: a house costs 50 wood and 40 stone, barracks 225 wood. Several citizens build faster by the same formula as the original, and a citizen fells a tree, carries 15 wood at a time to the Town Center and returns – matching the game measurement on every tick."
+   },
+   "raport": "RAPORT_ETAP_51.md"
+  },
+  {
+   "data": "2026-11-12",
+   "tytul": {
     "pl": "Etap 50: obywatel buduje dom",
     "en": "Stage 50: a citizen builds a house"
    },
@@ -13,7 +25,7 @@
     "pl": "Obywatel stawia dom tak jak w Empire Earth: fundament pojawia się od razu, robotnik podchodzi do narożnika, a budynek rośnie o 15 punktów mniej więcej co sekundę aż do ukończenia. Zmierzyliśmy to w oryginalnej grze i odtworzenie w OpenEE zgadza się z nią w każdym takcie.",
     "en": "A citizen builds a house just like in Empire Earth: the foundation appears at once, the worker walks to a corner and the building grows by 15 points about every second until it is finished. We measured this in the original game, and OpenEE matches it on every tick."
    },
-   "raport": "RAPORT_ETAP_50.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_50.md"
   },
   {
    "data": "2026-11-12",

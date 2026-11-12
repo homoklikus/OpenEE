@@ -99,3 +99,71 @@ samej próbce) [P]; rozkazy ruchu i ataku – przed taktem (jak dotąd). Przyczy
 - Koszt budowy, pobranie zasobów, populacja, odrzucenie miejsca (czerwony podgląd), BuildSiteValid/Clear,
   wielu budowniczych, naprawa uszkodzonego budynku, przerwanie budowy, ukończenie przez AI – [N].
 - Wygląd fundamentu i etapy modelu w czasie budowy – nie badano (Godot rysuje gotowy model).
+
+## 6. Etap 51 – koszt, wzór przyrostu, koszary, dwóch budowniczych
+
+### 6.1 Zasoby gracza [P: 660 – scenariusz z zasobami 1111/1222/1333/1444/1555]
+
+EEPlayer: **+0xAF8 żywność, +0xAFC drewno, +0xB00 kamień, +0xB04 złoto, +0xB08 żelazo** (i32, kolejność jak w SCN i w
+panelu gry). +0xB14 – populacja (etap 12). +0xB0C – 390 na starcie, **+50 po ukończeniu domu** (660, 663), bez zmiany
+po koszarach (674) – znaczenie [N]. +0xB14: dom – bez zmiany (1 → 1, 2 → 2), koszary – 2 → 3 po ukończeniu (674) [P;
+znaczenie N]. Limit populacji 100 (panel „1/100”) leży poza obiektem gracza (+0x23C4 itd. – wartości 100 w obiekcie;
+nie rozstrzygnięto). Zniszczenia ukończonego domu nie mierzono.
+
+### 6.2 Koszt i odmowa [P]
+
+| Budynek | Koszt | Chwila pobrania | Źródło |
+|---|---|---|---|
+| dom 37 | drewno 50, kamień 40 | w chwili utworzenia fundamentu (kliknięcie miejsca); wybór budynku i Esc – bez zmian | 660 (migawki S0–S5), 663 |
+| koszary 34 | drewno 225 | przy fundamencie | 674 |
+
+- **Brak zasobów** (po 20, 661): odmowa już przy przycisku budynku – komunikat „Zbyt mało surowców, aby rozpocząć
+  budowę.”, przycisk przyciemniony, brak trybu stawiania, brak fundamentu, zasoby bez zmian, obywatel bez celu.
+- **Miejsce w niezbadanym terenie** (662, 666, 671 – obrys koszar częściowo w czerni): podgląd czerwony, kliknięcie nie
+  tworzy fundamentu, zasoby bez zmian. Pole zajęte, poza mapą i niedostępne – nie mierzono [N]. Zwrot kosztu po
+  anulowaniu – [N].
+- Koszt nie leży w dbobjects (pola „cost” brak) – prawdopodobnie dbtechtree (brak schematu w OpenEE) [H].
+
+### 6.3 Wzór przyrostu HP – 0x60D7A5 / 0x60BF56 [W; P: 660, 663, 674]
+
+0x60D7A5 (EEUGBuildRepair vt[29], cykl pracy): budynek = cel +0x3C (z łańcuchem +0x1CC), gdy HP < Hmax: przy pierwszym
+cyklu budującego (cel +0x58 = 0) **budynek +0x274 += 1** (liczba budowniczych), p = 0x60BF56, HP = min(Hmax, HP + p)
+(SetHP 0x616F30); budujący +0x27C = round((Hmax − HP)/Hmax · K · m) (pozostały czas), +0x2B8 – licznik cyklu.
+
+0x60BF56 (budowa, +0x340 = 0): n = +0x274, **T = 3/(n + 2) · K · m**, v = Hmax / T, **p = ⌈BR · v / n⌉**, p ≥ 1,
+p ≤ Hmax − HP; cel +0x54/+0x58/+0x59: drugi cykl budującego daje 2·p − p₁ (korekta po dołączeniu). Stałe 3,0
+(0x825AC4) i 2,0 (0x825784).
+
+| Wielkość | Źródło | Dom 37 | Koszary 34 |
+|---|---|---|---|
+| Hmax | ulepszenie budynku +0x144 | 500 | 1500 |
+| m | ulepszenie budynku +0x94 (f32) | 1,0 [P: 672] | 1,0 [P: 674] |
+| K | vt+0x10 obiektu celu +0x44 (pozycja budowy) | 35000 ms [P: 660 +0x27C = 34930 przy HP 1] | 45000 ms [P: 674 +0x27C = 44970] |
+| BR | ulepszenie budującego +0x134 („Build rate”) | 1000 [P: 665] | 1000 |
+| p, n = 1 | ⌈1000 · 500/35000⌉ = ⌈14,29⌉ | **15** [P: 658–660] | ⌈33,3⌉ = **34** [P: 674] |
+| p, n = 2 | ⌈1000 · 500/26250 / 2⌉ = ⌈9,52⌉ | **10** każdy [P: 663] | – |
+
+Okres cyklu: licznik +0x2B8 [P: 4366 w próbce wejścia w 4004, 966 w 4002 – okres − 34] – rytm 29/29/30 taktów wynika z
+odejmowania 34 ms na takt i przenoszenia nadwyżki [P: wszystkie nagrania budowy]. Dwóch budowniczych: przyrosty
+niezależne (każdy swój licznik), wspólny jest tylko n (+0x274); n wraca do 0 po zejściu budowniczych z celu (663).
+
+### 6.4 Koszary 34 (2×2) [P: 674]
+
+Fundament: kotwica (147, 114), środek (148, 115), HP 1 → 1500, +34 co cykl, 44 cykle; punkt pracy (146,85; 113,85) –
+narożnik obwodu najbliższy obywatelowi (ta sama reguła co dla domu). W drodze CheckBuildSiteVisibility 4013 na każdym
+punkcie pośrednim: **BuildSiteVisible = LOS² + c ≥ d²** (d – od środka budynku; c = typ+0x58C [N], w Core kwadrat
+budynku) – koszary: d² = 27 i 14,2 → fałsz (Advance); dom w 663: d² = 6,1 → prawda (4014). Ukończenie: zgłoszenie mapy
++15 s (125491 w grze, 125488 w Core), przebudowa → maks. id podsektora 1606 (= gra).
+
+### 6.5 Dwóch obywateli [P: 663]
+
+Budowniczy A sam: 13 × 15 HP. B (PPM na fundamencie): 8017 → … → 9000 → 4013 → 4014 → 10003 → … → 4002 (objazd przez
+punkt pośredni). Od pierwszego cyklu B (n = 2): oba +10 na cykl; ostatni przyrost przycięty (496 → 500). Oba
+przechodzą do Idle w tym samym takcie; n = 0.
+
+### 6.6 Core (etap 51)
+
+`przyrost_budowy_titan` (0x60BF56), `budowniczowie` (+0x274), pola celu (+0x54/+0x58/+0x59) w budującym; dane typu w
+`ParametryWalki` (`czas_budowy_ms` = K, `czas_budowy_s` = m, `tempo_budowy_ms` = BR) z `parametry_jednostek_ee.json`
+(`budowa_typow`). `Swiat::oplac` – koszt przy fundamencie i odmowa bez zmian. Zgodność: 658 ×2, 659, 660, 674 – w
+całości; 663 – budowniczy B od t = 58465 (kurs przy skręcie za punktem pośrednim, 0,03 rad), A od 77216 (koniec).

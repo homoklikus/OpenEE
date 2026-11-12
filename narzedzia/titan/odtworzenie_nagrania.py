@@ -122,6 +122,72 @@ def opis_budowy(obs, bud, uklad, wyj):
     print(json.dumps({k: v for k, v in o.items() if k != 'jednostki'}, ensure_ascii=False)[:800])
 
 
+def opis_zbierania(nagr, uklad, wyj, od_t=None):
+    """Etap 51: rozkaz zbierania (cel EEUGGather, vtable 0x831B80). Źródła (obiekty Świata – rejestrator nie zna ich pól
+    x/y) dostają pozycję z kotwicy X/Y (+0x1C/+0x20) i ilość z +0x40; punkt pracy = ostatni punkt pierwszej trasy po
+    rozkazie (miejsce kliknięcia rzucone na obwód – [H]); zasoby gracza z próbki (EEPlayer +0xAF8)."""
+    d = json.load(open(nagr)); u = json.load(open(uklad))
+    if od_t is not None:   # odtworzenie od chwili od_t (stan jednostek z tej próbki; wcześniejsze rozkazy pominięte)
+        d['probki'] = [p for p in d['probki'] if p['t'] >= float(od_t)]
+    nazwy = {gid: g for g, v in u['grupy'].items() for gid in v['id']}
+    seria = _seria(d)
+    T0 = seria[0]['t']
+    p0 = d['probki'][0]
+    jedn, zrodla, rozkazy = [], [], []
+    for gid in d['jednostki']:
+        surowe = base64.b64decode(p0[gid]['surowe']['0x0'])
+        if int(gid, 16) >> 24 == 0:
+            X, Y = struct.unpack_from('<ii', surowe, 0x1C)
+            zrodla.append({'id': gid, 'typ': p0[gid]['typ'], 'X': X, 'Y': Y, 'hp': struct.unpack_from('<i', surowe, 0x3C)[0],
+                           'ilosc': struct.unpack_from('<i', surowe, 0x40)[0]})
+            continue
+        q = seria[0][gid]
+        jedn.append({'id': gid, 'nazwa': nazwy.get(gid, gid), 'typ': q['typ'], 'gracz': int(gid, 16) >> 24, 'x': q['x'],
+                     'y': q['y'], 'z': q['z'], 'kurs': math.atan2(-q['m01'], q['m11']), 'hp': q['hp']})
+    for gid in d['jednostki']:
+        if int(gid, 16) >> 24 != 1:
+            continue
+        prev = T0
+        for i, p in enumerate(d['probki']):
+            c = p.get(gid)
+            if c and any((cc.get('klasa') or '').endswith('0x831b80') for poz in (c.get('kolejka') or {}).get('poziomy', [])
+                         for cc in (poz.get('cele') or [])):
+                pkt = next((q[gid]['trasa'][-1] for q in d['probki'][i:i + 20] if q.get(gid, {}).get('trasa')), None)
+                rozkazy.append({'t_przed': prev, 'kto': gid, 't_proby': p['t'], 'rodzaj': 'zbieranie', 'x': pkt[0], 'y': pkt[1],
+                                'zrodla': [z['id'] for z in zrodla]})
+                break
+            prev = p['t']
+    znane = set()   # rozkazy ruchu (EEUGLocation z pochodzeniem 1) – jak w opis()
+    for gid in d['jednostki']:
+        if int(gid, 16) >> 24 != 1:
+            continue
+        prev_t = None
+        for q in seria:
+            u_ = q.get(gid)
+            if not u_:
+                continue
+            for c in u_['q']:
+                k = (c['numer'], c['utworzony'])
+                if c['pochodzenie'] == 1 and k not in znane and (c['klasa'] or '') == 'EEUGLocation':
+                    znane.add(k)
+                    rozkazy.append({'t_przed': prev_t if prev_t is not None else T0, 'kto': gid, 'utworzony': c['utworzony'],
+                                    't_proby': q['t'], 'rodzaj': 'ruch', 'x': c['punkt'][0], 'y': c['punkt'][1], 'kat': c.get('kat')})
+            prev_t = q['t']
+    rozkazy.sort(key=lambda r: r['t_przed'])
+    zas = None
+    if 'gracze' in p0:
+        g = base64.b64decode(p0['gracze']['1'])
+        zas = list(struct.unpack_from('<5i', g, 0))
+    o = {'nagranie': nagr.split('/')[-1], 'T0': T0, 'takt_ms': TAKT_MS, 'jednostki': jedn, 'zrodla': zrodla, 'rozkazy': rozkazy,
+         'koniec_t': seria[-1]['t'], 'zasoby_startowe': {'1': zas} if zas else {}}
+    json.dump(o, open(wyj, 'w'), indent=1)
+    for q in seria:   # źródła poza porównaniem pozycji (pola x/y obiektów prostych nieznane)
+        for z in zrodla:
+            q.pop(z['id'], None)
+    json.dump({'probki': seria}, open(wyj.replace('.json', '') + '.seria.json', 'w'))
+    print(json.dumps({k: v for k, v in o.items() if k != 'jednostki'}, ensure_ascii=False)[:900])
+
+
 def porownaj(ser_p, core_p, pomin=()):
     """Etap 46 (I2): na końcu jedno podsumowanie – pierwszy rozbieżny takt, jednostka, pole, wartości gra/Core,
     ostatnie zdarzenie walki Core przed nim, próbki nieaktualne, tryb RNG i graf."""
@@ -211,6 +277,8 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if a and a[0] == 'opis':
         opis(a[1], a[2], a[3])
+    elif a and a[0] == 'opis_zbierania':
+        opis_zbierania(a[1], a[2], a[3], a[4] if len(a) > 4 else None)
     elif a and a[0] == 'opis_budowy':
         opis_budowy(a[1], a[2], a[3], a[4])
     elif a and a[0] == 'porownaj':

@@ -199,6 +199,40 @@ def konwertuj_rekord(rek, w_z, w_do):
     return bytes(wyj), {k: v for k, v in off2.items()}
 
 
+_NAZWY_GRACZY = (b"Gracz\0", b"Komputer\0", b"Player\0", b"Computer\0")
+
+
+def _offset_surowcow(d5, pid, wersja=250, obecne=None):
+    """Etap 51: offset pięciu u32 surowców gracza `pid` w kawałku 5. Mapy Riverlands: jak scn.player_fields (pola nazw
+    „Gracz”/„Komputer”); mapy kampanii (nazwy własne graczy): jedyne wystąpienie wartości `obecne` (5 × u32) między
+    początkiem rekordu gracza a początkiem następnego [P: e46_czysta_troja – gracz 1: 1000/1000/1000/500/500 za
+    listą jednostek, jedno wystąpienie w kawałku]."""
+    if obecne:
+        a = _start_gracza(d5, pid, wersja)
+        try:
+            b = _start_gracza(d5, pid + 1, wersja)
+        except ValueError:
+            b = len(d5)
+        wz = struct.pack("<5I", *[int(v) for v in obecne])
+        i = d5.find(wz, a, b)
+        if i < 0 or d5.find(wz, i + 1, b) >= 0:
+            raise SystemExit(f"surowce: wartości {obecne} gracza {pid} nie występują dokładnie raz")
+        return i
+    hits = []
+    for nm in _NAZWY_GRACZY:
+        at = d5.find(nm)
+        while at >= 0:
+            if at >= 28 and struct.unpack_from("<I", d5, at - 4)[0] == len(nm):
+                hits.append(at)
+            at = d5.find(nm, at + 1)
+    hits.sort()
+    for i, at in enumerate(hits):
+        tag, _x, p = struct.unpack_from("<III", d5, at - 28)
+        if tag == 65536 and p == pid and i + 1 < len(hits):
+            return hits[i + 1] - 28
+    raise SystemExit(f"surowce: nie znaleziono pól gracza {pid}")
+
+
 def zbuduj(wej, wyj, uklad_plik, riverlands):
     uklad = json.loads(Path(uklad_plik).read_text(encoding="utf-8"))
     blob = Path(wej).read_bytes()
@@ -253,6 +287,11 @@ def zbuduj(wej, wyj, uklad_plik, riverlands):
             struct.pack_into("<I", d5, kb["offset"], kb["liczba"] + len(wstawki[kb_nr]))
         struct.pack_into("<I", d5, g["off_liczba"], g["liczba"] + n_nowych)
         struct.pack_into("<I", d5, g["off_nast"], nast)
+    # etap 51: surowce startowe graczy ("surowce": {"1": [5 × u32]}) – pięć u32 28 B przed drugim polem nazwy gracza
+    # (układ jak Riverlands scn.player_fields: pierwsze pole nazwy z numerem gracza 20 B wcześniej, wzór 65536, ?, pid)
+    for nr_s, wart in uklad.get("surowce", {}).items():
+        off = _offset_surowcow(bytes(d5), int(nr_s), wersja, uklad.get("surowce_obecne"))
+        struct.pack_into("<5I", d5, off, *[int(v) for v in wart])
     gr = G.czytaj(bytes(d5), wersja)                     # kontrola odczytu całego kawałka
     for nr, nowe in nowe_ids.items():
         znal = [x for x in gr[nr]["jednostki"] if x.get("id") in nowe]

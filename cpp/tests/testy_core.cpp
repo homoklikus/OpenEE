@@ -2129,6 +2129,103 @@ int test_budynki() {
         sprawdz(sb->jednostka(f)->ukonczony && sb->przebudowa_zaplanowana() && sb->termin_przebudowy() == t_ukon + 15000,
                 "ukończenie: +0x340 = 1, zgłoszenie zmiany mapy z terminem ukończenie + 15000 ms (658: 88705 + 15000)");
     }
+    // 11. etap 51 – wzór przyrostu 0x60BF56 i dwóch budowniczych [W; P: 663]: obywatel A sam: +15 (n = 1), po dołączeniu
+    //     B (n = 2): oba +10 na cykl; ostatni przycięty; budynek +0x274 = 2 w trakcie, 0 po zejściu obu z celu
+    {
+        auto sb = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        sb->ustaw_tablice_walki(tablice(), wagi_ee_575());
+        sb->ustaw_wejscie_mapy(wejscie_syntetyczne(21, {}), 7);
+        ParametryRuchu pr;
+        pr.vmax = 0.5; pr.rozmiar = 0.3; pr.a = 1.2; pr.c4 = 1.0 / 1.2;
+        ParametryWalki pc = g;
+        pc.pole_widzenia = 6.0f;
+        pc.tempo_budowy_ms = 1000;
+        const IdJednostki a = sb->dodaj_jednostke(pr, 11.65, 12.46, 0.0), bb = sb->dodaj_jednostke(pr, 13.5, 12.5, 0.0);
+        for (IdJednostki c : {a, bb}) { sb->ustaw_walke(c, 1, true, pc, 25); sb->ustaw_skrypt_jednostki(c, "obywatel"); }
+        ParametryWalki dom = dom_37();
+        dom.czas_budowy_s = 1.0f;     // ulepszenie +0x94 [P: 672]
+        dom.czas_budowy_ms = 35000;   // K [P: 660 – +0x27c]
+        const IdJednostki f = sb->postaw_fundament(1, 37, 10, 10, 1, 10.5, 10.5, 0.0, dom, 0x700, 1, 2, 0);
+        sb->rozkaz_budowy(a, f);
+        std::vector<int> przyrosty;
+        int hp = 1, n_maks = 0, k_b = -1;
+        bool b_wydany = false;
+        for (int k = 0; k < 3000; ++k) {
+            if (!b_wydany && sb->jednostka(f)->boj->s.hp >= 100) { sb->rozkaz_budowy(bb, f); b_wydany = true; k_b = k; }
+            sb->takt();
+            const int h = sb->jednostka(f)->boj->s.hp;
+            if (h != hp) { przyrosty.push_back(h - hp); hp = h; }
+            n_maks = std::max(n_maks, sb->jednostka(f)->budowniczowie);
+            if (sb->jednostka(f)->ukonczony && sb->jednostka(a)->stan == 5000 && sb->jednostka(bb)->stan == 5000) break;
+        }
+        std::string s;
+        for (int x : przyrosty) s += std::to_string(x) + " ";
+        std::printf("  dwóch budowniczych: przyrosty %s| n maks %d, n po %d, HP %d, B od taktu %d\n", s.c_str(), n_maks,
+                    sb->jednostka(f)->budowniczowie, hp, k_b);
+        bool ok15 = przyrosty.size() > 6, ok10 = false;
+        for (std::size_t i = 0; i < 6 && i < przyrosty.size(); ++i) ok15 = ok15 && przyrosty[i] == 15;
+        int dziesiatki = 0;
+        for (int x : przyrosty) dziesiatki += (x == 10);
+        ok10 = dziesiatki >= 20;
+        sprawdz(ok15 && ok10 && n_maks == 2 && sb->jednostka(f)->budowniczowie == 0 && hp == 500,
+                "0x60BF56: n = 1 → +15, n = 2 → +10 na budowniczego (3 / (n + 2)), +0x274 2 → 0 (663)");
+    }
+    // 12. etap 51 – koszt domu (660/663 [P]: drewno −50, kamień −40 przy fundamencie; 661 – po 20: odmowa bez zmian)
+    {
+        auto sb = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        const std::array<int, 5> dom{0, 50, 40, 0, 0};
+        sb->ustaw_zasoby(1, {1111, 1222, 1333, 1444, 1555});
+        const bool ok1 = sb->oplac(1, dom);
+        const auto z1 = sb->zasoby(1);
+        sb->ustaw_zasoby(1, {20, 20, 20, 20, 20});
+        const bool ok2 = sb->oplac(1, dom);
+        const auto z2 = sb->zasoby(1);
+        std::printf("  koszt domu: %d (%d %d %d %d %d), przy 20: %d (%d %d)\n", int(ok1), z1[0], z1[1], z1[2], z1[3], z1[4], int(ok2), z2[1], z2[2]);
+        sprawdz(ok1 && z1 == std::array<int, 5>{1111, 1172, 1293, 1444, 1555} && !ok2 && z2 == std::array<int, 5>{20, 20, 20, 20, 20},
+                "koszt domu 50 drewna i 40 kamienia (660/663); brak zasobów – odmowa bez zmian (661)");
+    }
+    // 13. etap 51 – zbieranie drewna (673 [P]): 8008 → GatherResource 4004 (pierwszy cykl ścina drzewo, potem +1 co
+    //     4400 ms) → pełne 15 → 4024 → FindNewStorage 4007 → MoveToStorage 8009 → AddResourceToStorage 4005 (drewno +15)
+    //     → 4016 → 4023 → 8008 (powrót)
+    {
+        auto sb = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        sb->ustaw_tablice_walki(tablice(), wagi_ee_575());
+        sb->ustaw_wejscie_mapy(wejscie_syntetyczne(21, {}), 7);
+        ParametryRuchu pr;
+        pr.vmax = 0.5; pr.rozmiar = 0.3; pr.a = 1.2; pr.c4 = 1.0 / 1.2;
+        ParametryWalki pc = g;
+        pc.pole_widzenia = 3.0f; pc.atak = 5.0f; pc.udzwig = 15;
+        pc.tempo_zbierania = {4400, 8926, 6000, 6000, 3500, 5200, 4600};
+        const IdJednostki c = sb->dodaj_jednostke(pr, 11.5, 12.5, 0.0);
+        sb->ustaw_walke(c, 1, true, pc, 65);
+        sb->ustaw_skrypt_jednostki(c, "obywatel");
+        const IdJednostki drz = sb->dodaj_zrodlo(0, 339, 10, 10, 10.5, 10.5, 0.0, 1, 400, 3, 1, 0, 0x1a4c);
+        ParametryWalki tc = dom_37();
+        tc.hp_max = 4000;
+        const IdJednostki m = sb->dodaj_obiekt_budynku(1, 35, 15, 10, 2, 16.0, 11.0, 0.0, tc, 4000, true, 0x701, false);
+        sb->ustaw_magazyn(m, true);
+        sb->ustaw_zasoby(1, {1111, 1222, 1333, 1444, 1555});
+        sb->rozkaz_zbierania(c, drz, 11.15, 11.15);
+        std::vector<int> stany{sb->jednostka(c)->stan};
+        int maks_niesie = 0, k_scinka = -1, k_dostawa = -1;
+        for (int k = 0; k < 12000; ++k) {
+            sb->takt();
+            const Jednostka* u = sb->jednostka(c);
+            if (u->stan != stany.back()) stany.push_back(u->stan);
+            maks_niesie = std::max(maks_niesie, u->ilosc_40);
+            if (k_scinka < 0 && sb->jednostka(drz)->boj->s.hp == 0) k_scinka = k;
+            if (k_dostawa < 0 && sb->zasoby(1)[1] == 1237) k_dostawa = k;
+            if (k_dostawa >= 0 && u->stan == 4004) break;
+        }
+        auto ma = [&](int st) { return std::find(stany.begin(), stany.end(), st) != stany.end(); };
+        std::printf("  zbieranie: ścięcie w takcie %d, dostawa %d, niesione maks %d, drzewo %d, drewno %d, stany:", k_scinka, k_dostawa,
+                    maks_niesie, sb->jednostka(drz)->ilosc_40, sb->zasoby(1)[1]);
+        for (int st : stany) std::printf(" %d", st);
+        std::printf("\n");
+        sprawdz(stany.front() == 8008 && ma(4004) && ma(4024) && ma(4007) && ma(8009) && ma(4005) && ma(4016) && ma(4023) &&
+                    maks_niesie == 15 && sb->jednostka(drz)->ilosc_40 == 385 && sb->zasoby(1)[1] == 1237 && k_scinka > 0,
+                "Gather.tai: ścięcie drzewa, 15 × 1 drewna co 4400 ms, oddanie w magazynie (+15), powrót do źródła (673)");
+    }
     return bledy ? FAIL : PASS;
 }
 

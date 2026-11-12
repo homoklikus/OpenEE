@@ -140,6 +140,20 @@ func _start() -> void:
 				"hp": int(obt.get("Health", 0)), "blokuje": 1, "id_mapy": rid, "w_siatce": 1}, true)
 			var bid: int = c.dodaj_budynek(pb)
 			core_id[rid] = bid; gra_id[bid] = rid
+	# etap 51: źródła surowców (obiekty Świata z opisu – drzewa) i magazyny (dbobjects „Resource type” 1 [H])
+	var zrodla_id := {}
+	for zr in opis.get("zrodla", []):
+		var zid: int = c.dodaj_zrodlo({"gracz": 0, "typ": int(zr["typ"]), "X": int(zr["X"]), "Y": int(zr["Y"]),
+			"x": float(zr["X"]) + 0.5, "y": float(zr["Y"]) + 0.5, "hp": int(zr["hp"]), "ilosc": int(zr["ilosc"]),
+			"zasob_typ": int(ob.get(int(zr["typ"]), {}).get("Resource type", 0)), "zasob_indeks": 1, "tempo_indeks": 0,
+			"id_mapy": str(zr["id"])})
+		zrodla_id[str(zr["id"])] = zid; core_id[str(zr["id"])] = zid
+	for gid in core_id:
+		var obz: Dictionary = ob.get(int(c.jednostka(core_id[gid]).get("typ", -1)), {})
+		if int(obz.get("Is building?", 0)) != 0 and int(obz.get("Unit type", 0)) == 2 and int(obz.get("Resource type", 0)) == 1:
+			c.ustaw_magazyn(core_id[gid], true)
+	for g in opis.get("zasoby_startowe", {}):
+		c.ustaw_zasoby(int(g), opis["zasoby_startowe"][g])
 	if kol == "pozycja": c.uporzadkuj_wg_pozycji()   # etap 44: kolejka fizyki po wczytaniu (Core)
 	if _arg("kontakty-wczytanie", "0") == "1": c.odbuduj_kontakty_wszystkich()   # etap 49: kolejność tworzenia = lista
 	var T0 := float(opis["T0"])
@@ -179,7 +193,7 @@ func _start() -> void:
 		for r in rozkazy.get(k, []):
 			var kto: int = core_id[str(r["kto"])]
 			var w
-			if r["rodzaj"] == "budowa":   # etap 50: wykonanie po takcie (niżej)
+			if r["rodzaj"] == "budowa" or r["rodzaj"] == "zbieranie":   # etap 50/51: wykonanie po takcie (niżej)
 				po_takcie.append(r); continue
 			if r["rodzaj"] == "atak": w = c.rozkaz_ataku(kto, core_id[str(r["cel"])])
 			else: w = c.rozkaz_ruchu(kto, float(r["x"]), float(r["y"]), float(r["kat"]) if r.get("kat") != null else null, false)
@@ -193,6 +207,10 @@ func _start() -> void:
 		for r in po_takcie:
 			var kto: int = core_id[str(r["kto"])]
 			var w
+			if r["rodzaj"] == "zbieranie":   # etap 51: PPM na źródle – MoveToResource 8008 w próbce kliknięcia [P: 673]
+				w = c.rozkaz_zbierania(kto, core_id[str(r["zrodla"][0])], float(r["x"]), float(r["y"]))
+				wynik.rozkazy.append([k, str(r["kto"]), "zbieranie", w])
+				continue
 			var fd: Dictionary = r["fundament"]
 			if not core_id.has(str(fd["id"])):
 				var obf: Dictionary = ob.get(int(fd["typ"]), {})
@@ -201,6 +219,7 @@ func _start() -> void:
 				pf.merge({"gracz": int(fd["gracz"]), "typ": int(fd["typ"]), "X": int(fd["X"]), "Y": int(fd["Y"]),
 					"kwadrat": maxi(1, int(obf.get("Square occupied", 1))), "x": float(fd["x"]), "y": float(fd["y"]),
 					"z": float(fd["z"]), "hp_max": int(obf.get("Health", 0)), "id_mapy": str(fd["id"])}, true)
+				pf.merge(par.get("budowa_typow", {}).get(str(int(fd["typ"])), {}), true)   # etap 51: K, m (wzór 0x60BF56)
 				var fid: int = c.postaw_fundament(pf)
 				core_id[str(fd["id"])] = fid; gra_id[fid] = str(fd["id"])
 				wynik.ids[str(fd["id"])] = "fundament"
@@ -226,6 +245,12 @@ func _start() -> void:
 				ostatnie_trasy[gid] = trs
 				wynik.trasy.append([snappedf(T0 + TAKT_MS * (k + 1), 0.1), gid, JSON.parse_string(trs)])
 		if _arg("rng", "0") == "1": pr["rng"] = int(c.diagnostyka().get("rng_stan", 0))   # etap 45: stan generatora
+		if not opis.get("zasoby_startowe", {}).is_empty():   # etap 51: zasoby gracza 1, niesione, ilość w źródłach
+			pr["zasoby"] = c.zasoby(1)
+			pr["zrodla"] = {}
+			for zg in zrodla_id: pr["zrodla"][zg] = [int(c.jednostka(zrodla_id[zg]).get("hp", -1)), int(c.jednostka(zrodla_id[zg]).get("ilosc_40", -1))]
+			for gid2 in core_id:
+				if int(gid2.hex_to_int()) >> 24 == 1: pr["niesie_" + gid2] = int(c.jednostka(core_id[gid2]).get("ilosc_40", 0))
 		if _arg("graf-scn", "0") == "1":   # etap 47: menedżer przebudowy (termin, flaga, zmienione sektory) i kolejka fizyki
 			var sg: Dictionary = c.stan_grafu()
 			pr["graf"] = [int(sg["d4"]), bool(sg["d8"]), int(sg["zmienione_sektory"]), int(sg["przebudowy_sektorow"]), int(sg["maks_id"])]

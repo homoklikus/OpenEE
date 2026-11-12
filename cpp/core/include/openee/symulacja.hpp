@@ -314,9 +314,22 @@ public:
     /// bez zgłoszenia zmiany mapy – zgłoszenie (termin zwykły) przy ukończeniu (BuildingRepaired).
     IdJednostki postaw_fundament(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
                                  const ParametryWalki& p, std::uint32_t id_mapy, int flaga600, int klasa4b4, int flaga612);
+    /// Etap 51 – zasoby gracza (EEPlayer +0xAF8.. i32: żywność, drewno, kamień, złoto, żelazo [P: 660]).
+    void ustaw_zasoby(int gracz, const std::array<int, 5>& z) { zasoby_[gracz] = z; }
+    std::array<int, 5> zasoby(int gracz) const { auto it = zasoby_.find(gracz); return it == zasoby_.end() ? std::array<int, 5>{} : it->second; }
+    /// Etap 51 – opłata za budynek przy postawieniu fundamentu [P: 660/663 – dom: drewno −50, kamień −40 w chwili utworzenia
+    /// fundamentu; 661 – przy braku zasobów gra odmawia już przy wyborze budynku: „Zbyt mało surowców…”, bez fundamentu
+    /// i bez zmiany zasobów]. Zwraca false (bez zmian), gdy którejkolwiek pozycji brakuje.
+    bool oplac(int gracz, const std::array<int, 5>& koszt);
     /// Etap 50 – rozkaz budowy obywatela (cel EEUGBuildRepair): miejsce pracy na obwodzie fundamentu, trasa, stany citizen.tai.
     bool rozkaz_budowy(IdJednostki obywatel, IdJednostki budynek);
     Punkt2 miejsce_budowy(const Jednostka& u, const Jednostka& b) const;
+    /// Etap 51 – zbieranie (EEUGGather): źródło surowca jako obiekt Core (drzewo – obiekt Świata już w siatce), rozkaz
+    /// zbierania z punktem pracy (gracz klika źródło), cykl Gather.tai, oddanie w magazynie (zasoby gracza).
+    IdJednostki dodaj_zrodlo(int gracz, int typ_db, int X, int Y, double x, double y, double z, int hp, int ilosc,
+                             int zasob_typ, int zasob_indeks, int tempo_indeks, std::uint32_t id_mapy);
+    bool ustaw_magazyn(IdJednostki budynek, bool m);
+    bool rozkaz_zbierania(IdJednostki obywatel, IdJednostki zrodlo, double x, double y);
     std::uint64_t wersja_grafu() const { return wersja_grafu_; }
     std::uint64_t przebudowy_grafu() const { return przebudowy_grafu_; }
     bool przebudowa_zaplanowana() const { return przebudowa_d8_; }
@@ -383,6 +396,10 @@ private:
     Jednostka* cel_ataku(const Jednostka& u);
     void omijanie_atakujacego(Jednostka& u, const Jednostka& o);   // etap 49: 0x549179 (ru = ro, +0x61A)
     void krok_budowy(Jednostka& u);   // etap 50: RepairBuilding (4002)
+    int przyrost_budowy_titan(Jednostka& u, const Jednostka& b);   // etap 51: 0x60BF56
+    void krok_zbierania(Jednostka& u);   // etap 51: GatherResource (4004) – 0x611801
+    std::optional<bool> zdarzenie_zbierania(Jednostka& u, const std::string& n);
+    Punkt2 punkt_obwodu(const Jednostka& cel, double px, double py, double r) const;   // rzut na obwód (etap 51)
     std::optional<bool> zdarzenie_budowy(Jednostka& u, const std::string& n);
     std::optional<bool> zdarzenie_walki(Jednostka& u, const std::string& n);
     bool szukaj_wroga(Jednostka& u);
@@ -419,6 +436,7 @@ private:
     WariantTitan wariant_;
     GeneratorTitan rng_;
     SkryptStanow skrypt_;
+    std::map<int, std::array<int, 5>> zasoby_;   // etap 51
     std::map<std::string, SkryptStanow> skrypty_;   // etap 45: skrypty typów (adresy stabilne – std::map)
     const SkryptStanow& skr(const Jednostka& u) const { return u.skrypt ? *u.skrypt : skrypt_; }
     int losuj_zakres(int lo, int hi);

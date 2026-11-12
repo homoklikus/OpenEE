@@ -306,6 +306,8 @@ bool FizykaLadowa::takt(const KontekstFizyki& k, Jednostka& u) {
             u.v = 0.0;
             u.omega = 0.0;
             return true;
+        case TrybRuchu::praca:         // etap 51: tryb 6 (praca obywatela) – bez ruchu [P: 673; procedura trybu 6 – N]
+            return true;
     }
     return true;
 }

@@ -32,7 +32,7 @@ Podsystem może mieć wysokie A i niskie B (wiemy, ale nie napisaliśmy) albo wy
 Żaden podsystem nie ma oceny 5: nawet najlepiej zbadane (ruch, A*) mają znane braki. Ocena 4 nie oznacza
 kompletności, tylko szerokie potwierdzenie zakresu, który już zbadano.
 
-## 3. Katalog podsystemów i oceny (stan po etapie 50)
+## 3. Katalog podsystemów i oceny (stan po etapie 51)
 
 | # | Podsystem | A rozpoznanie | B implementacja | C zgodność | Pewność | Główny dowód |
 |---|---|---|---|---|---|---|
@@ -49,10 +49,10 @@ kompletności, tylko szerokie potwierdzenie zakresu, który już zbadano.
 | 11 | System celów i rozkazów | 3 | 3 | 3 | średnia | kolejka celów, Shift, EEUGAttackUnit, EEUGLocation |
 | 12 | Walka i obrażenia | 3 | 3 | 3 | średnia | pojedynek 564, 631–634, dom 1v1 / 3v1 do śmierci |
 | 13 | Śmierć i usuwanie | 3 | 3 | 3 | średnia | 6000–6003, gruz 361/362, zapadanie budynku |
-| 14 | Budynki i budowanie | 3 | 3 | 3 | średnia | budowa domu przez obywatela: fundament, HP = postęp, ukończenie, zgłoszenie mapy – 658 ×2, 659 zgodne w całości |
-| 15 | Jednostki cywilne | 2 | 2 | 2 | niska | ucieczka (638) i budowa (658/659) obywatela |
-| 16 | Zbieranie surowców | 0 | 0 | 0 | – | – |
-| 17 | Ekonomia (zasoby, populacja) | 0 | 0 | 0 | – | – |
+| 14 | Budynki i budowanie | 4 | 3 | 4 | średnia | dom i koszary, koszt, wzór 0x60BF56 (K, m, n), dwóch budowniczych – 658 ×2, 659, 660, 674 zgodne w całości, 663 częściowo |
+| 15 | Jednostki cywilne | 3 | 3 | 3 | średnia | ucieczka (638), budowa (658–674), zbieranie drewna (673) |
+| 16 | Zbieranie surowców | 3 | 2 | 2 | niska | EEUGGather 0x611420/0x611801, Gather.tai; drewno – pełny cykl ×2 zgodny (673) |
+| 17 | Ekonomia (zasoby, populacja) | 2 | 1 | 1 | niska | zasoby EEPlayer +0xAF8…+0xB08, koszty domu i koszar, odmowa przy braku (660–674) |
 | 18 | Produkcja jednostek | 0 | 0 | 0 | – | – |
 | 19 | Technologie, epoki, ulepszenia | 1 | 1 | 1 | niska | premia prędkości gracza 0x627078 / SetSpeed [W+P] |
 | 20 | AI gracza komputerowego | 1 | 0 | 0 | niska | klasy EEComputerPlayer ×5 w każdej grze testowej (652) |
@@ -86,16 +86,16 @@ symulacji”.
 
 | Oś | 0 | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|---|
-| A | 8 | 8 | 5 | 12 | 5 | 0 |
-| B | 12 | 5 | 4 | 13 | 4 | 0 |
-| C | 13 | 6 | 4 | 11 | 4 | 0 |
+| A | 6 | 8 | 5 | 13 | 6 | 0 |
+| B | 10 | 6 | 4 | 14 | 4 | 0 |
+| C | 11 | 7 | 4 | 11 | 5 | 0 |
 
-- Podsystemy z zasadniczym mechanizmem (ocena ≥ 3): A 17, B 17, C 15 z 38 (etap 49: 16 / 16 / 14).
-- Podsystemy niebadane albo tylko wstępnie rozpoznane (≤ 1): A 16, B 17, C 19 z 38 (etap 49: 17 / 18 / 20).
-- Niebadane wcale (A = 0): Zbieranie surowców, Ekonomia (zasoby, populacja), Produkcja jednostek, Transport lądowy i morski, Lotnictwo, Warunki zwycięstwa, scenariusze, wyzwalacze, Zapis i wczytanie stanu gry, Edytor scenariuszy.
+- Podsystemy z zasadniczym mechanizmem (ocena ≥ 3): A 19, B 18, C 16 z 38 (etap 50: 17 / 17 / 15).
+- Podsystemy niebadane albo tylko wstępnie rozpoznane (≤ 1): A 14, B 16, C 18 z 38 (etap 50: 16 / 17 / 19).
+- Niebadane wcale (A = 0): Produkcja jednostek, Transport lądowy i morski, Lotnictwo, Warunki zwycięstwa, scenariusze, wyzwalacze, Zapis i wczytanie stanu gry, Edytor scenariuszy.
 
-**Średnia ocen bez wag** (tylko jako wskaźnik kierunku zmian, nie procent silnika): A 1,95, B 1,79,
-C 1,66 na 5 (etap 49: 1,89 / 1,74 / 1,61). Skala jest porządkowa, a podsystemy nie mają równej wielkości, więc średnia **nie jest** procentem
+**Średnia ocen bez wag** (tylko jako wskaźnik kierunku zmian, nie procent silnika): A 2,13, B 1,89,
+C 1,79 na 5 (etap 50: 1,95 / 1,79 / 1,66; etap 49: 1,89 / 1,74 / 1,61). Skala jest porządkowa, a podsystemy nie mają równej wielkości, więc średnia **nie jest** procentem
 ukończenia. Wag nie przypisujemy, bo nie ma wiarygodnej miary wielkości podsystemów.
 
 **Wskaźniki obiektywne pokrycia kodu oryginału** (EE `Empire Earth.exe`, e352d7ae…) [P: narzędzia]:
@@ -104,10 +104,10 @@ ukończenia. Wag nie przypisujemy, bo nie ma wiarygodnej miary wielkości podsys
 |---|---|---|
 | procedury w analizie Ghidra | 25 928 | razem z CRT, bibliotekami i UI |
 | różne adresy EE (0x401000–0x6FFFFF) cytowane w `docs/titan` | 880 (etap 50: ok. 900; liczone wyrażeniem `0x[4-6]xxxxx` – ta sama metoda daje dla HEAD etapu 49 894, więc przyrost ok. +6) | górne oszacowanie funkcji rozpoznanych; część to adresy wewnątrz funkcji lub dane – ok. 3 % procedur |
-| adresy EE cytowane w kodzie Core | 313 → 318 (etap 50) | mechanizmy z odwołaniem do oryginału w `cpp/core/src` |
+| adresy EE cytowane w kodzie Core | 313 → 318 (etap 50) → 326 (etap 51) | mechanizmy z odwołaniem do oryginału w `cpp/core/src` |
 | klasy RTTI w EXE | 1243 | w tym 356 `EEUI*` (interfejs), 69 `EEAI*`, ok. 120 `EEC*` (AI komputera) |
 | klasy RTTI wymienione w dokumentacji / Core | 88 | ok. 7 %; wymienienie ≠ rozpoznanie |
-| kod Core | ok. 5 000 wierszy C++ (etap 50: 5023) | `cpp/core/src` |
+| kod Core | ok. 5 300 wierszy C++ (etap 50: 5023, etap 51: 5348) | `cpp/core/src` |
 
 Wniosek: rozpoznana i odtworzona jest głównie **warstwa symulacji ruchu i walki pojedynczych jednostek lądowych**
 (ruch, trasy, kolizje, stany `.tai`, walka wręcz, śmierć, budynki jako cele i przeszkody). To rdzeń, od którego
@@ -131,10 +131,10 @@ transport, lotnictwo, zapis gry i multiplayer są prawie nietknięte.
 | 11 | System celów i rozkazów | EEUGGather, Patrol, Load/Unload; EEUGBuildRepair i HealUnit częściowo (naprawa, kolejka budowy [N]) | kod+wiedza | 10 | średnia | EEUGGather (zbieranie) |
 | 12 | Walka i obrażenia | pociski, obszar, łucznicy, oblężenie, morale w walce | kod+weryfikacja | 11 | średnia | jednostka dystansowa z pociskiem |
 | 13 | Śmierć i usuwanie | zwłoki jednostek, Spawn on death, efekty śmierci | kod | 12 | niska | zwłoki i Spawn on death |
-| 14 | Budynki i budowanie | koszt i pobranie zasobów, wzór przyrostu HP (15 [P], wzór [N]), wielu budowniczych, naprawa, budynki wielopolowe, odrzucenie miejsca, model fundamentu | wiedza+kod+weryfikacja | 11, 17 | średnia | koszary 2×2 budowane przez 2 obywateli + pomiar zasobów |
+| 14 | Budynki i budowanie | K z danych gry (dbtechtree – brak schematu), naprawa (gałąź +0x340 = 1), BuildSiteValid/Clear, pole zajęte, zwrot kosztu, model fundamentu | wiedza+kod | 11, 17 | średnia | schemat dbtechtree (koszt, K) i naprawa uszkodzonego budynku |
 | 15 | Jednostki cywilne | zbieranie, naprawa, garnizon, TaskSmartCitizen (kolejne zadanie) | wiedza | 14, 16 | wysoka | obywatel z rozkazem zbierania |
-| 16 | Zbieranie surowców | całość | wiedza | 15, 17 | wysoka | analiza EEUGGather |
-| 17 | Ekonomia (zasoby, populacja) | całość | wiedza | 16 | średnia | stan zasobów gracza w pamięci |
+| 16 | Zbieranie surowców | inne surowce (współczynnik tempa, indeks 0x636C96), wyczerpanie, wielu zbieraczy (WaitingArea), farmy, zwierzęta, wybór punktu kliknięcia | wiedza+weryfikacja | 15, 17 | wysoka | kamień/złoto i dwóch zbieraczy przy jednym źródle |
+| 17 | Ekonomia (zasoby, populacja) | populacja i limit (+0xB0C/+0xB14 [N]), koszty z danych, produkcja | wiedza | 16 | średnia | znaczenie +0xB0C/+0xB14 i limitu populacji |
 | 18 | Produkcja jednostek | kolejki budynków, punkty zbiórki | wiedza | 14, 17 | średnia | EEMBuildUnit – analiza |
 | 19 | Technologie, epoki, ulepszenia | drzewo technologii, epoki, pozostałe atrybuty cywilizacji | wiedza+kod | 2, 17 | wysoka | odczyt poziomów atrybutów cywilizacji z SCN |
 | 20 | AI gracza komputerowego | całość; losowania RNG AI [N] | wiedza | 32 | bardzo wysoka | funkcja planująca AI i jej losowania |
@@ -193,3 +193,13 @@ Zmiany w samym etapie 49 (wliczone w tabelę):
 - Narzędzie porównania (`odtworzenie_nagrania.py`) sprawdza teraz kurs także w próbkach „nieaktualnych”; ujawniło to
   wcześniejsze różnice obrotu w 652 mur_rog (prorok od t = 75034 zamiast 93819) i 654 NE (42477 zamiast 42647) –
   oceny 7 i 8 bez zmian, bo różnice dotyczą znanych otwartych przypadków (obrót końcowy, FaceEnemy przy π).
+
+**Etap 51.** Zmiany ocen:
+- 14 Budynki i budowanie: A 3 → 4, C 3 → 4 – drugi typ budynku (koszary 2×2), koszt, wzór 0x60BF56 z kodu i z
+  pomiaru (K z +0x27C, m z ulepszenia), dwóch budowniczych [W: 0x60D7A5, 0x60BF56; P: 660–674]; 5 nagrań budowy
+  zgodnych w całości. B 3 – brak naprawy, walidacji miejsca i K z danych gry.
+- 15 Jednostki cywilne: 2 → 3 (A, B, C) – budowa i zbieranie.
+- 16 Zbieranie surowców: A 0 → 3 (EEUGGather: zdarzenia, cykl, ubytek, stany), B/C 0 → 2 – jeden surowiec i jeden
+  zbieracz, pełny cykl drewna zgodny (673), punkty pracy [H].
+- 17 Ekonomia: A 0 → 2 (pola zasobów, koszty), B/C 0 → 1 (zasoby i opłata w Core, koszty zgodne).
+- Bez zmian ocen: 7 (ruch – nowa rozbieżność 673: zatrzymanie w 9006 przy v ≠ 0), 10, 11, 32 (dodatkowe losowania).

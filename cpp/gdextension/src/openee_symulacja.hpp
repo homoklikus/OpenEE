@@ -76,6 +76,12 @@ public:
     int64_t postaw_fundament(const godot::Dictionary& parametry);   // etap 50
     bool rozkaz_budowy(int64_t obywatel, int64_t budynek);
     bool ustaw_przyrost_budowy(int64_t id, int64_t hp);
+    void ustaw_zasoby(int64_t gracz, const godot::Array& z);   // etap 51
+    godot::Array zasoby(int64_t gracz) const;
+    bool oplac(int64_t gracz, const godot::Array& koszt);
+    int64_t dodaj_zrodlo(const godot::Dictionary& parametry);   // etap 51
+    bool ustaw_magazyn(int64_t budynek, bool magazyn);
+    bool rozkaz_zbierania(int64_t obywatel, int64_t zrodlo, double x, double y);
     godot::Dictionary migawka_diagnostyczna(bool szczegoly) const;
     godot::Dictionary wejscie_regionow_z_mapy() const;
     godot::Dictionary wejscie_regionow_z_scn(const godot::Array& obiekty, const godot::Array& zestawy) const;

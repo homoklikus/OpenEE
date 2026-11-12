@@ -142,6 +142,7 @@ func _testy() -> void:
 	_test_etapu48(dll)
 	_test_etapu49(dll)
 	_test_etapu50(dll)
+	_test_etapu51(dll)
 	_koniec()
 
 
@@ -1042,7 +1043,7 @@ func _test_etapu50(dll: String) -> void:
 	var c: Object = CoreCpp.nowa_symulacja()
 	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
 	c.utworz_swiat("ee")
-	_wynik("wersja Core – etap 50", str(c.wersja()).contains("etap 50"), c.wersja())
+	_wynik("wersja Core – etap 50 lub nowsza", str(c.wersja()).contains("etap 5"), c.wersja())
 	var p := {"a": 1.2, "vmax": 0.5, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.83333, "c8": 0.08185, "t488": 0.5}
 	var cit: int = c.dodaj_jednostke(p, 11.65, 12.46, 0.0)
 	c.ustaw_walke(cit, 1, true, {"pole_widzenia": 6.0, "rozmiar": 0.3, "typ_bazy": 32, "ai_szuka_wrogow": 0}, 25)
@@ -1067,3 +1068,61 @@ func _test_etapu50(dll: String) -> void:
 		and bool(c.jednostka(f).get("ukonczony", false))
 	_wynik("budowa obywatela: fundament HP 1 → 500 (34 przyrosty), MoveToRepairSite … RepairBuilding → TaskSmartCitizen → Idle",
 		ok, "HP %d, przyrosty %d, stany %s" % [hp, przyrosty, str(stany)])
+
+
+## Etap 51: wzór przyrostu budowy 0x60BF56 (K = 35000 ms, m = 1,0, Build rate 1000) – dwóch budowniczych (+15, potem
+## +10 każdy) [P: 663]; koszt domu i odmowa przy braku zasobów [P: 660/661].
+func _test_etapu51(dll: String) -> void:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	_wynik("wersja Core – etap 51", str(c.wersja()).contains("etap 51"), c.wersja())
+	var p := {"a": 1.2, "vmax": 0.5, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.83333, "c8": 0.08185, "t488": 0.5}
+	var ids := []
+	for xy in [[11.65, 12.46], [13.5, 12.5]]:
+		var u: int = c.dodaj_jednostke(p, xy[0], xy[1], 0.0)
+		c.ustaw_walke(u, 1, true, {"pole_widzenia": 6.0, "rozmiar": 0.3, "typ_bazy": 32, "ai_szuka_wrogow": 0, "tempo_budowy_ms": 1000}, 25)
+		c.ustaw_skrypt_jednostki(u, "Citizen")
+		ids.append(u)
+	var dom := {"gracz": 1, "typ": 37, "X": 10, "Y": 10, "kwadrat": 1, "x": 10.5, "y": 10.5, "z": 0.0, "hp_max": 500,
+		"pole_widzenia": 2.0, "rozmiar": 1.0, "typ_jednostki": 2, "typ_bazy": 37, "id_mapy": "0x700", "czas_budowy_ms": 35000, "czas_budowy_s": 1.0}
+	var f: int = c.postaw_fundament(dom)
+	c.rozkaz_budowy(ids[0], f); c.rozkaz_budowy(ids[1], f)
+	var przyrosty := {}; var hp := 1; var nmaks := 0
+	for k in 3000:
+		c.takt(1)
+		var h := int(c.jednostka(f).get("hp", -1))
+		if h != hp: przyrosty[h - hp] = int(przyrosty.get(h - hp, 0)) + 1; hp = h
+		nmaks = maxi(nmaks, int(c.jednostka(f).get("budowniczowie", 0)))
+		if bool(c.jednostka(f).get("ukonczony", false)) and int(c.jednostka(ids[0]).stan) == 5000 and int(c.jednostka(ids[1]).stan) == 5000: break
+	_wynik("dwóch budowniczych: przyrosty 10 (n = 2), HP 500, +0x274 = 2", hp == 500 and nmaks == 2 and int(przyrosty.get(10, 0)) >= 30,
+		"przyrosty %s, n maks %d" % [JSON.stringify(przyrosty), nmaks])
+	c.ustaw_zasoby(1, [1111, 1222, 1333, 1444, 1555])
+	var ok1: bool = c.oplac(1, [0, 50, 40, 0, 0])
+	var z1: Array = c.zasoby(1)
+	c.ustaw_zasoby(1, [20, 20, 20, 20, 20])
+	var ok2: bool = c.oplac(1, [0, 50, 40, 0, 0])
+	_wynik("koszt domu (50 drewna, 40 kamienia) i odmowa przy braku zasobów", ok1 and z1 == [1111, 1172, 1293, 1444, 1555] and not ok2
+		and c.zasoby(1) == [20, 20, 20, 20, 20], JSON.stringify(z1))
+	# zbieranie (Gather.tai) – drzewo, magazyn, oddanie +15 drewna [P: 673]
+	var c2: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c2.zaladuj_tablice(dll)["ok"]: c2.uzyj_tablic_przyblizonych()
+	c2.utworz_swiat("ee")
+	var ob: int = c2.dodaj_jednostke(p, 11.5, 12.5, 0.0)
+	c2.ustaw_walke(ob, 1, true, {"pole_widzenia": 3.0, "rozmiar": 0.3, "typ_bazy": 32, "ai_szuka_wrogow": 0, "atak": 5.0,
+		"udzwig": 15, "tempo_zbierania": [4400, 8926, 6000, 6000, 3500, 5200, 4600]}, 65)
+	c2.ustaw_skrypt_jednostki(ob, "Citizen")
+	var drz: int = c2.dodaj_zrodlo({"gracz": 0, "typ": 339, "X": 10, "Y": 10, "x": 10.5, "y": 10.5, "z": 0.0, "hp": 1, "ilosc": 400,
+		"zasob_typ": 3, "zasob_indeks": 1, "tempo_indeks": 0, "id_mapy": "0x1a4c"})
+	var tc := dom.duplicate(); tc.merge({"typ": 35, "X": 15, "Y": 10, "kwadrat": 2, "x": 16.0, "y": 11.0, "hp": 4000, "hp_max": 4000, "id_mapy": "0x701"}, true)
+	var m: int = c2.dodaj_budynek(tc)
+	c2.ustaw_magazyn(m, true)
+	c2.ustaw_zasoby(1, [1111, 1222, 1333, 1444, 1555])
+	c2.rozkaz_zbierania(ob, drz, 11.15, 11.15)
+	var niesie_maks := 0
+	for k in 12000:
+		c2.takt(1)
+		niesie_maks = maxi(niesie_maks, int(c2.jednostka(ob).get("ilosc_40", 0)))
+		if int(c2.zasoby(1)[1]) == 1237: break
+	_wynik("zbieranie: 15 drewna niesione i oddane w magazynie, drzewo 385", niesie_maks == 15 and int(c2.zasoby(1)[1]) == 1237
+		and int(c2.jednostka(drz).get("ilosc_40", -1)) == 385, "zasoby %s, drzewo %d" % [str(c2.zasoby(1)), int(c2.jednostka(drz).get("ilosc_40", -1))])

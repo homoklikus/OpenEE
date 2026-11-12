@@ -132,6 +132,7 @@ std::optional<bool> Swiat::zdarzenie(Jednostka& u, const std::string& n) {
         if (auto w = zdarzenie_walki(u, n)) return w;
     }
     if (auto w = zdarzenie_budowy(u, n)) return w;   // etap 50: cel EEUGBuildRepair
+    if (auto w = zdarzenie_zbierania(u, n)) return w;   // etap 51: cel EEUGGather
     if (n == "ArrivedAtMoveWaypoint") return u.osiagnieto_punkt;
     if (n == "ObstacleDetected") {  // 0x61B677 – losowanie co ocenę
         if (u.blokujacy != 0) return true;
@@ -274,6 +275,69 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
             if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::budowa)
                 if (const Jednostka* b = jednostka(u.kolejka_celow.front().cel_jednostka))
                     u.orientacja = mat_.set_orientation_ypr(f32(mat_.kat_do_celu(u.x, u.y, b->x, b->y)));
+            break;
+        case 8008:  // etap 51: MoveToResource – tryb 0 [P: 673]; punkt pracy: rozkaz (kliknięcie) albo rzut pozycji na
+                    // obwód źródła odsunięty o r [P: 673 – powrót z (145,80; 111,16) → (140,15; 111,15)]
+        case 8009:  // etap 51: MoveToStorage – rzut pozycji na obwód magazynu [P: 673 – (140,17; 111,1) → (145,85; 111,15)]
+            u.tryb = TrybRuchu::jazda;
+            if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::zbieranie) {
+                auto& c = u.kolejka_celow.front();
+                const double r = f32(0.5 * u.param.rozmiar);
+                // punkt nowego celu = rzut poprzedniego punktu pracy (cel x/y) na obwód drugiego obiektu [H: zgodne z 3
+                // punktami 673 – (140,15; 111,15) ↔ (145,85; 111,15); rzut pozycji obywatela dałby y = 111,105]
+                if (s.numer == 8009) {
+                    u.zb_tryb = 0;
+                    if (const Jednostka* m = jednostka(u.magazyn_id)) {
+                        const Punkt2 p = punkt_obwodu(*m, c.x, c.y, r);
+                        c.x = p.x; c.y = p.y;
+                    }
+                } else {
+                    if (u.zb_tryb != 1) {   // powrót do źródła (po oddaniu); pierwszy dojazd – punkt rozkazu
+                        if (const Jednostka* z = jednostka(c.cel_jednostka)) {
+                            const Punkt2 p = punkt_obwodu(*z, c.x, c.y, r);
+                            c.x = p.x; c.y = p.y;
+                        }
+                    }
+                    u.zb_tryb = 1;
+                }
+                u.trasa.clear();
+                u.dl_przed.clear();
+                u.dl_po.clear();
+                u.zdjete_punkty = 0;
+                u.trasa_gotowa = false;
+                u.zbieranie_ms = 0.0;
+            }
+            break;
+        case 4005:  // etap 51: AddResourceToStorage – oddanie: zasoby gracza += niesione [P: 673 – drewno +15 w próbce wejścia]
+            if (u.ilosc_40 > 0 && !u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::zbieranie) {
+                const Jednostka* z = jednostka(u.kolejka_celow.front().cel_jednostka);
+                const int i = z ? z->zasob_indeks : 1;
+                zasoby_[u.gracz][std::clamp(i, 0, 4)] += u.ilosc_40;
+                u.ilosc_40 = 0;
+            }
+            break;
+        case 4007:  // etap 51: FindNewStorage / FindStorage – najbliższy własny magazyn [H: kryterium wyboru]
+        case 4021:
+            if (u.boj) {
+                double bd = 1e300;
+                IdJednostki best = 0;
+                for (const auto& o : jednostki_)
+                    if (o.magazyn && o.boj && o.gracz == u.gracz && o.boj->s.hp > 0) {
+                        const double d = (o.x - u.x) * (o.x - u.x) + (o.y - u.y) * (o.y - u.y);
+                        if (d < bd) { bd = d; best = o.id; }
+                    }
+                u.magazyn_id = best;
+            }
+            break;
+        case 4004:  // etap 51: GatherResource – tryb 6, kurs od razu na środek źródła [P: 673 – 0,4157 → 2,3058 w próbce
+                    // wejścia, jak RepairBuilding]; licznik od okresu tempa
+            u.zbieranie_ms = 0.0;
+            u.tryb = TrybRuchu::praca;   // [P: 673 – w próbce wejścia tryb 6, v = 0, ω = 0 (przed: v 0,01, ω −0,42)]
+            u.v = 0.0;
+            u.omega = 0.0;
+            if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::zbieranie)
+                if (const Jednostka* z = jednostka(u.kolejka_celow.front().cel_jednostka))
+                    u.orientacja = mat_.set_orientation_ypr(f32(mat_.kat_do_celu(u.x, u.y, z->x, z->y)));
             break;
         case 8017:  // etap 50: MoveToRepairSite – tryb 0 już w stanie 8017 [P: 658 – próbka 50658: stan 8017, tryb 0 (w Idle 3);
                     // w następnym takcie PrepareToMove z trasą i ruchem v = 0,041]; akcja stanu w Titan nieprzeczytana [N]
@@ -493,6 +557,7 @@ void Swiat::takt() {
         }
         krok_maszyny(u);
         if (u.stan == 4002) krok_budowy(u);   // etap 50: RepairBuilding – praca obywatela
+        if (u.stan == 4004) krok_zbierania(u);   // etap 51: GatherResource
         if (u.tryb == TrybRuchu::do_celu) {  // tryb 1: pozycja celu ataku (cel +0x30 → +0x13C/+0x14C) w chwili fizyki
             if (Jednostka* t = cel_ataku(u)) {
                 u.cel_walki_x = t->x;
@@ -863,6 +928,129 @@ IdJednostki Swiat::postaw_fundament(int gracz, int typ_db, int X, int Y, int n, 
     return id;
 }
 
+Punkt2 Swiat::punkt_obwodu(const Jednostka& cel, double px, double py, double r) const {
+    // etap 51 [P: 673 – 3 punkty: rzut pozycji obywatela na prostokąt pól celu odsunięty o r = 0,5·rozmiar (0,15)]
+    const double X = std::floor(cel.komorka_x), Y = std::floor(cel.komorka_y), n = std::max(1, cel.kwadrat);
+    return {f32(std::clamp(px, X - r, X + n + r)), f32(std::clamp(py, Y - r, Y + n + r))};
+}
+
+IdJednostki Swiat::dodaj_zrodlo(int gracz, int typ_db, int X, int Y, double x, double y, double z, int hp, int ilosc,
+                                int zasob_typ, int zasob_indeks, int tempo_indeks, std::uint32_t id_mapy) {
+    ParametryWalki p;
+    p.hp_max = hp;
+    p.typ_bazy = typ_db;
+    p.typ_jednostki = 1;
+    const IdJednostki id = dodaj_obiekt_budynku(gracz, typ_db, X, Y, 1, x, y, z, p, hp, true, id_mapy, true, false);
+    if (Jednostka* u = jednostka(id)) {
+        u->ilosc_40 = ilosc;
+        u->zasob_typ = zasob_typ;
+        u->zasob_indeks = zasob_indeks;
+        u->tempo_indeks = tempo_indeks;
+    }
+    return id;
+}
+
+bool Swiat::ustaw_magazyn(IdJednostki budynek, bool m) {
+    Jednostka* b = jednostka(budynek);
+    if (!b) return false;
+    b->magazyn = m;
+    return true;
+}
+
+bool Swiat::rozkaz_zbierania(IdJednostki obywatel, IdJednostki zrodlo, double x, double y) {
+    // PPM na źródle (cel EEUGGather): MoveToResource 8008 w próbce po kliknięciu, tryb 0 [P: 673]; punkt pracy z
+    // kliknięcia (rzut miejsca kliknięcia na obwód źródła [H]) – podawany przez wołającego
+    Jednostka* u = jednostka(obywatel);
+    Jednostka* z = jednostka(zrodlo);
+    if (!u || !z) return false;
+    CelRuchu c{TypCelu::zbieranie, f32(x), f32(y), std::nullopt, true, false, 0};
+    c.cel_jednostka = zrodlo;
+    c.etap_grafu = true;
+    u->kolejka_celow.clear();
+    u->kolejka_celow.push_front(c);
+    u->cel = c.typ;
+    u->cel_od_gracza = true;
+    u->kurs_koncowy.reset();
+    u->trasa.clear();
+    u->dl_przed.clear();
+    u->dl_po.clear();
+    u->zdjete_punkty = 0;
+    u->trasa_gotowa = false;
+    u->zb_tryb = 1;
+    if (const StanSkryptu* s = skr(*u).stan(8008)) wejdz_w_stan(*u, *s);
+    return true;
+}
+
+void Swiat::krok_zbierania(Jednostka& u) {
+    // 0x611801 [W; P: 673]: cykl co tempo ms (+0x2B8 := ulepszenie +0x110 + 4·indeks; poza kamieniem × współczynnik
+    // globalny [N: 1,0 – drewno 4400 ms zmierzone]). Źródło żywe (HP > 0, drzewo HP 1) → TakeDamage (atak budującego):
+    // ścięcie drzewa (HP 0), bez surowca; inaczej źródło +0x40 −= 1 (0x61724D), obywatel +0x40 += 1.
+    if (u.kolejka_celow.empty() || u.kolejka_celow.front().typ != TypCelu::zbieranie) return;
+    Jednostka* z = jednostka(u.kolejka_celow.front().cel_jednostka);
+    if (!z || !z->boj || !u.boj) return;
+    const int i = std::clamp(z->tempo_indeks, 0, 6);
+    const double okres = u.boj->p.tempo_zbierania[i] > 0 ? double(u.boj->p.tempo_zbierania[i]) : 1000.0;
+    if (u.zbieranie_ms == 0.0) u.zbieranie_ms = okres;
+    u.zbieranie_ms -= 34.0;
+    if (u.zbieranie_ms > 0.0) return;
+    u.zbieranie_ms += okres;
+    if (z->boj->s.hp > 0) {
+        z->boj->s.hp = std::max(0, z->boj->s.hp - int(std::lround(u.boj->p.atak)));
+        z->boj->hp_29c = z->boj->s.hp;
+        return;
+    }
+    if (z->ilosc_40 <= 0) return;
+    z->ilosc_40 -= 1;
+    u.ilosc_40 += 1;
+}
+
+std::optional<bool> Swiat::zdarzenie_zbierania(Jednostka& u, const std::string& n) {
+    // Zdarzenia celu EEUGGather (vt+0x64 = 0x611420) [W]: 4003 ResourceCapacityFilled (+0x40 ≥ ulepszenie +0x14C),
+    // 4005 ResourceCapacityEmpty (+0x40 = 0), 4006 NewResourceFound (cel +0x38 ≠ 0), 4008 ResourceDepleted (źródło
+    // brak / +0x40 = 0), 4009 ResourceInRange (0x6111BE [H]), 4010 StorageInRange (0x61137E [H]), 4011 StorageFound
+    // (+0x3C ≠ 0), 4020 StorageDestroyed (+0x3C brak / HP 0), 4028 ResourceTargetIsTree (źródło +0x38 = 3),
+    // 5007 GoalIsResource (+0x40), 5008 GoalIsStorage (!+0x40 && !+0x41), GoalIsWaitingArea (+0x41).
+    static const char* NAZWY[] = {"ResourceCapacityFilled", "ResourceCapacityEmpty", "NewResourceFound", "ResourceDepleted",
+                                  "ResourceInRange", "StorageInRange", "StorageFound", "StorageDestroyed",
+                                  "ResourceTargetIsTree", "GoalIsResource", "GoalIsStorage", "GoalIsWaitingArea",
+                                  "ResourceAccessible", "OpenPositionAvailable", "WaitingAreaInRange", "ImAFarmer",
+                                  "FarmNotFound", "CanUseThisTileAsWaitingArea"};
+    bool znane = false;
+    for (const char* x : NAZWY) if (n == x) { znane = true; break; }
+    if (!znane) return std::nullopt;
+    const bool cel = !u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::zbieranie;
+    if (n == "ResourceCapacityEmpty") return u.ilosc_40 == 0;
+    if (n == "ResourceCapacityFilled") return u.boj && u.ilosc_40 >= u.boj->p.udzwig;
+    if (!cel) return n == "ResourceDepleted" || n == "StorageDestroyed";
+    const Jednostka* z = jednostka(u.kolejka_celow.front().cel_jednostka);
+    const Jednostka* m = jednostka(u.magazyn_id);
+    const double r = f32(0.5 * u.param.rozmiar);
+    if (n == "GoalIsResource") return u.zb_tryb == 1;
+    if (n == "GoalIsStorage") return u.zb_tryb == 0;
+    if (n == "GoalIsWaitingArea") return u.zb_tryb == 2;
+    if (n == "NewResourceFound") return false;            // szukanie nowego źródła – niewdrożone [N]
+    if (n == "ResourceDepleted") return !z || z->ilosc_40 <= 0;
+    if (n == "ResourceTargetIsTree") return z && z->zasob_typ == 3;
+    if (n == "StorageFound") return m != nullptr;
+    if (n == "StorageDestroyed") return !m || !m->boj || m->boj->s.hp <= 0;
+    if (n == "ResourceAccessible" || n == "OpenPositionAvailable" || n == "FarmNotFound") return true;   // [H]
+    if (n == "WaitingAreaInRange" || n == "ImAFarmer" || n == "CanUseThisTileAsWaitingArea") return false;   // [H]
+    // ResourceInRange / StorageInRange (0x6111BE / 0x61137E – nieprzeczytane): obywatel przy obwodzie celu odsuniętym
+    // o r (odległość od rzutu ≤ 0,1) [H: w 673 punkt zaliczony przy d < 0,05 od punktu obwodu]
+    const Jednostka* t = n == "ResourceInRange" ? z : m;
+    if (!t) return false;
+    const Punkt2 p = punkt_obwodu(*t, u.x, u.y, r);
+    return std::hypot(p.x - u.x, p.y - u.y) <= 0.1;
+}
+
+bool Swiat::oplac(int gracz, const std::array<int, 5>& koszt) {
+    auto& z = zasoby_[gracz];
+    for (int i = 0; i < 5; ++i)
+        if (z[i] < koszt[i]) return false;
+    for (int i = 0; i < 5; ++i) z[i] -= koszt[i];
+    return true;
+}
+
 Punkt2 Swiat::miejsce_budowy(const Jednostka& u, const Jednostka& b) const {
     // [P: 658 – jeden pomiar: obywatel (164,65; 115,46), dom (163, 113) → (164,15; 114,15) = narożnik obwodu odsuniętego
     // o r = 0,5·rozmiar obywatela (0,3); H: reguła ogólna] kandydaci jak przy ataku na budynek (boki + narożniki),
@@ -899,6 +1087,8 @@ bool Swiat::rozkaz_budowy(IdJednostki obywatel, IdJednostki budynek) {
     u->kolejka_celow.clear();
     u->kolejka_celow.push_front(c);
     u->budowa_ms = 0.0;
+    u->bud_start = u->bud_drugi = false;
+    u->bud_pierwszy = 0;
     // aktywacja celu EEUGBuildRepair → MoveToRepairSite (8017) [P: 658 ×2 – kolejne próbki po rozkazie 8017, 8000, 2015,
     // 10003 – jeden stan na takt]; trasa liczona dopiero w PrepareToMove (RepairSiteInRange = fałsz)
     u->cel = c.typ;
@@ -933,7 +1123,15 @@ std::optional<bool> Swiat::zdarzenie_budowy(Jednostka& u, const std::string& n) 
     if (n == "BuildQueueEmpty" || n == "SmartTaskNotAssigned") {
         // 4032 / 4033 [H: jedno zlecenie]; SmartTaskNotAssigned (TaskSmartCitizen → Idle): cel zdjęty – w 658 kolejka
         // celów pusta od próbki stanu 5000, w 4028 jeszcze z celem [P]
-        if (n == "SmartTaskNotAssigned" && cel) { u.kolejka_celow.clear(); u.cel = TypCelu::brak; }
+        if (n == "SmartTaskNotAssigned" && cel) {
+            // etap 51: budynek +0x274 wraca do 0 po ukończeniu, gdy budowniczowie schodzą z celu [P: 663 – 2 → 0 w takcie
+            // przejścia obu do Idle]; miejsce zmniejszenia w Titan [N]
+            if (Jednostka* bb = jednostka(u.kolejka_celow.front().cel_jednostka); bb && u.bud_start && bb->budowniczowie > 0)
+                --bb->budowniczowie;
+            u.bud_start = u.bud_drugi = false;
+            u.kolejka_celow.clear();
+            u.cel = TypCelu::brak;
+        }
         return true;
     }
     if (!cel) return n == "BuildingDestroyed" || n == "BuildingRepaired";   // 0x60D4FD: brak budynku → prawda
@@ -944,10 +1142,12 @@ std::optional<bool> Swiat::zdarzenie_budowy(Jednostka& u, const std::string& n) 
     if (n == "CannotAffordRepair" || n == "RepairIsSpecialUnit") return false;   // 4036/4037 – naprawa, jednostki specjalne [N]
     if (n == "BuildingNotPaidFor") return false;                     // 4030: +0x338 ≠ 0 (opłacony) → fałsz [P: 658 – 1]
     if (n == "BuildSiteValid" || n == "BuildSiteClear") return true; // 4023 0x60D12A / 4021 0x60CED6 – nieprzeczytane [H: wolne miejsce]
-    if (n == "BuildSiteVisible") {                                   // 4022: LOS² + typ+0x58C ≥ odległość (b2fa04) [W]
-        const double d = std::hypot(u.kolejka_celow.front().x - u.x, u.kolejka_celow.front().y - u.y);
+    if (n == "BuildSiteVisible") {
+        // 4022: LOS² + typ+0x58C ≥ kwadrat odległości od środka budynku [W; P: etap 51 – 674 koszary: d² = 27 i 14,2 →
+        // fałsz (4013 → Advance), 663 dom: d² = 6,1 → prawda (4013 → 4014); wcześniej odległość liniowa do punktu pracy]
+        const double d2 = (b->x - u.x) * (b->x - u.x) + (b->y - u.y) * (b->y - u.y);
         const double los = u.boj ? double(u.boj->p.pole_widzenia) : 0.0;
-        return los * los + double(std::max(1, b->kwadrat)) >= d;
+        return los * los + double(std::max(1, b->kwadrat)) >= d2;   // typ+0x58C – [N], przybliżenie: kwadrat
     }
     if (n == "RepairSiteInRange")   // 4014 → 0x60BC54 nieprzeczytane [H: koniec trasy do miejsca pracy]
         return u.trasa_gotowa && u.pozostalo_punktow() == 0;
@@ -967,19 +1167,56 @@ std::optional<bool> Swiat::zdarzenie_budowy(Jednostka& u, const std::string& n) 
     return true;
 }
 
+int Swiat::przyrost_budowy_titan(Jednostka& u, const Jednostka& b) {
+    // 0x60BF56 (gałąź budowy, +0x340 = 0) [W]: n = budynek +0x274 (budowniczowie), Hmax = ulepszenie budynku +0x144,
+    // T = (3 / (n + 2)) · K · m (m – ulepszenie budynku +0x94, dom 1,0 [P: 672]; K – vt+0x10 obiektu celu +0x44, dom
+    // 35000 ms [P: 660 – budujący +0x27c]), v = Hmax / T, p = ⌈BR · v / n⌉ (BR – ulepszenie budującego +0x134 = 1000
+    // [P: 665]), p ≥ 1, p ≤ Hmax − HP. Cel: pierwszy cykl zapamiętuje p (+0x54), drugi daje 2·p − p₁ (+0x59) [W].
+    // Dom: n = 1 → ⌈14,29⌉ = 15, n = 2 → ⌈9,52⌉ = 10 [P: 663]. Brak danych (K = 0) → `przyrost_budowy` (etap 50).
+    const int hmax = b.boj->p.hp_max, hp = b.boj->s.hp;
+    int p;
+    const float m = b.boj->p.czas_budowy_s > 0.0f ? b.boj->p.czas_budowy_s : 1.0f;
+    const int K = b.boj->p.czas_budowy_ms;
+    const int br = u.boj && u.boj->p.tempo_budowy_ms > 0 ? u.boj->p.tempo_budowy_ms : 0;
+    if (K > 0 && br > 0) {
+        const float n = float(std::max(1, b.budowniczowie));
+        const float v = float(f32(double(hmax) / ((3.0 / (double(n) + 2.0)) * double(K) * double(m))));
+        const float x = float(f32((double(br) * double(v)) / double(n)));
+        p = int(std::ceil(double(x)));
+        if (p > hmax) p = hmax;
+    } else {
+        p = u.przyrost_budowy;
+    }
+    if (p < 2) p = 1;
+    p = std::min(p, hmax - hp);
+    if (!u.bud_start) {
+        u.bud_start = true;
+        u.bud_drugi = false;
+        u.bud_pierwszy = p;
+    } else if (!u.bud_drugi) {
+        p = 2 * p - u.bud_pierwszy;
+        u.bud_drugi = true;
+    }
+    return p;
+}
+
 void Swiat::krok_budowy(Jednostka& u) {
-    // RepairBuilding (4002) [P: 658 ×2, 659 – 3 przebiegi, 33 przyrosty każdy]: odstępy przyrostów w taktach 29, 29, 30,
-    // 29, 30, 29, 29, 30, … (pierwszy 29 taktów po wejściu w stan) = licznik ms z przeniesieniem: przy wejściu 1000,
-    // co takt −34 (całkowite ms taktu [H]), przyrost przy ≤ 0 i +1000. +15 HP (dom 37, obywatel 32), ostatni przycięty
-    // do HP maks. Funkcja przyrostu i źródło wartości 15 (Build rate obywatela 1000, HP domu 500) – [N].
+    // RepairBuilding (4002): cykl co Build rate ms (+0x2B8 := ulepszenie budującego +0x134, po ukończeniu 1000 [W:
+    // 0x60D7A5]); licznik przy wejściu = okres, co takt −34 (całkowite ms taktu [H]), cykl przy ≤ 0 i + okres – rytm
+    // 29/29/30 [P: 658 ×2, 659, 660, 663]. W cyklu: pierwszy cykl budującego zwiększa budynek +0x274, przyrost wzorem
+    // 0x60BF56, HP = min(Hmax, HP + p) (SetHP 0x616F30).
     if (u.kolejka_celow.empty() || u.kolejka_celow.front().typ != TypCelu::budowa) return;
     Jednostka* b = jednostka(u.kolejka_celow.front().cel_jednostka);
     if (!b || !b->boj || b->boj->s.hp <= 0) return;
-    if (u.budowa_ms == 0.0) u.budowa_ms = 1000.0;
+    const double okres = u.boj && u.boj->p.tempo_budowy_ms > 0 ? double(u.boj->p.tempo_budowy_ms) : 1000.0;
+    if (u.budowa_ms == 0.0) u.budowa_ms = okres;
     u.budowa_ms -= 34.0;
     if (u.budowa_ms > 0.0) return;
-    u.budowa_ms += 1000.0;
-    b->boj->s.hp = std::min(b->boj->p.hp_max, b->boj->s.hp + u.przyrost_budowy);
+    u.budowa_ms += okres;
+    if (b->boj->s.hp >= b->boj->p.hp_max) return;
+    if (!u.bud_start) ++b->budowniczowie;   // 0x60D7A5: +0x274++ przy celu z +0x58 = 0
+    const int p = przyrost_budowy_titan(u, *b);
+    b->boj->s.hp = std::min(b->boj->p.hp_max, b->boj->s.hp + p);
     b->boj->hp_29c = b->boj->s.hp;
     if (wejscie_) {
         for (auto& [k, l] : wejscie_->obiekty)

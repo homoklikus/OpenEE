@@ -147,7 +147,8 @@ func _przygotuj_mape_core() -> void:
 		var n := maxi(1, int(ob.get("Square occupied", 1)))
 		var e := {"id": 0x7100000 + i, "typ": int(b["typ"]), "gracz": int(b["gracz"]), "X": int(b["X"]), "Y": int(b["Y"]),
 			"kwadrat": n, "blokuje": _blokuje(int(b["typ"]), ob), "kurs": float(b.get("kurs", 0.0)),
-			"hp": int(b["hp"]) if b.has("hp") else int(ob.get("Health", 0)), "fundament": bool(b.get("fundament", false))}
+			"hp": int(b["hp"]) if b.has("hp") else int(ob.get("Health", 0)), "fundament": bool(b.get("fundament", false)),
+			"budowa": b.get("budowa", {})}   # etap 51: K (czas_budowy_ms) i m (czas_budowy_s) – wzór 0x60BF56
 		_budynki_dod.append(e)
 		i += 1
 		# etap 50: fundament z rozkazu budowy – obiekt Core stawiany po wczytaniu mapy (HP 1, bez zgłoszenia mapy do
@@ -264,6 +265,7 @@ func nowa_bitwa() -> bool:
 		var bid: int
 		if e.fundament:
 			pb["hp_max"] = int(ob.get("Health", 0)); pb.erase("w_siatce")
+			pb.merge(e.get("budowa", {}), true)
 			bid = core.postaw_fundament(pb)
 		else:
 			bid = core.dodaj_budynek(pb)
@@ -626,14 +628,16 @@ func _demo_e50(sekundy: float) -> void:
 	if kat != "": DirAccess.make_dir_recursive_absolute(kat)
 	var bud := -1; var cit := -1
 	for bid in _budynki_core: bud = int(bid)
+	var obywatele := []
 	for j in sym.lista():
-		if not j.budynek and j.wlasciciel == sym.gracz_lokalny: cit = j.id
-	var przebieg := {"budynek": bud, "obywatel": cit, "kroki": [], "hp": [], "stany": []}
+		if not j.budynek and j.wlasciciel == sym.gracz_lokalny: cit = j.id; obywatele.append(j.id)
+	var przebieg := {"budynek": bud, "obywatel": cit, "obywatele": obywatele, "kroki": [], "hp": [], "stany": [], "budowniczowie": []}
 	var t := 0.0
 	var nr := 0
 	while t < sekundy and not bool(core.jednostka(bud).get("ukonczony", false)):
 		await _czekaj(1.0, kat if nr % 10 == 0 else "", "e50_budowa_%02d" % nr, przebieg)
 		przebieg.hp.append(int(core.jednostka(bud).get("hp", -1)))
+		przebieg.budowniczowie.append(int(core.jednostka(bud).get("budowniczowie", 0)))   # etap 51: +0x274
 		var st := int(core.jednostka(cit).stan)
 		if przebieg.stany.is_empty() or przebieg.stany[-1] != st: przebieg.stany.append(st)
 		t += 1.0; nr += 1

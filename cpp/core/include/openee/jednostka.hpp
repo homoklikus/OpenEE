@@ -32,13 +32,14 @@ struct ParametryRuchu {
 };
 
 /// Tryb fizyki EEPMLand (+0x264, AoC +0x268).
-enum class TrybRuchu : std::uint8_t { jazda = 0, do_celu = 1, zatrzymanie = 2, spoczynek = 3, hamowanie = 4, obrot_w_miejscu = 5 };
+enum class TrybRuchu : std::uint8_t { jazda = 0, do_celu = 1, zatrzymanie = 2, spoczynek = 3, hamowanie = 4, obrot_w_miejscu = 5,
+                                     praca = 6 };   // 6: GatherResource/RepairBuilding – v = ω = 0, bez ruchu (etap 51 [P: 673, 658])
 // tryb 2 (etap 45): EEPMLand vt+0x30 = EE 0x54DDFF – v = 0 (0x54A55B), ω = 0, bez kroku końcowego vt+0x48 [W: kod;
 // P: 638, t = 66988 – obywatel ginie w ruchu: tryb 2, v 0,418 → 0, pozycja bez zmian w takcie śmierci].
 // tryb 1 (etap 31): EEPMLand vt+0x10 = EE 0x54DA82 – obrót do celu ataku (vt+0x1C z flagą broni), hamowanie v.
 
 /// Typ celu (kolejka celów, etap 21): rodzaj celu +5 – 1 miejsce (EEUGLocation), 2 jednostka (EEUGAttackUnit, etap 31).
-enum class TypCelu : std::uint8_t { brak = 0, miejsce = 1, jednostka = 2, leczenie = 3, budowa = 4 };   // 4: EEUGBuildRepair (etap 50)   // 3: EEUGHeal (etap 46; bajt rodzaju [N])
+enum class TypCelu : std::uint8_t { brak = 0, miejsce = 1, jednostka = 2, leczenie = 3, budowa = 4, zbieranie = 5 };   // 5: EEUGGather (etap 51)   // 4: EEUGBuildRepair (etap 50)   // 3: EEUGHeal (etap 46; bajt rodzaju [N])
 
 struct Punkt2 {
     double x = 0, y = 0;  // f32 przechowywane jako double
@@ -138,7 +139,20 @@ struct Jednostka {
     int kwadrat = 1;
     bool ukonczony = true;          // etap 50: budynek +0x340 – 0 w trakcie budowy, 1 po BuildingRepaired (0x60BD19) [P: 658]
     int przyrost_budowy = 0;        // etap 50: HP budynku na sekundę pracy obywatela (RepairBuilding) [P: 658 – dom 37, obywatel 32: 15; wzór N]
-    double budowa_ms = 0.0;         // etap 50: akumulator ms w RepairBuilding (+15 HP po każdych pełnych 1000 ms) [P: 658]
+    double budowa_ms = 0.0;         // etap 50: licznik ms do następnego cyklu RepairBuilding (+0x2B8 := Build rate [W: 0x60D7A5])
+    int budowniczowie = 0;          // etap 51: budynek +0x274 – liczba budowniczych, którzy wykonali pierwszy cykl [W; P: 663]
+    bool bud_start = false;         // etap 51: cel EEUGBuildRepair +0x58 – pierwszy cykl wykonany
+    bool bud_drugi = false;         // etap 51: cel +0x59 – drugi cykl wykonany (korekta 2·p − p₁)
+    int bud_pierwszy = 0;           // etap 51: cel +0x54 – przyrost pierwszego cyklu
+    // etap 51 – zbieranie (EEUGGather 0x831B80) [W: 0x611420, 0x611801, 0x61724D; P: 673]
+    int ilosc_40 = 0;               // +0x40: obywatel – niesiony surowiec; źródło – pozostała ilość (drzewo 400 [P])
+    int zasob_typ = 0;              // źródło +0x38: rodzaj surowca (3 – drzewo/drewno [W: ResourceTargetIsTree])
+    int zasob_indeks = 0;           // indeks surowca: żywność 0, drewno 1, kamień 2, złoto 3, żelazo 4 (EEPlayer +0xAF8)
+    int tempo_indeks = 0;           // indeks tempa w ulepszeniu budującego +0x110 + 4·i (drewno 0 [P: 4400 ms]) – 0x636C96 [N]
+    bool magazyn = false;           // budynek przyjmuje surowce (Centrum Miasta – dbobjects „Resource type” 1 [H])
+    IdJednostki magazyn_id = 0;     // cel +0x3C – wybrany magazyn
+    int zb_tryb = 1;                // cel +0x40/+0x41: 1 – źródło (GoalIsResource), 0 – magazyn, 2 – miejsce oczekiwania
+    double zbieranie_ms = 0.0;      // licznik ms GatherResource (+0x2B8 := tempo [P: 4366 w próbce wejścia = 4400 − 34])
     bool kolizyjny = true;          // +0x2D8 (0x5ED24B: typ +0x606 „Collidable” ≠ 0 i nie wyjątki) – uczestnik list kontaktów
     bool blokuje_pola = false;      // typ +0x600 – pola X..X+n−1 × Y..Y+n−1 nieprzejezdne, dopóki HP > 0
     std::uint32_t id_mapy = 0;      // identyfikator obiektu na listach pól (wejście grafu, WejscieRegionow)

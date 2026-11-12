@@ -47,6 +47,25 @@ const NazwaNumer NAZWY[] = {
     {"CheckRepairSiteAccessibility", 4017},
     {"TaskSmartCitizen", 4028},
     {"InsufficientResources", 4030},
+    // etap 51: Gather.tai [P: 673 – sekwencja 8008 → … → 4004 → 4024 → 4007/4021 → 8009 → … → 4005 → 4016 → 4023 →
+    // 8008]; pozostałe – rejestracja 0x618E11 (push numer, push nazwa) [W]
+    {"GatherResource", 4004},
+    {"AddResourceToStorage", 4005},
+    {"FindNewResource", 4006},
+    {"FindNewStorage", 4007},
+    {"CheckResourceCapacity", 4010},
+    {"CheckPreviousResource", 4016},
+    {"CheckSafety", 4018},
+    {"CheckStorageAccessibility", 4020},
+    {"FindStorage", 4021},
+    {"CheckResourceAccessibility", 4022},
+    {"MoveToWaitingArea", 4023},
+    {"NotifyWaitingCitizen", 4024},
+    {"CheckForOpenPosition", 4025},
+    {"HasResourceGoal", 4027},
+    {"FindFarm", 4029},
+    {"MoveToResource", 8008},
+    {"MoveToStorage", 8009},
     // etap 46: Healer.tai (rejestracja 0x6194D3/0x619914/0x6195A8) [W]
     {"LookForHealee", 16000},
     {"HealUnit", 16001},
@@ -461,6 +480,70 @@ SkryptStanow SkryptStanow::wbudowany_budynek() {
     return s;
 }
 
+const char* tekst_obywatel_zbieranie() {
+    // Etap 51: Gather.tai (dołączany w citizen.tai przed częścią budowy) – własny zapis przejść, kolejność pliku gry [W:
+    // plik .tai; P: 673 – pełny cykl drzewo → Centrum Miasta ×2]. WaitForOpenPosition – numer [N].
+    return R"TAI(
+AddResourceToStorage {
+  StorageDestroyed true(FindNewStorage)
+  ResourceCapacityEmpty true(CheckPreviousResource)
+}
+CheckForOpenPosition {
+  WaitingAreaInRange false(MoveToWaitingArea)
+  OpenPositionAvailable true(MoveToResource) false(WaitForOpenPosition)
+}
+CheckPreviousResource { ResourceDepleted true(FindNewResource) false(MoveToWaitingArea) }
+CheckResourceAccessibility { ResourceAccessible true(GatherResource) false(FindNewResource) }
+CheckResourceCapacity { ResourceCapacityFilled true(FindStorage) false(FindNewResource) }
+CheckStorageAccessibility {
+  StorageDestroyed true(FindNewStorage)
+  StorageInRange true(AddResourceToStorage) false(FindNewStorage)
+}
+FindNewResource { NewResourceFound true(MoveToWaitingArea) false(FindStorage) }
+FindNewStorage {
+  ResourceCapacityEmpty true(Idle)
+  StorageFound true(MoveToStorage) false(Idle)
+}
+FindStorage {
+  ResourceCapacityEmpty true(Idle)
+  StorageFound true(MoveToStorage) false(Idle)
+}
+GatherResource {
+  ResourceDepleted true(CheckResourceCapacity)
+  ResourceCapacityFilled true(NotifyWaitingCitizen)
+  ResourceInRange false(PrepareToMove)
+  TakingLightDamage true(FleeDanger)
+}
+MoveToResource { ResourceInRange true(GatherResource) false(PrepareToMove) }
+MoveToWaitingArea {
+  ResourceCapacityFilled true(MoveToStorage)
+  ResourceTargetIsTree true(MoveToResource)
+  WaitingAreaInRange true(CheckForOpenPosition) false(PrepareToMove)
+}
+MoveToStorage {
+  StorageDestroyed true(FindNewStorage)
+  StorageInRange true(AddResourceToStorage) false(PrepareToMove)
+}
+NotifyWaitingCitizen { StorageDestroyed true(FindNewStorage) false(FindStorage) }
+HasResourceGoal {
+  ResourceTargetIsTree true(CheckResourceAccessibility)
+  ResourceDepleted true(FindNewResource)
+  ResourceInRange true(GatherResource) false(MoveToWaitingArea)
+}
+ReacquireGoal {
+  GoalIsWaitingArea true(CheckForOpenPosition)
+  GoalIsStorage true(CheckStorageAccessibility)
+  GoalIsResource true(HasResourceGoal)
+}
+WaitForOpenPosition {
+  ImAFarmer true(FindFarm)
+  ResourceDepleted true(CheckResourceCapacity)
+  WaitingAreaInRange false(MoveToWaitingArea)
+}
+FindFarm { FarmNotFound true(WaitForOpenPosition) }
+)TAI";
+}
+
 const char* tekst_obywatel_budowa() {
     // Etap 50: część „Building & Repairing” citizen.tai (własny zapis przejść, kolejność jak w pliku gry) [W: plik .tai;
     // P: 658/659 – ścieżka GetNextMoveWaypoint → TurnToUnitFacing → ReacquireGoal → CheckRepairSiteAccessibility →
@@ -512,6 +595,8 @@ WaitForBuildSiteToClear {
   BuildSiteClear true(RepairBuilding)
 }
 GetNextMoveWaypoint {
+  allof(GoalIsResource,ResourceTargetIsTree,ResourceInRange) true(GatherResource)
+  allof(GoalIsStorage,StorageInRange) true(AddResourceToStorage)
   allof(GoalIsRepairSite,NextWaypointRetrieved) true(CheckBuildSiteVisibility)
 }
 )TAI";
@@ -525,7 +610,8 @@ SkryptStanow SkryptStanow::wbudowany_obywatel() {
     SkryptStanow s;
     {
         std::string blad;
-        s.parsuj(std::string(tekst_obywatel_budowa()) + tekst_land(), nullptr, blad);   // etap 50: część budowy przed land
+        // etap 50/51: Gather.tai, część budowy, potem land (kolejność dołączeń citizen.tai)
+        s.parsuj(std::string(tekst_obywatel_zbieranie()) + tekst_obywatel_budowa() + tekst_land(), nullptr, blad);
     }
     auto& idle = s.stany_["Idle"];
     std::vector<Przejscie> nowe;

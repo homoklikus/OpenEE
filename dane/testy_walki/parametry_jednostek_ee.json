@@ -133,7 +133,18 @@
     "punktowy": 0,
     "szukanie_ms": 2000,
     "pole_ac": 0.5,
-    "typ_jednostki": 6
+    "typ_jednostki": 6,
+    "tempo_budowy_ms": 1000,
+    "tempo_zbierania": [
+     4400,
+     8926,
+     6000,
+     6000,
+     3500,
+     5200,
+     4600
+    ],
+    "udzwig": 15
    }
   }
  },
@@ -265,6 +276,31 @@
  "przyrost_budowy": {
   "32": {
    "37": 15
+  }
+ },
+ "budowa_typow_uwaga": "Etap 51: parametry budowy typu budynku – czas_budowy_ms = K (vt+0x10 obiektu celu +0x44; dom 35000 [P: 660 – +0x27c budującego = (Hmax − HP)/Hmax · K · m]), czas_budowy_s = m (ulepszenie +0x94; dom 1,0 [P: 672]), koszt [żywność, drewno, kamień, złoto, żelazo] (dom 0/50/40/0/0 [P: 660, 663]). Obywatel 32: tempo_budowy_ms = ulepszenie +0x134 = 1000 [P: 665]. Przyrost HP liczy Core wzorem 0x60BF56 – przyrost_budowy (etap 50) zostaje tylko jako zapas. Zbieranie (etap 51): obywatel 32 – tempo_zbierania = ulepszenie +0x110 + 4·i (drewno, kamień, złoto, żelazo, polowanie, zbieractwo, farma) [P: 665; kamień 8926 ≠ dbobjects 10500 – premia gracza], udzwig = +0x14C = 15 [P: 665, 673]. Koszary 34: K = 45000 ms [P: 674 – +0x27c = 44970 przy HP 1/1500], m = 1,0 [P: 674], koszt drewno 225 [P: 674].",
+ "budowa_typow": {
+  "37": {
+   "czas_budowy_ms": 35000,
+   "czas_budowy_s": 1.0,
+   "koszt": [
+    0,
+    50,
+    40,
+    0,
+    0
+   ]
+  },
+  "34": {
+   "czas_budowy_ms": 45000,
+   "czas_budowy_s": 1.0,
+   "koszt": [
+    0,
+    225,
+    0,
+    0,
+    0
+   ]
   }
  }
 }

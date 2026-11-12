@@ -15,6 +15,14 @@ namespace openee {
 /// Parametry bojowe typu dla gracza (EEUnitClassUpgrade + EEUnitClass) – odczyt pamięci EE, zad. 565 [P].
 struct ParametryWalki {
     int hp_max = 0;                         // upgrade +0x144
+    // Etap 51 – budowa [W: 0x60BF56, 0x60D7A5; P: 663, 665]
+    float czas_budowy_s = 0.0f;             // ulepszenie +0x94 budynku (f32) – mnożnik czasu budowy (dom 1,0 [P: 672])
+    int czas_budowy_ms = 0;                 // K: vt+0x10 obiektu celu +0x44 (pozycja budowy) – czas budowy jednym
+                                            // obywatelem w ms (dom 35000 [P: 660 – budujący +0x27c = (Hmax − HP)/Hmax · K · +0x94])
+    std::array<int, 7> tempo_zbierania{};   // etap 51: ulepszenie +0x110 + 4·i (drewno 4400, kamień 8926, złoto 6000,
+                                            // żelazo 6000, polowanie 3500, zbieractwo 5200, farma 4600 [P: 665])
+    int udzwig = 0;                         // etap 51: ulepszenie +0x14C („Carry capacity”, obywatel 15 [P: 665, 673])
+    int tempo_budowy_ms = 0;                // ulepszenie +0x134 budującego („Build rate”) – okres pracy i licznik wzoru
     float atak = 0.0f;                      // upgrade +0xD8
     std::array<float, 6> pancerz{};         // upgrade +0xE0: shock, arrow, pierce, gun, laser, missile
     float zasieg_max = 0.0f;                // upgrade +0x9C

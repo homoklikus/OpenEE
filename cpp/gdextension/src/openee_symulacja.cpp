@@ -73,6 +73,12 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("postaw_fundament", "parametry"), &OpenEESymulacja::postaw_fundament);   // etap 50
     ClassDB::bind_method(D_METHOD("rozkaz_budowy", "obywatel", "budynek"), &OpenEESymulacja::rozkaz_budowy);
     ClassDB::bind_method(D_METHOD("ustaw_przyrost_budowy", "id", "hp"), &OpenEESymulacja::ustaw_przyrost_budowy);
+    ClassDB::bind_method(D_METHOD("ustaw_zasoby", "gracz", "zasoby"), &OpenEESymulacja::ustaw_zasoby);   // etap 51
+    ClassDB::bind_method(D_METHOD("zasoby", "gracz"), &OpenEESymulacja::zasoby);
+    ClassDB::bind_method(D_METHOD("oplac", "gracz", "koszt"), &OpenEESymulacja::oplac);
+    ClassDB::bind_method(D_METHOD("dodaj_zrodlo", "parametry"), &OpenEESymulacja::dodaj_zrodlo);
+    ClassDB::bind_method(D_METHOD("ustaw_magazyn", "budynek", "magazyn"), &OpenEESymulacja::ustaw_magazyn);
+    ClassDB::bind_method(D_METHOD("rozkaz_zbierania", "obywatel", "zrodlo", "x", "y"), &OpenEESymulacja::rozkaz_zbierania);
     ClassDB::bind_method(D_METHOD("usun_obiekt_mapy", "id"), &OpenEESymulacja::usun_obiekt_mapy);
     ClassDB::bind_method(D_METHOD("migawka_diagnostyczna", "szczegoly"), &OpenEESymulacja::migawka_diagnostyczna, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("ustaw_faze_leczenia", "id", "takty"), &OpenEESymulacja::ustaw_faze_leczenia);
@@ -87,7 +93,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.23.0 (etap 50, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.24.0 (etap 51, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -240,6 +246,9 @@ Dictionary OpenEESymulacja::jednostka(int64_t id) const {
     }
     d["budynek"] = u->budynek;   // etap 47
     d["ukonczony"] = u->ukonczony;   // etap 50: +0x340
+    d["budowniczowie"] = u->budowniczowie;   // etap 51: +0x274
+    d["ilosc_40"] = u->ilosc_40;             // etap 51: niesiony surowiec / ilość w źródle (+0x40)
+    d["magazyn_id"] = int64_t(u->magazyn_id);
     d["w_fizyce"] = u->w_fizyce;
     if (u->budynek) {
         d["kwadrat"] = u->kwadrat;
@@ -464,6 +473,41 @@ bool OpenEESymulacja::ustaw_przyrost_budowy(int64_t id, int64_t hp) {
     return true;
 }
 
+static std::array<int, 5> tablica5(const Array& a) {
+    std::array<int, 5> z{};
+    for (int i = 0; i < 5 && i < a.size(); ++i) z[i] = int(a[i]);
+    return z;
+}
+
+void OpenEESymulacja::ustaw_zasoby(int64_t gracz, const Array& z) { if (swiat_) swiat_->ustaw_zasoby(int(gracz), tablica5(z)); }
+
+Array OpenEESymulacja::zasoby(int64_t gracz) const {
+    Array a;
+    if (!swiat_) return a;
+    for (int v : swiat_->zasoby(int(gracz))) a.push_back(v);
+    return a;
+}
+
+bool OpenEESymulacja::oplac(int64_t gracz, const Array& koszt) { return swiat_ && swiat_->oplac(int(gracz), tablica5(koszt)); }
+
+// etap 51: źródło surowca (drzewo – obiekt Świata już w siatce) i zbieranie
+int64_t OpenEESymulacja::dodaj_zrodlo(const Dictionary& d) {
+    if (!swiat_) return -1;
+    const double x = liczba(d, "x", 0), y = liczba(d, "y", 0);
+    return int64_t(swiat_->dodaj_zrodlo(int(liczba(d, "gracz", 0)), int(liczba(d, "typ", -1)), int(liczba(d, "X", 0)),
+                                        int(liczba(d, "Y", 0)), x, y, d.has("z") ? liczba(d, "z", 0) : swiat_->teren().get_mesh_z(x, y),
+                                        int(liczba(d, "hp", 1)), int(liczba(d, "ilosc", 0)), int(liczba(d, "zasob_typ", 0)),
+                                        int(liczba(d, "zasob_indeks", 1)), int(liczba(d, "tempo_indeks", 0)),
+                                        d.get("id_mapy", 0).get_type() == Variant::STRING ? std::uint32_t(String(d["id_mapy"]).hex_to_int())
+                                                                                        : std::uint32_t(int64_t(d.get("id_mapy", 0)))));
+}
+
+bool OpenEESymulacja::ustaw_magazyn(int64_t b, bool m) { return swiat_ && swiat_->ustaw_magazyn(openee::IdJednostki(b), m); }
+
+bool OpenEESymulacja::rozkaz_zbierania(int64_t c, int64_t z, double x, double y) {
+    return swiat_ && swiat_->rozkaz_zbierania(openee::IdJednostki(c), openee::IdJednostki(z), x, y);
+}
+
 Array OpenEESymulacja::gruz() const {   // etap 48: pozostałości budynków (obiekty mapy Core)
     Array a;
     if (!swiat_) return a;
@@ -570,6 +614,14 @@ openee::ParametryWalki parametry_walki(const Dictionary& d, int64_t hp) {
     p.typ_bazy = int(liczba(d, "typ_bazy", 0));
     p.typ_jednostki = int(liczba(d, "typ_jednostki", 0));
     p.regeneracja = int(liczba(d, "regeneracja", 0));
+    p.czas_budowy_s = float(liczba(d, "czas_budowy_s", 0.0));     // etap 51: ulepszenie +0x94 budynku (mnożnik)
+    p.czas_budowy_ms = int(liczba(d, "czas_budowy_ms", 0));        // etap 51: K – czas budowy typu [ms]
+    p.tempo_budowy_ms = int(liczba(d, "tempo_budowy_ms", 0));      // etap 51: ulepszenie +0x134 budującego
+    p.udzwig = int(liczba(d, "udzwig", 0));                        // etap 51: ulepszenie +0x14C
+    if (d.has("tempo_zbierania")) {                                // etap 51: ulepszenie +0x110 + 4·i
+        const Array a = d["tempo_zbierania"];
+        for (int i = 0; i < 7 && i < a.size(); ++i) p.tempo_zbierania[i] = int(a[i]);
+    }
     p.reakcja_underattack = bool(liczba(d, "reakcja_underattack", 0));   // etap 46: EEUC +0x370 ma stan 2018
     p.leczenie_hp = int(liczba(d, "leczenie_hp", 0));             // etap 46: Healer.tai
     p.leczenie_prog = float(liczba(d, "leczenie_prog", 0.0));

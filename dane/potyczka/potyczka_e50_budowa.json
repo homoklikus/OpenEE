@@ -52,7 +52,8 @@
     "szukanie_ms": 2000,
     "pole_ac": 0.5,
     "typ_jednostki": 6,
-    "ai_szuka_wrogow": 0
+    "ai_szuka_wrogow": 0,
+    "tempo_budowy_ms": 1000
    },
    "hp": 65,
    "teren_dozwolony": [
@@ -1122,7 +1123,11 @@
    "gracz": 1,
    "X": 167,
    "Y": 114,
-   "fundament": true
+   "fundament": true,
+   "budowa": {
+    "czas_budowy_ms": 35000,
+    "czas_budowy_s": 1.0
+   }
   }
  ],
  "budowa": [
