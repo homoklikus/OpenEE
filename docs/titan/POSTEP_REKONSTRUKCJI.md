@@ -32,7 +32,7 @@ Podsystem może mieć wysokie A i niskie B (wiemy, ale nie napisaliśmy) albo wy
 Żaden podsystem nie ma oceny 5: nawet najlepiej zbadane (ruch, A*) mają znane braki. Ocena 4 nie oznacza
 kompletności, tylko szerokie potwierdzenie zakresu, który już zbadano.
 
-## 3. Katalog podsystemów i oceny (stan po etapie 49)
+## 3. Katalog podsystemów i oceny (stan po etapie 50)
 
 | # | Podsystem | A rozpoznanie | B implementacja | C zgodność | Pewność | Główny dowód |
 |---|---|---|---|---|---|---|
@@ -40,17 +40,17 @@ kompletności, tylko szerokie potwierdzenie zakresu, który już zbadano.
 | 2 | Format SCN i serializacja | 3 | 3 | 3 | średnia | import_mapy.md, generator czystych map, 4133 rekordów e42 |
 | 3 | Mapa i warstwy terenu | 3 | 3 | 3 | wysoka | GetMeshZ bitowo z DLL, klasyfikacja pól 99,6 % |
 | 4 | Obiekty mapy i zajętość pól | 3 | 3 | 3 | średnia | listy pól EEMap (zad. 552), 647/650 – budynek na 4 polach |
-| 5 | Graf nawigacji (podsektory) | 3 | 3 | 3 | średnia | e35_a zgodna, przebudowa przyrostowa, koszary 2×2 = gra |
+| 5 | Graf nawigacji (podsektory) | 3 | 3 | 3 | średnia | e35_a zgodna, przebudowa przyrostowa, koszary 2×2 = gra, budynek postawiony w grze (659: termin, id) |
 | 6 | Pathfinding (A*, Bounded, graf) | 4 | 4 | 4 | wysoka | 18 przypadków bitowo, 648 trasa = gra |
-| 7 | Fizyka ruchu (EEPMLand) | 4 | 4 | 4 | wysoka | S1–S7, 644 4148/4148, 648 prorok 3585/3585 |
+| 7 | Fizyka ruchu (EEPMLand) | 4 | 4 | 4 | wysoka | S1–S7, 644 4148/4148, 648 prorok 3585/3585, obywatel 658/659 |
 | 8 | Kolizje (kontakty, odpychanie) | 4 | 3 | 3 | średnia | 0x549179 z gałęzią omijania, budynki w listach (652), 644/648/649 zgodne |
 | 9 | Kolejka fizyki i kolejność taktu | 3 | 3 | 3 | średnia | lista 0x918DDC (639), 649 koszary – budynek na liście |
-| 10 | Maszyny stanów .tai | 3 | 3 | 3 | średnia | Generic Movement/Attack, Prophet.tai, budynek |
+| 10 | Maszyny stanów .tai | 3 | 3 | 3 | średnia | Generic Movement/Attack, Prophet.tai, budynek, citizen.tai – budowa (658) |
 | 11 | System celów i rozkazów | 3 | 3 | 3 | średnia | kolejka celów, Shift, EEUGAttackUnit, EEUGLocation |
 | 12 | Walka i obrażenia | 3 | 3 | 3 | średnia | pojedynek 564, 631–634, dom 1v1 / 3v1 do śmierci |
 | 13 | Śmierć i usuwanie | 3 | 3 | 3 | średnia | 6000–6003, gruz 361/362, zapadanie budynku |
-| 14 | Budynki i budowanie | 2 | 2 | 2 | niska | zniszczenie i graf [P]; postaw_budynek [W] |
-| 15 | Jednostki cywilne | 1 | 1 | 1 | niska | ruch i ucieczka obywatela (638) |
+| 14 | Budynki i budowanie | 3 | 3 | 3 | średnia | budowa domu przez obywatela: fundament, HP = postęp, ukończenie, zgłoszenie mapy – 658 ×2, 659 zgodne w całości |
+| 15 | Jednostki cywilne | 2 | 2 | 2 | niska | ucieczka (638) i budowa (658/659) obywatela |
 | 16 | Zbieranie surowców | 0 | 0 | 0 | – | – |
 | 17 | Ekonomia (zasoby, populacja) | 0 | 0 | 0 | – | – |
 | 18 | Produkcja jednostek | 0 | 0 | 0 | – | – |
@@ -86,16 +86,16 @@ symulacji”.
 
 | Oś | 0 | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|---|
-| A | 8 | 9 | 5 | 11 | 5 | 0 |
-| B | 12 | 6 | 4 | 12 | 4 | 0 |
-| C | 13 | 7 | 4 | 10 | 4 | 0 |
+| A | 8 | 8 | 5 | 12 | 5 | 0 |
+| B | 12 | 5 | 4 | 13 | 4 | 0 |
+| C | 13 | 6 | 4 | 11 | 4 | 0 |
 
-- Podsystemy z zasadniczym mechanizmem (ocena ≥ 3): A 16, B 16, C 14 z 38.
-- Podsystemy niebadane albo tylko wstępnie rozpoznane (≤ 1): A 17, B 18, C 20 z 38.
+- Podsystemy z zasadniczym mechanizmem (ocena ≥ 3): A 17, B 17, C 15 z 38 (etap 49: 16 / 16 / 14).
+- Podsystemy niebadane albo tylko wstępnie rozpoznane (≤ 1): A 16, B 17, C 19 z 38 (etap 49: 17 / 18 / 20).
 - Niebadane wcale (A = 0): Zbieranie surowców, Ekonomia (zasoby, populacja), Produkcja jednostek, Transport lądowy i morski, Lotnictwo, Warunki zwycięstwa, scenariusze, wyzwalacze, Zapis i wczytanie stanu gry, Edytor scenariuszy.
 
-**Średnia ocen bez wag** (tylko jako wskaźnik kierunku zmian, nie procent silnika): A 1.89, B 1.74,
-C 1.61 na 5. Skala jest porządkowa, a podsystemy nie mają równej wielkości, więc średnia **nie jest** procentem
+**Średnia ocen bez wag** (tylko jako wskaźnik kierunku zmian, nie procent silnika): A 1,95, B 1,79,
+C 1,66 na 5 (etap 49: 1,89 / 1,74 / 1,61). Skala jest porządkowa, a podsystemy nie mają równej wielkości, więc średnia **nie jest** procentem
 ukończenia. Wag nie przypisujemy, bo nie ma wiarygodnej miary wielkości podsystemów.
 
 **Wskaźniki obiektywne pokrycia kodu oryginału** (EE `Empire Earth.exe`, e352d7ae…) [P: narzędzia]:
@@ -103,11 +103,11 @@ ukończenia. Wag nie przypisujemy, bo nie ma wiarygodnej miary wielkości podsys
 | Wskaźnik | Wartość | Uwagi |
 |---|---|---|
 | procedury w analizie Ghidra | 25 928 | razem z CRT, bibliotekami i UI |
-| różne adresy EE (0x401000–0x6FFFFF) cytowane w `docs/titan` | 880 | górne oszacowanie funkcji rozpoznanych; część to adresy wewnątrz funkcji lub dane – ok. 3 % procedur |
-| adresy EE cytowane w kodzie Core | 313 | mechanizmy z odwołaniem do oryginału w `cpp/core/src` |
+| różne adresy EE (0x401000–0x6FFFFF) cytowane w `docs/titan` | 880 (etap 50: ok. 900; liczone wyrażeniem `0x[4-6]xxxxx` – ta sama metoda daje dla HEAD etapu 49 894, więc przyrost ok. +6) | górne oszacowanie funkcji rozpoznanych; część to adresy wewnątrz funkcji lub dane – ok. 3 % procedur |
+| adresy EE cytowane w kodzie Core | 313 → 318 (etap 50) | mechanizmy z odwołaniem do oryginału w `cpp/core/src` |
 | klasy RTTI w EXE | 1243 | w tym 356 `EEUI*` (interfejs), 69 `EEAI*`, ok. 120 `EEC*` (AI komputera) |
 | klasy RTTI wymienione w dokumentacji / Core | 88 | ok. 7 %; wymienienie ≠ rozpoznanie |
-| kod Core | ok. 4 800 wierszy C++ | `cpp/core/src` |
+| kod Core | ok. 5 000 wierszy C++ (etap 50: 5023) | `cpp/core/src` |
 
 Wniosek: rozpoznana i odtworzona jest głównie **warstwa symulacji ruchu i walki pojedynczych jednostek lądowych**
 (ruch, trasy, kolizje, stany `.tai`, walka wręcz, śmierć, budynki jako cele i przeszkody). To rdzeń, od którego
@@ -119,7 +119,7 @@ transport, lotnictwo, zapis gry i multiplayer są prawie nietknięte.
 | # | Podsystem | Brakuje | Brak dotyczy | Zależności | Trudność | Następny kamień milowy |
 |---|---|---|---|---|---|---|
 | 1 | Wczytywanie plików i baz db*.dat | pola „Unknown” baz, część znaczeń kolumn | wiedza | – | niska | opis wszystkich kolumn dbobjects używanych przez Core |
-| 2 | Format SCN i serializacja | dane cywilizacji graczy, wyzwalacze, zapis SCN z Core | wiedza+kod | 1 | średnia | odczyt cywilizacji gracza z SCN (premie atrybutów) |
+| 2 | Format SCN i serializacja | znaczenie 16 atrybutów, źródło premii spoza SCN, wyzwalacze, zapis SCN z Core | wiedza+kod | 1 | średnia | powiązanie atrybutów SCN (lista 574 wpisów) z polami 0x626834 |
 | 3 | Mapa i warstwy terenu | klify [N], woda, zmiany terenu | wiedza | 1, 2 | średnia | klify i woda w klasyfikacji pól |
 | 4 | Obiekty mapy i zajętość pól | obrót budynków, obiekty Świata (drzewa) jako kontakty [N] | wiedza+weryfikacja | 2, 3 | średnia | pomiar drzew i obiektów Świata w listach kontaktów |
 | 5 | Graf nawigacji (podsektory) | obszary +0xF4 – model z pomiaru, dodanie budynku w grze niezmierzone | weryfikacja | 3, 4 | średnia | pomiar grafu po postawieniu budynku |
@@ -127,12 +127,12 @@ transport, lotnictwo, zapis gry i multiplayer są prawie nietknięte.
 | 7 | Fizyka ruchu (EEPMLand) | końcowy obrót przy kursie ≈ docelowemu (koszary 650), inne tryby fizyki (morze, powietrze) | weryfikacja | 3, 9 | niska | obrót końcowy proroka w 650 |
 | 8 | Kolizje (kontakty, odpychanie) | duże jednostki 0x548A3C [H], brama, drzewa, obiekty Świata | kod+weryfikacja | 4, 7 | średnia | kolizja dużych jednostek (≥ 1,0) – pomiar |
 | 9 | Kolejka fizyki i kolejność taktu | kiedy budynek wchodzi na listę fizyki przed śmiercią (649: na liście żywy) | wiedza | 7 | średnia | odczyt chwili dodania budynku do listy |
-| 10 | Maszyny stanów .tai | zdarzenia klątw, transportu, budowy, zbierania | kod | 11 | średnia | zdarzenia cywilne (Gather/Build) |
-| 11 | System celów i rozkazów | EEUGGather, EEUGBuildRepair, Patrol, Load/Unload, HealUnit tylko częściowo | kod+wiedza | 10 | średnia | EEUGBuildRepair (budowa) |
+| 10 | Maszyny stanów .tai | zdarzenia klątw, transportu, zbierania; budowy – częściowo (BuildSiteValid/Clear [H]) | kod | 11 | średnia | zdarzenia zbierania (Gather) |
+| 11 | System celów i rozkazów | EEUGGather, Patrol, Load/Unload; EEUGBuildRepair i HealUnit częściowo (naprawa, kolejka budowy [N]) | kod+wiedza | 10 | średnia | EEUGGather (zbieranie) |
 | 12 | Walka i obrażenia | pociski, obszar, łucznicy, oblężenie, morale w walce | kod+weryfikacja | 11 | średnia | jednostka dystansowa z pociskiem |
 | 13 | Śmierć i usuwanie | zwłoki jednostek, Spawn on death, efekty śmierci | kod | 12 | niska | zwłoki i Spawn on death |
-| 14 | Budynki i budowanie | cały proces budowy (fundament, postęp, koszt) – brak pomiaru | wiedza+kod+weryfikacja | 11, 17 | wysoka | pierwsza budowa rozkazem obywatela zmierzona w grze |
-| 15 | Jednostki cywilne | zbieranie, budowa, naprawa, garnizon | wiedza | 14, 16 | wysoka | obywatel z rozkazem zbierania |
+| 14 | Budynki i budowanie | koszt i pobranie zasobów, wzór przyrostu HP (15 [P], wzór [N]), wielu budowniczych, naprawa, budynki wielopolowe, odrzucenie miejsca, model fundamentu | wiedza+kod+weryfikacja | 11, 17 | średnia | koszary 2×2 budowane przez 2 obywateli + pomiar zasobów |
+| 15 | Jednostki cywilne | zbieranie, naprawa, garnizon, TaskSmartCitizen (kolejne zadanie) | wiedza | 14, 16 | wysoka | obywatel z rozkazem zbierania |
 | 16 | Zbieranie surowców | całość | wiedza | 15, 17 | wysoka | analiza EEUGGather |
 | 17 | Ekonomia (zasoby, populacja) | całość | wiedza | 16 | średnia | stan zasobów gracza w pamięci |
 | 18 | Produkcja jednostek | kolejki budynków, punkty zbiórki | wiedza | 14, 17 | średnia | EEMBuildUnit – analiza |
@@ -145,7 +145,7 @@ transport, lotnictwo, zapis gry i multiplayer są prawie nietknięte.
 | 25 | Lotnictwo | całość | wiedza | 7 | wysoka | EEUCAir* – rozpoznanie |
 | 26 | Animacja jednostek | zgodność czasów animacji z grą | weryfikacja | 13 | średnia | pomiar klatek animacji ataku |
 | 27 | Efekty graficzne i dźwięk | efekty EEEffect, dźwięki, muzyka | wiedza+kod | 26 | średnia | efekty śmierci |
-| 28 | Sterowanie gracza i interfejs | panele, przyciski, budowa z interfejsu, skróty | kod | 11 | wysoka | przycisk budowy w interfejsie |
+| 28 | Sterowanie gracza i interfejs | panele, przyciski, budowa z interfejsu OpenEE, skróty | kod | 11 | wysoka | przycisk budowy w interfejsie OpenEE (rozkaz Core już jest) |
 | 29 | Warunki zwycięstwa, scenariusze, wyzwalacze | wyzwalacze, kampanie, cele scenariusza | wiedza | 2 | wysoka | EEVictoryCondition – rozpoznanie |
 | 30 | Multiplayer i synchronizacja | całość | wiedza | 32 | bardzo wysoka | – |
 | 31 | Zapis i wczytanie stanu gry | całość | wiedza | wszystkie | wysoka | format zapisu gry |
@@ -159,7 +159,8 @@ transport, lotnictwo, zapis gry i multiplayer są prawie nietknięte.
 Terminu ukończenia całego silnika nie podajemy: tempo etapów dotyczy głównie ruchu i walki, a dla gospodarki, AI i
 interfejsu nie ma jeszcze danych o tempie. Realistyczna kolejność: (1) domknięcie ruchu i kolizji (duże jednostki,
 grupy), (2) obywatel: budowa i zbieranie, (3) ekonomia i produkcja, (4) technologie i epoki, (5) AI komputera.
-Bez (2)–(4) nie da się uruchomić pełnej rozgrywki Empire Earth.
+Bez (2)–(4) nie da się uruchomić pełnej rozgrywki Empire Earth. Etap 50 zaczął punkt (2): obywatel stawia
+budynek zgodnie z grą, ale bez kosztu, zbierania i produkcji gracz nie ma jeszcze z czego budować.
 
 ## 6. Jak aktualizować
 
@@ -179,3 +180,16 @@ Zmiany w samym etapie 49 (wliczone w tabelę):
 - 7 Fizyka ruchu: C 4 – prorok 648 do końca (3585/3585).
 - 19 Technologie i ulepszenia: 0 → 1 (A, B, C) – premia prędkości cywilizacji (0x627078, SetSpeed) [W + P].
 - 12 Walka: C 3 – dom 3v1 i koszary 3v1 zgodne co takt do śmierci budynku.
+
+**Etap 50.** Zmiany ocen:
+- 14 Budynki i budowanie: A/B/C 2 → 3, pewność niska → średnia – cykl budowy domu przez obywatela rozpoznany
+  (fundament HP 1 i +0x340, HP = postęp, BuildingRepaired 0x60BD19, zgłoszenie mapy +15000 ms) [P: 658 ×2, 659; W],
+  odtworzony w Core i zgodny w całości w trzech nagraniach. Do oceny 4 brakuje kosztu, wielu typów budynków,
+  wielu budowniczych i wzoru przyrostu.
+- 15 Jednostki cywilne: 1 → 2 (A, B, C) – druga czynność obywatela (budowa) obok ucieczki.
+- Bez zmiany ocen, nowe dowody: 5 Graf (budynek postawiony w grze: termin 97568 i id 1605 = gra), 7 Fizyka (obywatel:
+  c4 = 1/a), 10 Maszyny stanów (citizen.tai – budowa; MoveToRepairSite = 8017), 2 SCN (lista atrybutów cywilizacji –
+  struktura [P], znaczenie [N]), 32 Losowość (liczba losowań na takt w ruchu i w budowie [P], źródło dodatkowych [N]).
+- Narzędzie porównania (`odtworzenie_nagrania.py`) sprawdza teraz kurs także w próbkach „nieaktualnych”; ujawniło to
+  wcześniejsze różnice obrotu w 652 mur_rog (prorok od t = 75034 zamiast 93819) i 654 NE (42477 zamiast 42647) –
+  oceny 7 i 8 bez zmian, bo różnice dotyczą znanych otwartych przypadków (obrót końcowy, FaceEnemy przy π).

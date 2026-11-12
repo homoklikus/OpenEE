@@ -70,6 +70,9 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("blokady_pola", "x", "y"), &OpenEESymulacja::blokady_pola);
     ClassDB::bind_method(D_METHOD("gruz"), &OpenEESymulacja::gruz);
     ClassDB::bind_method(D_METHOD("postaw_budynek", "parametry"), &OpenEESymulacja::postaw_budynek);
+    ClassDB::bind_method(D_METHOD("postaw_fundament", "parametry"), &OpenEESymulacja::postaw_fundament);   // etap 50
+    ClassDB::bind_method(D_METHOD("rozkaz_budowy", "obywatel", "budynek"), &OpenEESymulacja::rozkaz_budowy);
+    ClassDB::bind_method(D_METHOD("ustaw_przyrost_budowy", "id", "hp"), &OpenEESymulacja::ustaw_przyrost_budowy);
     ClassDB::bind_method(D_METHOD("usun_obiekt_mapy", "id"), &OpenEESymulacja::usun_obiekt_mapy);
     ClassDB::bind_method(D_METHOD("migawka_diagnostyczna", "szczegoly"), &OpenEESymulacja::migawka_diagnostyczna, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("ustaw_faze_leczenia", "id", "takty"), &OpenEESymulacja::ustaw_faze_leczenia);
@@ -84,7 +87,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.22.0 (etap 49, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.23.0 (etap 50, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -236,6 +239,7 @@ Dictionary OpenEESymulacja::jednostka(int64_t id) const {
         d["trasa"] = tr;
     }
     d["budynek"] = u->budynek;   // etap 47
+    d["ukonczony"] = u->ukonczony;   // etap 50: +0x340
     d["w_fizyce"] = u->w_fizyce;
     if (u->budynek) {
         d["kwadrat"] = u->kwadrat;
@@ -429,6 +433,35 @@ int64_t OpenEESymulacja::postaw_budynek(const Dictionary& d) {
                                            bool(liczba(d, "kolizja", 1)));
     if (d.has("gruz_typ")) swiat_->ustaw_gruz_budynku(id, int(liczba(d, "gruz_typ", 0)), int(liczba(d, "gruz_kwadrat", 1)));
     return int64_t(id);
+}
+
+// etap 50: fundament z rozkazu budowy (HP 1, +0x340 = 0, bez zgłoszenia mapy do ukończenia) [P: 658/659]
+int64_t OpenEESymulacja::postaw_fundament(const Dictionary& d) {
+    if (!swiat_) return -1;
+    const openee::ParametryWalki p = parametry_walki(d, int64_t(liczba(d, "hp_max", liczba(d, "hp", 0))));
+    const double x = liczba(d, "x", 0), y = liczba(d, "y", 0);
+    const auto id = swiat_->postaw_fundament(int(liczba(d, "gracz", 0)), int(liczba(d, "typ", -1)), int(liczba(d, "X", 0)),
+                                             int(liczba(d, "Y", 0)), int(liczba(d, "kwadrat", 1)), x, y,
+                                             d.has("z") ? liczba(d, "z", 0) : swiat_->teren().get_mesh_z(x, y), p,
+                                             d.get("id_mapy", 0).get_type() == Variant::STRING
+                                                 ? std::uint32_t(String(d["id_mapy"]).hex_to_int())
+                                                 : std::uint32_t(int64_t(d.get("id_mapy", 0))),
+                                             int(liczba(d, "flaga600", 1)), int(liczba(d, "klasa4b4", 2)),
+                                             int(liczba(d, "flaga612", 0)));
+    if (d.has("gruz_typ")) swiat_->ustaw_gruz_budynku(id, int(liczba(d, "gruz_typ", 0)), int(liczba(d, "gruz_kwadrat", 1)));
+    return int64_t(id);
+}
+
+bool OpenEESymulacja::rozkaz_budowy(int64_t obywatel, int64_t budynek) {
+    return swiat_ && swiat_->rozkaz_budowy(openee::IdJednostki(obywatel), openee::IdJednostki(budynek));
+}
+
+// etap 50: przyrost HP budynku na jeden cykl RepairBuilding (658/659: 15 – obywatel 32, dom 37 [P]; wzór ogólny [N])
+bool OpenEESymulacja::ustaw_przyrost_budowy(int64_t id, int64_t hp) {
+    openee::Jednostka* u = swiat_ ? swiat_->jednostka(openee::IdJednostki(id)) : nullptr;
+    if (!u) return false;
+    u->przyrost_budowy = int(hp);
+    return true;
 }
 
 Array OpenEESymulacja::gruz() const {   // etap 48: pozostałości budynków (obiekty mapy Core)

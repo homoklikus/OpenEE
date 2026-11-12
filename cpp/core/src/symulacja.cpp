@@ -131,6 +131,7 @@ std::optional<bool> Swiat::zdarzenie(Jednostka& u, const std::string& n) {
     if (u.boj) {  // etap 31: zdarzenia walki i celów-jednostek (tylko jednostki ze stanem bojowym)
         if (auto w = zdarzenie_walki(u, n)) return w;
     }
+    if (auto w = zdarzenie_budowy(u, n)) return w;   // etap 50: cel EEUGBuildRepair
     if (n == "ArrivedAtMoveWaypoint") return u.osiagnieto_punkt;
     if (n == "ObstacleDetected") {  // 0x61B677 – losowanie co ocenę
         if (u.blokujacy != 0) return true;
@@ -267,6 +268,16 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
                 u.kolejka_celow.pop_front();
                 if (!u.kolejka_celow.empty()) aktywuj_cel(u);
             }
+            break;
+        case 4002:  // etap 50: RepairBuilding – kurs od razu na środek budynku [P: 658 ×2 – próbka wejścia w 4002: kurs 2,7539 →
+                    // 2,3761 = kierunek (164,1687; 114,1957) → (163,5; 113,5), ω 0, bez obrotu stopniowego]; akcja Titan [N]
+            if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::budowa)
+                if (const Jednostka* b = jednostka(u.kolejka_celow.front().cel_jednostka))
+                    u.orientacja = mat_.set_orientation_ypr(f32(mat_.kat_do_celu(u.x, u.y, b->x, b->y)));
+            break;
+        case 8017:  // etap 50: MoveToRepairSite – tryb 0 już w stanie 8017 [P: 658 – próbka 50658: stan 8017, tryb 0 (w Idle 3);
+                    // w następnym takcie PrepareToMove z trasą i ruchem v = 0,041]; akcja stanu w Titan nieprzeczytana [N]
+            u.tryb = TrybRuchu::jazda;
             break;
         case 10003:  // Advance: tryb 0, +0x33F = 0
             u.tryb = TrybRuchu::jazda;
@@ -481,6 +492,7 @@ void Swiat::takt() {
             continue;
         }
         krok_maszyny(u);
+        if (u.stan == 4002) krok_budowy(u);   // etap 50: RepairBuilding – praca obywatela
         if (u.tryb == TrybRuchu::do_celu) {  // tryb 1: pozycja celu ataku (cel +0x30 → +0x13C/+0x14C) w chwili fizyki
             if (Jednostka* t = cel_ataku(u)) {
                 u.cel_walki_x = t->x;
@@ -824,6 +836,155 @@ void Swiat::omijanie_atakujacego(Jednostka& u, const Jednostka& o) {
     u.push_x = f32(u.push_x - dx * k);
     u.push_y = f32(u.push_y - dy * k);
     ++diag_.omijania_atakujacych;
+}
+
+// ============================================================================================ budowa (etap 50)
+// Atlas: docs/titan/budowa.md. Pomiar 658 (dwa przebiegi) i 659: dom 37 stawiany przez obywatela 32 rozkazem z interfejsu.
+IdJednostki Swiat::postaw_fundament(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
+                                    const ParametryWalki& p, std::uint32_t id_mapy, int flaga600, int klasa4b4,
+                                    int flaga612) {
+    // [P: 658/659] fundament = obiekt budynku od chwili kliknięcia: HP 1, +0x340 = 0, +0x338 = 1, na liście pola (659:
+    // pole (163, 113) z obiektem HP 1 tuż po rozkazie), bez zgłoszenia zmiany mapy (+0xD8 = 0 aż do ukończenia).
+    const bool blokuje = flaga600 != 0 || klasa4b4 == 0x19;
+    const IdJednostki id = dodaj_obiekt_budynku(gracz, typ_db, X, Y, n, x, y, z, p, 1, blokuje, id_mapy, false);
+    if (Jednostka* b = jednostka(id)) b->ukonczony = false;
+    if (wejscie_) {
+        const int k = std::max(1, n);
+        for (int dy = 0; dy < k; ++dy)
+            for (int dx = 0; dx < k; ++dx) {
+                const int xx = X + dx, yy = Y + dy;
+                if (xx < 0 || yy < 0 || xx >= wejscie_->N || yy >= wejscie_->N) continue;
+                ObiektPolaRegionu o;
+                o.id = id_mapy; o.hp = 1; o.gracz = gracz; o.flaga600 = flaga600; o.klasa4b4 = klasa4b4; o.flaga612 = flaga612;
+                auto& l = wejscie_->obiekty[xx * wejscie_->N + yy];
+                l.insert(l.begin(), o);
+            }
+    }
+    return id;
+}
+
+Punkt2 Swiat::miejsce_budowy(const Jednostka& u, const Jednostka& b) const {
+    // [P: 658 – jeden pomiar: obywatel (164,65; 115,46), dom (163, 113) → (164,15; 114,15) = narożnik obwodu odsuniętego
+    // o r = 0,5·rozmiar obywatela (0,3); H: reguła ogólna] kandydaci jak przy ataku na budynek (boki + narożniki),
+    // wybór – najbliższy punkt (odległość euklidesowa od pozycji obywatela); funkcja Titan [N].
+    const double r = f32(0.5 * u.param.rozmiar);
+    const int X = int(b.komorka_x), Y = int(b.komorka_y), n = std::max(1, b.kwadrat);
+    std::vector<Punkt2> m;
+    for (int x = X; x < X + n; ++x) { m.push_back({f32(x + 0.25), f32(Y - r)}); m.push_back({f32(x + 0.75), f32(Y - r)}); }
+    m.push_back({f32(X + n + r), f32(Y - r)});
+    for (int y = Y; y < Y + n; ++y) { m.push_back({f32(X + n + r), f32(y + 0.25)}); m.push_back({f32(X + n + r), f32(y + 0.75)}); }
+    m.push_back({f32(X + n + r), f32(Y + n + r)});
+    for (int x = X + n - 1; x >= X; --x) { m.push_back({f32(x + 0.75), f32(Y + n + r)}); m.push_back({f32(x + 0.25), f32(Y + n + r)}); }
+    m.push_back({f32(X - r), f32(Y + n + r)});
+    for (int y = Y + n - 1; y >= Y; --y) { m.push_back({f32(X - r), f32(y + 0.75)}); m.push_back({f32(X - r), f32(y + 0.25)}); }
+    m.push_back({f32(X - r), f32(Y - r)});
+    Punkt2 best = m.front();
+    double bd = 1e300;
+    for (const auto& c : m) {
+        if (!teren_.pole_przejezdne(podloga(c.x), podloga(c.y))) continue;
+        const double d = (c.x - u.x) * (c.x - u.x) + (c.y - u.y) * (c.y - u.y);
+        if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+}
+
+bool Swiat::rozkaz_budowy(IdJednostki obywatel, IdJednostki budynek) {
+    Jednostka* u = jednostka(obywatel);
+    Jednostka* b = jednostka(budynek);
+    if (!u || !b || !b->budynek) return false;
+    const Punkt2 p = miejsce_budowy(*u, *b);
+    CelRuchu c{TypCelu::budowa, p.x, p.y, std::nullopt, true, false, 0};
+    c.cel_jednostka = budynek;
+    c.etap_grafu = true;
+    u->kolejka_celow.clear();
+    u->kolejka_celow.push_front(c);
+    u->budowa_ms = 0.0;
+    // aktywacja celu EEUGBuildRepair → MoveToRepairSite (8017) [P: 658 ×2 – kolejne próbki po rozkazie 8017, 8000, 2015,
+    // 10003 – jeden stan na takt]; trasa liczona dopiero w PrepareToMove (RepairSiteInRange = fałsz)
+    u->cel = c.typ;
+    u->cel_od_gracza = c.od_gracza;
+    u->kurs_koncowy.reset();
+    u->trasa.clear();
+    u->dl_przed.clear();
+    u->dl_po.clear();
+    u->zdjete_punkty = 0;
+    u->trasa_gotowa = false;
+    if (const StanSkryptu* s = skr(*u).stan(8017)) wejdz_w_stan(*u, *s);
+    else aktywuj_cel(*u);
+    return true;
+}
+
+std::optional<bool> Swiat::zdarzenie_budowy(Jednostka& u, const std::string& n) {
+    // Zdarzenia celu EEUGBuildRepair (vt+0x64 = 0x60D4FD; numery z rejestracji 0x617E.. [W]): 2001 BuildingDestroyed,
+    // 4001 BuildingRepaired, 4014 RepairSiteInRange, 4021 BuildSiteClear, 4022 BuildSiteVisible, 4023 BuildSiteValid,
+    // 4030 BuildingNotPaidFor, 4031 GoalIsBuild, 4036 CannotAffordRepair, 4037 RepairIsSpecialUnit; 5011 GoalIsRepairSite.
+    static const char* NAZWY[] = {"GoalIsRepairSite", "BuildingRepaired", "BuildingDestroyed", "GoalIsBuild", "BuildQueueEmpty",
+                                  "BuildSiteValid", "BuildSiteVisible", "BuildSiteClear", "RepairSiteInRange",
+                                  "CannotAffordRepair", "BuildingNotPaidFor", "RepairIsSpecialUnit", "SmartTaskNotAssigned",
+                                  "OwnerIsHuman", "OwnerIsComputer", "BuildingInBuildQueue"};
+    bool znane = false;
+    for (const char* z : NAZWY) if (n == z) { znane = true; break; }
+    if (!znane) return std::nullopt;
+    if (n == "OwnerIsHuman") return u.czlowiek;
+    if (n == "OwnerIsComputer") return !u.czlowiek;
+    const bool cel = !u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::budowa;
+    if (n == "GoalIsRepairSite") return cel;                      // 5011 – rodzaj celu bieżącego [W]
+    if (n == "BuildingInBuildQueue") return false;                // kolejka budowy (wiele zleceń) – niewdrożona [N]
+    if (n == "BuildQueueEmpty" || n == "SmartTaskNotAssigned") {
+        // 4032 / 4033 [H: jedno zlecenie]; SmartTaskNotAssigned (TaskSmartCitizen → Idle): cel zdjęty – w 658 kolejka
+        // celów pusta od próbki stanu 5000, w 4028 jeszcze z celem [P]
+        if (n == "SmartTaskNotAssigned" && cel) { u.kolejka_celow.clear(); u.cel = TypCelu::brak; }
+        return true;
+    }
+    if (!cel) return n == "BuildingDestroyed" || n == "BuildingRepaired";   // 0x60D4FD: brak budynku → prawda
+    Jednostka* b = jednostka(u.kolejka_celow.front().cel_jednostka);
+    if (!b || !b->boj) return n == "BuildingDestroyed" || n == "BuildingRepaired";
+    if (n == "BuildingDestroyed") return b->boj->s.hp == 0;          // 2001: budynek +0x3C = 0
+    if (n == "GoalIsBuild") return true;                             // 4031: cel +0x5A = 0 → prawda [W]
+    if (n == "CannotAffordRepair" || n == "RepairIsSpecialUnit") return false;   // 4036/4037 – naprawa, jednostki specjalne [N]
+    if (n == "BuildingNotPaidFor") return false;                     // 4030: +0x338 ≠ 0 (opłacony) → fałsz [P: 658 – 1]
+    if (n == "BuildSiteValid" || n == "BuildSiteClear") return true; // 4023 0x60D12A / 4021 0x60CED6 – nieprzeczytane [H: wolne miejsce]
+    if (n == "BuildSiteVisible") {                                   // 4022: LOS² + typ+0x58C ≥ odległość (b2fa04) [W]
+        const double d = std::hypot(u.kolejka_celow.front().x - u.x, u.kolejka_celow.front().y - u.y);
+        const double los = u.boj ? double(u.boj->p.pole_widzenia) : 0.0;
+        return los * los + double(std::max(1, b->kwadrat)) >= d;
+    }
+    if (n == "RepairSiteInRange")   // 4014 → 0x60BC54 nieprzeczytane [H: koniec trasy do miejsca pracy]
+        return u.trasa_gotowa && u.pozostalo_punktow() == 0;
+    // 4001 BuildingRepaired (0x60BD19) [W; P: 658]: HP ≥ HP maks. ulepszenia; przy pierwszym spełnieniu (+0x340 = 0)
+    // akcje ukończenia: +0x340 = 1, zgłoszenie zmiany mapy z terminem zwykłym (+0xD4 = teraz + 15000 ms [P]).
+    if (b->boj->s.hp < b->boj->p.hp_max) return false;
+    if (!b->ukonczony) {
+        b->ukonczony = true;
+        if (b->blokuje_pola && wejscie_ && graf_.podsektory.size() > 0) {
+            std::vector<int> pola;
+            for (int dy = 0; dy < std::max(1, b->kwadrat); ++dy)
+                for (int dx = 0; dx < std::max(1, b->kwadrat); ++dx)
+                    pola.push_back(int(b->komorka_x + dx) * wejscie_->N + int(b->komorka_y + dy));
+            zglos_zmiane_mapy(pola, false);
+        }
+    }
+    return true;
+}
+
+void Swiat::krok_budowy(Jednostka& u) {
+    // RepairBuilding (4002) [P: 658 ×2, 659 – 3 przebiegi, 33 przyrosty każdy]: odstępy przyrostów w taktach 29, 29, 30,
+    // 29, 30, 29, 29, 30, … (pierwszy 29 taktów po wejściu w stan) = licznik ms z przeniesieniem: przy wejściu 1000,
+    // co takt −34 (całkowite ms taktu [H]), przyrost przy ≤ 0 i +1000. +15 HP (dom 37, obywatel 32), ostatni przycięty
+    // do HP maks. Funkcja przyrostu i źródło wartości 15 (Build rate obywatela 1000, HP domu 500) – [N].
+    if (u.kolejka_celow.empty() || u.kolejka_celow.front().typ != TypCelu::budowa) return;
+    Jednostka* b = jednostka(u.kolejka_celow.front().cel_jednostka);
+    if (!b || !b->boj || b->boj->s.hp <= 0) return;
+    if (u.budowa_ms == 0.0) u.budowa_ms = 1000.0;
+    u.budowa_ms -= 34.0;
+    if (u.budowa_ms > 0.0) return;
+    u.budowa_ms += 1000.0;
+    b->boj->s.hp = std::min(b->boj->p.hp_max, b->boj->s.hp + u.przyrost_budowy);
+    b->boj->hp_29c = b->boj->s.hp;
+    if (wejscie_) {
+        for (auto& [k, l] : wejscie_->obiekty)
+            for (auto& o : l) if (o.id == b->id_mapy && b->id_mapy != 0) o.hp = b->boj->s.hp;
+    }
 }
 
 void Swiat::zastosuj_push(Jednostka& u) {

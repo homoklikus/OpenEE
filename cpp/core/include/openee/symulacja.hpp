@@ -310,12 +310,19 @@ public:
     /// Etap 49 – listy kontaktów wszystkich obiektów od nowa, w bieżącej kolejności listy (jak tworzenie obiektów przy
     /// wczytaniu: obiekt dopisuje wcześniejsze z własnego okna; odbudowa po kolei daje te same pary) [W: 0x5ED24B → 0x616F9D].
     void odbuduj_kontakty_wszystkich();
+    /// Etap 50 – fundament budynku z rozkazu budowy (EEMBuildUnit) [P: 658/659]: obiekt na polach od razu (HP 1, +0x340 = 0),
+    /// bez zgłoszenia zmiany mapy – zgłoszenie (termin zwykły) przy ukończeniu (BuildingRepaired).
+    IdJednostki postaw_fundament(int gracz, int typ_db, int X, int Y, int n, double x, double y, double z,
+                                 const ParametryWalki& p, std::uint32_t id_mapy, int flaga600, int klasa4b4, int flaga612);
+    /// Etap 50 – rozkaz budowy obywatela (cel EEUGBuildRepair): miejsce pracy na obwodzie fundamentu, trasa, stany citizen.tai.
+    bool rozkaz_budowy(IdJednostki obywatel, IdJednostki budynek);
+    Punkt2 miejsce_budowy(const Jednostka& u, const Jednostka& b) const;
     std::uint64_t wersja_grafu() const { return wersja_grafu_; }
     std::uint64_t przebudowy_grafu() const { return przebudowy_grafu_; }
     bool przebudowa_zaplanowana() const { return przebudowa_d8_; }
     std::uint32_t termin_przebudowy() const { return termin_d4_; }
     const WejscieRegionow* wejscie_mapy() const { return wejscie_ ? &*wejscie_ : nullptr; }   // etap 48
-    float opoznienie_przebudowy_s = 0.0f;   // *0x9183C0 (wartość z gry nieodczytana; w pliku 0) [N]
+    float opoznienie_przebudowy_s = 1.5f;   // *0x9183C0 [P: etap 50, 658 – +0xD4 = ukończenie domu + 15000 ms] (wcześniej 0 [N])
     const GrafPodsektorow& graf_podsektorow() const { return graf_; }
     /// N progu 9016 ShouldMoveToNextAutoWaypoint ([0x917DC8], 0x4243AC) z rozmiaru mapy
     static int prog_punktu_auto(int rozmiar_mapy);
@@ -375,6 +382,8 @@ private:
     // walka
     Jednostka* cel_ataku(const Jednostka& u);
     void omijanie_atakujacego(Jednostka& u, const Jednostka& o);   // etap 49: 0x549179 (ru = ro, +0x61A)
+    void krok_budowy(Jednostka& u);   // etap 50: RepairBuilding (4002)
+    std::optional<bool> zdarzenie_budowy(Jednostka& u, const std::string& n);
     std::optional<bool> zdarzenie_walki(Jednostka& u, const std::string& n);
     bool szukaj_wroga(Jednostka& u);
     bool cel_nieosiagalny(Jednostka& u, const Jednostka& t, bool sprawdz_pola);   // 0x5EC9BB (etap 37)

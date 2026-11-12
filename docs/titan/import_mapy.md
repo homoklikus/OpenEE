@@ -97,3 +97,31 @@ Zadanie 570 (ten sam scenariusz w AoC): wynik w raporcie etapu 30 (§ 8).
 3. *[Etap 44 – rozwiązane: +0x600 = „Is building?”.]*
 4. Kto i kiedy wypełnia EETile+4 przy wczytywaniu (konstruktor EETile nie ma bezpośredniego zapisu vtable w kodzie –
    obiekty prawdopodobnie odtwarzane z serializacji) [N].
+
+## Etap 50 – atrybuty cywilizacji graczy w SCN (kawałek 5)
+
+[P: odczyt SCN e42_* i kampanii EETheGreeks – Argos, Troja] W rekordzie gracza (kawałek 5, za listą jednostek) jest
+lista **574 wpisów** – po jednym na typ obiektu (`n_upg` = 574, para (574, 16) służy w narzędziu do odnalezienia
+listy, bo `parse_players5` z Riverlands nie czyta wygenerowanych SCN):
+
+| Pole | Typ | Znaczenie |
+|---|---|---|
+| typ | u32 | ID dbobjects |
+| nazwa | wstr | nazwa typu |
+| atrybuty | 16 × i32 | wartość = 1 + liczba poziomów atrybutu [H: 1 = brak premii] |
+| punkty | u32 | punkty cywilizacji wydane na typ |
+
+Przykłady: Argos – typ 165, atrybut 14 = 4, punkty 6; Troja – typ 463, atrybut 1 = 5, atrybut 11 = 2.
+
+**Prorok 216 nie ma poziomów u żadnego gracza** w SCN e42, choć prorok gracza 1 w grze ma premię prędkości
+(0,45 → 0,5, etap 49 [P: 648]). Premia tego proroka pochodzi więc z innego źródła – prawdopodobnie z cywilizacji
+gracza ustawianej przy starcie gry (dbcivilization / dbpremadecivs) [N]. Dlatego w etapie 50 nie podłączono listy
+z SCN do Core: premie w odtworzeniach nadal pochodzą z pomiaru (`premie_cywilizacji` w
+`parametry_jednostek_ee.json`), a 648 pozostaje 3585/3585. Tabela premii i kosztów atrybutów: dbcivilization
+(schemat .dats – zestaw wartości na grupę jednostek; prawdopodobnie odpowiada typ+0x410 [H]).
+
+**Rola 0x626834** [W: dekompilacja Ghidra]: funkcja (obiekt ulepszenia/typu, n) zwraca wartość bazową atrybutu n
+(0–15) – ten sam indeks co 16 pól listy z SCN: 0 → f32 +0x424, 1 → +0x510, 2 → +0x4F0, 3 → +0x4F8, 4 → +0x4FC,
+5 → +0x500, 6 → +0x4F4, 7 → +0x4EC, 8 → +0x534 (≤ 0 → +0x580), 9 → +0x55C, 10 → +0x538, 11 → f32 +0x420,
+12 → +0x554, 14 → f32 +0x430, 15 → +0x570; 13 i pozostałe → 0. Znaczenie pól (które jest prędkością, HP, atakiem
+itd.) potwierdzono dotąd tylko dla premii prędkości (etap 49); reszta [N].

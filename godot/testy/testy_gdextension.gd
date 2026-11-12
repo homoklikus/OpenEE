@@ -141,6 +141,7 @@ func _testy() -> void:
 	_test_etapu47(dll)
 	_test_etapu48(dll)
 	_test_etapu49(dll)
+	_test_etapu50(dll)
 	_koniec()
 
 
@@ -1033,3 +1034,36 @@ func _test_etapu49(dll: String) -> void:
 	var d: Dictionary = c.diagnostyka()
 	_wynik("mur z +0x2D8: kontakt i odepchnięcie jednostki, mur nieruchomy", int(d.get("kroki_odpychania", 0)) > 0 \
 		and float(c.jednostka(m).x) == 10.5, "kroki %d" % int(d.get("kroki_odpychania", 0)))
+
+
+## Etap 50: rozkaz budowy obywatela – fundament HP 1, cykl RepairBuilding (+15 HP w rytmie 29/29/30 taktów),
+## ukończenie (+0x340) i zgłoszenie zmiany mapy, stan końcowy Idle [P: 658/659].
+func _test_etapu50(dll: String) -> void:
+	var c: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+	c.utworz_swiat("ee")
+	_wynik("wersja Core – etap 50", str(c.wersja()).contains("etap 50"), c.wersja())
+	var p := {"a": 1.2, "vmax": 0.5, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.83333, "c8": 0.08185, "t488": 0.5}
+	var cit: int = c.dodaj_jednostke(p, 11.65, 12.46, 0.0)
+	c.ustaw_walke(cit, 1, true, {"pole_widzenia": 6.0, "rozmiar": 0.3, "typ_bazy": 32, "ai_szuka_wrogow": 0}, 25)
+	c.ustaw_skrypt_jednostki(cit, "Citizen")
+	c.ustaw_przyrost_budowy(cit, 15)
+	var dom := {"gracz": 1, "typ": 37, "X": 10, "Y": 10, "kwadrat": 1, "x": 10.5, "y": 10.5, "z": 0.0, "hp_max": 500,
+		"pole_widzenia": 2.0, "rozmiar": 1.0, "typ_jednostki": 2, "typ_bazy": 37, "id_mapy": "0x700"}
+	var f: int = c.postaw_fundament(dom)
+	var j0: Dictionary = c.jednostka(f)
+	var ok_f: bool = int(j0.get("hp", -1)) == 1 and not bool(j0.get("ukonczony", true))
+	c.rozkaz_budowy(cit, f)
+	var stany := [int(c.jednostka(cit).stan)]
+	var przyrosty := 0; var hp := 1
+	for k in 2500:
+		c.takt(1)
+		var s := int(c.jednostka(cit).stan)
+		if s != stany[-1]: stany.append(s)
+		var h := int(c.jednostka(f).get("hp", -1))
+		if h != hp: przyrosty += 1; hp = h
+		if s == 5000 and bool(c.jednostka(f).get("ukonczony", false)): break
+	var ok: bool = ok_f and hp == 500 and przyrosty == 34 and stany[0] == 8017 and 4002 in stany and stany[-1] == 5000 \
+		and bool(c.jednostka(f).get("ukonczony", false))
+	_wynik("budowa obywatela: fundament HP 1 → 500 (34 przyrosty), MoveToRepairSite … RepairBuilding → TaskSmartCitizen → Idle",
+		ok, "HP %d, przyrosty %d, stany %s" % [hp, przyrosty, str(stany)])

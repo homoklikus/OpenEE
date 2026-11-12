@@ -84,7 +84,8 @@
   "e49b_dom_NE": "bez_zwierzat",
   "e49b_dom_SW": "bez_zwierzat",
   "e49b_kosz_N": "bez_zwierzat",
-  "e49b_kosz_W": "bez_zwierzat"
+  "e49b_kosz_W": "bez_zwierzat",
+  "e50_obywatel": "bez_zwierzat"
  },
  "zrodlo_wzorow": "e35_a.scn",
  "warianty": {
@@ -1880,6 +1881,18 @@
      "u3c": 0.3
     }
    ]
+  },
+  "e50_obywatel": {
+   "A_CIT": [
+    "CIT",
+    1,
+    [
+     [
+      164.5,
+      115.5
+     ]
+    ]
+   ]
   }
  },
  "opis_etap47": "e47_dom1 – jedna gwardia niszczy dom (HP rekordu u3c = 0,3); e47_mur – gwardia atakuje mur 467 (u3c = 0,02); e47_przejscie – mur gracza 1 w y = 111 (x = 160…170) z domem gracza 5 w przejściu (164, 111), trzy gwardie niszczą dom, prorok A idzie z (164,5; 116,5) na drugą stronę (ponowne wyznaczanie trasy po zmianie mapy); e47_przejscie2 – jak e47_przejscie z pełnym HP domu (zniszczenie po rozkazie ruchu); e47_rng_bez_p5 – jak e46_rng_1v1 bez jednostek gracza 5 (losowania AI komputera). Czwarty element grupy = nadpisanie pól rekordu.",
@@ -1890,5 +1903,6 @@
   "cel_zmieniajacy_pole": "ruch celu wymaga rozkazu dla gracza 5 (komputer) – MCP wydaje rozkazy tylko graczowi 1; rekordy z trasą (L_pts) nie są obsługiwane przez narzędzie [N]"
  },
  "opis_etap48": "e48_prorok – prorok bez zmiany mapy (parametry ruchu z pamięci typu i ulepszenia gracza), rozkaz ruchu; e48_dom_t0 / e48_dom_3v1 – jedna / trzy gwardie poza polem widzenia domu (HP rekordu 0,1 / 0,2), atak rozkazem PPM od początku nagrania (faza ataku co takt); e48_koszary – koszary 2×2 (wzór 0x100010e, kotwica X, Y = lewy dolny róg, środek X + 1) niszczone przez trzy gwardie, potem rozkaz proroka przez zwolnione pola; e48_wieza / e48_mur_gruz – wieża i mur (pozostałości po zniszczeniu); e48_kontakt3 – trzecia gwardia wchodzi między dwie stojące (kontakt trzech jednostek); e48_widzi – wróg w polu widzenia od wczytania (pierwsze CanISeeEnemy); e48_widzi_ruch – wróg poza polem widzenia, wykrycie po rozkazie ruchu. Poprawka po zad. 650: prorok-obserwator w (168,5; 113,5) – w pierwszej wersji cel był poza jego polem widzenia (8,49 > 8) i atak PPM nie mógł wskazać budynku (lista renderu).",
- "opis_etap49": "Etap 49: e49_dom_N/S/E/W/NE/SW – gwardia atakuje dom 1×1 z czterech stron i dwóch narożników (miejsce podejścia, pakiet B); e49_kosz_N/W – koszary 2×2 z północy i zachodu; e49_prorok5 – prorok gracza 5 obok proroka gracza 1 (źródło premii prędkości, pakiet C); e49_mur_rog – gwardia i prorok mijają narożnik muru (kontakt z budynkiem, pakiet A) oraz dom i wieża (odczyt +0x2D8). e49b_* – powtórka z gwardią w odległości ≥ 6 (poza polem widzenia 4 gwardii; w e49_dom_* gwardia atakowała sama przed startem rejestratora, więc dojścia nie zarejestrowano)."
+ "opis_etap49": "Etap 49: e49_dom_N/S/E/W/NE/SW – gwardia atakuje dom 1×1 z czterech stron i dwóch narożników (miejsce podejścia, pakiet B); e49_kosz_N/W – koszary 2×2 z północy i zachodu; e49_prorok5 – prorok gracza 5 obok proroka gracza 1 (źródło premii prędkości, pakiet C); e49_mur_rog – gwardia i prorok mijają narożnik muru (kontakt z budynkiem, pakiet A) oraz dom i wieża (odczyt +0x2D8). e49b_* – powtórka z gwardią w odległości ≥ 6 (poza polem widzenia 4 gwardii; w e49_dom_* gwardia atakowała sama przed startem rejestratora, więc dojścia nie zarejestrowano).",
+ "opis_etap50": "Etap 50: e50_obywatel – jeden obywatel gracza 1 na czystej mapie (rozkaz budowy przez interfejs gry, pakiet A)."
 }

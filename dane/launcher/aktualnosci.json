@@ -6,6 +6,18 @@
   {
    "data": "2026-11-12",
    "tytul": {
+    "pl": "Etap 50: obywatel buduje dom",
+    "en": "Stage 50: a citizen builds a house"
+   },
+   "tekst": {
+    "pl": "Obywatel stawia dom tak jak w Empire Earth: fundament pojawia się od razu, robotnik podchodzi do narożnika, a budynek rośnie o 15 punktów mniej więcej co sekundę aż do ukończenia. Zmierzyliśmy to w oryginalnej grze i odtworzenie w OpenEE zgadza się z nią w każdym takcie.",
+    "en": "A citizen builds a house just like in Empire Earth: the foundation appears at once, the worker walks to a corner and the building grows by 15 points about every second until it is finished. We measured this in the original game, and OpenEE matches it on every tick."
+   },
+   "raport": "RAPORT_ETAP_50.md"
+  },
+  {
+   "data": "2026-11-12",
+   "tytul": {
     "pl": "Etap 49: jednostki omijają mury i siebie nawzajem",
     "en": "Stage 49: units steer around walls and each other"
    },
@@ -13,7 +25,7 @@
     "pl": "Mury i budynki odpychają jednostki tak jak w Empire Earth, a gwardie atakujące budynek obchodzą swoich towarzyszy zamiast się z nimi zderzać. Prorok przechodzi obok muru dokładnie jak w oryginale, a jednostki podchodzą do budynków z każdej strony w te same miejsca co w grze. Dodaliśmy też mapę postępu: ile silnika już odtworzono i ile zostało.",
     "en": "Walls and buildings now push units away as in Empire Earth, and guards attacking a building step around their comrades instead of bumping into them. A prophet walks past a wall exactly as in the original, and units approach buildings from every side at the same spots as in the game. We also added a progress map showing how much of the engine is rebuilt and how much remains."
    },
-   "raport": "RAPORT_ETAP_49.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_49.md"
   },
   {
    "data": "2026-11-12",

@@ -73,6 +73,9 @@ public:
     int64_t blokady_pola(int64_t x, int64_t y) const;
     godot::Array gruz() const;   // etap 48
     int64_t postaw_budynek(const godot::Dictionary& parametry);   // etap 48
+    int64_t postaw_fundament(const godot::Dictionary& parametry);   // etap 50
+    bool rozkaz_budowy(int64_t obywatel, int64_t budynek);
+    bool ustaw_przyrost_budowy(int64_t id, int64_t hp);
     godot::Dictionary migawka_diagnostyczna(bool szczegoly) const;
     godot::Dictionary wejscie_regionow_z_mapy() const;
     godot::Dictionary wejscie_regionow_z_scn(const godot::Array& obiekty, const godot::Array& zestawy) const;

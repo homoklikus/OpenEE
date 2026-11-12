@@ -107,7 +107,9 @@ func _po_zbudowaniu() -> void:
 			for x in range(okno.y, okno.y + okno.z): l += "." if core.pole_przejezdne(x, y) else "#"
 			w.append("%d %s" % [y, l])
 		_raport_p["siatka_od_x"] = okno.y; _raport_p["siatka"] = w
-	if _arg("potyczka-demo", "") != "" and uklad.has("demo_e47"):
+	if _arg("potyczka-demo", "") != "" and uklad.has("demo_e50"):
+		await _demo_e50(float(_arg("potyczka-demo", "60")))
+	elif _arg("potyczka-demo", "") != "" and uklad.has("demo_e47"):
 		await _demo_e47(float(_arg("potyczka-demo", "90")))
 	elif _arg("potyczka-demo", "") != "":
 		await _demo(float(_arg("potyczka-demo", "60")))
@@ -145,13 +147,16 @@ func _przygotuj_mape_core() -> void:
 		var n := maxi(1, int(ob.get("Square occupied", 1)))
 		var e := {"id": 0x7100000 + i, "typ": int(b["typ"]), "gracz": int(b["gracz"]), "X": int(b["X"]), "Y": int(b["Y"]),
 			"kwadrat": n, "blokuje": _blokuje(int(b["typ"]), ob), "kurs": float(b.get("kurs", 0.0)),
-			"hp": int(b["hp"]) if b.has("hp") else int(ob.get("Health", 0))}
-		_obiekty_core.append(e)
+			"hp": int(b["hp"]) if b.has("hp") else int(ob.get("Health", 0)), "fundament": bool(b.get("fundament", false))}
 		_budynki_dod.append(e)
+		i += 1
+		# etap 50: fundament z rozkazu budowy – obiekt Core stawiany po wczytaniu mapy (HP 1, bez zgłoszenia mapy do
+		# ukończenia), poza obiektami mapy i wejściem grafu (jak w grze: 658/659 [P])
+		if e.fundament: continue
+		_obiekty_core.append(e)
 		_budynki_wejscie.append({"id": e.id, "gracz": e.gracz, "X": e.X, "Y": e.Y, "typ": e.typ, "kwadrat": n,
 			"hp": int(ob.get("Health", 0)), "zasob": int(ob.get("Resource type", 0)), "budynek": int(ob.get("Is building?", 0)),
 			"unit_type": int(ob.get("Unit type", 0))})
-		i += 1
 
 
 ## Blokada pola (typ +0x600) = dbobjects „Is building?” [P etap 44: e35_a 70/70 typów z odczytu pamięci, m.in. obiekty
@@ -212,10 +217,12 @@ func nowa_bitwa() -> bool:
 	zegar = ZegarSymulacji.new(sym); zegar.name = "ZegarSymulacji"; add_child(zegar)
 	widok = WidokJednostek.new(sym, zegar); widok.name = "WidokJednostek"; add_child(widok)
 	var n := 0
+	var id_jedn := []   # etap 50: id Core jednostek układu (rozkaz budowy)
 	for jd in uklad.get("jednostki", []):
 		var typ := int(jd["typ"]); var g := int(jd["gracz"])
 		var td: Dictionary = typy.get(str(typ), {})
 		var id: int = core.dodaj_jednostke(td.get("ruch", {}), float(jd["x"]), float(jd["y"]), float(jd.get("kurs", 0.0)))
+		id_jedn.append(id)
 		if id <= 0: continue
 		var pw := {}
 		var wd: Dictionary = td.get("walka", {})
@@ -246,6 +253,7 @@ func nowa_bitwa() -> bool:
 	# etap 47: budynki układu jako obiekty Core (HP, obrażenia, Dying, zapadanie się, zmiana mapy – wszystko w Core);
 	# Godot tylko rysuje model w pozycji i wysokości z Core
 	_budynki_core.clear()
+	var id_bud := []   # etap 50: id Core budynków układu w kolejności pliku
 	for e in _budynki_dod:
 		var ob: Dictionary = _obiekty.get(int(e.typ), {})
 		var pb := ObiektyScnCore.parametry_budynku(ob, _obiekty)
@@ -253,7 +261,13 @@ func nowa_bitwa() -> bool:
 		var nb: int = int(e.kwadrat)
 		pb.merge({"gracz": e.gracz, "typ": e.typ, "X": e.X, "Y": e.Y, "kwadrat": nb, "x": float(e.X) + nb * 0.5,
 			"y": float(e.Y) + nb * 0.5, "hp": e.hp, "blokuje": 1 if e.blokuje else 0, "id_mapy": int(e.id), "w_siatce": 1}, true)
-		var bid: int = core.dodaj_budynek(pb)
+		var bid: int
+		if e.fundament:
+			pb["hp_max"] = int(ob.get("Health", 0)); pb.erase("w_siatce")
+			bid = core.postaw_fundament(pb)
+		else:
+			bid = core.dodaj_budynek(pb)
+		id_bud.append(bid)
 		if bid <= 0: continue
 		_budynki_core[bid] = int(e.id)
 		sym.zarejestruj(bid, int(e.gracz), int(e.typ), maxf(0.5, float(ob.get("Circle selection size", 1.0))), String(ob.get("Name", "")))
@@ -266,6 +280,11 @@ func nowa_bitwa() -> bool:
 		widok.dodaj(bid, mb, tb2, _kolor_gracza(int(e.gracz)), sk, SekwencjeAnimacji.z_rekordu(grb))
 		widok.ustaw_grafike_id(bid, gidb)
 	_raport_p["budynki_core"] = _budynki_core.size()
+	# etap 50: rozkazy budowy z układu (obywatel → fundament); przyrost HP na cykl RepairBuilding z pomiaru [P: 658/659]
+	for r in uklad.get("budowa", []):
+		var cit: int = id_jedn[int(r["obywatel"])]; var bud: int = id_bud[int(r["budynek"])]
+		core.ustaw_przyrost_budowy(cit, int(r.get("przyrost", 0)))
+		core.rozkaz_budowy(cit, bud)
 	core.uporzadkuj_wg_pozycji()   # etap 44: kolejność taktu jak kolejka fizyki EE po wczytaniu (Core)
 	var wb := widok.zbuduj(Zasoby)
 	var start_zle: Array = []          # kontrola danych układu: jednostka na polu nieprzejezdnym (Core)
@@ -309,7 +328,7 @@ func _po_takcie_walki(zd: Array) -> void:
 		if r != "wybor_celu" or dziennik_walki.size() < 3:
 			dziennik_walki.append("t%d %s %d→%d%s" % [e.takt, r, e.kto, e.cel, (" (%d)" % e.wartosc) if r == "trafienie" else ""])
 	while dziennik_walki.size() > 6: dziennik_walki.pop_front()
-	if wynik == "":
+	if wynik == "" and not uklad.get("wrogowie", []).is_empty():   # etap 50: układ bez wrogów (demo budowy) – bez wyniku bitwy
 		var gl := sym.gracz_lokalny
 		var wlasne := sym.liczba_zywych(gl)
 		var wrogie := 0
@@ -600,6 +619,31 @@ func _demo_e47(sekundy: float) -> void:
 
 
 ## Wejście jak od gracza: zdarzenia myszy przez Input (trafiają do SterowanieRTS._unhandled_input).
+## Etap 50: automat demonstracji budowy – obywatel z rozkazem budowy (z układu) stawia dom; raport: stany obywatela,
+## HP budynku co sekundę, ukończenie (+0x340), termin zgłoszenia zmiany mapy. Logika budowy – Core.
+func _demo_e50(sekundy: float) -> void:
+	var kat := _arg("potyczka-zrzuty", "")
+	if kat != "": DirAccess.make_dir_recursive_absolute(kat)
+	var bud := -1; var cit := -1
+	for bid in _budynki_core: bud = int(bid)
+	for j in sym.lista():
+		if not j.budynek and j.wlasciciel == sym.gracz_lokalny: cit = j.id
+	var przebieg := {"budynek": bud, "obywatel": cit, "kroki": [], "hp": [], "stany": []}
+	var t := 0.0
+	var nr := 0
+	while t < sekundy and not bool(core.jednostka(bud).get("ukonczony", false)):
+		await _czekaj(1.0, kat if nr % 10 == 0 else "", "e50_budowa_%02d" % nr, przebieg)
+		przebieg.hp.append(int(core.jednostka(bud).get("hp", -1)))
+		var st := int(core.jednostka(cit).stan)
+		if przebieg.stany.is_empty() or przebieg.stany[-1] != st: przebieg.stany.append(st)
+		t += 1.0; nr += 1
+	await _czekaj(1.0, kat, "e50_budowa_koniec", przebieg)
+	przebieg["koniec"] = {"hp": int(core.jednostka(bud).get("hp", -1)), "ukonczony": core.jednostka(bud).get("ukonczony", null),
+		"stan_obywatela": int(core.jednostka(cit).stan), "graf": core.stan_grafu(), "takt": sym.takt}
+	_raport_p["demo_e50"] = przebieg
+	_koniec_automatu(0)
+
+
 func _klik(przycisk: int, p: Vector2, shift := false) -> void:
 	for wcisniety in [true, false]:
 		var e := InputEventMouseButton.new()

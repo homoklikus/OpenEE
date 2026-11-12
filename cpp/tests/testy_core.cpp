@@ -2071,6 +2071,64 @@ int test_budynki() {
                     blisko(r.c4, 0.45) && blisko(r.c8, 0.07367) && r0.vmax == b.vmax,
                 "1 poziom prędkości: 0,45 + max(0,045; 0,05) = 0,5; a, α, ωmax ×10/9; c4 = 1/a, c8 = 1/α (odczyt pamięci 648)");
     }
+    // 10. etap 50 – rozkaz budowy obywatela (658/659 [P]): fundament HP 1 bez zgłoszenia mapy; trasa na narożnik obwodu;
+    //     stany CheckRepairSiteAccessibility 4017 → WaitForBuildSiteToClear 4012 → RepairBuilding 4002; +15 HP w odstępach
+    //     29, 29, 30, 29, 30, … taktów; przy HP maks. – ukończenie (+0x340), zgłoszenie z terminem zwykłym, 4028 → 5000
+    {
+        auto sb = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27());
+        sb->ustaw_tablice_walki(tablice(), wagi_ee_575());
+        sb->ustaw_wejscie_mapy(wejscie_syntetyczne(21, {}), 7);
+        ParametryRuchu pr;
+        pr.vmax = 0.6; pr.rozmiar = 0.3;
+        const IdJednostki c = sb->dodaj_jednostke(pr, 11.65, 12.46, 0.0);
+        ParametryWalki pc = g;
+        pc.pole_widzenia = 6.0f;
+        sb->ustaw_walke(c, 1, true, pc, 25);
+        sb->ustaw_skrypt_jednostki(c, "obywatel");
+        sb->jednostka(c)->przyrost_budowy = 15;
+        const IdJednostki f = sb->postaw_fundament(1, 37, 10, 10, 1, 10.5, 10.5, 0.0, dom_37(), 0x700, 1, 2, 0);
+        const bool fund = sb->jednostka(f)->boj->s.hp == 1 && !sb->jednostka(f)->ukonczony && !sb->przebudowa_zaplanowana();
+        const Punkt2 m = sb->miejsce_budowy(*sb->jednostka(c), *sb->jednostka(f));
+        sb->rozkaz_budowy(c, f);
+        std::vector<int> stany{sb->jednostka(c)->stan}, odstepy;
+        int hp = 1, t_hp = -1, t_4002 = -1, przyrosty = 0;
+        std::uint32_t t_ukon = 0;
+        for (int k = 0; k < 3000; ++k) {
+            sb->takt();
+            const Jednostka* u = sb->jednostka(c);
+            if (stany.empty() || stany.back() != u->stan) stany.push_back(u->stan);
+            if (u->stan == 4002 && t_4002 < 0) { t_4002 = k; t_hp = k; }
+            const int h = sb->jednostka(f)->boj->s.hp;
+            if (h != hp) { odstepy.push_back(k - t_hp); t_hp = k; hp = h; ++przyrosty; }
+            if (sb->jednostka(f)->ukonczony && t_ukon == 0) t_ukon = sb->zegar_ms();
+            if (u->stan == 5000 && sb->jednostka(f)->ukonczony) break;
+        }
+        auto pozycja = [&](int st) { for (std::size_t i = 0; i < stany.size(); ++i) if (stany[i] == st) return int(i); return -1; };
+        const int i17 = pozycja(4017), i12 = pozycja(4012), i02 = pozycja(4002), i28 = pozycja(4028), i00 = pozycja(5000);
+        std::string od;
+        for (std::size_t i = 0; i < std::min<std::size_t>(odstepy.size(), 12); ++i) od += std::to_string(odstepy[i]) + " ";
+        std::printf("  budowa: miejsce (%.3f, %.3f), przyrosty %d, HP %d, odstępy %s, ukończenie %u, termin %u, stany:", m.x, m.y,
+                    przyrosty, hp, od.c_str(), unsigned(t_ukon), unsigned(sb->termin_przebudowy()));
+        for (int st : stany) std::printf(" %d", st);
+        std::printf("\n");
+        const std::vector<int> wzor = {29, 29, 30, 29, 30, 29, 29, 30, 29, 30, 29, 29};
+        const bool rytm = odstepy.size() >= wzor.size() && std::equal(wzor.begin(), wzor.end(), odstepy.begin());
+        sprawdz(fund, "fundament: HP 1, +0x340 = 0, bez zgłoszenia zmiany mapy (658/659)");
+        sprawdz(std::fabs(m.x - 11.15) < 1e-5 && std::fabs(m.y - 11.15) < 1e-5, "miejsce pracy: narożnik obwodu (X+1+r, Y+1+r), r = 0,15 (658)");
+        sprawdz(!stany.empty() && stany[0] == 8017 && pozycja(8000) == 1 && i17 >= 0 && i17 < i12 && i12 < i02 && i02 < i28 &&
+                    i28 < i00, "stany 8017 → 8000 → … → 4017 → 4012 → 4002 → 4028 → 5000 (658)");
+        {
+            const Jednostka* u = sb->jednostka(c);
+            const Jednostka* b = sb->jednostka(f);
+            const double kurs = std::atan2(-u->orientacja.m01(), u->orientacja.m11());
+            const double oczek = std::atan2(-(b->x - u->x), b->y - u->y);
+            std::printf("  kurs po budowie %.4f, na środek budynku %.4f\n", kurs, oczek);
+            sprawdz(std::fabs(std::remainder(kurs - oczek, 2 * 3.14159265358979)) < 1e-3, "RepairBuilding: kurs na środek budynku (658: 2,3761)");
+        }
+        sprawdz(rytm && przyrosty == 34 && hp == 500, "33 × 15 HP + przycięty ostatni (496 → 500), odstępy 29, 29, 30, … (658/659)");
+        sprawdz(sb->jednostka(f)->ukonczony && sb->przebudowa_zaplanowana() && sb->termin_przebudowy() == t_ukon + 15000,
+                "ukończenie: +0x340 = 1, zgłoszenie zmiany mapy z terminem ukończenie + 15000 ms (658: 88705 + 15000)");
+    }
     return bledy ? FAIL : PASS;
 }
 

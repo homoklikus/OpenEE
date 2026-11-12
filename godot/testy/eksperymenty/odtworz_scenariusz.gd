@@ -11,6 +11,7 @@ extends SceneTree
 ## Dane wejściowe są lokalne – nie trafiają do repozytorium.
 
 const TAKT_MS := 1500.0 / 44.0
+var _typ_gry := {}   # etap 50: id gry → typ (przyrost budowy wg typu budującego)
 
 
 func _arg(n: String, d: String) -> String:
@@ -151,7 +152,9 @@ func _start() -> void:
 		if not rozkazy.has(k): rozkazy[k] = []
 		rozkazy[k].append(r)
 	var wynik := {"mapa": im.get("skrot", ""), "graf": graf, "ids": {}, "probki": [], "rozkazy": []}
-	for j in opis["jednostki"]: wynik.ids[str(j["id"])] = str(j["nazwa"])
+	for j in opis["jednostki"]:
+		wynik.ids[str(j["id"])] = str(j["nazwa"])
+		_typ_gry[str(j["id"])] = int(j["typ"])
 	var takty := int(_arg("takty", str(int(round((float(opis["koniec_t"]) - T0) / TAKT_MS)) + 2)))
 	# etap 45: --rng-nagranie=PLIK – przed każdym taktem stan generatora z nagrania gry (próbka końca poprzedniego taktu);
 	# diagnostyka losowań w takcie (poza nagraniem gra losuje też w systemach nieodwzorowanych w Core)
@@ -172,9 +175,12 @@ func _start() -> void:
 				if _arg("rng-tylko-start", "0") == "1":
 					rng_gry.clear(); rng_tylko_start = true
 				break
+		var po_takcie := []
 		for r in rozkazy.get(k, []):
 			var kto: int = core_id[str(r["kto"])]
 			var w
+			if r["rodzaj"] == "budowa":   # etap 50: wykonanie po takcie (niżej)
+				po_takcie.append(r); continue
 			if r["rodzaj"] == "atak": w = c.rozkaz_ataku(kto, core_id[str(r["cel"])])
 			else: w = c.rozkaz_ruchu(kto, float(r["x"]), float(r["y"]), float(r["kat"]) if r.get("kat") != null else null, false)
 			wynik.rozkazy.append([k, str(r["kto"]), str(r["rodzaj"]), w])
@@ -182,6 +188,26 @@ func _start() -> void:
 				diag_rozkazu.append(k)
 		var n_rng0 := int(c.diagnostyka().get("rng_losowan", 0))
 		c.takt(1)
+		# etap 50: rozkaz budowy w próbce po takcie k widoczny jako MoveToRepairSite 8017 z trybem 0, bez ruchu i bez
+		# przejścia [P: 658 ×2] – w odtworzeniu wykonywany po takcie k (gra obsługuje rozkaz po aktualizacji jednostki [H])
+		for r in po_takcie:
+			var kto: int = core_id[str(r["kto"])]
+			var w
+			var fd: Dictionary = r["fundament"]
+			if not core_id.has(str(fd["id"])):
+				var obf: Dictionary = ob.get(int(fd["typ"]), {})
+				var pf := ObiektyScnCore.parametry_budynku(obf, ob)
+				pf["rozmiar_jeden"] = int(wm.get("typy", {}).get("typ:%d" % int(fd["typ"]), [0, 0, 0, 0])[3])
+				pf.merge({"gracz": int(fd["gracz"]), "typ": int(fd["typ"]), "X": int(fd["X"]), "Y": int(fd["Y"]),
+					"kwadrat": maxi(1, int(obf.get("Square occupied", 1))), "x": float(fd["x"]), "y": float(fd["y"]),
+					"z": float(fd["z"]), "hp_max": int(obf.get("Health", 0)), "id_mapy": str(fd["id"])}, true)
+				var fid: int = c.postaw_fundament(pf)
+				core_id[str(fd["id"])] = fid; gra_id[fid] = str(fd["id"])
+				wynik.ids[str(fd["id"])] = "fundament"
+			var pb_: Dictionary = par.get("przyrost_budowy", {}).get(str(_typ_gry.get(str(r["kto"]), "")), {})
+			c.ustaw_przyrost_budowy(kto, int(pb_.get(str(int(fd["typ"])), 0)))
+			w = c.rozkaz_budowy(kto, core_id[str(fd["id"])])
+			wynik.rozkazy.append([k, str(r["kto"]), "budowa", w])
 		if k in diag_rozkazu or (k - 1) in diag_rozkazu:
 			var dg: Dictionary = c.diagnostyka()
 			print("diag takt ", k, ": bounded_sukces=", dg.get("bounded_sukces"), " iteracje=", dg.get("astar_iteracje"), " wywolania=", dg.get("astar_wywolania"))

@@ -38,7 +38,7 @@ enum class TrybRuchu : std::uint8_t { jazda = 0, do_celu = 1, zatrzymanie = 2, s
 // tryb 1 (etap 31): EEPMLand vt+0x10 = EE 0x54DA82 – obrót do celu ataku (vt+0x1C z flagą broni), hamowanie v.
 
 /// Typ celu (kolejka celów, etap 21): rodzaj celu +5 – 1 miejsce (EEUGLocation), 2 jednostka (EEUGAttackUnit, etap 31).
-enum class TypCelu : std::uint8_t { brak = 0, miejsce = 1, jednostka = 2, leczenie = 3 };   // 3: EEUGHeal (etap 46; bajt rodzaju [N])
+enum class TypCelu : std::uint8_t { brak = 0, miejsce = 1, jednostka = 2, leczenie = 3, budowa = 4 };   // 4: EEUGBuildRepair (etap 50)   // 3: EEUGHeal (etap 46; bajt rodzaju [N])
 
 struct Punkt2 {
     double x = 0, y = 0;  // f32 przechowywane jako double
@@ -136,6 +136,9 @@ struct Jednostka {
     // (rekord SCN X, Y = +0x1C/+0x20) i kwadrat n × n („Square occupied”).
     bool budynek = false;
     int kwadrat = 1;
+    bool ukonczony = true;          // etap 50: budynek +0x340 – 0 w trakcie budowy, 1 po BuildingRepaired (0x60BD19) [P: 658]
+    int przyrost_budowy = 0;        // etap 50: HP budynku na sekundę pracy obywatela (RepairBuilding) [P: 658 – dom 37, obywatel 32: 15; wzór N]
+    double budowa_ms = 0.0;         // etap 50: akumulator ms w RepairBuilding (+15 HP po każdych pełnych 1000 ms) [P: 658]
     bool kolizyjny = true;          // +0x2D8 (0x5ED24B: typ +0x606 „Collidable” ≠ 0 i nie wyjątki) – uczestnik list kontaktów
     bool blokuje_pola = false;      // typ +0x600 – pola X..X+n−1 × Y..Y+n−1 nieprzejezdne, dopóki HP > 0
     std::uint32_t id_mapy = 0;      // identyfikator obiektu na listach pól (wejście grafu, WejscieRegionow)

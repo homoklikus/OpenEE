@@ -37,7 +37,16 @@ const NazwaNumer NAZWY[] = {
     {"ResourcesRotting", 6001},
     // etap 44/45: rejestracja nazw 0x618E11 (push numer, push nazwa) [W]
     {"FleeDanger", 8019},
-    {"MoveToRepairSite", 8018},
+    {"MoveToRepairSite", 8017},   // etap 50 [P: 658/659 – stan w 1. próbce po rozkazie budowy; wcześniej 8018 [N]]
+    // etap 50: citizen.tai – budowa [P: 658/659 – sekwencja 4017 → 4012 → 4002 → 4028 → 5000; W: rejestracja push numer,
+    // push nazwa]; 4013/4014/4030 tylko z rejestracji [W]
+    {"RepairBuilding", 4002},
+    {"WaitForBuildSiteToClear", 4012},
+    {"CheckBuildSiteVisibility", 4013},
+    {"CheckBuildSiteValidity", 4014},
+    {"CheckRepairSiteAccessibility", 4017},
+    {"TaskSmartCitizen", 4028},
+    {"InsufficientResources", 4030},
     // etap 46: Healer.tai (rejestracja 0x6194D3/0x619914/0x6195A8) [W]
     {"LookForHealee", 16000},
     {"HealUnit", 16001},
@@ -452,12 +461,72 @@ SkryptStanow SkryptStanow::wbudowany_budynek() {
     return s;
 }
 
+const char* tekst_obywatel_budowa() {
+    // Etap 50: część „Building & Repairing” citizen.tai (własny zapis przejść, kolejność jak w pliku gry) [W: plik .tai;
+    // P: 658/659 – ścieżka GetNextMoveWaypoint → TurnToUnitFacing → ReacquireGoal → CheckRepairSiteAccessibility →
+    // WaitForBuildSiteToClear → RepairBuilding → TaskSmartCitizen → Idle].
+    return R"TAI(
+CheckBuildSiteValidity {
+  allof(BuildingRepaired,GoalIsBuild,BuildQueueEmpty) true(TaskSmartCitizen)
+  anyof(BuildingDestroyed,BuildingRepaired) true(Idle)
+  BuildSiteValid true(Advance) false(CheckOwner)
+}
+CheckBuildSiteVisibility {
+  allof(BuildingRepaired,GoalIsBuild,BuildQueueEmpty) true(TaskSmartCitizen)
+  anyof(BuildingDestroyed,BuildingRepaired) true(Idle)
+  BuildSiteVisible true(CheckBuildSiteValidity) false(Advance)
+}
+CheckOwner {
+  OwnerIsHuman true(ConvertToLocationGoal)
+  OwnerIsComputer true(WaitForBuildSiteToClear)
+}
+CheckRepairSiteAccessibility {
+  allof(BuildingRepaired,GoalIsBuild,BuildQueueEmpty) true(TaskSmartCitizen)
+  anyof(BuildingDestroyed,BuildingRepaired) true(Idle)
+  RepairIsSpecialUnit true(ChangeTargetForSpecialRepair)
+  RepairSiteInRange false(Idle)
+  BuildSiteValid true(WaitForBuildSiteToClear) false(CheckOwner)
+  NextWaypointRetrieved false(PrepareToMove)
+}
+ConvertToLocationGoal { GoalIsLocation true(PrepareToMove) }
+MoveToRepairSite {
+  allof(BuildingRepaired,GoalIsBuild,BuildQueueEmpty) true(TaskSmartCitizen)
+  anyof(BuildingDestroyed,BuildingRepaired) true(Idle)
+  RepairSiteInRange false(PrepareToMove)
+  BuildSiteValid true(WaitForBuildSiteToClear) false(ConvertToLocationGoal)
+}
+ReacquireGoal { GoalIsRepairSite true(CheckRepairSiteAccessibility) }
+RepairBuilding {
+  allof(BuildingRepaired,GoalIsBuild,BuildQueueEmpty) true(TaskSmartCitizen)
+  anyof(BuildingRepaired,BuildingDestroyed) true(Idle)
+  anyof(CannotAffordRepair,BuildingNotPaidFor) true(InsufficientResources)
+  allof(TakingLightDamage,OwnerIsComputer) true(UnderAttack)
+}
+InsufficientResources { AlwaysTrue true(Idle) }
+ChangeTargetForSpecialRepair { AlwaysTrue true(MoveToRepairSite) }
+TaskSmartCitizen { SmartTaskNotAssigned true(Idle) }
+WaitForBuildSiteToClear {
+  allof(BuildingRepaired,GoalIsBuild,BuildQueueEmpty) true(TaskSmartCitizen)
+  anyof(BuildingRepaired,BuildingDestroyed) true(Idle)
+  RepairIsSpecialUnit true(ChangeTargetForSpecialRepair)
+  BuildSiteClear true(RepairBuilding)
+}
+GetNextMoveWaypoint {
+  allof(GoalIsRepairSite,NextWaypointRetrieved) true(CheckBuildSiteVisibility)
+}
+)TAI";
+}
+
 SkryptStanow SkryptStanow::wbudowany_obywatel() {
     // Etap 45 [W: citizen.tai – #include Gather.tai (Idle { TakingLightDamage true(FleeDanger) }), własne Idle
     // { BuildingInBuildQueue true(MoveToRepairSite); TakingLightDamage true(FleeDanger) }, potem Generic Attack /
     // Movement / Death jak land]. Własny zapis: skrypt ruchu i walki jak wbudowany_land, Idle w kolejności dołączeń.
     // Budowa i zbieranie surowców – poza Core (zdarzenia nieobsługiwane = fałsz).
-    SkryptStanow s = wbudowany_land();
+    SkryptStanow s;
+    {
+        std::string blad;
+        s.parsuj(std::string(tekst_obywatel_budowa()) + tekst_land(), nullptr, blad);   // etap 50: część budowy przed land
+    }
     auto& idle = s.stany_["Idle"];
     std::vector<Przejscie> nowe;
     nowe.push_back({Przejscie::Typ::pojedyncze, {"TakingLightDamage"}, "FleeDanger", ""});
@@ -465,7 +534,7 @@ SkryptStanow SkryptStanow::wbudowany_obywatel() {
     for (const auto& p : idle.przejscia) nowe.push_back(p);
     idle.przejscia = nowe;
     s.stany_["FleeDanger"] = StanSkryptu{"FleeDanger", 8019, {}};   // stan natywny – akcja wejścia EEUC vt+0x40
-    s.stany_["MoveToRepairSite"] = StanSkryptu{"MoveToRepairSite", 8018, {}};
+    if (!s.stany_.count("MoveToRepairSite")) s.stany_["MoveToRepairSite"] = StanSkryptu{"MoveToRepairSite", 8017, {}};
     return s;
 }
 
