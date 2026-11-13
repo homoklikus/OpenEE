@@ -85,6 +85,8 @@ Reszta algorytmu jest wspólna:
 **Druga różnica w filtrze** [W, nowa]: EE odrzuca parę, gdy (flagi_a XOR flagi_b) & 4 ≠ 0 (0x5E90D1). AoC używa maski
 0xC i dodatkowo odrzuca parę, gdy jednostka ma bit 8 i którakolwiek strona ma grupę typu 0x22 (0x5F69CA…0x5F69DF).
 Znaczenie bitu 8 i grupy 0x22 [N]; w pomiarach nie wystąpiły.
+[Uzupełnienie – Fable 2: maska 8 = typy kosmiczne (grupy 31–34, tylko AoC), grupa 0x22 = `Sp15 - Space Fighter`;
+`EKSPERYMENT_FABLE_DUZE_JEDNOSTKI.md` § 8 [W].]
 
 AoC 0x5FE611 ma też na końcu przełączenie animacji 2 ↔ 0xD (0x5FE6EC…0x5FE72F), którego EE w tym miejscu nie ma [W];
 bez związku z kontaktami.
@@ -190,6 +192,10 @@ samym stanie początkowym. Dalsza symulacja: gwardia kończy 0,20 pola dalej w o
 gwardię tym samym łukiem (do y ≈ 106,2) – także w AoC, gdy pary jeszcze nie było, więc objazd tarana nie wynika z
 listy kontaktów [P]; mechanizm [N] (prawdopodobnie gałąź dużych jednostek 0x548A3C [H]).
 
+**Korekta (eksperyment Fable 2):** hipoteza o 0x548A3C jest obalona. Objazd jest zapisany w trasie A\* już w chwili
+przyjęcia rozkazu (kara kosztu kroku 0x41CFFF / AoC 0x419595 za stojącą jednostkę na polu) [P], a 0x548A3C nie jest
+wołana dla pary taran–gwardia [W]. Patrz `EKSPERYMENT_FABLE_DUZE_JEDNOSTKI.md` § 3–4.
+
 Tor 856 → 858 (gwardia w środku pola): w AoC para powstała przy zmianie pola w osi y przy odległości 0,752, tuż
 przed progiem 0,75, więc push i końcowa pozycja gwardii (165,480; 109,313 / 109,303) wyszły prawie takie same.
 
@@ -241,8 +247,8 @@ rozmiarze 1,0 / 2,0 / 3,0. Dla piechoty wynik jest ten sam w obu trybach.
   (wysokość terenu z odczytu, nie z rekordu).
 - Rozmiar 2,0 i 3,0 (okręty) oraz 1,5 (przewidywanie: brak różnicy wzdłuż osi ruchu) – niezmierzone.
 - Kilka kontaktów naraz: kolejność listy i podział impulsów (tor D nie dał dwóch kontaktów jednocześnie).
-- Objazd tarana wokół stojącej jednostki bez pary kontaktu – mechanizm [N].
-- Znaczenie bitu 8 flag typu i grupy 0x22 w filtrze AoC [N].
+- Objazd tarana wokół stojącej jednostki bez pary kontaktu – mechanizm [N]. [Rozstrzygnięte w Fable 2: kara A\* [P].]
+- Znaczenie bitu 8 flag typu i grupy 0x22 w filtrze AoC [N]. [Rozstrzygnięte statycznie w Fable 2: typy kosmiczne AoC [W].]
 - Odtworzenie pary `_5` w Core po dodaniu parametrów tarana i gałęzi dużych jednostek.
 
 ## 12. Podsumowanie dla Opusa

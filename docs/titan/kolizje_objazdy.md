@@ -59,8 +59,12 @@ jeśli o stoi i (ro > ru albo o nieruchoma):  u.push −= 2·(px, py)      // od
 - Odpychanie jest **jednostronne**: u zmienia wektor push o. Symetrię daje to, że o przetwarza u przez własną listę.
   Wynik zależy od kolejności jednostek [W].
 - Wariant AoC różni się kolejnością sumowania w iloczynie skalarnym [W].
-- Jednostki o rozmiarze ≥ 1 przechodzą przez 0x548A3C (linie kursów, przecięcia, ustępowanie). Geometrię opisano
-  tylko na poziomie [H] i nie jest potrzebna dla piechoty.
+- **Poprawka (eksperyment Fable 2)** [W + P]: 0x548A3C (AoC 0x555247) jest wołana tylko wtedy, gdy **obie** strony
+  mają rozmiar ≥ 1,0, a o jest typem ruchomym (prędkość maksymalna > 0); para taran–gwardia i taran–dom idzie przez
+  0x549179. Funkcja bada proste kursów (przypadek „w linii” ≤ 5° albo przecięcie z |s|, |t| < 0,75) i poza tym
+  warunkiem nie robi nic; nie planuje objazdu – objazd stojącej jednostki pochodzi z kary A\* 0x41CFFF.
+  Szczegóły i pomiary: `EKSPERYMENT_FABLE_DUZE_JEDNOSTKI.md` § 3–6. [Zastąpione: „jednostki o rozmiarze ≥ 1
+  przechodzą przez 0x548A3C”.]
 
 **Zastosowanie** – 0x549A08 (AoC 0x556213) [W]:
 ```

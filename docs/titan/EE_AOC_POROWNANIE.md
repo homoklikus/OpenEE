@@ -53,7 +53,10 @@ mechanik, prędkość, kolizje), 30–32 (walka: przeładowanie, obrót, tablice
 | Pole bieżącej produkcji / licznik | +0x25C / +0x27C | +0x260 / +0x280 | ZMIENIONY (przesunięcie) | [W + P] |
 | Klasa jednostki – typ dbobjects | +0x4B8 | +0x1BC | ZMIENIONY (przesunięcie) | [P: etap 12] |
 | Odbudowa kontaktów przy zmianie pola | okno ±R od nowej pozycji (zapis macierzy, potem 0x5E8F0E) | okno od pozycji sprzed zapisu (0x5FE611 → 0x5F6817, potem zapis) | ZMIENIONY | [W + P: zadania 681–689, 7 nagrań – reguła gry 0 niezgodności list]; obserwowalne dla rozmiaru kolizji 1,0 (taran – każda zmiana pola, kontakt o pole później w AoC, inny push przy zderzeniu czołowym), nieobserwowalne dla rozmiaru < 1 przy zwykłym przejściu granicy pola; `EKSPERYMENT_FABLE_KOLIZJE.md` |
-| Filtr par kontaktu (flagi typu) | maska 4 | maska 0xC + wyjątek grupy typu 0x22 | ZMIENIONY [W] | EE 0x5E90D1, AoC 0x5F69CA; znaczenie [N], bez pomiaru |
+| Filtr par kontaktu (flagi typu) | maska 4 (morski / niemorski) | maska 0xC (dodatkowo kosmiczny / niekosmiczny) + wyjątek grupy typu 0x22 (`Sp15 - Space Fighter`, tylko AoC) | ZMIENIONY [W] | EE 0x5E90D1, AoC 0x5F69CA; flagi z grupy typu: EE 0x61CCEC, AoC 0x62FD1C (maska 8 = grupy 31–34, których nie ma w dbobjects EE); dla typów wspólnych wynik ten sam; bez pomiaru w grze – Fable 2 § 8 |
+| Kara A\* za stojącą jednostkę (objazd o pole) | 0x41CFFF: +50 / +150 | 0x419595: +50 / +150 | WSPÓLNY [P] | te same trasy w 8 parach nagrań (taran i gwardia wokół gwardii, tarana, domu); jednostki w ruchu nieomijane; Core zgodny 4299/4299 i 4329/4329 próbek – Fable 2 § 4, § 10 |
+| Wybór gałęzi kolizji (mała / duża) | pętla 0x5498C4; duża 0x548A3C (vt+0x40), morska 0x54F84C | pętla 0x5560CF; duża 0x555247 (vt+0x44), morska 0x55C1CB | WSPÓLNY [W] (kod instrukcja w instrukcję; indeks metody przesunięty o 1) | warunek: oba rozmiary ≥ 1,0 i o ruchomy; **skutek ZMIENIONY [P]**: w EE taran objeżdżający stojący taran odpycha go (0,026; −0,026), w AoC para powstaje za późno i reakcji nie ma (zad. 700/701) – konsekwencja okna kontaktów; Fable 2 § 6.4 |
+| Kolejność listy kontaktów | nowa para na początku | nowa para na początku | WSPÓLNY [P] | zad. 691/693, 696/697 – Fable 2 § 9 |
 | Przeładowanie | stałe | losowe [lo, hi] | ZMIENIONY | walka.md § 11 [P: 580/581] |
 | Narastanie przewijania krawędzią | brak | ~1 s | NIEZWERYFIKOWANY (możliwe ustawienie myszy) | POROWNANIE_MECHANIK § 2 |
 | Wybór płci produkowanego obywatela | 1074, 1074 | 1451, 1451, 1074, 1074, 1074 | NIEZWERYFIKOWANY (reguła [N]) | 677–679 |
@@ -96,9 +99,9 @@ Kolumna „dowody” – wersja, w której zebrano dowody ocen A/B/C: **EE**, **
 | 3 | Mapa i teren | EE+AoC [W: DLL obu] | NIEZWERYFIKOWANY (pomiary EE) |
 | 4 | Obiekty mapy | EE | NIEZWERYFIKOWANY |
 | 5 | Graf nawigacji | EE | NIEZWERYFIKOWANY |
-| 6 | Pathfinding | EE+AoC (444/445 EE, 454 AoC) | WSPÓLNY w zmierzonych przypadkach |
+| 6 | Pathfinding | EE+AoC (444/445 EE, 454 AoC; kara za stojącą jednostkę – Fable 2) | WSPÓLNY w zmierzonych przypadkach |
 | 7 | Fizyka ruchu | EE (AoC: prędkość etap 13) | NIEZWERYFIKOWANY poza prędkością |
-| 8 | Kolizje | EE (AoC: kontakty – eksperyment Fable) | ZMIENIONY [P] – okno list kontaktów (stara / nowa pozycja); odpychanie piechoty NIEZWERYFIKOWANY |
+| 8 | Kolizje | EE (AoC: kontakty – eksperymenty Fable 1 i 2) | ZMIENIONY [P] – okno list kontaktów (stara / nowa pozycja), także dla pary dużych jednostek; kolejność listy WSPÓLNA [P]; gałąź dużych jednostek – kod wspólny [W]; odpychanie piechoty NIEZWERYFIKOWANY |
 | 9 | Kolejka fizyki | EE | NIEZWERYFIKOWANY |
 | 10 | Maszyny stanów | EE | NIEZWERYFIKOWANY |
 | 11 | Cele i rozkazy | EE (+AoC 454) | NIEZWERYFIKOWANY |

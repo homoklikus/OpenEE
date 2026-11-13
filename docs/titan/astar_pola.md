@@ -214,15 +214,20 @@ Koszt kroku z pola (fx, fy) na pole (tx, ty):
    - nie jest jednostką szukającą;
    - ma typ z +0x606 ≠ 0;
    - nie jest wyłączona (vtable +0x58);
-   - nie należy do tej samej grupy (+0x1C8) przy prędkości (+0x244) ≥ 1,0;
+   - nie jest jednostką tej samej grupy (+0x1C8) o rozmiarze kolizji (+0x244) < 1,0 – mała jednostka własnej grupy
+     jest pomijana, duża nie;
    - ma bieżący cel w stanie 5000 albo 2001.
 
    Wysokość kary:
-   - +50, gdy prędkość < 1,0;
-   - +150, gdy prędkość ≥ 1,0, a rozmiar kolizji szukającego < 1,0;
+   - +50, gdy rozmiar kolizji przeszkody (+0x244) < 1,0;
+   - +150, gdy rozmiar przeszkody ≥ 1,0, a rozmiar kolizji szukającego (typ +0x474) < 1,0;
    - +50 w pozostałych przypadkach.
 
-   [W: kod; brak pomiaru]
+   [W: kod]. **Poprawka (eksperyment Fable 2):** pole jednostki +0x244 to rozmiar kolizji, nie prędkość [P: próbki
+   surowe – taran 1,0, gwardia 0,5]; wcześniejszy opis mówił o prędkości. Kara +50 jest **zmierzona** w EE i AoC:
+   trasa z A\* objeżdża stojącą gwardię, stojący taran i dom o jedno pole (10 + 50 + 10 = 70 wobec 14 + 14 = 28),
+   a jednostki w ruchu nie są omijane [P: `EKSPERYMENT_FABLE_DUZE_JEDNOSTKI.md` § 4]. Odpowiednik AoC: 0x419595
+   [W: ten sam układ instrukcji i stałych]. Kara +150 i pominięcie własnej grupy – bez pomiaru.
 4. **Duże jednostki.** Szukający o rozmiarze kolizji (typ +0x474) ≥ 1,0, z niezerowym polem +0x2DC i typem +0x617 = 0,
    sprawdza 4 pola wokół celu kroku (kierunki 4, 3, 1, 6 z 0x632E7C). Koszt jest podwajany, gdy któreś z tych pól:
    - jest zajęte (komórka +0x14);
@@ -289,6 +294,6 @@ Pomiary (zadania MCP 464–488) i porównanie z modelem: `astar_wyniki.md` § 7�
 
 1. Lista storage +0x20 i +0x1C, przeglądana przy szukaniu najbliższego węzła – w tej maszynie zawsze pusta? [N]
 2. Pełny warunek bramy (stan 15001, sojusz, 0x414BEA) [N].
-3. Kary za jednostki i podwojenie kosztu nie zostały zmierzone – teren testów był bez stojących obcych jednostek na
-   trasie, a gwardia ma rozmiar kolizji 0,5 [N].
+3. Podwojenie kosztu dla szukającego ≥ 1,0 i kara +150 nie zostały zmierzone [N]. Kara +50 za stojącą jednostkę –
+   zmierzona w eksperymencie Fable 2 (§ 6) [P]. [Zastąpione: „kary za jednostki nie zostały zmierzone”.]
 4. Kierunki 0x632E7C (numeracja 1, 3, 4, 6) [N].
