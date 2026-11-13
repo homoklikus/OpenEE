@@ -78,7 +78,12 @@ static func techtree(d: PackedByteArray) -> Array:
 			out.append({"nazwa": _napis(d, o), "seq": d.decode_s32(o + 100), "id": d.decode_s32(o + 104),
 				"start": d.decode_s32(o + 108), "koniec": d.decode_s32(o + 112), "event": d.decode_s32(o + 116),
 				"obiekt": d.decode_s32(o + 172), "typ": d.decode_s32(o + 188), "epoka": d.decode_s32(o + oe),
-				"grupa": grupa, "glowa_grupy": i == 0})
+				"grupa": grupa, "glowa_grupy": i == 0,
+				# etap 52 – koszt i czas (schemat EE DB Editor: pola 7 Wood, 8 Stone, 10 Gold, 12 Iron, 13 Food, 14 Build time,
+				# 21 Is object?; przesunięcia wspólne EE/AoC – pola 0–36 [P: dom 50/40/35000, koszary 225/45000, obywatel
+				# 50 żywności/28000 – zgodne z pomiarami 660/674/677/679]); koszt w kolejności zasobów Core (żywność … żelazo)
+				"koszt": [d.decode_s32(o + 148), d.decode_s32(o + 124), d.decode_s32(o + 128), d.decode_s32(o + 136),
+					d.decode_s32(o + 144)], "czas_ms": d.decode_s32(o + 152), "czy_obiekt": d.decode_s32(o + 180)})
 			o += R + 4 * nb
 		grupa += 1
 	return out

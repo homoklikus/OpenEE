@@ -2229,10 +2229,113 @@ int test_budynki() {
     return bledy ? FAIL : PASS;
 }
 
+// Etap 52 – produkcja jednostek w budynkach (docs/titan/produkcja.md): dopisanie z opłatą, start w tym samym takcie, licznik
+// −34 ms/takt, utworzenie na krawędzi budynku, natychmiastowy start następnej pozycji, limit populacji, zwrot przy
+// anulowaniu, losowania (EE 3 / AoC 1 przy utworzeniu). Dane: dbtechtree 1451/1074 (50 żywności, 28000 ms) [P: odczyt
+// bazy], pomiary AoC 677/678, EE 679 [P].
+int test_produkcja() {
+    auto tab = tablice_lub_skip();
+    if (!tab) return SKIP;
+    auto przygotuj = [&](WariantTitan w) {
+        auto sb = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27(), w);
+        ParametryWalki tc = dom_37();
+        tc.hp_max = 4000;
+        sb->dodaj_obiekt_budynku(1, 35, 14, 10, 2, 15.0, 11.0, 0.0, tc, 4000, true, 0x701, false);
+        sb->ustaw_zasoby(1, {1111, 1222, 1333, 1444, 1555});
+        sb->ustaw_populacje(1, 1, 100);
+        ParametryProdukcji p;
+        p.tech_id = 1451; p.typ_db = 480; p.koszt = {50, 0, 0, 0, 0}; p.czas_ms = 28000; p.mnoznik_czasu = 1.0; p.populacja = 1;
+        p.ruch.vmax = 0.5; p.ruch.rozmiar = 0.3; p.ruch.a = 1.2; p.ruch.c4 = 1.0 / 1.2;
+        p.walka = gwardia_ee(); p.hp = 25;
+        sb->ustaw_produkcje(p);
+        p.tech_id = 1074; p.typ_db = 32;
+        sb->ustaw_produkcje(p);
+        return sb;
+    };
+    auto losowania = [](std::uint32_t a, std::uint32_t b) {
+        for (int n = 0; n < 64; ++n) { if (a == b) return n; a = (214013u * a + 2531011u) & 0x7FFFFFFFu; }
+        return -1;
+    };
+    // 1. jedna pozycja (AoC 677 / EE 679 [P]): opłata i start w takcie rozkazu, 824 takty, jednostka na (X + r; Y − r)
+    for (WariantTitan w : {WariantTitan::ee(), WariantTitan::aoc()}) {
+        auto sb = przygotuj(w);
+        IdJednostki b = sb->jednostki().front().id;
+        const std::uint32_t r0 = sb->generator().stan();
+        const bool ok = sb->rozkaz_produkcji(b, 1451);
+        const int l_start = losowania(r0, sb->generator().stan());
+        const auto z = sb->zasoby(1);
+        const int ms0 = sb->jednostka(b)->prod_ms;
+        int takt_konca = -1, l_konca = -1;
+        for (int k = 1; k <= 900; ++k) {
+            const std::uint32_t ra = sb->generator().stan();
+            sb->takt();
+            if (!sb->nowe_jednostki().empty()) { takt_konca = k; l_konca = losowania(ra, sb->generator().stan()) - 2; break; }
+        }
+        const Jednostka* n = sb->nowe_jednostki().empty() ? nullptr : sb->jednostka(sb->nowe_jednostki()[0]);
+        std::printf("  %s: rozkaz %d, żywność %d, licznik %d, losowania startu %d, koniec w takcie %d (+%d los.), nowa (%.3f, %.3f) typ %d,"
+                    " m01 %.3f m11 %.3f, populacja %d, bieżąca %d\n", w.nazwa, int(ok), z[0], ms0, l_start, takt_konca, l_konca,
+                    n ? n->x : 0.0, n ? n->y : 0.0, n ? n->typ_db : -1, n ? n->orientacja.m01() : 0.0, n ? n->orientacja.m11() : 0.0,
+                    sb->populacja(1), sb->jednostka(b)->prod_biezaca);
+        sprawdz(ok && z[0] == 1061 && ms0 == 28000 && l_start == 1 && takt_konca == 824 && n && std::abs(n->x - 14.15) < 1e-5 &&
+                    std::abs(n->y - 9.85) < 1e-5 && n->typ_db == 480 && n->stan == 5000 && sb->populacja(1) == 2 &&
+                    sb->jednostka(b)->prod_biezaca == -1 && l_konca == w.losowania_utworzenia,
+                std::string(w.nazwa) + ": koszt przy rozkazie, start 28000, 824 takty, wyjście (X + r; Y − r), populacja +1, losowania (677/679)");
+    }
+    // 2. dwie pozycje (677 „dwa”, 679 [P]): druga opłacona od razu, czeka; po zakończeniu pierwszej start drugiej w tym
+    //    samym takcie (licznik 28000), druga jednostka o 2r dalej
+    {
+        auto sb = przygotuj(WariantTitan::ee());
+        IdJednostki b = sb->jednostki().front().id;
+        sb->rozkaz_produkcji(b, 1451);
+        sb->takt();
+        sb->rozkaz_produkcji(b, 1074);
+        const int zyw = sb->zasoby(1)[0];
+        const std::size_t kol = sb->jednostki().front().prod_kolejka.size();
+        std::vector<int> konce;
+        std::vector<std::pair<double, double>> poz;
+        int ms_po = -1;
+        for (int k = 2; k <= 1700; ++k) {
+            sb->takt();
+            for (IdJednostki id : sb->nowe_jednostki()) {
+                konce.push_back(k); poz.push_back({sb->jednostka(id)->x, sb->jednostka(id)->y});
+                if (konce.size() == 1) ms_po = sb->jednostka(b)->prod_ms;
+            }
+        }
+        std::printf("  dwie pozycje: żywność %d, kolejka %zu, końce", zyw, kol);
+        for (std::size_t i = 0; i < konce.size(); ++i) std::printf(" %d (%.3f, %.3f)", konce[i], poz[i].first, poz[i].second);
+        std::printf(", licznik po pierwszej %d\n", ms_po);
+        sprawdz(zyw == 1011 && kol == 1 && konce.size() == 2 && konce[0] == 824 && konce[1] == 1648 && ms_po == 28000 &&
+                    std::abs(poz[1].first - 14.45) < 1e-5 && std::abs(poz[1].second - 9.85) < 1e-5,
+                "druga pozycja: opłata przy rozkazie, start bez przerwy, wyjście o 2r dalej (677/679)");
+    }
+    // 3. brak zasobów (678 [P]) i limit populacji (0x563A25 [W]): odmowa bez zmian; pozycja opłacona czeka na miejsce
+    {
+        auto sb = przygotuj(WariantTitan::aoc());
+        IdJednostki b = sb->jednostki().front().id;
+        sb->ustaw_zasoby(1, {20, 20, 20, 20, 20});
+        const bool brak = sb->rozkaz_produkcji(b, 1451);
+        const bool bez_zmian = sb->zasoby(1) == std::array<int, 5>{20, 20, 20, 20, 20} && sb->jednostki().front().prod_kolejka.empty();
+        sb->ustaw_zasoby(1, {1111, 1222, 1333, 1444, 1555});
+        sb->ustaw_populacje(1, 101, 100);   // populacja = limit 101
+        const bool ok = sb->rozkaz_produkcji(b, 1451);
+        const bool czeka = sb->jednostka(b)->prod_biezaca == -1 && sb->jednostka(b)->prod_kolejka.size() == 1 && sb->zasoby(1)[0] == 1061;
+        sb->ustaw_populacje(1, 100, 100);
+        sb->takt();
+        const bool start = sb->jednostka(b)->prod_biezaca == 1451 && sb->jednostka(b)->prod_ms == 28000;
+        // anulowanie bieżącej (0x5FD8F3 [W]): zwrot 1,0, licznik 0
+        const bool an = sb->anuluj_produkcje(b, 0);
+        std::printf("  brak zasobów: %d (bez zmian %d); limit: rozkaz %d, czeka %d, start po zwolnieniu %d; anulowanie %d, żywność %d\n",
+                    int(brak), int(bez_zmian), int(ok), int(czeka), int(start), int(an), sb->zasoby(1)[0]);
+        sprawdz(!brak && bez_zmian && ok && czeka && start && an && sb->zasoby(1)[0] == 1111 && sb->jednostka(b)->prod_biezaca == -1,
+                "brak zasobów – odmowa (678); populacja = limit – pozycja czeka; anulowanie – pełny zwrot (0x5FD8F3)");
+    }
+    return bledy ? FAIL : PASS;
+}
+
 int main(int argc, char** argv) {
     const std::map<std::string, std::function<int()>> grupy = {
         {"trygonometria", test_trygonometria}, {"rng", test_rng}, {"teren", test_teren}, {"ruch", test_ruch},
-        {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka}, {"walka_swiat", test_walka_swiat}, {"morale", test_morale}, {"budynki", test_budynki},
+        {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka}, {"walka_swiat", test_walka_swiat}, {"morale", test_morale}, {"budynki", test_budynki}, {"produkcja", test_produkcja},
         {"podsystemy", test_podsystemy}};
     std::vector<std::string> wybrane;
     for (int i = 1; i < argc; ++i) wybrane.push_back(argv[i]);

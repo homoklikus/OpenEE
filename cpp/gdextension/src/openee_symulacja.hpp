@@ -82,6 +82,14 @@ public:
     int64_t dodaj_zrodlo(const godot::Dictionary& parametry);   // etap 51
     bool ustaw_magazyn(int64_t budynek, bool magazyn);
     bool rozkaz_zbierania(int64_t obywatel, int64_t zrodlo, double x, double y);
+    // etap 52 – produkcja jednostek
+    void ustaw_produkcje(const godot::Dictionary& d);
+    bool rozkaz_produkcji(int64_t budynek, int64_t tech_id);
+    bool anuluj_produkcje(int64_t budynek, int64_t indeks);
+    void ustaw_populacje(int64_t gracz, int64_t populacja, int64_t globalny, int64_t a, int64_t b);
+    int64_t populacja(int64_t gracz) const;
+    int64_t limit_populacji(int64_t gracz) const;
+    godot::Array nowe_jednostki() const;
     godot::Dictionary migawka_diagnostyczna(bool szczegoly) const;
     godot::Dictionary wejscie_regionow_z_mapy() const;
     godot::Dictionary wejscie_regionow_z_scn(const godot::Array& obiekty, const godot::Array& zestawy) const;

@@ -40,6 +40,7 @@ var _raport_p := {}
 var _budynki_dod: Array = []          # etap 47: budynki układu potyczki (spoza SCN) – obiekty Core z HP
 var _budynki_wejscie: Array = []      # te same budynki w formacie obiektów pól (wejście grafu)
 var _budynki_core := {}               # id Core budynku → id obiektu mapy
+var _nowe_z_produkcji: Array = []      # etap 52: [takt, id, typ, x, y] jednostek z produkcji
 var _gruz_znaczniki := {}             # etap 49: id gruzu Core → TYMCZASOWY znacznik diagnostyczny (brak legalnego modelu)
 var _typy_pol := {}                   # flagi typów obiektów pól z Core (+0x568, +0x600, +0x4B4, +0x612)
 
@@ -107,7 +108,9 @@ func _po_zbudowaniu() -> void:
 			for x in range(okno.y, okno.y + okno.z): l += "." if core.pole_przejezdne(x, y) else "#"
 			w.append("%d %s" % [y, l])
 		_raport_p["siatka_od_x"] = okno.y; _raport_p["siatka"] = w
-	if _arg("potyczka-demo", "") != "" and uklad.has("demo_e50"):
+	if _arg("potyczka-demo", "") != "" and uklad.has("demo_e52"):
+		await _demo_e52(float(_arg("potyczka-demo", "90")))
+	elif _arg("potyczka-demo", "") != "" and uklad.has("demo_e50"):
 		await _demo_e50(float(_arg("potyczka-demo", "60")))
 	elif _arg("potyczka-demo", "") != "" and uklad.has("demo_e47"):
 		await _demo_e47(float(_arg("potyczka-demo", "90")))
@@ -253,7 +256,7 @@ func nowa_bitwa() -> bool:
 		n += 1
 	# etap 47: budynki układu jako obiekty Core (HP, obrażenia, Dying, zapadanie się, zmiana mapy – wszystko w Core);
 	# Godot tylko rysuje model w pozycji i wysokości z Core
-	_budynki_core.clear()
+	_budynki_core.clear(); _nowe_z_produkcji.clear()
 	var id_bud := []   # etap 50: id Core budynków układu w kolejności pliku
 	for e in _budynki_dod:
 		var ob: Dictionary = _obiekty.get(int(e.typ), {})
@@ -287,6 +290,7 @@ func nowa_bitwa() -> bool:
 		var cit: int = id_jedn[int(r["obywatel"])]; var bud: int = id_bud[int(r["budynek"])]
 		core.ustaw_przyrost_budowy(cit, int(r.get("przyrost", 0)))
 		core.rozkaz_budowy(cit, bud)
+	_ustaw_produkcje(id_bud)   # etap 52: produkcja jednostek (typy z dbtechtree, rozkazy z układu)
 	core.uporzadkuj_wg_pozycji()   # etap 44: kolejność taktu jak kolejka fizyki EE po wczytaniu (Core)
 	var wb := widok.zbuduj(Zasoby)
 	var start_zle: Array = []          # kontrola danych układu: jednostka na polu nieprzejezdnym (Core)
@@ -322,6 +326,8 @@ func _usun_warstwy() -> void:
 
 ## Zdarzenia walki z Core (po każdym takcie): HUD, podświetlenie trafionego, liczniki. Kolejność = kolejność Core.
 func _po_takcie_walki(zd: Array) -> void:
+	if uklad.has("produkcja") and core.has_method("nowe_jednostki"):   # etap 52: jednostki z produkcji – rejestracja i model
+		for nid in core.nowe_jednostki(): _zarejestruj_nowa(int(nid))
 	for e in zd:
 		if e.typ != "walka": continue
 		var r := String(e.rodzaj)
@@ -645,6 +651,79 @@ func _demo_e50(sekundy: float) -> void:
 	przebieg["koniec"] = {"hp": int(core.jednostka(bud).get("hp", -1)), "ukonczony": core.jednostka(bud).get("ukonczony", null),
 		"stan_obywatela": int(core.jednostka(cit).stan), "graf": core.stan_grafu(), "takt": sym.takt}
 	_raport_p["demo_e50"] = przebieg
+	_koniec_automatu(0)
+
+
+# Etap 52 – produkcja jednostek (docs/titan/produkcja.md). Koszt, czas i obiekt pozycji z dbtechtree (EpokiDB), mnożnik
+# czasu i koszt populacji z danych (parametry_jednostek_ee.json → produkcja), parametry tworzonej jednostki z „typy” układu.
+# Rozkazy z układu (bez interfejsu produkcji): {"budynek": indeks w „budynki”, "tech": id, "ile": n}.
+func _ustaw_produkcje(id_bud: Array) -> void:
+	if not uklad.has("produkcja") or not core.has_method("ustaw_produkcje"): return
+	var pr: Dictionary = uklad["produkcja"]
+	var par: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://../dane/testy_walki/parametry_jednostek_ee.json"))
+	var tech := {}
+	var tt: Dictionary = Zasoby.znajdz("db/dbtechtree.dat")
+	for rt in EpokiDB.techtree(tt.get("dane", PackedByteArray())): tech[int(rt["id"])] = rt
+	var gl := int(uklad.get("gracz_lokalny", 1))
+	core.ustaw_zasoby(gl, pr.get("zasoby", [0, 0, 0, 0, 0]))
+	var pop: Array = pr.get("populacja", [0, 100])
+	core.ustaw_populacje(gl, int(pop[0]), int(pop[1]), 0, 0)
+	var info := {}
+	for r in pr.get("rozkazy", []):
+		var tid := int(r["tech"])
+		var rt: Dictionary = tech.get(tid, {})
+		if rt.is_empty():
+			ImporterEE.zglos("uwaga", "potyczka", "Brak technologii %d w dbtechtree" % tid); continue
+		var typ := str(int(rt["obiekt"]))
+		var td: Dictionary = uklad.get("typy", {}).get(typ, {})
+		if td.is_empty():
+			ImporterEE.zglos("uwaga", "potyczka", "Brak parametrów typu %s (produkcja %d)" % [typ, tid]); continue
+		var dp: Dictionary = par.get("produkcja", {}).get(str(tid), {})
+		core.ustaw_produkcje({"tech_id": tid, "typ_db": int(rt["obiekt"]), "koszt": rt["koszt"], "czas_ms": int(rt["czas_ms"]),
+			"mnoznik_czasu": float(dp.get("mnoznik_czasu", 1.0)), "populacja": int(dp.get("populacja", 1)), "ruch": td["ruch"],
+			"walka": td["walka"], "hp": int(td.get("hp", 1)),
+			"skrypt": String(_obiekty.get(int(typ), {}).get("TAI Script", ""))})
+		info[str(tid)] = {"nazwa": rt["nazwa"], "obiekt": int(rt["obiekt"]), "koszt": rt["koszt"], "czas_ms": int(rt["czas_ms"])}
+		for k in int(r.get("ile", 1)):
+			core.rozkaz_produkcji(int(id_bud[int(r["budynek"])]), tid)
+	_raport_p["produkcja_typy"] = info
+
+
+func _zarejestruj_nowa(id: int) -> void:
+	var j: Dictionary = core.jednostka(id)
+	var typ := int(j.get("typ_db", -1)); var g := int(j.get("gracz", int(uklad.get("gracz_lokalny", 1))))
+	var ob: Dictionary = _obiekty.get(typ, {})
+	sym.zarejestruj(id, g, typ, maxf(0.15, float(ob.get("Circle selection size", 0.25))), String(ob.get("Name", "")))
+	var gid := grafika_obiektu(typ, g)
+	var gr: Dictionary = _grafiki.get(gid, {})
+	if not gr.is_empty() and String(gr.get("Model path", "")) != "":
+		var skala := float(ob.get("Graphic size", 1.0)); if skala <= 0: skala = 1.0
+		widok.dodaj(id, String(gr["Model path"]).to_lower().replace("\\", "/") + ".cem",
+			String(gr.get("Texture path", "")).to_lower().replace("\\", "/"), _kolor_gracza(g), skala, SekwencjeAnimacji.z_rekordu(gr))
+		widok.ustaw_grafike_id(id, gid)
+		if widok.has_method("zbuduj"): widok.zbuduj(Zasoby)
+	_nowe_z_produkcji.append([sym.takt, id, typ, snappedf(float(j.get("x", 0)), 0.001), snappedf(float(j.get("y", 0)), 0.001)])
+
+
+func _demo_e52(sekundy: float) -> void:
+	var kat := _arg("potyczka-zrzuty", "")
+	if kat != "": DirAccess.make_dir_recursive_absolute(kat)
+	var bud := -1
+	for bid in _budynki_core: bud = int(bid)
+	var gl := int(uklad.get("gracz_lokalny", 1))
+	var przebieg := {"budynek": bud, "kroki": [], "co_sekunde": []}
+	var cel := int(uklad.get("demo_e52", {}).get("jednostek", 2))
+	var t := 0.0; var nr := 0
+	while t < sekundy and _nowe_z_produkcji.size() < cel:
+		await _czekaj(1.0, kat if nr % 10 == 0 else "", "e52_produkcja_%02d" % nr, przebieg)
+		var jb: Dictionary = core.jednostka(bud)
+		przebieg.co_sekunde.append([sym.takt, int(jb.get("prod_biezaca", -1)), int(jb.get("prod_ms", 0)), int(jb.get("prod_kolejka_n", 0)),
+			core.zasoby(gl), int(core.populacja(gl))])
+		t += 1.0; nr += 1
+	await _czekaj(1.0, kat, "e52_produkcja_koniec", przebieg)
+	przebieg["nowe"] = _nowe_z_produkcji
+	przebieg["koniec"] = {"zasoby": core.zasoby(gl), "populacja": core.populacja(gl), "limit": core.limit_populacji(gl), "takt": sym.takt}
+	_raport_p["demo_e52"] = przebieg
 	_koniec_automatu(0)
 
 

@@ -167,3 +167,12 @@ przechodzą do Idle w tym samym takcie; n = 0.
 `ParametryWalki` (`czas_budowy_ms` = K, `czas_budowy_s` = m, `tempo_budowy_ms` = BR) z `parametry_jednostek_ee.json`
 (`budowa_typow`). `Swiat::oplac` – koszt przy fundamencie i odmowa bez zmian. Zgodność: 658 ×2, 659, 660, 674 – w
 całości; 663 – budowniczy B od t = 58465 (kurs przy skręcie za punktem pośrednim, 0,03 rad), A od 77216 (koniec).
+
+## 7. Etap 52 – dane z dbtechtree
+
+Koszt i czas budowy leżą w `dbtechtree` (schemat EE DB Editor: pola 7–14): b House (1069) – 50 drewna, 40 kamienia,
+Build time 35000; b Barracks (1071) – 225 drewna, 45000; identycznie w EE i AoC [P: odczyt]. To potwierdza wartości
+zmierzone w etapie 51 (opłata 660/674, K z +0x27C). Importery (`EpokiDB.techtree`, `epoki.py`) zwracają pola `koszt` i
+`czas_ms`. Odtworzenia budowy nadal biorą K i koszt z `budowa_typow` (ten sam wynik) – przełączenie na bazę: etap 53.
+Budowy w AoC dotąd nie mierzono (`EE_AOC_POROWNANIE.md` § 7).
+

@@ -143,6 +143,7 @@ func _testy() -> void:
 	_test_etapu49(dll)
 	_test_etapu50(dll)
 	_test_etapu51(dll)
+	_test_etapu52(dll)
 	_koniec()
 
 
@@ -1076,7 +1077,7 @@ func _test_etapu51(dll: String) -> void:
 	var c: Object = CoreCpp.nowa_symulacja()
 	if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
 	c.utworz_swiat("ee")
-	_wynik("wersja Core – etap 51", str(c.wersja()).contains("etap 51"), c.wersja())
+	_wynik("wersja Core – etap 51 lub nowszy", str(c.wersja()).contains("etap 5"), c.wersja())
 	var p := {"a": 1.2, "vmax": 0.5, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.83333, "c8": 0.08185, "t488": 0.5}
 	var ids := []
 	for xy in [[11.65, 12.46], [13.5, 12.5]]:
@@ -1126,3 +1127,52 @@ func _test_etapu51(dll: String) -> void:
 		if int(c2.zasoby(1)[1]) == 1237: break
 	_wynik("zbieranie: 15 drewna niesione i oddane w magazynie, drzewo 385", niesie_maks == 15 and int(c2.zasoby(1)[1]) == 1237
 		and int(c2.jednostka(drz).get("ilosc_40", -1)) == 385, "zasoby %s, drzewo %d" % [str(c2.zasoby(1)), int(c2.jednostka(drz).get("ilosc_40", -1))])
+
+
+# Etap 52 – produkcja jednostek w budynkach (docs/titan/produkcja.md): koszt przy rozkazie, start w tym samym takcie,
+# 824 takty (28000 ms / 34 ms), wyjście na krawędzi budynku, populacja, limit, anulowanie, wariant losowań (EE 3 / AoC 1).
+func _test_etapu52(dll: String) -> void:
+	var p := {"a": 1.2, "vmax": 0.5, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.83333, "c8": 0.08185, "t488": 0.5}
+	var tc := {"gracz": 1, "typ": 35, "X": 14, "Y": 10, "kwadrat": 2, "x": 15.0, "y": 11.0, "z": 0.0, "hp": 4000, "hp_max": 4000,
+		"pole_widzenia": 2.0, "rozmiar": 1.0, "typ_jednostki": 2, "typ_bazy": 35, "id_mapy": "0x701"}
+	var wyniki := {}
+	for war in ["ee", "aoc"]:
+		var c: Object = CoreCpp.nowa_symulacja()
+		if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+		c.utworz_swiat(war)
+		if war == "ee": _wynik("wersja Core – etap 52", str(c.wersja()).contains("etap 52"), c.wersja())
+		var b: int = c.dodaj_budynek(tc)
+		c.ustaw_zasoby(1, [1111, 1222, 1333, 1444, 1555])
+		c.ustaw_populacje(1, 1, 100, 0, 0)
+		c.ustaw_produkcje({"tech_id": 1451, "typ_db": 480, "koszt": [50, 0, 0, 0, 0], "czas_ms": 28000, "mnoznik_czasu": 1.0,
+			"populacja": 1, "ruch": p, "walka": {"pole_widzenia": 3.0, "rozmiar": 0.3, "typ_bazy": 480}, "hp": 65, "skrypt": "Citizen"})
+		var ok: bool = c.rozkaz_produkcji(b, 1451)
+		var j0: Dictionary = c.jednostka(b)
+		var takt_konca := -1; var nowa := {}
+		for k in range(1, 900):
+			c.takt(1)
+			var nw: Array = c.nowe_jednostki()
+			if not nw.is_empty(): takt_konca = k; nowa = c.jednostka(int(nw[0])); break
+		wyniki[war] = [ok, c.zasoby(1)[0], int(j0.get("prod_ms", -1)), takt_konca, snappedf(float(nowa.get("x", 0)), 0.001),
+			snappedf(float(nowa.get("y", 0)), 0.001), int(nowa.get("typ_db", -1)), int(c.populacja(1)), int(c.limit_populacji(1))]
+	var w: Array = wyniki["ee"]
+	_wynik("produkcja: koszt przy rozkazie, licznik 28000, 824 takty, wyjście (14,15; 9,85), populacja 2, limit 101",
+		w[0] and w[1] == 1061 and w[2] == 28000 and w[3] == 824 and w[4] == 14.15 and w[5] == 9.85 and w[6] == 480 and w[7] == 2
+		and w[8] == 101, JSON.stringify(wyniki))
+	_wynik("produkcja AoC – ten sam przebieg co EE (czas, miejsce, populacja)", wyniki["aoc"] == wyniki["ee"], JSON.stringify(wyniki["aoc"]))
+	# brak zasobów i anulowanie
+	var c3: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c3.zaladuj_tablice(dll)["ok"]: c3.uzyj_tablic_przyblizonych()
+	c3.utworz_swiat("aoc")
+	var b3: int = c3.dodaj_budynek(tc)
+	c3.ustaw_populacje(1, 1, 100, 0, 0)
+	c3.ustaw_produkcje({"tech_id": 1074, "typ_db": 32, "koszt": [50, 0, 0, 0, 0], "czas_ms": 28000, "ruch": p, "hp": 65})
+	c3.ustaw_zasoby(1, [20, 20, 20, 20, 20])
+	var brak: bool = c3.rozkaz_produkcji(b3, 1074)
+	c3.ustaw_zasoby(1, [1111, 1222, 1333, 1444, 1555])
+	c3.rozkaz_produkcji(b3, 1074); c3.rozkaz_produkcji(b3, 1074)
+	var kol := int(c3.jednostka(b3).get("prod_kolejka_n", -1))
+	var an1: bool = c3.anuluj_produkcje(b3, 1)
+	var an0: bool = c3.anuluj_produkcje(b3, 0)
+	_wynik("produkcja: brak zasobów – odmowa; anulowanie kolejki i bieżącej – pełny zwrot", not brak and kol == 1 and an1 and an0
+		and c3.zasoby(1) == [1111, 1222, 1333, 1444, 1555] and int(c3.jednostka(b3).get("prod_biezaca", 0)) == -1, JSON.stringify(c3.zasoby(1)))

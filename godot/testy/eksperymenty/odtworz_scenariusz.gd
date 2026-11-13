@@ -56,7 +56,7 @@ func _start() -> void:
 	var dll := CoreCpp.znajdz_dll("ee", root.get_node("Konfiguracja"))
 	if dll == "" or not c.zaladuj_tablice(dll)["ok"]:
 		print("BŁĄD: brak Low-Level Engine.dll"); quit(1); return
-	c.utworz_swiat_na_mapie("ee", PackedByteArray(par["dozwolone_teren"]))
+	c.utworz_swiat_na_mapie(_arg("wariant", "ee"), PackedByteArray(par["dozwolone_teren"]))   # etap 52: --wariant=aoc
 	var tr := {}
 	for tab in par["tablice_walki"]["trafienie"]:
 		tr[tab] = {}
@@ -154,6 +154,24 @@ func _start() -> void:
 			c.ustaw_magazyn(core_id[gid], true)
 	for g in opis.get("zasoby_startowe", {}):
 		c.ustaw_zasoby(int(g), opis["zasoby_startowe"][g])
+	# etap 52: produkcja – typy z dbtechtree (koszt, czas, obiekt; EpokiDB) + mnożnik i koszt populacji z danych,
+	# parametry ruchu/walki tworzonej jednostki z typu obiektu; populacja i limit gracza z nagrania
+	if opis.has("produkcja"):
+		var tt: Dictionary = Z.znajdz("db/dbtechtree.dat")
+		var tech := {}
+		for rt in EpokiDB.techtree(tt.get("dane", PackedByteArray())): tech[int(rt["id"])] = rt
+		for tid in opis["produkcja"]:
+			var rt: Dictionary = tech.get(int(tid), {})
+			if rt.is_empty(): print("BŁĄD: brak technologii ", tid, " w dbtechtree"); quit(1); return
+			var typ := str(int(rt["obiekt"]))
+			var dp: Dictionary = par.get("produkcja", {}).get(str(tid), {})
+			c.ustaw_produkcje({"tech_id": int(tid), "typ_db": int(rt["obiekt"]), "koszt": rt["koszt"], "czas_ms": int(rt["czas_ms"]),
+				"mnoznik_czasu": float(dp.get("mnoznik_czasu", 1.0)), "populacja": int(dp.get("populacja", 1)),
+				"ruch": par["ruch"][typ], "walka": par["walka"][typ]["p"], "hp": int(par["walka"][typ]["hp"]),
+				"skrypt": String(ob.get(int(typ), {}).get("TAI Script", ""))})
+	for g in opis.get("populacja", {}):
+		var pp: Array = opis["populacja"][g]
+		c.ustaw_populacje(int(g), int(pp[0]), int(pp[1]), 0, 0)
 	if kol == "pozycja": c.uporzadkuj_wg_pozycji()   # etap 44: kolejka fizyki po wczytaniu (Core)
 	if _arg("kontakty-wczytanie", "0") == "1": c.odbuduj_kontakty_wszystkich()   # etap 49: kolejność tworzenia = lista
 	var T0 := float(opis["T0"])
@@ -193,7 +211,7 @@ func _start() -> void:
 		for r in rozkazy.get(k, []):
 			var kto: int = core_id[str(r["kto"])]
 			var w
-			if r["rodzaj"] == "budowa" or r["rodzaj"] == "zbieranie":   # etap 50/51: wykonanie po takcie (niżej)
+			if r["rodzaj"] == "budowa" or r["rodzaj"] == "zbieranie" or r["rodzaj"] == "produkcja":   # etap 50–52: po takcie
 				po_takcie.append(r); continue
 			if r["rodzaj"] == "atak": w = c.rozkaz_ataku(kto, core_id[str(r["cel"])])
 			else: w = c.rozkaz_ruchu(kto, float(r["x"]), float(r["y"]), float(r["kat"]) if r.get("kat") != null else null, false)
@@ -207,6 +225,10 @@ func _start() -> void:
 		for r in po_takcie:
 			var kto: int = core_id[str(r["kto"])]
 			var w
+			if r["rodzaj"] == "produkcja":   # etap 52: koszt i start w próbce kliknięcia [P: 677/679]
+				w = c.rozkaz_produkcji(kto, int(r["tech"]))
+				wynik.rozkazy.append([k, str(r["kto"]), "produkcja", w])
+				continue
 			if r["rodzaj"] == "zbieranie":   # etap 51: PPM na źródle – MoveToResource 8008 w próbce kliknięcia [P: 673]
 				w = c.rozkaz_zbierania(kto, core_id[str(r["zrodla"][0])], float(r["x"]), float(r["y"]))
 				wynik.rozkazy.append([k, str(r["kto"]), "zbieranie", w])
@@ -251,6 +273,19 @@ func _start() -> void:
 			for zg in zrodla_id: pr["zrodla"][zg] = [int(c.jednostka(zrodla_id[zg]).get("hp", -1)), int(c.jednostka(zrodla_id[zg]).get("ilosc_40", -1))]
 			for gid2 in core_id:
 				if int(gid2.hex_to_int()) >> 24 == 1: pr["niesie_" + gid2] = int(c.jednostka(core_id[gid2]).get("ilosc_40", 0))
+		if opis.has("produkcja"):   # etap 52: bieżąca pozycja, licznik, kolejka budynków; populacja; nowe jednostki
+			for gid3 in core_id:
+				var jb: Dictionary = c.jednostka(core_id[gid3])
+				if int(jb.get("prod_biezaca", -1)) >= 0 or int(jb.get("prod_kolejka_n", 0)) > 0 or opis.get("budynki_produkcji", []).has(gid3):
+					pr["prod_" + gid3] = [int(jb.get("prod_biezaca", -1)), int(jb.get("prod_ms", 0)), int(jb.get("prod_kolejka_n", 0))]
+			pr["populacja"] = c.populacja(1)
+			for nid in c.nowe_jednostki():
+				var nj: Dictionary = c.jednostka(int(nid))
+				var kurs_n := 0.0
+				for d2 in c.stan_jednostek():
+					if int(d2.id) == int(nid): kurs_n = float(d2.kurs)
+				if not wynik.has("nowe"): wynik["nowe"] = []
+				wynik["nowe"].append([snappedf(T0 + TAKT_MS * (k + 1), 0.1), int(nj.get("typ_db", -1)), float(nj.get("x", 0)), float(nj.get("y", 0)), kurs_n])
 		if _arg("graf-scn", "0") == "1":   # etap 47: menedżer przebudowy (termin, flaga, zmienione sektory) i kolejka fizyki
 			var sg: Dictionary = c.stan_grafu()
 			pr["graf"] = [int(sg["d4"]), bool(sg["d8"]), int(sg["zmienione_sektory"]), int(sg["przebudowy_sektorow"]), int(sg["maks_id"])]

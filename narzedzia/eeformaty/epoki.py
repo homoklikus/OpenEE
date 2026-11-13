@@ -81,6 +81,8 @@ def techtree(d):
                           "event": v[4], "obiekt": v[18], "typ": v[22],
                           "epoka": struct.unpack_from("<i", d, o + f["epoka"])[0], "grupa": grupa,
                           "glowa_grupy": i == 0,
+                          # etap 52: koszt (żywność, drewno, kamień, złoto, żelazo – pola 13, 7, 8, 10, 12) i „Build time” (14)
+                          "koszt": [v[12], v[6], v[7], v[9], v[11]], "czas_ms": v[13], "czy_obiekt": v[19],
                           "budowniczowie": list(struct.unpack_from("<%di" % nb, d, o + f["rekord"]))})
             o += f["rekord"] + 4 * nb
         grupa += 1

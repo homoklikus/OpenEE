@@ -273,12 +273,91 @@ def podsumowanie(core, wynik):
           + f"; graf autonomiczny: {graf}")
 
 
+# Etap 52: produkcja w budynku – przesunięcia pól wg kompilacji [W: AoC 0x5F5F97/0x6394CD, EE 0x5E8908/0x624DF8; P: 677/679]
+PRODUKCJA_POLA = {'aoc': {'biezaca': 0x260, 'pozostalo': 0x280, 'pozycja_b': 8, 'zywnosc': 0xAFC, 'populacja': 0xB14},
+                  'ee': {'biezaca': 0x25C, 'pozostalo': 0x27C, 'pozycja_b': 4, 'zywnosc': 0xAF8, 'populacja': 0xB10}}
+BRAK_TECH = 100000
+
+
+def stan_produkcji(d, budynek, gracz_od=0xA00):
+    """Etap 52: z nagrania (surowe bajty budynku 0…0x700 i gracza od `gracz_od`) – lista (t, bieżąca, licznik, kolejka,
+    zasoby[5], populacja) dla każdej próbki."""
+    P = PRODUKCJA_POLA[d.get('wariant', 'ee')]
+    out = []
+    for p in d['probki']:
+        b = base64.b64decode(p[budynek]['surowe']['0x0']); g = base64.b64decode(p['gracze']['1'])
+        od, do = struct.unpack_from('<ii', b, 0x4C)
+        cur = struct.unpack_from('<i', b, P['biezaca'])[0]
+        out.append((p['t'], -1 if cur == BRAK_TECH else cur, struct.unpack_from('<i', b, P['pozostalo'])[0],
+                    (do - od) // P['pozycja_b'] if od else 0, list(struct.unpack_from('<5i', g, P['zywnosc'] - gracz_od)),
+                    struct.unpack_from('<i', g, P['populacja'] - gracz_od)[0]))
+    return out
+
+
+def opis_produkcji(nagr, uklad, wyj, globalny=100):
+    """Etap 52: rozkazy produkcji z nagrania – próbka spadku zasobów (opłata przy rozkazie [P: 677/679]) = próbka
+    kliknięcia; technologia pozycji z kolejności startów (kolejka FIFO [W]); populacja startowa z próbki, składnik
+    globalny limitu z odczytu gry (produkcja_odczyt: 100 [P: 678/679])."""
+    d = json.load(open(nagr)); u = json.load(open(uklad))
+    nazwy = {gid: g for g, v in u['grupy'].items() for gid in v['id']}
+    budynek = next(g for g in d['jednostki'] if d['probki'][0][g]['typ'] in (35, 41, 721))
+    st = stan_produkcji(d, budynek)
+    seria = _seria(d)
+    T0 = seria[0]['t']
+    jedn = []
+    for gid in d['jednostki']:
+        q = seria[0][gid]
+        jedn.append({'id': gid, 'nazwa': nazwy.get(gid, gid), 'typ': q['typ'], 'gracz': int(gid, 16) >> 24, 'x': q['x'],
+                     'y': q['y'], 'z': q['z'], 'kurs': math.atan2(-q['m01'], q['m11']), 'hp': q['hp']})
+    starty = [st[i][1] for i in range(1, len(st)) if st[i][1] >= 0 and (st[i][1] != st[i - 1][1] or st[i][2] > st[i - 1][2])]
+    rozkazy = []
+    for i in range(1, len(st)):
+        spadek = st[i - 1][4][0] - st[i][4][0]
+        for _ in range(max(0, spadek // 50)):   # koszt obywatela – 50 żywności (dbtechtree 1074/1451)
+            rozkazy.append({'t_przed': st[i - 1][0], 'kto': budynek, 't_proby': st[i][0], 'rodzaj': 'produkcja'})
+    for r, tech in zip(rozkazy, starty):
+        r['tech'] = tech
+    rozkazy = [r for r in rozkazy if 'tech' in r]
+    o = {'nagranie': nagr.split('/')[-1], 'wariant': d.get('wariant', 'ee'), 'T0': T0, 'takt_ms': TAKT_MS, 'jednostki': jedn,
+         'rozkazy': rozkazy, 'koniec_t': seria[-1]['t'], 'zasoby_startowe': {'1': st[0][4]},
+         'populacja': {'1': [st[0][5], int(globalny)]}, 'produkcja': sorted(set(starty)), 'budynki_produkcji': [budynek]}
+    json.dump(o, open(wyj, 'w'), indent=1)
+    json.dump({'probki': seria, 'produkcja': {budynek: st}}, open(wyj.replace('.json', '') + '.seria.json', 'w'))
+    print(json.dumps({k: v for k, v in o.items() if k != 'jednostki'}, ensure_ascii=False)[:900])
+
+
+def porownaj_produkcje(ser_p, core_p):
+    """Etap 52: próbka po próbce – bieżąca pozycja, licznik, długość kolejki, zasoby i populacja (gra / Core);
+    pierwsza rozbieżność i liczba zgodnych próbek; nowe jednostki Core (czas, typ, pozycja, kurs)."""
+    ser = json.load(open(ser_p)); core = json.load(open(core_p))
+    ct = [p[1] for p in core['probki']]
+    zg = n = 0; pierwsza = None
+    for gid, st in ser['produkcja'].items():
+        for (t, cur, ms, kol, zas, pop) in st:
+            i = bisect.bisect_right(ct, t + 16.0) - 1
+            if i < 0 or abs(ct[i] - t) > 16.0:
+                continue
+            pc = core['probki'][i][2]
+            c = pc.get('prod_' + gid, [-1, 0, 0])
+            g_ = (cur, ms if cur >= 0 else 0, kol, zas, pop); k_ = (c[0], c[1] if c[0] >= 0 else 0, c[2], pc.get('zasoby'), pc.get('populacja'))
+            n += 1
+            if g_ == k_: zg += 1
+            elif pierwsza is None: pierwsza = (t, g_, k_)
+    print(f"produkcja: zgodne {zg}/{n}; pierwsza rozbieżność: {pierwsza}")
+    print("nowe jednostki Core (t, typ, x, y, kurs):", core.get('nowe', []))
+    return zg, n, pierwsza
+
+
 if __name__ == '__main__':
     a = sys.argv[1:]
     if a and a[0] == 'opis':
         opis(a[1], a[2], a[3])
     elif a and a[0] == 'opis_zbierania':
         opis_zbierania(a[1], a[2], a[3], a[4] if len(a) > 4 else None)
+    elif a and a[0] == 'opis_produkcji':
+        opis_produkcji(a[1], a[2], a[3], int(a[4]) if len(a) > 4 else 100)
+    elif a and a[0] == 'porownaj_produkcje':
+        porownaj_produkcje(a[1], a[2])
     elif a and a[0] == 'opis_budowy':
         opis_budowy(a[1], a[2], a[3], a[4])
     elif a and a[0] == 'porownaj':

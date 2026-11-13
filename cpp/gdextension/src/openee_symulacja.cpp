@@ -79,6 +79,14 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("dodaj_zrodlo", "parametry"), &OpenEESymulacja::dodaj_zrodlo);
     ClassDB::bind_method(D_METHOD("ustaw_magazyn", "budynek", "magazyn"), &OpenEESymulacja::ustaw_magazyn);
     ClassDB::bind_method(D_METHOD("rozkaz_zbierania", "obywatel", "zrodlo", "x", "y"), &OpenEESymulacja::rozkaz_zbierania);
+    // etap 52 – produkcja jednostek w budynkach
+    ClassDB::bind_method(D_METHOD("ustaw_produkcje", "parametry"), &OpenEESymulacja::ustaw_produkcje);
+    ClassDB::bind_method(D_METHOD("rozkaz_produkcji", "budynek", "tech_id"), &OpenEESymulacja::rozkaz_produkcji);
+    ClassDB::bind_method(D_METHOD("anuluj_produkcje", "budynek", "indeks"), &OpenEESymulacja::anuluj_produkcje);
+    ClassDB::bind_method(D_METHOD("ustaw_populacje", "gracz", "populacja", "globalny", "a", "b"), &OpenEESymulacja::ustaw_populacje);
+    ClassDB::bind_method(D_METHOD("populacja", "gracz"), &OpenEESymulacja::populacja);
+    ClassDB::bind_method(D_METHOD("limit_populacji", "gracz"), &OpenEESymulacja::limit_populacji);
+    ClassDB::bind_method(D_METHOD("nowe_jednostki"), &OpenEESymulacja::nowe_jednostki);
     ClassDB::bind_method(D_METHOD("usun_obiekt_mapy", "id"), &OpenEESymulacja::usun_obiekt_mapy);
     ClassDB::bind_method(D_METHOD("migawka_diagnostyczna", "szczegoly"), &OpenEESymulacja::migawka_diagnostyczna, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("ustaw_faze_leczenia", "id", "takty"), &OpenEESymulacja::ustaw_faze_leczenia);
@@ -93,7 +101,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.24.0 (etap 51, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.25.0 (etap 52, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -134,8 +142,7 @@ bool OpenEESymulacja::utworz_swiat(const String& wariant) {
     return true;
 }
 
-int64_t OpenEESymulacja::dodaj_jednostke(const Dictionary& p, double x, double y, double kurs) {
-    if (!swiat_) return 0;
+static openee::ParametryRuchu parametry_ruchu_z(const Dictionary& p) {
     openee::ParametryRuchu r;
     r.a = liczba(p, "a", r.a);
     r.vmax = liczba(p, "vmax", r.vmax);
@@ -150,6 +157,12 @@ int64_t OpenEESymulacja::dodaj_jednostke(const Dictionary& p, double x, double y
     r.c8 = liczba(p, "c8", r.c8);
     r.t488 = liczba(p, "t488", r.t488);
     r.pochyla = p.has("pochyla") ? bool(p["pochyla"]) : false;
+    return r;
+}
+
+int64_t OpenEESymulacja::dodaj_jednostke(const Dictionary& p, double x, double y, double kurs) {
+    if (!swiat_) return 0;
+    const openee::ParametryRuchu r = parametry_ruchu_z(p);
     return int64_t(swiat_->dodaj_jednostke(r, x, y, kurs));
 }
 
@@ -247,7 +260,11 @@ Dictionary OpenEESymulacja::jednostka(int64_t id) const {
     d["budynek"] = u->budynek;   // etap 47
     d["ukonczony"] = u->ukonczony;   // etap 50: +0x340
     d["budowniczowie"] = u->budowniczowie;   // etap 51: +0x274
-    d["ilosc_40"] = u->ilosc_40;             // etap 51: niesiony surowiec / ilość w źródle (+0x40)
+    d["ilosc_40"] = u->ilosc_40;
+    d["prod_biezaca"] = u->prod_biezaca;     // etap 52: bieżąca pozycja produkcji (−1 = brak), licznik ms, długość kolejki
+    d["prod_ms"] = u->prod_ms;
+    d["prod_kolejka_n"] = int64_t(u->prod_kolejka.size());
+    d["typ_db"] = u->typ_db;             // etap 51: niesiony surowiec / ilość w źródle (+0x40)
     d["magazyn_id"] = int64_t(u->magazyn_id);
     d["w_fizyce"] = u->w_fizyce;
     if (u->budynek) {
@@ -489,6 +506,35 @@ Array OpenEESymulacja::zasoby(int64_t gracz) const {
 }
 
 bool OpenEESymulacja::oplac(int64_t gracz, const Array& koszt) { return swiat_ && swiat_->oplac(int(gracz), tablica5(koszt)); }
+
+// etap 52 – produkcja (docs/titan/produkcja.md)
+void OpenEESymulacja::ustaw_produkcje(const Dictionary& d) {
+    if (!swiat_) return;
+    openee::ParametryProdukcji p;
+    p.tech_id = int(liczba(d, "tech_id", -1));
+    p.typ_db = int(liczba(d, "typ_db", -1));
+    if (d.has("koszt")) p.koszt = tablica5(Array(d["koszt"]));
+    p.czas_ms = int(liczba(d, "czas_ms", 0));
+    p.mnoznik_czasu = liczba(d, "mnoznik_czasu", 1.0);
+    p.populacja = int(liczba(d, "populacja", 1));
+    if (d.has("ruch")) p.ruch = parametry_ruchu_z(Dictionary(d["ruch"]));
+    p.hp = int(liczba(d, "hp", 0));
+    if (d.has("walka")) p.walka = parametry_walki(Dictionary(d["walka"]), p.hp);
+    if (d.has("skrypt")) p.skrypt = tekst(String(d["skrypt"]));
+    swiat_->ustaw_produkcje(p);
+}
+bool OpenEESymulacja::rozkaz_produkcji(int64_t b, int64_t t) { return swiat_ && swiat_->rozkaz_produkcji(openee::IdJednostki(b), int(t)); }
+bool OpenEESymulacja::anuluj_produkcje(int64_t b, int64_t i) { return swiat_ && swiat_->anuluj_produkcje(openee::IdJednostki(b), int(i)); }
+void OpenEESymulacja::ustaw_populacje(int64_t g, int64_t p, int64_t gl, int64_t a, int64_t b) {
+    if (swiat_) swiat_->ustaw_populacje(int(g), int(p), int(gl), int(a), int(b));
+}
+int64_t OpenEESymulacja::populacja(int64_t g) const { return swiat_ ? swiat_->populacja(int(g)) : 0; }
+int64_t OpenEESymulacja::limit_populacji(int64_t g) const { return swiat_ ? swiat_->limit_populacji(int(g)) : 0; }
+Array OpenEESymulacja::nowe_jednostki() const {
+    Array a;
+    if (swiat_) for (auto id : swiat_->nowe_jednostki()) a.push_back(int64_t(id));
+    return a;
+}
 
 // etap 51: źródło surowca (drzewo – obiekt Świata już w siatce) i zbieranie
 int64_t OpenEESymulacja::dodaj_zrodlo(const Dictionary& d) {

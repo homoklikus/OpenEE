@@ -91,7 +91,8 @@
   "e51_dwaj": "bez_zwierzat",
   "e51_koszary": "bez_zwierzat",
   "e51_brak": "bez_zwierzat",
-  "e51_zbieranie": "bez_zwierzat"
+  "e51_zbieranie": "bez_zwierzat",
+  "e52_brak": "bez_zwierzat"
  },
  "zrodlo_wzorow": "e35_a.scn",
  "warianty": {
@@ -1977,6 +1978,32 @@
      "Y": 110
     }
    ]
+  },
+  "e52_brak": {
+   "A_CIT": [
+    "CIT",
+    1,
+    [
+     [
+      143.5,
+      110.5
+     ]
+    ]
+   ],
+   "TC": [
+    "TC",
+    1,
+    [
+     [
+      147.0,
+      111.0
+     ]
+    ],
+    {
+     "X": 146,
+     "Y": 110
+    }
+   ]
   }
  },
  "opis_etap47": "e47_dom1 – jedna gwardia niszczy dom (HP rekordu u3c = 0,3); e47_mur – gwardia atakuje mur 467 (u3c = 0,02); e47_przejscie – mur gracza 1 w y = 111 (x = 160…170) z domem gracza 5 w przejściu (164, 111), trzy gwardie niszczą dom, prorok A idzie z (164,5; 116,5) na drugą stronę (ponowne wyznaczanie trasy po zmianie mapy); e47_przejscie2 – jak e47_przejscie z pełnym HP domu (zniszczenie po rozkazie ruchu); e47_rng_bez_p5 – jak e46_rng_1v1 bez jednostek gracza 5 (losowania AI komputera). Czwarty element grupy = nadpisanie pól rekordu.",
@@ -2034,6 +2061,15 @@
     1444,
     1555
    ]
+  },
+  "e52_brak": {
+   "1": [
+    20,
+    20,
+    20,
+    20,
+    20
+   ]
   }
  },
  "opis_etap51": "Etap 51: gospodarka. Surowce startowe gracza 1 różne (1111/1222/1333/1444/1555 – rozpoznanie pól w EEPlayer; e51_brak – po 20, za mało na dom). e51_dwaj – dwóch obywateli na jednym fundamencie; e51_koszary – budowa koszar 34 (2×2); e51_zbieranie – obywatel przy drzewach zachodniego brzegu czystego prostokąta (x = 139, y 107–113) i Centrum Miasta 35 (wzór 0x10005c6 z e35_a) jako punkt oddania.",
@@ -2043,5 +2079,6 @@
   1000,
   500,
   500
- ]
+ ],
+ "opis_etap52": "Etap 52: produkcja obywatela w Centrum Miasta – e51_zbieranie (TC 0x1000856, obywatel, zasoby 1111…) i e52_brak (ten sam układ, zasoby po 20 < koszt obywatela 50 żywności). Ta sama mapa SCN 231 wczytywana w EE i AoC."
 }

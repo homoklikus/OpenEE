@@ -153,6 +153,12 @@ struct Jednostka {
     IdJednostki magazyn_id = 0;     // cel +0x3C – wybrany magazyn
     int zb_tryb = 1;                // cel +0x40/+0x41: 1 – źródło (GoalIsResource), 0 – magazyn, 2 – miejsce oczekiwania
     double zbieranie_ms = 0.0;      // licznik ms GatherResource (+0x2B8 := tempo [P: 4366 w próbce wejścia = 4400 − 34])
+    // etap 52 – produkcja w budynku (docs/titan/produkcja.md) [W: AoC 0x5F5F97/0x5FDC58/0x6394CD, EE 0x5E8908/0x5EF9FF/
+    // 0x624DF8; P: 677/678]: kolejka – obiekt +0x48 (wektor pozycji {technologia, flaga}), bieżąca pozycja – AoC +0x260 /
+    // EE +0x25C (100000 = brak), pozostały czas ms – AoC +0x280 / EE +0x27C
+    std::deque<int> prod_kolejka;
+    int prod_biezaca = -1;          // identyfikator technologii (dbtechtree) albo −1
+    int prod_ms = 0;
     bool kolizyjny = true;          // +0x2D8 (0x5ED24B: typ +0x606 „Collidable” ≠ 0 i nie wyjątki) – uczestnik list kontaktów
     bool blokuje_pola = false;      // typ +0x600 – pola X..X+n−1 × Y..Y+n−1 nieprzejezdne, dopóki HP > 0
     std::uint32_t id_mapy = 0;      // identyfikator obiektu na listach pól (wejście grafu, WejscieRegionow)

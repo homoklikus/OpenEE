@@ -4,6 +4,18 @@
  "wiecej_url": "https://github.com/homoklikus/OpenEE/blob/main/raporty/README.md",
  "wpisy": [
   {
+   "data": "2026-11-13",
+   "tytul": {
+    "pl": "Etap 52: Centrum Miasta produkuje obywateli",
+    "en": "Stage 52: the Town Center trains citizens"
+   },
+   "tekst": {
+    "pl": "Budynki w OpenEE produkują jednostki tak jak w Empire Earth: obywatel kosztuje 50 żywności pobieranej od razu, powstaje po 28 sekundach przy krawędzi Centrum Miasta, a kolejny z kolejki zaczyna się bez przerwy. Zmierzyliśmy to w The Art of Conquest – od teraz głównej wersji badań – i kontrolnie w podstawowym Empire Earth; OpenEE zgadza się z obiema grami w każdym takcie.",
+    "en": "Buildings in OpenEE now train units just like in Empire Earth: a citizen costs 50 food taken at once, appears after 28 seconds at the edge of the Town Center, and the next one in the queue starts right away. We measured this in The Art of Conquest – from now on the main research version – and, as a check, in the original Empire Earth; OpenEE matches both games on every tick."
+   },
+   "raport": "RAPORT_ETAP_52.md"
+  },
+  {
    "data": "2026-11-12",
    "tytul": {
     "pl": "Etap 51: budowa kosztuje, obywatel zbiera drewno",
@@ -13,7 +25,7 @@
     "pl": "Budowa w OpenEE pobiera teraz surowce tak jak w Empire Earth: dom kosztuje 50 drewna i 40 kamienia, koszary 225 drewna. Kilku obywateli buduje szybciej według tego samego wzoru co w oryginale, a obywatel ścina drzewo, nosi po 15 drewna do Centrum Miasta i wraca – zgodnie z pomiarem w grze w każdym takcie.",
     "en": "Building in OpenEE now costs resources just like in Empire Earth: a house costs 50 wood and 40 stone, barracks 225 wood. Several citizens build faster by the same formula as the original, and a citizen fells a tree, carries 15 wood at a time to the Town Center and returns – matching the game measurement on every tick."
    },
-   "raport": "RAPORT_ETAP_51.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_51.md"
   },
   {
    "data": "2026-11-12",

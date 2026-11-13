@@ -583,6 +583,28 @@ void Swiat::takt() {
         po_ruchu(u, x0, y0);
         if (u.tryb != TrybRuchu::zatrzymanie) krok_koncowy(u);  // 0x549E61 (po każdym trybie oprócz 2: 0x549FD2)
     }
+    // etap 52: produkcja w budynkach – aktualizacja klasy budynku (EEUCBuilding; AoC odliczanie 0x6394CD, EE 0x624DF8)
+    // poza kolejką fizyki (żywy budynek nie jest w 0x918DDC). Kolejność względem pętli fizyki [N]; od końca listy jak ona.
+    nowe_jednostki_.clear();
+    for (std::size_t i = jednostki_.size(); i-- > 0;) {
+        Jednostka& b = jednostki_[i];
+        if (b.budynek && (b.prod_biezaca >= 0 || !b.prod_kolejka.empty())) krok_produkcji(b);
+    }
+    // jednostki z produkcji – dodane po przebiegu (nowy obiekt na koniec listy; ten takt bez aktualizacji) [W: kolejka
+    // dodań fizyki 0x53066A – nowe obiekty na koniec]
+    for (const auto& n : do_utworzenia_) {
+        const ParametryProdukcji& p = produkcja_typow_.at(n.tech_id);
+        const Jednostka* bb = jednostka(n.budynek);
+        const int gracz = bb ? bb->gracz : 0;
+        const bool czl = bb ? bb->czlowiek : true;
+        // kurs: nowa jednostka zwrócona na −y (macierz m01 = 0, m11 = −1) [P: 677 – 4 jednostki]
+        const IdJednostki id = dodaj_jednostke(p.ruch, n.x, n.y, std::atan2(-0.0, -1.0));
+        if (p.walka.hp_max > 0 || p.hp > 0) ustaw_walke(id, gracz, czl, p.walka, p.hp);
+        if (!p.skrypt.empty()) ustaw_skrypt_jednostki(id, p.skrypt);
+        if (Jednostka* u = jednostka(id)) { u->typ_db = p.typ_db; u->gracz = gracz; }
+        nowe_jednostki_.push_back(id);
+    }
+    do_utworzenia_.clear();
 }
 
 IdJednostki Swiat::srodek_w_polu(std::int64_t ix, std::int64_t iy, IdJednostki pytajaca) const {
@@ -3009,6 +3031,114 @@ void Swiat::etap_grafu(Jednostka& u) {
     u.dl_po.clear();
     u.zdjete_punkty = 0;
     u.trasa_gotowa = false;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Etap 52 – produkcja jednostek w budynkach (docs/titan/produkcja.md). Źródła: AoC db8fc5ce… – komunikat „Research
+// Technology” 0x4C49B7, dopisanie 0x5F5F97, start pozycji 0x5FDC58, bieżąca 0x5FEA99, odliczanie 0x6394CD, anulowanie
+// 0x5FD8F3, gracz vt+0xB4 (opłata 0x56B09E), vt+0x44 (zwrot), vt+0x54 (warunki 0x563A25); EE e352d7ae… – 0x5E8908,
+// 0x5EF9FF, 0x5F077C, 0x624DF8 [W]. Pomiar: AoC 677/678 [P]; EE – zob. dokument.
+
+bool Swiat::rozkaz_produkcji(IdJednostki budynek, int tech_id) {
+    Jednostka* b = jednostka(budynek);
+    auto it = produkcja_typow_.find(tech_id);
+    if (!b || !b->budynek || it == produkcja_typow_.end()) return false;
+    if (b->boj && b->boj->s.hp <= 0) return false;
+    if (!b->ukonczony) return false;   // komunikat: tylko budynki z +0x34C/+0x340 ≠ 0 (0x4C4B11) [W]
+    // 0x5F5F97: warunek kosztu (gracz vt+0x80 → 0x56542E, mnożnik 1,0) i opłata od razu (vt+0xB4) [W; P: 677 – żywność −50
+    // w takcie rozkazu, także dla pozycji czekającej w kolejce; 678 – brak zasobów: bez zmian]
+    if (!oplac(b->gracz, it->second.koszt)) return false;
+    b->prod_kolejka.push_back(tech_id);
+    if (b->prod_biezaca < 0) start_produkcji(*b);   // wolny budynek – start w tym samym takcie [P: 677, 403527]
+    return true;
+}
+
+bool Swiat::anuluj_produkcje(IdJednostki budynek, int indeks) {
+    Jednostka* b = jednostka(budynek);
+    if (!b || indeks < 0) return false;
+    auto zwrot = [&](int tech) {   // gracz vt+0x44 – zwrot kosztu z mnożnikiem 1,0 [W: 0x5FD963, 0x5FCF09]
+        auto it = produkcja_typow_.find(tech);
+        if (it == produkcja_typow_.end()) return;
+        auto& z = zasoby_[b->gracz];
+        for (int i = 0; i < 5; ++i) z[i] += it->second.koszt[i];
+    };
+    if (indeks == 0) {
+        if (b->prod_biezaca < 0) return false;
+        zwrot(b->prod_biezaca);   // 0x5FD8F3: zwrot, bieżąca := brak, licznik := 0
+        b->prod_biezaca = -1;
+        b->prod_ms = 0;
+        return true;
+    }
+    if (std::size_t(indeks) > b->prod_kolejka.size()) return false;
+    zwrot(b->prod_kolejka[std::size_t(indeks - 1)]);
+    b->prod_kolejka.erase(b->prod_kolejka.begin() + (indeks - 1));
+    return true;
+}
+
+bool Swiat::start_produkcji(Jednostka& b) {
+    // 0x5FDC58 (EE 0x5EF9FF): budynek ukończony; pierwsza pozycja kolejki; warunek gracza vt+0x54 w trybie 2 –
+    // populacja + koszt populacji ≤ limit (0x563A9F: klasa vt+0x6C + gracz+0xB14 > vt+0x78 + vt+0x7C → czekaj) [W];
+    // czas := round(czas typu × ulepszenie +0x94) [W; P: 677 – 28000]; jedno losowanie generatora [P: 677 – 3 starty,
+    // każdy +1 losowanie w takcie startu; przeznaczenie N].
+    if (!b.ukonczony || b.prod_kolejka.empty()) return false;
+    const int tech = b.prod_kolejka.front();
+    auto it = produkcja_typow_.find(tech);
+    if (it == produkcja_typow_.end()) { b.prod_kolejka.pop_front(); return false; }
+    const ParametryProdukcji& p = it->second;
+    if (populacja(b.gracz) + p.populacja > limit_populacji(b.gracz)) return false;
+    b.prod_kolejka.pop_front();
+    b.prod_biezaca = tech;
+    b.prod_ms = int(std::lround(double(f32(float(p.czas_ms) * float(p.mnoznik_czasu)))));
+    rng_.krok();
+    return true;
+}
+
+bool Swiat::miejsce_wyjscia(const Jednostka& b, const ParametryProdukcji& p, double& x, double& y) const {
+    // [P: 677 – Centrum Miasta kotwica (146, 110), n = 2; kolejne jednostki: (146,15; 109,85), (146,45; 109,85),
+    // (146,75; 109,85) – krawędź y = Y − r, x = X + r + k·2r, r = 0,5·rozmiar (obywatel 0,15)]; reguła wyboru wolnego
+    // miejsca (pierwsze bez jednostki bliżej niż 2r) [H]; funkcja tworzenia AoC 0x631B55 – nieprzeczytana [N].
+    const double r = f32(0.5 * p.ruch.rozmiar);
+    const double y0 = f32(double(b.komorka_y) - r);
+    const int maks = std::max(1, int(std::floor(double(b.kwadrat) / (2.0 * r) + 1e-9)));
+    for (int k = 0; k < maks; ++k) {
+        const double xk = f32(double(b.komorka_x) + r + double(k) * 2.0 * r);
+        bool wolne = true;
+        for (const auto& o : jednostki_) {
+            if (o.budynek || (o.boj && o.boj->s.hp <= 0)) continue;
+            const double dx = o.x - xk, dy = o.y - y0;
+            if (dx * dx + dy * dy < (2.0 * r) * (2.0 * r) - 1e-9) { wolne = false; break; }
+        }
+        for (const auto& n : do_utworzenia_) {
+            const double dx = n.x - xk, dy = n.y - y0;
+            if (dx * dx + dy * dy < (2.0 * r) * (2.0 * r) - 1e-9) { wolne = false; break; }
+        }
+        if (wolne) { x = xk; y = y0; return true; }
+    }
+    return false;
+}
+
+void Swiat::krok_produkcji(Jednostka& b) {
+    if (b.prod_biezaca >= 0 && b.prod_ms > 0 && (!b.boj || b.boj->s.hp > 0)) {
+        // 0x6394CD: licznik −= czas taktu (EEPhysics +0xA4 = 34 ms) [P: 677 – stałe 34 także w taktach 35 ms]
+        const int r = b.prod_ms - 34;
+        if (r > 0) {
+            b.prod_ms = r;
+        } else {
+            const ParametryProdukcji& p = produkcja_typow_.at(b.prod_biezaca);
+            double x = 0, y = 0;
+            if (miejsce_wyjscia(b, p, x, y)) {
+                // utworzenie jednostki: populacja += koszt; losowania – wariant (EE 3, AoC 1) [P: 679 / 677]
+                for (int k = 0; k < wariant_.losowania_utworzenia; ++k) rng_.krok();
+                do_utworzenia_.push_back({b.prod_biezaca, b.id, x, y});
+                populacja_[b.gracz][0] += p.populacja;
+                b.prod_ms = 0;
+                b.prod_biezaca = -1;   // pozycja zakończona – w tej samej próbce brak bieżącej [P: 677, 431620]
+            } else {
+                b.prod_ms = 5000;      // brak miejsca – ponowna próba po 5000 ms (0x639580) [W]
+            }
+        }
+    }
+    if (b.prod_biezaca < 0 && !b.prod_kolejka.empty()) start_produkcji(b);   // następna bez przerwy [P: 677, 503729]
 }
 
 }  // namespace openee

@@ -72,6 +72,96 @@
    "ee": "0x60B26F",
    "aoc": "0x61D8DC",
    "opis": "EEUGAttackUnit vt+0x40 – wejście w stany ataku"
+  },
+  {
+   "ee": "0x4BBE02",
+   "aoc": "0x4C49B7",
+   "opis": "EEMResearchTechnology vt[10] – wykonanie rozkazu produkcji/badania",
+   "kryterium": "RTTI: ta sama klasa i indeks metody",
+   "pewnosc": "W",
+   "zachowanie": "N",
+   "etap": 52
+  },
+  {
+   "ee": "0x5E8908",
+   "aoc": "0x5F5F97",
+   "opis": "budynek – dopisanie pozycji do kolejki produkcji (opłata vt+0xB4)",
+   "kryterium": "sekwencja: limit kl. 0x1B, push +0x48, ++rezerwacje, vt+0xB4(1,0)",
+   "pewnosc": "W",
+   "zachowanie": "N",
+   "etap": 52
+  },
+  {
+   "ee": "0x5EF9FF",
+   "aoc": "0x5FDC58",
+   "opis": "budynek – start pozycji z kolejki (czas × ulepszenie +0x94)",
+   "kryterium": "sekwencja: ukończony, vt+0x54(…,2), +0x94, vt+0x10",
+   "pewnosc": "W",
+   "zachowanie": "N",
+   "etap": 52
+  },
+  {
+   "ee": "0x5F077C",
+   "aoc": "0x5FEA99",
+   "opis": "budynek – ustawienie bieżącej pozycji produkcji (100000 = brak)",
+   "kryterium": "sekwencja i wywołanie z BuildingRepaired",
+   "pewnosc": "W",
+   "zachowanie": "N",
+   "etap": 52
+  },
+  {
+   "ee": "0x624DF8",
+   "aoc": "0x6394CD",
+   "opis": "budynek – odliczanie produkcji (−A_GRA+0xA4) i utworzenie jednostki",
+   "kryterium": "sekwencja: odliczanie, ponowienie 5000 ms; EE tworzy w funkcji, AoC w 0x631B55",
+   "pewnosc": "W",
+   "zachowanie": "P: produkcja obywatela 677 (AoC) / 679 (EE) – ten sam przebieg; losowania przy utworzeniu EE 3, AoC 1",
+   "etap": 52
+  },
+  {
+   "ee": "0x55BE2C",
+   "aoc": "0x56B09E",
+   "opis": "EEPlayer vt+0xB4 – pobranie kosztu technologii",
+   "kryterium": "RTTI EEPlayer, indeks 45 w obu",
+   "pewnosc": "W",
+   "zachowanie": "P: koszt przy rozkazie w obu (677/679)",
+   "etap": 52
+  },
+  {
+   "ee": "0x5546F5",
+   "aoc": "0x5628CB",
+   "opis": "EEPlayer vt+0x44 – zwrot kosztu",
+   "kryterium": "RTTI EEPlayer, indeks 17 w obu",
+   "pewnosc": "W",
+   "zachowanie": "N",
+   "etap": 52
+  },
+  {
+   "ee": "0x555E93",
+   "aoc": "0x564223",
+   "opis": "EEPlayer vt+0x50 – liczniki kategorii 0x1B (jednostki + rezerwacje)",
+   "kryterium": "RTTI, indeks 20; pola EE +0xB24/+0xB28, AoC +0xB28/+0xB2C",
+   "pewnosc": "W",
+   "zachowanie": "N",
+   "etap": 52
+  },
+  {
+   "ee": "0x55574D",
+   "aoc": "0x563A25",
+   "opis": "EEPlayer vt+0x54 – warunki rozpoczęcia (populacja, limity)",
+   "kryterium": "RTTI, indeks 21",
+   "pewnosc": "W",
+   "zachowanie": "N",
+   "etap": 52
+  },
+  {
+   "ee": "0x556EBC",
+   "aoc": "0x56528B",
+   "opis": "EEPlayer vt+0x7C – składniki limitu populacji (gracz + globalny)",
+   "kryterium": "RTTI, indeks 31; EE +0xB1C/+0xB20/0x9183D4, AoC +0xB20/+0xB24/0x930E14",
+   "pewnosc": "W",
+   "zachowanie": "N",
+   "etap": 52
   }
  ],
  "struktury": {

@@ -41,6 +41,16 @@
    "c4": 0.83333,
    "c8": 0.08185,
    "t488": 0.5
+  },
+  "480": {
+   "a": 1.2,
+   "vmax": 0.5,
+   "alfa": 12.21731,
+   "wmax": 13.96264,
+   "rozmiar": 0.3,
+   "c4": 0.83333,
+   "c8": 0.08185,
+   "t488": 0.5
   }
  },
  "walka_uwaga": "Etap 47: wiersz klasy 3 (budynki – dom 37, „Family ID” 3) tablic trafień dla rodziny 48 (gwardia) z odczytu walka_tabele (e31/walka_578_g1.json) [P]; dom: 6 HP na trafienie = fistp(min(0,8·6,93; 5,93)) – modyfikator wysokości (Δz = −1,02, kara 0,8) [P: 645/647]. Etap 46: bohater 173 (dbobjects „(heal)”, HP 1235): walka z zad. 621 (walka.md); leczenie z dbobjects – Healer heal amount 50, Unknown#50 = próg 1,0, zasięg 4,0, Unknown#51 = okres 1,0 s (pamięć typu +0x49C/+0x4A0/+0x4A4 [P]); leczone_typy – zestaw ulepszenia +0x10C nieodczytany [N], przyjęte typy jednostek testowych (422 leczona w 644 [P]).",
@@ -121,6 +131,33 @@
    }
   },
   "32": {
+   "hp": 65,
+   "p": {
+    "atak": 5.0,
+    "zasieg_max": 2.0,
+    "pole_widzenia": 3.0,
+    "przeladowanie_ms": 2000,
+    "klasa_trafienia": 36,
+    "rodzina_ataku": 38,
+    "rozmiar": 0.3,
+    "punktowy": 0,
+    "szukanie_ms": 2000,
+    "pole_ac": 0.5,
+    "typ_jednostki": 6,
+    "tempo_budowy_ms": 1000,
+    "tempo_zbierania": [
+     4400,
+     8926,
+     6000,
+     6000,
+     3500,
+     5200,
+     4600
+    ],
+    "udzwig": 15
+   }
+  },
+  "480": {
    "hp": 65,
    "p": {
     "atak": 5.0,
@@ -302,5 +339,17 @@
     0
    ]
   }
- }
+ },
+ "typ_480_uwaga": "Etap 52: Female Citizen (dbobjects 480, dbtechtree 1451) – kopia parametrów 32: rekordy 32 i 480 różnią się tylko nazwą, grafiką, dźwiękami, listą technologii i „Attack angle” (32: 0,349; 480: 0) [P: odczyt dbobjects EE i AoC]; łuku ataku walka 32 i tak nie ustawia (luk_ataku 0).",
+ "produkcja": {
+  "1074": {
+   "mnoznik_czasu": 1.0,
+   "populacja": 1
+  },
+  "1451": {
+   "mnoznik_czasu": 1.0,
+   "populacja": 1
+  }
+ },
+ "produkcja_uwaga": "Etap 52: koszt, czas i obiekt – z dbtechtree w chwili odtworzenia (EpokiDB.techtree: Citizen 1074 / Female Citizen 1451 – Food cost 50, Build time 28000, obiekty 32 / 480, identyczne w EE i AoC). Tu tylko wartości spoza bazy: mnożnik czasu = ulepszenie +0x94 (1,0) [W: AoC 0x5FDDAF, EE 0x5EFB48; P: 677/679 – licznik 28000] i koszt populacji (klasa vt+0x6C) 1 [P: 677/679 – populacja +1 na jednostkę]."
 }

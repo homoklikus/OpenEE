@@ -21,9 +21,12 @@ struct WariantTitan {
     RegulaObrotu obrot = RegulaObrotu::ee;
     OdbudowaKontaktow kontakty = OdbudowaKontaktow::po_zapisie;
     const char* nazwa = "EE";
+    // etap 52: dodatkowe losowania generatora przy utworzeniu jednostki z produkcji budynku [P: EE 679 – 2 utworzenia, po 3;
+    // AoC 677 – 4 utworzenia, po 1]; EE tworzy jednostkę w 0x624DF8, AoC w osobnej 0x631B55 [W]; przeznaczenie losowań [N]
+    int losowania_utworzenia = 3;
 
-    static WariantTitan ee() { return {Gra::ee, RegulaObrotu::ee, OdbudowaKontaktow::po_zapisie, "EE"}; }
-    static WariantTitan aoc() { return {Gra::aoc, RegulaObrotu::aoc, OdbudowaKontaktow::przed_zapisem, "AoC"}; }
+    static WariantTitan ee() { return {Gra::ee, RegulaObrotu::ee, OdbudowaKontaktow::po_zapisie, "EE", 3}; }
+    static WariantTitan aoc() { return {Gra::aoc, RegulaObrotu::aoc, OdbudowaKontaktow::przed_zapisem, "AoC", 1}; }
     static WariantTitan z_nazwy(const std::string& n) { return (n == "aoc" || n == "AoC") ? aoc() : ee(); }
 };
 

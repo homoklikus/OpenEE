@@ -198,6 +198,20 @@ std::vector<int> przebuduj_sektor(GrafPodsektorow& G, const WejscieRegionow& w, 
 /// Punkt reprezentatywny 0x42C2D5 dla listy pól w kolejności kontenera (kolumny od ostatniej, przedziały y rosnąco).
 std::pair<int, int> punkt_reprezentatywny(const std::vector<std::pair<int, int>>& pola);
 
+/// Etap 52 – pozycja produkcji (rekord dbtechtree z „Is object?” = 1) i dane tworzonej jednostki.
+struct ParametryProdukcji {
+    int tech_id = -1;
+    int typ_db = -1;                       // dbtechtree „Object ID” (dbobjects)
+    std::array<int, 5> koszt{};            // dbtechtree: żywność, drewno, kamień, złoto, żelazo
+    int czas_ms = 0;                       // dbtechtree „Build time”
+    double mnoznik_czasu = 1.0;            // ulepszenie typu +0x94 (start pozycji: czas × m [W: AoC 0x5FDDAF, EE 0x5EFB48])
+    int populacja = 1;                     // koszt populacji (klasa vt+0x6C) [P: 677 – obywatel +1; wartość z danych N]
+    ParametryRuchu ruch;
+    ParametryWalki walka;
+    int hp = 0;
+    std::string skrypt = "obywatel";
+};
+
 class Swiat {
 public:
     Swiat(std::shared_ptr<const TabliceTrig> tablice, TerenSiatka teren, WariantTitan wariant = WariantTitan::ee());
@@ -330,6 +344,22 @@ public:
                              int zasob_typ, int zasob_indeks, int tempo_indeks, std::uint32_t id_mapy);
     bool ustaw_magazyn(IdJednostki budynek, bool m);
     bool rozkaz_zbierania(IdJednostki obywatel, IdJednostki zrodlo, double x, double y);
+    // --- etap 52: produkcja jednostek w budynkach (docs/titan/produkcja.md) ---
+    void ustaw_produkcje(const ParametryProdukcji& p) { produkcja_typow_[p.tech_id] = p; }
+    /// Populacja gracza (AoC +0xB14 / EE +0xB10) i składniki limitu: 1 + a + b + globalny (gracz vt+0x7C – AoC 0x56528B,
+    /// EE 0x556EBC) [W; P: 678 – globalny 100, a = b = 0, panel „x/100”].
+    void ustaw_populacje(int gracz, int populacja, int globalny, int a = 0, int b = 0) { populacja_[gracz] = {populacja, globalny, a, b}; }
+    int populacja(int gracz) const { auto it = populacja_.find(gracz); return it == populacja_.end() ? 0 : it->second[0]; }
+    int limit_populacji(int gracz) const { auto it = populacja_.find(gracz); return it == populacja_.end() ? 1 : 1 + it->second[1] + it->second[2] + it->second[3]; }
+    /// Rozkaz produkcji (komunikat „Research Technology” → 0x5F5F97 / EE 0x5E8908): koszt pobierany od razu
+    /// (gracz vt+0xB4, mnożnik 1,0), pozycja na koniec kolejki; wolny budynek zaczyna w tym samym takcie [P: 677].
+    /// false – brak zasobów (bez zmian [P: 678]), budynek nieukończony albo nieznana pozycja.
+    bool rozkaz_produkcji(IdJednostki budynek, int tech_id);
+    /// Anulowanie: indeks 0 – pozycja bieżąca (0x5FD8F3: zwrot 1,0, licznik 0), k ≥ 1 – k-ta pozycja kolejki (zwrot 1,0)
+    /// [W]; pomiar [N].
+    bool anuluj_produkcje(IdJednostki budynek, int indeks);
+    /// Identyfikatory jednostek utworzonych w ostatnim takcie (do mapowania na obiekty gry w odtworzeniach).
+    const std::vector<IdJednostki>& nowe_jednostki() const { return nowe_jednostki_; }
     std::uint64_t wersja_grafu() const { return wersja_grafu_; }
     std::uint64_t przebudowy_grafu() const { return przebudowy_grafu_; }
     bool przebudowa_zaplanowana() const { return przebudowa_d8_; }
@@ -437,6 +467,14 @@ private:
     GeneratorTitan rng_;
     SkryptStanow skrypt_;
     std::map<int, std::array<int, 5>> zasoby_;   // etap 51
+    std::map<int, ParametryProdukcji> produkcja_typow_;   // etap 52
+    std::map<int, std::array<int, 4>> populacja_;         // etap 52: populacja, globalny, a, b
+    struct NowaJednostka { int tech_id; IdJednostki budynek; double x, y; };
+    std::vector<NowaJednostka> do_utworzenia_;
+    std::vector<IdJednostki> nowe_jednostki_;
+    void krok_produkcji(Jednostka& b);
+    bool start_produkcji(Jednostka& b);
+    bool miejsce_wyjscia(const Jednostka& b, const ParametryProdukcji& p, double& x, double& y) const;
     std::map<std::string, SkryptStanow> skrypty_;   // etap 45: skrypty typów (adresy stabilne – std::map)
     const SkryptStanow& skr(const Jednostka& u) const { return u.skrypt ? *u.skrypt : skrypt_; }
     int losuj_zakres(int lo, int hi);
