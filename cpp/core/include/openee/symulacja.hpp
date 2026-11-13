@@ -38,6 +38,7 @@ struct Diagnostyka {
     std::uint64_t kolizje = 0;                    // wywołania 0x549179 z kolizją
     std::uint64_t kroki_odpychania = 0;           // udane przesunięcia 0x549A08
     std::uint64_t cele_zajete = 0;                // reguła (a)
+    std::uint64_t pary_duze = 0;                  // etap 53: pary skierowane do gałęzi dużej (0x548A3C) – bez reakcji w Core
     WynikAStar ostatnia_trasa;                    // ostatnie pełne A* (diagnostyka)
     bool ostatnia_bounded_sukces = false;
     int ostatnia_poprawa_poczatku = 0;   // etap 48: 0x4A2B29/0x4A3757 – 0 brak, 1 sukces, −1 porażka
@@ -205,7 +206,12 @@ struct ParametryProdukcji {
     std::array<int, 5> koszt{};            // dbtechtree: żywność, drewno, kamień, złoto, żelazo
     int czas_ms = 0;                       // dbtechtree „Build time”
     double mnoznik_czasu = 1.0;            // ulepszenie typu +0x94 (start pozycji: czas × m [W: AoC 0x5FDDAF, EE 0x5EFB48])
-    int populacja = 1;                     // koszt populacji (klasa vt+0x6C) [P: 677 – obywatel +1; wartość z danych N]
+    int populacja = 1;                     // koszt populacji (klasa vt+0x6C) [P: 677 – obywatel +1; 704/706 – Maceman +1]
+    // etap 53: losowy zamiennik przy starcie pozycji. Gdy ≥ 0, start losuje URandom::Generate i przy wyniku ≥ 0,5
+    // bieżącą pozycją zostaje technologia `losowy_zamiennik` (Citizen 1074 → Female Citizen 1451) [W: AoC 0x5FDDED…
+    // 0x5FDE6B, EE 0x5EFB91 – tylko technologia obiektu dbobjects 32; P: 7/7 startów 677–679]. Inne technologie nie
+    // losują przy starcie [P: 704/706 – Maceman, 5 startów AoC i 5 EE bez losowania].
+    int losowy_zamiennik = -1;
     ParametryRuchu ruch;
     ParametryWalki walka;
     int hp = 0;
@@ -239,6 +245,10 @@ public:
     /// pierwszej aktualizacji fizyki jednostki (dosadzenie do terenu) – przechwycenie 0x62C963 liczy odległość 3D
     /// z tą wartością [P: 631 – cel stojący z = 1,837 (zapis), teren 0,408; punkt (164,5001; 110,184) odtworzony].
     bool ustaw_z(IdJednostki id, double z);
+    /// Etap 53: orientacja z elementów macierzy gry (kolumna „przód”: m01, m11) – stan początkowy z nagrania. Kurs jednostki
+    /// po wczytaniu scenariusza nie leży na siatce tablic UMCos (np. m01 = 0,7070934, m11 = −0,7071197), a decyzja
+    /// prędkości ma próg |diff| ≤ π/4 – odtworzenie macierzy z kąta przez tablice zmienia stronę progu [P: taran 690].
+    bool ustaw_kurs_macierzy(IdJednostki id, double m01, double m11);
     /// Etap 44: kolejność listy jednostek po wczytaniu scenariusza – pozycja x rosnąco, potem y (kolejka fizyki 0x918DDC).
     void uporzadkuj_wg_pozycji();
     Jednostka* jednostka(IdJednostki id);
@@ -358,6 +368,10 @@ public:
     /// Anulowanie: indeks 0 – pozycja bieżąca (0x5FD8F3: zwrot 1,0, licznik 0), k ≥ 1 – k-ta pozycja kolejki (zwrot 1,0)
     /// [W]; pomiar [N].
     bool anuluj_produkcje(IdJednostki budynek, int indeks);
+    /// Etap 53: anulowanie z interfejsu (PPM na przycisku technologii; AoC 0x5FD984 z flagą „wszystkie” = 0) – pierwsza
+    /// pozycja kolejki tej technologii (obywatel i obywatelka są równoważne), a gdy żadnej nie ma – bieżąca pozycja tej
+    /// technologii (0x5FD8F3). Pełny zwrot kosztu [P: AoC 705, EE 706]. false = nic nie anulowano.
+    bool anuluj_technologie(IdJednostki budynek, int tech_id);
     /// Identyfikatory jednostek utworzonych w ostatnim takcie (do mapowania na obiekty gry w odtworzeniach).
     const std::vector<IdJednostki>& nowe_jednostki() const { return nowe_jednostki_; }
     std::uint64_t wersja_grafu() const { return wersja_grafu_; }

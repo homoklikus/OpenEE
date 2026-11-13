@@ -58,6 +58,7 @@ public:
     int64_t zbuduj_graf_z_przydzialu(const godot::PackedInt32Array& id_xH, int64_t W, int64_t H, int64_t komorka);
     godot::Dictionary zbuduj_graf_z_wejscia(const godot::Dictionary& wejscie, int64_t komorka);
     bool ustaw_z(int64_t id, double z);
+    bool ustaw_kurs_macierzy(int64_t id, double m01, double m11);   // etap 53
     void uporzadkuj_wg_pozycji();
     godot::Dictionary premia_predkosci(const godot::Dictionary& p, int64_t poziomy, double procent) const;
     void odbuduj_kontakty_wszystkich();
@@ -86,6 +87,7 @@ public:
     void ustaw_produkcje(const godot::Dictionary& d);
     bool rozkaz_produkcji(int64_t budynek, int64_t tech_id);
     bool anuluj_produkcje(int64_t budynek, int64_t indeks);
+    bool anuluj_technologie(int64_t budynek, int64_t tech_id);
     void ustaw_populacje(int64_t gracz, int64_t populacja, int64_t globalny, int64_t a, int64_t b);
     int64_t populacja(int64_t gracz) const;
     int64_t limit_populacji(int64_t gracz) const;

@@ -58,6 +58,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("zbuduj_graf_z_przydzialu", "id_xH", "W", "H", "komorka"), &OpenEESymulacja::zbuduj_graf_z_przydzialu);
     ClassDB::bind_method(D_METHOD("zbuduj_graf_z_wejscia", "wejscie", "komorka"), &OpenEESymulacja::zbuduj_graf_z_wejscia);
     ClassDB::bind_method(D_METHOD("ustaw_z", "id", "z"), &OpenEESymulacja::ustaw_z);
+    ClassDB::bind_method(D_METHOD("ustaw_kurs_macierzy", "id", "m01", "m11"), &OpenEESymulacja::ustaw_kurs_macierzy);   // etap 53
     ClassDB::bind_method(D_METHOD("uporzadkuj_wg_pozycji"), &OpenEESymulacja::uporzadkuj_wg_pozycji);
     ClassDB::bind_method(D_METHOD("odbuduj_kontakty_wszystkich"), &OpenEESymulacja::odbuduj_kontakty_wszystkich);
     ClassDB::bind_method(D_METHOD("ustaw_skrypt_jednostki", "id", "nazwa"), &OpenEESymulacja::ustaw_skrypt_jednostki);
@@ -83,6 +84,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("ustaw_produkcje", "parametry"), &OpenEESymulacja::ustaw_produkcje);
     ClassDB::bind_method(D_METHOD("rozkaz_produkcji", "budynek", "tech_id"), &OpenEESymulacja::rozkaz_produkcji);
     ClassDB::bind_method(D_METHOD("anuluj_produkcje", "budynek", "indeks"), &OpenEESymulacja::anuluj_produkcje);
+    ClassDB::bind_method(D_METHOD("anuluj_technologie", "budynek", "tech_id"), &OpenEESymulacja::anuluj_technologie);
     ClassDB::bind_method(D_METHOD("ustaw_populacje", "gracz", "populacja", "globalny", "a", "b"), &OpenEESymulacja::ustaw_populacje);
     ClassDB::bind_method(D_METHOD("populacja", "gracz"), &OpenEESymulacja::populacja);
     ClassDB::bind_method(D_METHOD("limit_populacji", "gracz"), &OpenEESymulacja::limit_populacji);
@@ -101,7 +103,7 @@ void OpenEESymulacja::_bind_methods() {
     ClassDB::bind_method(D_METHOD("takty"), &OpenEESymulacja::takty);
 }
 
-String OpenEESymulacja::wersja() const { return "OpenEE Core 0.25.0 (etap 52, C++20, godot-cpp 10.0.0, API 4.7)"; }
+String OpenEESymulacja::wersja() const { return "OpenEE Core 0.26.0 (etap 53, C++20, godot-cpp 10.0.0, API 4.7)"; }
 
 Dictionary OpenEESymulacja::zaladuj_tablice(const String& sciezka_dll) {
     Dictionary w;
@@ -301,6 +303,7 @@ Dictionary OpenEESymulacja::diagnostyka() const {
         d["ostatnie_nieobslugiwane"] = gtekst(g.ostatnie_nieobslugiwane);
         d["wejscia_niewdrozone"] = int64_t(g.wejscia_niewdrozone);
         d["kolizje"] = int64_t(g.kolizje);
+        d["pary_duze"] = int64_t(g.pary_duze);   // etap 53
         d["kroki_odpychania"] = int64_t(g.kroki_odpychania);
         d["omijania_atakujacych"] = int64_t(g.omijania_atakujacych);   // etap 49
         d["objazdy_niezweryfikowane"] = int64_t(g.objazdy_niezweryfikowane);
@@ -517,6 +520,7 @@ void OpenEESymulacja::ustaw_produkcje(const Dictionary& d) {
     p.czas_ms = int(liczba(d, "czas_ms", 0));
     p.mnoznik_czasu = liczba(d, "mnoznik_czasu", 1.0);
     p.populacja = int(liczba(d, "populacja", 1));
+    p.losowy_zamiennik = int(liczba(d, "losowy_zamiennik", -1));   // etap 53: wybór płci obywatela
     if (d.has("ruch")) p.ruch = parametry_ruchu_z(Dictionary(d["ruch"]));
     p.hp = int(liczba(d, "hp", 0));
     if (d.has("walka")) p.walka = parametry_walki(Dictionary(d["walka"]), p.hp);
@@ -525,6 +529,7 @@ void OpenEESymulacja::ustaw_produkcje(const Dictionary& d) {
 }
 bool OpenEESymulacja::rozkaz_produkcji(int64_t b, int64_t t) { return swiat_ && swiat_->rozkaz_produkcji(openee::IdJednostki(b), int(t)); }
 bool OpenEESymulacja::anuluj_produkcje(int64_t b, int64_t i) { return swiat_ && swiat_->anuluj_produkcje(openee::IdJednostki(b), int(i)); }
+bool OpenEESymulacja::anuluj_technologie(int64_t b, int64_t t) { return swiat_ && swiat_->anuluj_technologie(openee::IdJednostki(b), int(t)); }
 void OpenEESymulacja::ustaw_populacje(int64_t g, int64_t p, int64_t gl, int64_t a, int64_t b) {
     if (swiat_) swiat_->ustaw_populacje(int(g), int(p), int(gl), int(a), int(b));
 }
@@ -933,6 +938,9 @@ void OpenEESymulacja::uporzadkuj_wg_pozycji() { if (swiat_) swiat_->uporzadkuj_w
 void OpenEESymulacja::odbuduj_kontakty_wszystkich() { if (swiat_) swiat_->odbuduj_kontakty_wszystkich(); }
 
 bool OpenEESymulacja::ustaw_z(int64_t id, double z) { return swiat_ && swiat_->ustaw_z(openee::IdJednostki(id), z); }
+bool OpenEESymulacja::ustaw_kurs_macierzy(int64_t id, double m01, double m11) {
+    return swiat_ && swiat_->ustaw_kurs_macierzy(openee::IdJednostki(id), m01, m11);
+}
 
 // etap 43: wejście floodu regionów z mapy SCN w Core (rodzaj pola 0x516E8C, bajt +0x14 wody 0x426577) – bez danych
 // z pamięci gry; obiekty pól (jednostki, typy) dodaje wywołujący – w Core brak listy obiektów na polach [N]

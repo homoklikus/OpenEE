@@ -158,3 +158,20 @@ Reguła stoku, test kroku i kolizje: `fizyka_terenu.md` § 3–4, `kolizje_objaz
 - Przyczyna kilku rozbieżnych znaków ω w EE 500 [N].
 - Pełna lista wątków i miejsc przywracania słowa sterującego FPU (np. podczas wczytywania zapisu gry) [W/N].
 - Adresy `UMArcCos` i `UMCos` w DLL AoC (tablice identyczne) [W].
+
+## 10. Etap 53 – trzy nowe obserwacje
+
+1. **Zegar gry jest skwantowany jak f32** [P; przyczyna H]. EEPhysics +0xD0 rośnie o 34,0909 ms na takt poniżej
+   524 288 ms, a o 34,0625 ms (16 × 34 + 1 × 35) w przedziale [524 288; 1 048 576) – nagrania `e52_677_dwa` (obie strony
+   granicy), `e52_678`, `e53_705_*`. Kwant 1/16 ms odpowiada dokładności f32 w [2^19, 2^20). Liczniki odejmujące stałe
+   34 ms (produkcja) nie zależą od tego. Narzędzia porównują nagrania po numerze taktu (`produkcja.md` § 5.7).
+2. **Kurs po wczytaniu scenariusza nie leży na siatce tablic** [P]. Jednostka „pod 45°” ma w pamięci m01 = 0,7070934,
+   m11 = −0,7071197 (kąt o 1,9·10⁻⁵ rad za −3π/4). Decyzja prędkości ma próg |diff| ≤ π/4 (0x548645): dla tarana
+   (α = 1,745 rad/s²) gra w pierwszym takcie tylko się obraca (v = 0), a Core z macierzą odtworzoną z kąta przez `UMCos`
+   – przyspiesza. `Swiat::ustaw_kurs_macierzy` i `odtworz_scenariusz.gd --macierz=1` ustawiają macierz z nagrania;
+   wtedy tor tarana zgadza się co takt. Dla gwardii (α = 12,2) obie gałęzie progu dają przyspieszanie, dlatego
+   wcześniejsze nagrania tego nie pokazały.
+3. **Reguła stoku na granicy progu** [P; przyczyna N]. Taran na pochyłym wierszu oscyluje 0,4318 ↔ 0,4659 (próg
+   vmax·(1 − s·0,5)); Core odtwarza oscylację, ale w jednym takcie hamuje, gdy gra przyspiesza (EE t = 55226, AoC
+   t = 54715; EE 57749 na innym wierszu), po czym wzór wraca przesunięty o takt, a pozycja różni się o 0,0023 pola.
+   v jest wtedy równe progowi co do zaokrąglenia f32. Czułość typu +0x488 tarana nie była odczytana (przyjęto 0,5).

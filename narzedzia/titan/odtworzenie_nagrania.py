@@ -19,6 +19,9 @@ Dane (nagrania, scenariusze) są lokalne."""
 import base64, bisect, json, math, struct, sys
 
 TAKT_MS = 1500.0 / 44.0
+# etap 53: klasy celów bez nazwy w rejestratorze – vtable EE i AoC (ustalone osobno w każdej grze [P: 658/673 EE, 707/708 AoC])
+VT_BUDOWA = ('0x8319f0', '0x84740c')      # EEUGBuildRepair
+VT_ZBIERANIE = ('0x831b80', '0x8475a8')   # EEUGGather
 
 
 def _seria(d):
@@ -58,7 +61,8 @@ def opis(nagr, uklad, wyj):
         if not p:
             continue
         jedn.append({'id': gid, 'nazwa': nazwy.get(gid, gid), 'typ': p['typ'], 'gracz': int(gid, 16) >> 24,
-                     'x': p['x'], 'y': p['y'], 'z': p['z'], 'kurs': math.atan2(-p['m01'], p['m11']), 'hp': p['hp']})
+                     'x': p['x'], 'y': p['y'], 'z': p['z'], 'kurs': math.atan2(-p['m01'], p['m11']), 'hp': p['hp'],
+                     'm01': p['m01'], 'm11': p['m11']})   # etap 53: elementy macierzy (odtworz_scenariusz.gd --macierz=1)
     rozkazy, znane = [], set()
     for gid in d['jednostki']:
         if int(gid, 16) >> 24 != 1:
@@ -89,8 +93,12 @@ def opis(nagr, uklad, wyj):
     print('jednostki:', [(j['nazwa'], j['id'], j['typ']) for j in jedn])
 
 
-def opis_budowy(obs, bud, uklad, wyj):
+def opis_budowy(obs, bud, uklad, wyj, do_t=None):
     a = json.load(open(obs)); b = json.load(open(bud)); u = json.load(open(uklad))
+    if do_t is not None:   # etap 53: koniec porównania (np. przed zniszczeniem budynku klawiszem Delete)
+        a['probki'] = [p for p in a['probki'] if p['t'] <= float(do_t)]
+    # etap 53: rejestrator z `nowe_gracza` dopisuje fundament także do obserwacji – jednostki obserwacji = obecne w 1. próbce
+    a['jednostki'] = [j for j in a['jednostki'] if j in a['probki'][0]]
     nazwy = {gid: g for g, v in u['grupy'].items() for gid in v['id']}
     sa, sb = _seria(a), _seria(b)
     fund = [j for j in b['jednostki'] if j not in a['jednostki']]
@@ -107,7 +115,7 @@ def opis_budowy(obs, bud, uklad, wyj):
                      'y': p['y'], 'z': p['z'], 'kurs': math.atan2(-p['m01'], p['m11']), 'hp': p['hp']})
         prev = T0
         for q in sa:
-            if gid in q and any((c['klasa'] or '').endswith('0x8319f0') for c in q[gid]['q']):
+            if gid in q and any((c['klasa'] or '').endswith(VT_BUDOWA) for c in q[gid]['q']):
                 f = fund[0]
                 pf = next(r for r in b['probki'] if f in r)[f]
                 rozkazy.append({'t_przed': prev, 'kto': gid, 't_proby': q['t'], 'rodzaj': 'budowa', 'cel': f,
@@ -115,7 +123,7 @@ def opis_budowy(obs, bud, uklad, wyj):
                                               'z': pf['z'], 'gracz': int(f, 16) >> 24}})
                 break
             prev = q['t']
-    o = {'nagranie': obs.split('/')[-1] + '+' + bud.split('/')[-1], 'T0': T0, 'takt_ms': TAKT_MS, 'jednostki': jedn,
+    o = {'nagranie': obs.split('/')[-1] + '+' + bud.split('/')[-1], 'wariant': a.get('wariant', 'ee'), 'T0': T0, 'takt_ms': TAKT_MS, 'jednostki': jedn,
          'rozkazy': rozkazy, 'koniec_t': sa[-1]['t'], 'pozniejsze': fund}
     json.dump(o, open(wyj, 'w'), indent=1)
     json.dump({'probki': sa}, open(wyj.replace('.json', '') + '.seria.json', 'w'))
@@ -150,7 +158,7 @@ def opis_zbierania(nagr, uklad, wyj, od_t=None):
         prev = T0
         for i, p in enumerate(d['probki']):
             c = p.get(gid)
-            if c and any((cc.get('klasa') or '').endswith('0x831b80') for poz in (c.get('kolejka') or {}).get('poziomy', [])
+            if c and any((cc.get('klasa') or '').endswith(VT_ZBIERANIE) for poz in (c.get('kolejka') or {}).get('poziomy', [])
                          for cc in (poz.get('cele') or [])):
                 pkt = next((q[gid]['trasa'][-1] for q in d['probki'][i:i + 20] if q.get(gid, {}).get('trasa')), None)
                 rozkazy.append({'t_przed': prev, 'kto': gid, 't_proby': p['t'], 'rodzaj': 'zbieranie', 'x': pkt[0], 'y': pkt[1],
@@ -177,8 +185,9 @@ def opis_zbierania(nagr, uklad, wyj, od_t=None):
     zas = None
     if 'gracze' in p0:
         g = base64.b64decode(p0['gracze']['1'])
-        zas = list(struct.unpack_from('<5i', g, 0))
-    o = {'nagranie': nagr.split('/')[-1], 'T0': T0, 'takt_ms': TAKT_MS, 'jednostki': jedn, 'zrodla': zrodla, 'rozkazy': rozkazy,
+        # EE 673: rejestracja [gracz, 0xAF8, 32] – zasoby od początku wycinka; etap 53: wycinek [gracz, 0xA00, 0x400]
+        zas = list(struct.unpack_from('<5i', g, 0 if len(g) < 0x400 else PRODUKCJA_POLA[d.get('wariant', 'ee')]['zywnosc'] - 0xA00))
+    o = {'nagranie': nagr.split('/')[-1], 'wariant': d.get('wariant', 'ee'), 'T0': T0, 'takt_ms': TAKT_MS, 'jednostki': jedn, 'zrodla': zrodla, 'rozkazy': rozkazy,
          'koniec_t': seria[-1]['t'], 'zasoby_startowe': {'1': zas} if zas else {}}
     json.dump(o, open(wyj, 'w'), indent=1)
     for q in seria:   # źródła poza porównaniem pozycji (pola x/y obiektów prostych nieznane)
@@ -294,58 +303,187 @@ def stan_produkcji(d, budynek, gracz_od=0xA00):
     return out
 
 
-def opis_produkcji(nagr, uklad, wyj, globalny=100):
-    """Etap 52: rozkazy produkcji z nagrania – próbka spadku zasobów (opłata przy rozkazie [P: 677/679]) = próbka
-    kliknięcia; technologia pozycji z kolejności startów (kolejka FIFO [W]); populacja startowa z próbki, składnik
-    globalny limitu z odczytu gry (produkcja_odczyt: 100 [P: 678/679])."""
+# etap 53: para technologii obywatela (przycisk zamawia 1074; start losuje płeć – AoC 0x5FDDED, EE 0x5EFB91)
+PARA_PLCI = {1451: 1074}
+
+
+def opis_produkcji(nagr, uklad, wyj, globalny=100, dodatkowe=''):
+    """Etap 52/53: rozkazy produkcji i anulowania z nagrania (surowe bajty budynku i gracza).
+    Budynek = pierwsza jednostka z 1. próbki, w której polach produkcji cokolwiek się dzieje. Rozkaz = próbka, w której
+    rośnie liczba pozycji (kolejka + bieżąca, z poprawką na pozycję zakończoną w tym takcie); anulowanie = próbka, w której
+    liczba pozycji maleje bez zakończenia (licznik daleko od zera). Technologia przycisku: jedyna technologia startów
+    nagrania (1451 → 1074: płeć losuje start); nagranie z kilkoma technologiami nie jest obsługiwane (kolejka w surowych
+    bajtach to tylko wskaźniki). Populacja startowa z próbki, składnik globalny limitu z odczytu gry. Nowe jednostki gry
+    (rejestrator `nowe_gracza`) – `nowe_gry`: pierwsza próbka (czas, typ, pozycja, kurs, stan, cel).
+    `dodatkowe` = "typ:x:y,typ:x:y" – jednostki gracza 1 stojące na mapie od wcześniejszych przebiegów tej samej sesji
+    (nie ma ich w układzie scenariusza ani w rejestracji), np. wyprodukowane wcześniej – zajmują miejsca wyjścia."""
     d = json.load(open(nagr)); u = json.load(open(uklad))
     nazwy = {gid: g for g, v in u['grupy'].items() for gid in v['id']}
-    budynek = next(g for g in d['jednostki'] if d['probki'][0][g]['typ'] in (35, 41, 721))
-    st = stan_produkcji(d, budynek)
+    P0 = d['probki'][0]
+    budynek = None
+    for g in d['jednostki']:
+        if g not in P0 or '0x0' not in (P0[g].get('surowe') or {}):
+            continue
+        st = stan_produkcji(d, g)
+        if any(x[1] >= 0 or x[3] > 0 for x in st):
+            budynek = g
+            break
+    if budynek is None:
+        raise SystemExit('opis_produkcji: w nagraniu nie ma budynku z produkcją')
     seria = _seria(d)
     T0 = seria[0]['t']
     jedn = []
     for gid in d['jednostki']:
+        if gid not in seria[0]:
+            continue
         q = seria[0][gid]
         jedn.append({'id': gid, 'nazwa': nazwy.get(gid, gid), 'typ': q['typ'], 'gracz': int(gid, 16) >> 24, 'x': q['x'],
                      'y': q['y'], 'z': q['z'], 'kurs': math.atan2(-q['m01'], q['m11']), 'hp': q['hp']})
+    for k, e in enumerate(x for x in dodatkowe.split(',') if x):
+        ty, x, y = e.split(':')[:3]
+        jedn.append({'id': '0x7f%06x' % k, 'nazwa': 'dodatkowa%d' % k, 'typ': int(ty), 'gracz': 1, 'x': float(x), 'y': float(y),
+                     'z': None, 'kurs': math.pi, 'hp': None})
     starty = [st[i][1] for i in range(1, len(st)) if st[i][1] >= 0 and (st[i][1] != st[i - 1][1] or st[i][2] > st[i - 1][2])]
+    przyciski = sorted({PARA_PLCI.get(t, t) for t in starty})
+    if len(przyciski) != 1:
+        raise SystemExit(f'opis_produkcji: technologie startów {sorted(set(starty))} – obsługiwana jedna technologia przycisku')
+    tech = przyciski[0]
     rozkazy = []
+    takt = [0]   # numer taktu próbki liczony od 1. próbki (zegar gry nie jest równomierny – zob. porownaj_produkcje)
     for i in range(1, len(st)):
-        spadek = st[i - 1][4][0] - st[i][4][0]
-        for _ in range(max(0, spadek // 50)):   # koszt obywatela – 50 żywności (dbtechtree 1074/1451)
-            rozkazy.append({'t_przed': st[i - 1][0], 'kto': budynek, 't_proby': st[i][0], 'rodzaj': 'produkcja'})
-    for r, tech in zip(rozkazy, starty):
-        r['tech'] = tech
-    rozkazy = [r for r in rozkazy if 'tech' in r]
+        takt.append(takt[-1] + max(1, round((st[i][0] - st[i - 1][0]) / TAKT_MS)))
+    for i in range(1, len(st)):
+        a, b = st[i - 1], st[i]
+        na, nb = a[3] + (a[1] >= 0), b[3] + (b[1] >= 0)
+        koniec = 1 if (a[1] >= 0 and 0 < a[2] <= 34 and (b[1] < 0 or b[2] > a[2])) else 0   # pozycja zakończona w tym takcie
+        delta = nb - na + koniec
+        for _ in range(max(0, delta)):
+            rozkazy.append({'t_przed': a[0], 'takt_przed': takt[i - 1], 'kto': budynek, 't_proby': b[0], 'rodzaj': 'produkcja', 'tech': tech})
+        for _ in range(max(0, -delta)):
+            rozkazy.append({'t_przed': a[0], 'takt_przed': takt[i - 1], 'kto': budynek, 't_proby': b[0], 'rodzaj': 'anuluj', 'tech': tech})
+    nowe = []
+    for n in d.get('nowe') or []:
+        q = next((p[n['id']] for p in d['probki'] if n['id'] in p), None)
+        if q is None:
+            continue
+        cele = [c.get('punkt') for c in ((q.get('kolejka') or {}).get('poziomy') or [{}])[0].get('cele', [])]
+        nowe.append({'id': n['id'], 't': n['t'], 'typ': q['typ'], 'x': q['x'], 'y': q['y'],
+                     'kurs': math.atan2(-q['m01'], q['m11']), 'stan': q['stan'], 'cele': cele})
     o = {'nagranie': nagr.split('/')[-1], 'wariant': d.get('wariant', 'ee'), 'T0': T0, 'takt_ms': TAKT_MS, 'jednostki': jedn,
-         'rozkazy': rozkazy, 'koniec_t': seria[-1]['t'], 'zasoby_startowe': {'1': st[0][4]},
-         'populacja': {'1': [st[0][5], int(globalny)]}, 'produkcja': sorted(set(starty)), 'budynki_produkcji': [budynek]}
+         'rozkazy': rozkazy, 'koniec_t': seria[-1]['t'], 'koniec_takt': takt[-1], 'zasoby_startowe': {'1': st[0][4]},
+         'populacja': {'1': [st[0][5], int(globalny)]}, 'produkcja': sorted(set(starty) | {tech}),
+         'budynki_produkcji': [budynek], 'nowe_gry': nowe}
     json.dump(o, open(wyj, 'w'), indent=1)
-    json.dump({'probki': seria, 'produkcja': {budynek: st}}, open(wyj.replace('.json', '') + '.seria.json', 'w'))
-    print(json.dumps({k: v for k, v in o.items() if k != 'jednostki'}, ensure_ascii=False)[:900])
+    json.dump({'probki': seria, 'produkcja': {budynek: st}, 'nowe_gry': nowe,
+               'rng': [[p['t'], p.get('rng_kroki')] for p in d['probki']]}, open(wyj.replace('.json', '') + '.seria.json', 'w'))
+    print(json.dumps({k: v for k, v in o.items() if k != 'jednostki'}, ensure_ascii=False)[:1100])
 
 
 def porownaj_produkcje(ser_p, core_p):
-    """Etap 52: próbka po próbce – bieżąca pozycja, licznik, długość kolejki, zasoby i populacja (gra / Core);
-    pierwsza rozbieżność i liczba zgodnych próbek; nowe jednostki Core (czas, typ, pozycja, kurs)."""
+    """Etap 52/53: próbka po próbce – bieżąca pozycja, licznik, długość kolejki, zasoby i populacja (gra / Core);
+    pierwsza rozbieżność i liczba zgodnych próbek. Etap 53: nowe jednostki – gra (pierwsza próbka rejestratora) wobec
+    Core: różnica czasu w taktach, typ, pozycja (|Δ| ≤ 0,002), kurs (|Δ| ≤ 0,002 rad), stan początkowy; losowania
+    generatora w taktach startu i utworzenia (gdy Core uruchomiono z --rng=1)."""
     ser = json.load(open(ser_p)); core = json.load(open(core_p))
     ct = [p[1] for p in core['probki']]
-    zg = n = 0; pierwsza = None
+    zg = n = nieakt = 0; pierwsza = None
     for gid, st in ser['produkcja'].items():
+        pop_g = None; pop_ok = False
+        # etap 53: dopasowanie po numerze taktu, nie po czasie – zegar gry (EEPhysics +0xD0) powyżej 524288 ms rośnie o
+        # 34,0625 ms na takt (kwant f32 = 1/16 ms) zamiast 1500/44 [P: 677_dwa, 705], więc czas próbki rozjeżdża się z siatką
+        # Core o 0,03 ms/takt. Pierwsza próbka gry wyznacza takt Core po czasie; kolejne – po liczbie taktów gry.
+        i_pocz = None; takt_gry = 0; t_pop = None
         for (t, cur, ms, kol, zas, pop) in st:
-            i = bisect.bisect_right(ct, t + 16.0) - 1
-            if i < 0 or abs(ct[i] - t) > 16.0:
+            if t_pop is not None:
+                takt_gry += max(1, round((t - t_pop) / TAKT_MS))
+            t_pop = t
+            if i_pocz is None:
+                j = bisect.bisect_right(ct, t + 16.0) - 1
+                if j < 0:
+                    i_pocz = -1          # próbka sprzed pierwszego taktu Core (start od 1. próbki): takt Core = −1
+                    continue
+                if abs(ct[j] - t) > 16.0:
+                    t_pop = None; takt_gry = 0   # poza zakresem Core – szukaj dalej
+                    continue
+                i_pocz = j
+            i = i_pocz + takt_gry
+            if i < 0 or i >= len(ct):
                 continue
             pc = core['probki'][i][2]
             c = pc.get('prod_' + gid, [-1, 0, 0])
             g_ = (cur, ms if cur >= 0 else 0, kol, zas, pop); k_ = (c[0], c[1] if c[0] >= 0 else 0, c[2], pc.get('zasoby'), pc.get('populacja'))
             n += 1
-            if g_ == k_: zg += 1
-            elif pierwsza is None: pierwsza = (t, g_, k_)
-    print(f"produkcja: zgodne {zg}/{n}; pierwsza rozbieżność: {pierwsza}")
-    print("nowe jednostki Core (t, typ, x, y, kurs):", core.get('nowe', []))
+            if g_ == k_:
+                zg += 1; pop_ok = True
+            elif pop_ok and g_ == pop_g:
+                # próbka nieaktualna rejestratora: gra = poprzednia próbka (zgodna z Core); następna znów jest porównywana
+                nieakt += 1; pop_ok = False
+            else:
+                pop_ok = False
+                if pierwsza is None: pierwsza = (t, g_, k_)
+            pop_g = g_
+    print(f"produkcja: zgodne {zg}/{n}, próbek nieaktualnych rejestratora {nieakt}; pierwsza rozbieżność: {pierwsza}")
+    nc = core.get('nowe', [])
+    print("nowe jednostki Core (t, typ, x, y, kurs[, stan]):", nc)
+    ng = ser.get('nowe_gry') or []
+    ok_n = 0
+    for k, g in enumerate(ng):
+        if k >= len(nc):
+            print(f"  nowa {g['id']}: brak w Core"); continue
+        c = nc[k]
+        dt = round((c[0] - g['t']) / TAKT_MS)
+        dk = abs((c[4] - g['kurs'] + math.pi) % (2 * math.pi) - math.pi)
+        zgodna = dt == 0 and c[1] == g['typ'] and abs(c[2] - g['x']) <= 0.002 and abs(c[3] - g['y']) <= 0.002 and dk <= 0.002 \
+            and (len(c) < 6 or c[5] == g['stan'])
+        ok_n += zgodna
+        print(f"  nowa {g['id']}: gra t={g['t']} typ {g['typ']} ({g['x']:.3f}; {g['y']:.3f}) kurs {g['kurs']:.4f} stan {g['stan']} cele {g['cele']}"
+              f" | Core Δt {dt} taktów, typ {c[1]}, ({c[2]:.3f}; {c[3]:.3f}), kurs {c[4]:.4f}, stan {c[5] if len(c) > 5 else '?'} → {'zgodna' if zgodna else 'RÓŻNA'}")
+    if ng:
+        print(f"nowe jednostki: zgodne {ok_n}/{len(ng)} (Core utworzył {len(nc)})")
+    # losowania: takty, w których gra albo Core odbiega od 2 losowań taktu
+    rg = {int(round(t)): k for t, k in ser.get('rng', []) if k is not None}
+    if rg and core['probki'] and 'rng_n' in core['probki'][0][2]:
+        roz = []; por = 0
+        zdarzenia = set()
+        for gid, st in ser['produkcja'].items():
+            for a, b in zip(st, st[1:]):
+                if a[1] != b[1] or b[2] > a[2]:
+                    zdarzenia.add(int(round(b[0])))
+        for t in sorted(zdarzenia):
+            i = bisect.bisect_right(ct, t + 16.0) - 1
+            if i < 0 or t not in rg:
+                continue
+            por += 1
+            if core['probki'][i][2]['rng_n'] != rg[t]:
+                roz.append((t, rg[t], core['probki'][i][2]['rng_n']))
+        print(f"losowania w taktach startu/utworzenia/anulowania: porównane {por}, różne {len(roz)} (t, gra, Core): {roz[:6]}")
     return zg, n, pierwsza
+
+
+def porownaj_zbieranie(nagr, core_p, obywatel, drzewo):
+    """Etap 51/53: gospodarka zbierania próbka po próbce – drewno gracza, ładunek obywatela (+0x40), ilość (+0x40) i HP
+    (+0x3C) drzewa: gra wobec Core (pola próbki `zasoby`, `niesie_<id>`, `zrodla`). Zasoby gracza: wycinek rejestratora
+    [gracz, 0xAF8, 32] (EE, etap 51) albo [gracz, 0xA00, 0x400] z przesunięciem gry (etap 53)."""
+    d = json.load(open(nagr)); c = json.load(open(core_p))
+    ct = [p[1] for p in c['probki']]
+    T0 = c['probki'][0][1]; n = zg = 0; pierwsza = None; gra = core = None
+    for p in d['probki']:
+        if p['t'] < T0:
+            continue
+        i = bisect.bisect_right(ct, p['t'] + 16) - 1
+        cp = c['probki'][i][2] if i >= 0 and abs(ct[i] - p['t']) <= 16 else None
+        if not cp or 'zasoby' not in cp:
+            continue
+        g = base64.b64decode(p['gracze']['1'])
+        off = 0 if len(g) < 0x400 else PRODUKCJA_POLA[d.get('wariant', 'ee')]['zywnosc'] - 0xA00
+        bc = base64.b64decode(p[obywatel]['surowe']['0x0']); bt = base64.b64decode(p[drzewo]['surowe']['0x0'])
+        gra = (struct.unpack_from('<i', g, off + 4)[0], struct.unpack_from('<i', bc, 0x40)[0], struct.unpack_from('<i', bt, 0x40)[0],
+               struct.unpack_from('<i', bt, 0x3C)[0])
+        core = (cp['zasoby'][1], cp['niesie_' + obywatel], cp['zrodla'][drzewo][1], cp['zrodla'][drzewo][0])
+        n += 1
+        if gra == core: zg += 1
+        elif pierwsza is None: pierwsza = (p['t'], gra, core)
+    print(f"zbieranie (drewno, ładunek, ilość i HP drzewa): zgodne {zg}/{n}; pierwsza różnica: {pierwsza}; koniec gra {gra} Core {core}")
 
 
 if __name__ == '__main__':
@@ -355,11 +493,13 @@ if __name__ == '__main__':
     elif a and a[0] == 'opis_zbierania':
         opis_zbierania(a[1], a[2], a[3], a[4] if len(a) > 4 else None)
     elif a and a[0] == 'opis_produkcji':
-        opis_produkcji(a[1], a[2], a[3], int(a[4]) if len(a) > 4 else 100)
+        opis_produkcji(a[1], a[2], a[3], int(a[4]) if len(a) > 4 else 100, a[5] if len(a) > 5 else '')
+    elif a and a[0] == 'porownaj_zbieranie':
+        porownaj_zbieranie(a[1], a[2], a[3], a[4])
     elif a and a[0] == 'porownaj_produkcje':
         porownaj_produkcje(a[1], a[2])
     elif a and a[0] == 'opis_budowy':
-        opis_budowy(a[1], a[2], a[3], a[4])
+        opis_budowy(a[1], a[2], a[3], a[4], a[5] if len(a) > 5 else None)
     elif a and a[0] == 'porownaj':
         w = porownaj(a[1], a[2], tuple(int(x) for x in a[3].split(',')) if len(a) > 3 and a[3] else ())
         podsumowanie(json.load(open(a[2])), w)

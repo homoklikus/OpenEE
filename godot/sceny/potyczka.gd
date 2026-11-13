@@ -12,6 +12,7 @@ extends "res://sceny/test_scenariusz.gd"
 ## Sterowanie: LPM – zaznacz, ramka – zaznacz grupę, PPM w teren – ruch (Shift: kolejka), PPM na wrogu – atak,
 ##   spacja – pauza, R – nowa bitwa (restart), Esc – launcher.
 
+const ParametryTypowDB := preload("res://silnik/symulacja/parametry_typow_db.gd")   # etap 53
 const TYPY_RUCHOME := [5, 6, 13, 16, 23, 4, 18, 21, 22]
 const PLIK_DOMYSLNY := "dane/potyczka/potyczka_troja.json"
 const MIGNIECIE_S := 0.25            # czas podświetlenia paska HP po trafieniu (prezentacja)
@@ -108,7 +109,9 @@ func _po_zbudowaniu() -> void:
 			for x in range(okno.y, okno.y + okno.z): l += "." if core.pole_przejezdne(x, y) else "#"
 			w.append("%d %s" % [y, l])
 		_raport_p["siatka_od_x"] = okno.y; _raport_p["siatka"] = w
-	if _arg("potyczka-demo", "") != "" and uklad.has("demo_e52"):
+	if _arg("potyczka-demo", "") != "" and uklad.has("demo_e53"):
+		await _demo_e53(float(_arg("potyczka-demo", "120")))
+	elif _arg("potyczka-demo", "") != "" and uklad.has("demo_e52"):
 		await _demo_e52(float(_arg("potyczka-demo", "90")))
 	elif _arg("potyczka-demo", "") != "" and uklad.has("demo_e50"):
 		await _demo_e50(float(_arg("potyczka-demo", "60")))
@@ -676,14 +679,24 @@ func _ustaw_produkcje(id_bud: Array) -> void:
 			ImporterEE.zglos("uwaga", "potyczka", "Brak technologii %d w dbtechtree" % tid); continue
 		var typ := str(int(rt["obiekt"]))
 		var td: Dictionary = uklad.get("typy", {}).get(typ, {})
+		var pochodne := false
 		if td.is_empty():
-			ImporterEE.zglos("uwaga", "potyczka", "Brak parametrów typu %s (produkcja %d)" % [typ, tid]); continue
+			# etap 53: typ spoza układu (np. jednostka wojskowa z koszar) – parametry z pomiaru (parametry_jednostek_ee.json)
+			# albo wyprowadzone z dbobjects (ParametryTypowDB); produkcja nie wymaga osobnego wpisu dla każdej jednostki
+			if not ParametryTypowDB.uzupelnij(par, _obiekty, int(typ)):
+				ImporterEE.zglos("uwaga", "potyczka", "Brak parametrów typu %s (produkcja %d)" % [typ, tid]); continue
+			td = {"ruch": par["ruch"][typ], "walka": par["walka"][typ]["p"], "hp": int(par["walka"][typ]["hp"])}
+			pochodne = bool(par["walka"][typ].get("pochodne", false))
 		var dp: Dictionary = par.get("produkcja", {}).get(str(tid), {})
 		core.ustaw_produkcje({"tech_id": tid, "typ_db": int(rt["obiekt"]), "koszt": rt["koszt"], "czas_ms": int(rt["czas_ms"]),
-			"mnoznik_czasu": float(dp.get("mnoznik_czasu", 1.0)), "populacja": int(dp.get("populacja", 1)), "ruch": td["ruch"],
+			"mnoznik_czasu": float(dp.get("mnoznik_czasu", 1.0)),
+			"populacja": int(dp.get("populacja", int(_obiekty.get(int(typ), {}).get("Population count", 1)))),
+			"losowy_zamiennik": int(dp.get("losowy_zamiennik", -1)) if tech.has(int(dp.get("losowy_zamiennik", -1))) and bool(pr.get("losuj_plec", false)) else -1,
+			"ruch": td["ruch"],
 			"walka": td["walka"], "hp": int(td.get("hp", 1)),
 			"skrypt": String(_obiekty.get(int(typ), {}).get("TAI Script", ""))})
-		info[str(tid)] = {"nazwa": rt["nazwa"], "obiekt": int(rt["obiekt"]), "koszt": rt["koszt"], "czas_ms": int(rt["czas_ms"])}
+		info[str(tid)] = {"nazwa": rt["nazwa"], "obiekt": int(rt["obiekt"]), "koszt": rt["koszt"], "czas_ms": int(rt["czas_ms"]),
+			"parametry_z_dbobjects": pochodne}
 		for k in int(r.get("ile", 1)):
 			core.rozkaz_produkcji(int(id_bud[int(r["budynek"])]), tid)
 	_raport_p["produkcja_typy"] = info
@@ -724,6 +737,57 @@ func _demo_e52(sekundy: float) -> void:
 	przebieg["nowe"] = _nowe_z_produkcji
 	przebieg["koniec"] = {"zasoby": core.zasoby(gl), "populacja": core.populacja(gl), "limit": core.limit_populacji(gl), "takt": sym.takt}
 	_raport_p["demo_e52"] = przebieg
+	_koniec_automatu(0)
+
+
+# Etap 53 – demonstracja produkcji wojskowej (docs/titan/produkcja.md § 5): ukończone koszary produkują jednostki z kolejki
+# (rozkazy z układu), automat anuluje jedną pozycję kolejki (jak PPM na przycisku), a każdej nowej jednostce wydaje rozkaz
+# ruchu do punktu z układu (zwykły rozkaz gracza – punkt zbiórki nie jest odwzorowany w Core). Raport co sekundę: bieżąca
+# pozycja, licznik, kolejka, zasoby, populacja; lista nowych jednostek i ich pozycje końcowe. Cała logika w Core.
+func _demo_e53(sekundy: float) -> void:
+	var kat := _arg("potyczka-zrzuty", "")
+	if kat != "": DirAccess.make_dir_recursive_absolute(kat)
+	var bud := -1
+	for bid in _budynki_core: bud = int(bid)
+	var gl := int(uklad.get("gracz_lokalny", 1))
+	var d: Dictionary = uklad.get("demo_e53", {})
+	var cel_n := int(d.get("jednostek", 2))
+	var cel_ruchu: Array = d.get("cel_ruchu", [])
+	var przebieg := {"budynek": bud, "kroki": [], "co_sekunde": [], "anulowanie": {}, "rozkazy_ruchu": []}
+	var wyslane := {}
+	var t := 0.0; var nr := 0
+	var koniec_po := -1.0
+	while t < sekundy:
+		await _czekaj(1.0, kat if nr % 15 == 0 else "", "e53_koszary_%02d" % nr, przebieg)
+		var jb: Dictionary = core.jednostka(bud)
+		przebieg.co_sekunde.append([sym.takt, int(jb.get("prod_biezaca", -1)), int(jb.get("prod_ms", 0)), int(jb.get("prod_kolejka_n", 0)),
+			core.zasoby(gl), int(core.populacja(gl))])
+		if d.has("anuluj_po_s") and przebieg.anulowanie.is_empty() and t >= float(d["anuluj_po_s"]):
+			var przed: Array = core.zasoby(gl)
+			var ok: bool = core.anuluj_technologie(bud, int(d.get("anuluj_tech", -1)))
+			przebieg.anulowanie = {"takt": sym.takt, "wynik": ok, "zasoby_przed": przed, "zasoby_po": core.zasoby(gl),
+				"kolejka_po": int(core.jednostka(bud).get("prod_kolejka_n", -1))}
+		for n in _nowe_z_produkcji:
+			var id := int(n[1])
+			if wyslane.has(id) or cel_ruchu.size() < 2: continue
+			var k := wyslane.size()
+			var cel := Vector2(float(cel_ruchu[0]), float(cel_ruchu[1]) + 0.5 * k)
+			sym.rozkaz_grupy([id], cel, false)
+			wyslane[id] = cel
+			przebieg.rozkazy_ruchu.append({"takt": sym.takt, "id": id, "cel": [cel.x, cel.y]})
+		if _nowe_z_produkcji.size() >= cel_n and koniec_po < 0: koniec_po = t + float(d.get("czekaj_na_ruch_s", 12))
+		if koniec_po >= 0 and t >= koniec_po: break
+		t += 1.0; nr += 1
+	await _czekaj(1.0, kat, "e53_koszary_koniec", przebieg)
+	var konce := []
+	for n in _nowe_z_produkcji:
+		var j: Dictionary = core.jednostka(int(n[1]))
+		konce.append({"id": int(n[1]), "typ": int(n[2]), "start": [n[3], n[4]], "koniec": [snappedf(float(j.get("x", 0)), 0.001),
+			snappedf(float(j.get("y", 0)), 0.001)], "stan": int(j.get("stan", -1)), "cel": [wyslane.get(int(n[1]), Vector2.ZERO).x, wyslane.get(int(n[1]), Vector2.ZERO).y]})
+	przebieg["nowe"] = _nowe_z_produkcji
+	przebieg["nowe_koniec"] = konce
+	przebieg["koniec"] = {"zasoby": core.zasoby(gl), "populacja": core.populacja(gl), "limit": core.limit_populacji(gl), "takt": sym.takt}
+	_raport_p["demo_e53"] = przebieg
 	_koniec_automatu(0)
 
 

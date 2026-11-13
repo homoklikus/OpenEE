@@ -52,3 +52,25 @@ przy v = 0,295, Core hamuje) – ruch, nie zbieranie.
 Wybór źródła i miejsca przy wielu obywatelach (WaitingArea, OpenPosition), inne surowce (współczynnik globalny tempa,
 indeks 0x636C96), farmy, zwierzęta (TakeDamage zamiast ścinania), wyczerpanie źródła i szukanie nowego (FindNewResource),
 zniszczenie magazynu – nie mierzono.
+
+## 5. Etap 53 – walidacja w AoC
+
+Pomiar: zadanie 708, AoC (proces c636a2ab…), scenariusz `e42_e51_zbieranie`, nagranie `e53_708_zb` (7286 próbek) [P].
+Pierwsze kliknięcie trafiło w teren (zwykły rozkaz ruchu, t = 40431), rozkaz zbierania przyjęty w t = 94638.
+
+| Wielkość | AoC 708 | EE 673 |
+|---|---|---|
+| klasa celu | vtable 0x8475A8 | vtable 0x831B80 (EEUGGather) |
+| stany | 8008 → 8000 → 2015 → 10003 → 9000 → 4004 → 4024 → 4007 → 8009 → … → 4005 → 4016 → 4023 → 8008 | to samo |
+| drzewo | HP 1 → 0 po 4398 ms pracy; ilość 400 → 395 → 390 → 385 | to samo |
+| rytm | +5 drewna co 22 059 ms (pierwsze po 26 457 ms od wejścia w 4004) | to samo |
+| udźwig | 15, potem powrót do Centrum Miasta | to samo |
+| oddanie | drewno gracza +15 w próbce wejścia w 4005; ładunek 0 | to samo |
+| ponowne podjęcie | 8008 → dojście → 4004 bez nowego rozkazu | to samo |
+
+- Zgodność Core (`--wariant=aoc`, odtworzenie od t = 90000, `--od-startu=0`): obywatel i Centrum Miasta 4783/4783 próbek
+  bez rozbieżności; gospodarka (drewno, ładunek, ilość i HP drzewa) 4782/4782 (`porownaj_zbieranie`).
+- Odtworzenie od początku nagrania: pierwsza rozbieżność t = 47045 (pozycja 140,5322 / 140,5235, kurs) – koniec
+  przypadkowego rozkazu ruchu pod drzewem; ten sam rodzaj co otwarta pozycja EE 673 „zatrzymanie w 9006 przy v ≠ 0”.
+  Nie przedstawiam całego nagrania jako zgodnego.
+- Wybór źródła i magazynu, inne surowce, kilku zbieraczy – nadal niezmierzone w żadnej grze.

@@ -144,3 +144,20 @@ Odtworzenie w Core po zmianach etapu 37 (`odtworz_e35.gd`, kąt celu z nagrania)
 | 677 | AoC | jw. | Produkcja 1, potem 2 obywateli | `produkcja_rozkaz`, rejestrator TC + gracz 0xA00…0xE00 | – | koszt 50 żywności przy rozkazie; start w tym samym takcie, 28000, −34/takt, 824 takty; wyjście (146,15/146,45/146,75; 109,85), kurs −y; populacja +0xB14; płeć 1451, 1451, 1074 | Core 1898/1898, 3101/3101 |
 | 678 | AoC | jw., potem e42_e52_brak | Anulowanie (nieudane – zły krok), brak zasobów | `produkcja_rozkaz`, `produkcja_odczyt` | – | limit globalny 100 (limit 101); przy 20 żywności – odmowa bez zmian; płeć 1074 ×2 | – |
 | 679 | AoC + EE | e42_e51_zbieranie | Anulowanie kliknięciem w ikonę kolejki; kontrolny pomiar EE | `klik_okna`, `produkcja_rozkaz` | – | AoC: klik (40, 1400) lewy/prawy bez skutku [N]; EE: ten sam przebieg (824 takty, wyjście, kurs), kolejka 4 B, populacja +0xB10, losowania przy utworzeniu 3 (AoC 1) | Core 2996/2996 (EE) |
+
+## Etap 53 – produkcja wojskowa, anulowanie, punkt zbiórki, budowa i zbieranie w AoC
+
+Eksperymenty Fable (zadania 681–701) opisują `EKSPERYMENT_FABLE_KOLIZJE.md` i `EKSPERYMENT_FABLE_DUZE_JEDNOSTKI.md`.
+
+| Nr | Gra | Scenariusz | Pytanie | Metoda | Oczekiwanie | Wynik | Wniosek |
+|---|---|---|---|---|---|---|---|
+| 702 | AoC | e42_e53_koszary | Start i panel koszar | `start_testowy` | – | nieudane: kursor gry nie reagował na ruch myszy (pulpit w użyciu), odprawa niezatwierdzona, limit 240 s ×2 | powtórzone jako 703 |
+| 703 | AoC | jw. | Panel koszar | `produkcja_rozkaz` (liczba 0), zrzut | – | 4 przyciski jednostek (965…1377, 1265), ulepszenie, przycisk flagi; kolejka bez ikon | – |
+| 704 | AoC | jw. | Produkcja 1, potem 2 jednostek wojskowych | `produkcja_rozkaz` + rejestrator (budynek, gracz 0xA00…0xE00) | jak obywatel | 3011 Maceman: 30 żywności + 30 żelaza, 32000 ms, 942 takty, wyjście (164,25 / 164,75 / 165,25; 111,75), bez losowania startu, +1 przy utworzeniu | Core 2646/2647 i 4984/4984 |
+| 705 | AoC | jw. | Anulowanie (PPM na przycisku), punkt zbiórki (PPM w teren) | `klik_okna` prawy ×4, `obs_rozkaz` na budynek, rejestrator z `nowe_gracza` | – | kolejka 2 → 1 → 0, potem bieżąca; pełny zwrot; punkt jako EEUGLocation w 2. poziomie kolejki budynku; nowe jednostki z (166,25; 114,25) w stanie 8000 do (168,25; 115,25 / 115,75) | Core 1008/1008 (anulowanie) |
+| 706 | EE | jw. | To samo co 704 i 705 w EE | jw. | jak AoC | ten sam przebieg; losowania utworzenia 3 | Core 2387, 3920, 860 próbek w całości; nowe jednostki 3/3 |
+| 707 | AoC | e42_e51_ekonomia | Budowa domu, dom a limit populacji, zniszczenie (Delete) | `budowa_rozkaz`, `obs_wybierz`, `klawisze` | jak EE 660 | koszt 50/40, +15 HP co 29–30 taktów, 34 092 ms; 4002 → 5000 bez próbki 4028; pola gracza bez zmian po ukończeniu i zniszczeniu | Core 2580/2581 + 1312/1312 |
+| 708 | AoC | e42_e51_zbieranie | Zbieranie drewna | `ppm_na_obiekt` | jak EE 673 | 8008 → 4004 → 15 drewna → 8009 → 4005 (+15) → 8008; +5 co 22 059 ms | Core 4783/4783, gospodarka 4782/4782 (od t = 90000) |
+| 709 | AoC | e42_e53_koszary | Nowa jednostka w rejestratorze; kolejka mieszana | `produkcja_rozkaz` ×5 (dwa przyciski), PPM ×3 | – | 2. przycisk = 3107 Gallic Warrior; PPM usuwa pierwszą pozycję 3011 z kolejki, nie rusza bieżącej innej technologii | Core 1967/1967, nowa jednostka zgodna |
+| 710 | EE | jw. | Kolejka mieszana w EE | jw. | jak AoC | 2. przycisk = 2024 Spearman; ta sama reguła anulowania | – |
+

@@ -51,6 +51,18 @@ void Swiat::uporzadkuj_wg_pozycji() {
     });
 }
 
+bool Swiat::ustaw_kurs_macierzy(IdJednostki id, double m01, double m11) {
+    Jednostka* u = jednostka(id);
+    if (!u) return false;
+    // obrót wokół osi z bez pochylenia: m00 = cos, m01 = −sin, m10 = sin, m11 = cos (set_orientation_ypr przy P = R = 0)
+    u->orientacja = Macierz3{};
+    u->orientacja.m[0] = f32(m11);
+    u->orientacja.m[1] = f32(m01);
+    u->orientacja.m[3] = f32(-m01);
+    u->orientacja.m[4] = f32(m11);
+    return true;
+}
+
 bool Swiat::ustaw_z(IdJednostki id, double z) {
     for (auto& u : jednostki_)
         if (u.id == id) { u.z = f32(z); return true; }
@@ -275,6 +287,15 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
             if (!u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::budowa)
                 if (const Jednostka* b = jednostka(u.kolejka_celow.front().cel_jednostka))
                     u.orientacja = mat_.set_orientation_ypr(f32(mat_.kat_do_celu(u.x, u.y, b->x, b->y)));
+            u.tryb = TrybRuchu::praca;   // etap 53 [P: EE 660 t = 62794, AoC 707 t = 50147 – tryb 6 w próbce wejścia]
+            break;
+        case 4012:  // etap 53: WaitForBuildSiteToClear – tryb 3, v = 0, ω = 0 w próbce wejścia [P: EE 660 t = 62760 – v 0,0106 → 0;
+                    // AoC 707 t = 50113 – v 0,2955 → 0, ω 0,4165 → 0]. Wcześniej Core zostawiał prędkość z dojazdu: w EE
+                    // resztka 0,0106 nie dawała różnicy pozycji, w AoC (zatrzymanie w 9006 przy v = 0,2955) obywatel po
+                    // ukończeniu budynku zjeżdżał o 0,02 pola (pierwsza rozbieżność 707: t = 84273).
+            u.tryb = TrybRuchu::spoczynek;
+            u.v = 0.0;
+            u.omega = 0.0;
             break;
         case 8008:  // etap 51: MoveToResource – tryb 0 [P: 673]; punkt pracy: rozkaz (kliknięcie) albo rzut pozycji na
                     // obwód źródła odsunięty o r [P: 673 – powrót z (145,80; 111,16) → (140,15; 111,15)]
@@ -824,8 +845,11 @@ void Swiat::odbuduj_kontakty(Jednostka& u, double cx, double cy) {
         if (!o.kolizyjny) continue;
         if (o.boj && o.boj->s.hp <= 0) continue;
         if (o.komorka_x < xa || o.komorka_x > xb || o.komorka_y < ya || o.komorka_y > yb) continue;
-        u.lista_kontaktow.push_back(o.id);
-        o.lista_kontaktow.push_back(u.id);
+        // Etap 53: nowa para trafia na POCZĄTEK obu list (EE 0x5E8B77 → 0x5F240E, AoC 0x5F6226 → 0x600D8B) [W; P: eksperyment
+        // Fable 2 § 9 – zad. 691/693, 696/697]. Pętla kolizji taktu (0x5498C4) idzie od głowy listy. [Zastąpione: dopisywanie
+        // na koniec.]
+        u.lista_kontaktow.insert(u.lista_kontaktow.begin(), o.id);
+        o.lista_kontaktow.insert(o.lista_kontaktow.begin(), u.id);
         o.kontakty = std::uint32_t(o.lista_kontaktow.size());
     }
     u.kontakty = std::uint32_t(u.lista_kontaktow.size());
@@ -856,6 +880,18 @@ void Swiat::krok_koncowy(Jednostka& u) {
     for (IdJednostki oid : lista) {  // 0x5498C4 → 0x549179 dla każdego kontaktu
         Jednostka* o = jednostka(oid);
         if (!o) continue;
+        // Etap 53 – wybór gałęzi (EE 0x5498C4 @0x5499A5…0x5499EF, AoC 0x5560CF) [W; P: eksperyment Fable 2 § 3.1, 6.3–6.4]:
+        // gdy rozmiar kolizji obu stron (+0x244) ≥ 1,0 i druga strona jest typem ruchomym (prędkość maksymalna > 0),
+        // gra woła metodę „dużą” (EE 0x548A3C, AoC 0x555247), a NIE odpychanie małe 0x549179. Gałąź duża reaguje tylko po
+        // spełnieniu warunku geometrycznego (kursy w linii ≤ 5° albo przecięcie prostych kursów z |s|, |t| < 0,75); wzory
+        // jej skutków są nieodczytane [N], więc Core ich nie odwzorowuje – para pozostaje bez reakcji. To odpowiada grze w
+        // zmierzonych układach bez spełnionego warunku (tarany mijające się, zderzenie czołowe, objazd w AoC), a różni się
+        // w EE przy objeździe stojącego tarana (push 0,026 pola, zad. 700). Wcześniej Core stosował tu odpychanie małe,
+        // którego gra dla tej pary nie wykonuje (pierwsza rozbieżność AoC 701: t = 70772, chwila powstania pary).
+        if (u.param.promien_kolizji >= 1.0 && o->param.promien_kolizji >= 1.0 && o->param.vmax > 0.0) {
+            ++diag_.pary_duze;
+            continue;
+        }
         const auto r = odpychanie_male(u.x, u.y, u.param.promien_kolizji, o->x, o->y, o->param.promien_kolizji, o->v,
                                        o->param.vmax);
         if (!r.kolizja) continue;
@@ -3075,11 +3111,29 @@ bool Swiat::anuluj_produkcje(IdJednostki budynek, int indeks) {
     return true;
 }
 
+bool Swiat::anuluj_technologie(IdJednostki budynek, int tech_id) {
+    // AoC 0x5FD984 (komunikat anulowania 0x4C47xx: dla każdego zaznaczonego budynku tego typu) [W]: przegląd kolejki od
+    // początku; pozycja pasuje, gdy technologia jest ta sama albo obie należą do pary 1074/1451 (0x6414D2); pierwsza
+    // pasująca jest usuwana ze zwrotem ×1,0 (vt+0x44), pozostałe zachowują kolejność. Gdy nie usunięto żadnej, a bieżąca
+    // pozycja pasuje – 0x5FD8F3 (zwrot, bieżąca := brak, licznik := 0). Następna pozycja startuje w aktualizacji budynku.
+    // [P: AoC 705 / EE 706 – trzy PPM przy kolejce 3011, 3011 i bieżącej 3011: kolejka 2 → 1 → 0, potem bieżąca; zwrot
+    // 30 żywności + 30 żelaza za każdym razem, także po 12,7 s produkcji; populacja i generator bez zmian.]
+    Jednostka* b = jednostka(budynek);
+    if (!b || !b->budynek) return false;
+    auto pasuje = [](int a, int c) { return a == c || (a == 1074 && c == 1451) || (a == 1451 && c == 1074); };
+    for (std::size_t i = 0; i < b->prod_kolejka.size(); ++i)
+        if (pasuje(b->prod_kolejka[i], tech_id)) return anuluj_produkcje(budynek, int(i) + 1);
+    if (b->prod_biezaca >= 0 && pasuje(b->prod_biezaca, tech_id)) return anuluj_produkcje(budynek, 0);
+    return false;
+}
+
 bool Swiat::start_produkcji(Jednostka& b) {
     // 0x5FDC58 (EE 0x5EF9FF): budynek ukończony; pierwsza pozycja kolejki; warunek gracza vt+0x54 w trybie 2 –
     // populacja + koszt populacji ≤ limit (0x563A9F: klasa vt+0x6C + gracz+0xB14 > vt+0x78 + vt+0x7C → czekaj) [W];
-    // czas := round(czas typu × ulepszenie +0x94) [W; P: 677 – 28000]; jedno losowanie generatora [P: 677 – 3 starty,
-    // każdy +1 losowanie w takcie startu; przeznaczenie N].
+    // czas := round(czas typu × ulepszenie +0x94) [W; P: 677 – 28000; 704 – 32000].
+    // Etap 53: losowanie przy starcie dotyczy tylko technologii z losowym zamiennikiem (obywatel: wybór płci) – zob.
+    // ParametryProdukcji::losowy_zamiennik. [Etap 52 – zastąpione: „jedno losowanie generatora przy każdym starcie,
+    // przeznaczenie N”.] Czas liczony z technologii z kolejki (obiekt ebx w 0x5FDEAB), nie z zamiennika [W].
     if (!b.ukonczony || b.prod_kolejka.empty()) return false;
     const int tech = b.prod_kolejka.front();
     auto it = produkcja_typow_.find(tech);
@@ -3087,9 +3141,13 @@ bool Swiat::start_produkcji(Jednostka& b) {
     const ParametryProdukcji& p = it->second;
     if (populacja(b.gracz) + p.populacja > limit_populacji(b.gracz)) return false;
     b.prod_kolejka.pop_front();
-    b.prod_biezaca = tech;
+    int biezaca = tech;
+    if (p.losowy_zamiennik >= 0) {
+        const double r = rng_.losuj();
+        if (r >= 0.5 && produkcja_typow_.count(p.losowy_zamiennik)) biezaca = p.losowy_zamiennik;
+    }
+    b.prod_biezaca = biezaca;
     b.prod_ms = int(std::lround(double(f32(float(p.czas_ms) * float(p.mnoznik_czasu)))));
-    rng_.krok();
     return true;
 }
 

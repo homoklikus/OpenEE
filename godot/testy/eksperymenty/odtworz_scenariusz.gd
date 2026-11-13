@@ -14,6 +14,8 @@ const TAKT_MS := 1500.0 / 44.0
 var _typ_gry := {}   # etap 50: id gry → typ (przyrost budowy wg typu budującego)
 
 
+const ParametryTypowDB := preload("res://silnik/symulacja/parametry_typow_db.gd")   # etap 53
+
 func _arg(n: String, d: String) -> String:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--%s=" % n): return a.split("=", true, 1)[1]
@@ -104,7 +106,8 @@ func _start() -> void:
 			var bid: int = c.dodaj_budynek(pb)
 			core_id[str(j["id"])] = bid; gra_id[bid] = str(j["id"])
 			continue
-		if not par["ruch"].has(ty) or not par["walka"].has(ty):
+		# etap 53: typ bez pomiaru – parametry z dbobjects (ParametryTypowDB; te same reguły dają wartości typów zmierzonych)
+		if not ParametryTypowDB.uzupelnij(par, ob, int(ty)):
 			print("BŁĄD: brak parametrów typu ", ty); quit(1); return
 		var pr: Dictionary = (par["ruch"][ty] as Dictionary).duplicate()
 		# etap 48: parametry ruchu jednostki z pamięci gry (ulepszenie gracza +0x34) – nadpisują wartości typu z dbobjects
@@ -120,6 +123,8 @@ func _start() -> void:
 		if _arg("smierc", "1") == "1": pw.merge(ObiektyScnCore.parametry_smierci(int(ty), Z))   # etap 44: z dbgraphics i dbobjects
 		c.ustaw_walke(id, int(j["gracz"]), int(j["gracz"]) == 1, pw, int(j["hp"]) if j["hp"] != null else int(par["walka"][ty]["hp"]))
 		if j.get("z") != null: c.ustaw_z(id, float(j["z"]))   # z zapisu scenariusza (etap 43, 631 [P])
+		# etap 53: --macierz=1 – orientacja z elementów macierzy 1. próbki (opis: m01, m11) zamiast z kąta przez tablice
+		if _arg("macierz", "0") == "1" and j.get("m01") != null: c.ustaw_kurs_macierzy(id, float(j["m01"]), float(j["m11"]))
 		if _arg("skrypty", "1") == "1":   # etap 45: skrypt .tai typu (dbobjects „TAI Script”), interpretacja w Core
 			c.ustaw_skrypt_jednostki(id, String(ob.get(int(ty), {}).get("TAI Script", "")))
 		core_id[str(j["id"])] = id; gra_id[id] = str(j["id"])
@@ -164,9 +169,14 @@ func _start() -> void:
 			var rt: Dictionary = tech.get(int(tid), {})
 			if rt.is_empty(): print("BŁĄD: brak technologii ", tid, " w dbtechtree"); quit(1); return
 			var typ := str(int(rt["obiekt"]))
-			var dp: Dictionary = par.get("produkcja", {}).get(str(tid), {})
+			var dp: Dictionary = par.get("produkcja", {}).get(str(int(tid)), {})   # etap 53: klucz całkowity (JSON daje float)
+			# etap 53: jednostka dowolnego typu – parametry z pomiaru albo z dbobjects; koszt populacji z „Population count”
+			if not ParametryTypowDB.uzupelnij(par, ob, int(typ)):
+				print("BŁĄD: brak parametrów typu ", typ, " (technologia ", tid, ")"); quit(1); return
 			c.ustaw_produkcje({"tech_id": int(tid), "typ_db": int(rt["obiekt"]), "koszt": rt["koszt"], "czas_ms": int(rt["czas_ms"]),
-				"mnoznik_czasu": float(dp.get("mnoznik_czasu", 1.0)), "populacja": int(dp.get("populacja", 1)),
+				"mnoznik_czasu": float(dp.get("mnoznik_czasu", 1.0)),
+				"populacja": int(dp.get("populacja", int(ob.get(int(typ), {}).get("Population count", 1)))),
+				"losowy_zamiennik": int(dp.get("losowy_zamiennik", -1)),
 				"ruch": par["ruch"][typ], "walka": par["walka"][typ]["p"], "hp": int(par["walka"][typ]["hp"]),
 				"skrypt": String(ob.get(int(typ), {}).get("TAI Script", ""))})
 	for g in opis.get("populacja", {}):
@@ -181,6 +191,9 @@ func _start() -> void:
 	var rozkazy := {}
 	for r in opis["rozkazy"]:
 		var k := int(round((float(r["t_przed"]) - T0) / TAKT_MS))
+		# etap 53: rozkaz z numerem taktu liczonym od 1. próbki (opis_produkcji) – przy --od-startu=0 ważniejszy niż czas:
+		# zegar gry powyżej 524288 ms rośnie o 34,0625 ms na takt (kwant f32) i czas rozjeżdża się z siatką 1500/44 ms
+		if r.has("takt_przed") and _arg("od-startu", "1") == "0": k = int(r["takt_przed"])
 		if not rozkazy.has(k): rozkazy[k] = []
 		rozkazy[k].append(r)
 	var wynik := {"mapa": im.get("skrot", ""), "graf": graf, "ids": {}, "probki": [], "rozkazy": []}
@@ -188,6 +201,7 @@ func _start() -> void:
 		wynik.ids[str(j["id"])] = str(j["nazwa"])
 		_typ_gry[str(j["id"])] = int(j["typ"])
 	var takty := int(_arg("takty", str(int(round((float(opis["koniec_t"]) - T0) / TAKT_MS)) + 2)))
+	if opis.has("koniec_takt") and _arg("od-startu", "1") == "0" and _arg("takty", "") == "": takty = int(opis["koniec_takt"]) + 2
 	# etap 45: --rng-nagranie=PLIK – przed każdym taktem stan generatora z nagrania gry (próbka końca poprzedniego taktu);
 	# diagnostyka losowań w takcie (poza nagraniem gra losuje też w systemach nieodwzorowanych w Core)
 	var rng_gry := {}
@@ -211,7 +225,7 @@ func _start() -> void:
 		for r in rozkazy.get(k, []):
 			var kto: int = core_id[str(r["kto"])]
 			var w
-			if r["rodzaj"] == "budowa" or r["rodzaj"] == "zbieranie" or r["rodzaj"] == "produkcja":   # etap 50–52: po takcie
+			if r["rodzaj"] == "budowa" or r["rodzaj"] == "zbieranie" or r["rodzaj"] == "produkcja" or r["rodzaj"] == "anuluj":   # etap 50–53: po takcie
 				po_takcie.append(r); continue
 			if r["rodzaj"] == "atak": w = c.rozkaz_ataku(kto, core_id[str(r["cel"])])
 			else: w = c.rozkaz_ruchu(kto, float(r["x"]), float(r["y"]), float(r["kat"]) if r.get("kat") != null else null, false)
@@ -228,6 +242,10 @@ func _start() -> void:
 			if r["rodzaj"] == "produkcja":   # etap 52: koszt i start w próbce kliknięcia [P: 677/679]
 				w = c.rozkaz_produkcji(kto, int(r["tech"]))
 				wynik.rozkazy.append([k, str(r["kto"]), "produkcja", w])
+				continue
+			if r["rodzaj"] == "anuluj":   # etap 53: PPM na przycisku technologii [P: 705/706]
+				w = c.anuluj_technologie(kto, int(r["tech"]))
+				wynik.rozkazy.append([k, str(r["kto"]), "anuluj", w])
 				continue
 			if r["rodzaj"] == "zbieranie":   # etap 51: PPM na źródle – MoveToResource 8008 w próbce kliknięcia [P: 673]
 				w = c.rozkaz_zbierania(kto, core_id[str(r["zrodla"][0])], float(r["x"]), float(r["y"]))
@@ -285,7 +303,7 @@ func _start() -> void:
 				for d2 in c.stan_jednostek():
 					if int(d2.id) == int(nid): kurs_n = float(d2.kurs)
 				if not wynik.has("nowe"): wynik["nowe"] = []
-				wynik["nowe"].append([snappedf(T0 + TAKT_MS * (k + 1), 0.1), int(nj.get("typ_db", -1)), float(nj.get("x", 0)), float(nj.get("y", 0)), kurs_n])
+				wynik["nowe"].append([snappedf(T0 + TAKT_MS * (k + 1), 0.1), int(nj.get("typ_db", -1)), float(nj.get("x", 0)), float(nj.get("y", 0)), kurs_n, int(nj.get("stan", -1))])
 		if _arg("graf-scn", "0") == "1":   # etap 47: menedżer przebudowy (termin, flaga, zmienione sektory) i kolejka fizyki
 			var sg: Dictionary = c.stan_grafu()
 			pr["graf"] = [int(sg["d4"]), bool(sg["d8"]), int(sg["zmienione_sektory"]), int(sg["przebudowy_sektorow"]), int(sg["maks_id"])]

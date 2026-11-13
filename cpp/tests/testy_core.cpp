@@ -2249,6 +2249,7 @@ int test_produkcja() {
         p.walka = gwardia_ee(); p.hp = 25;
         sb->ustaw_produkcje(p);
         p.tech_id = 1074; p.typ_db = 32;
+        p.losowy_zamiennik = 1451;   // etap 53: wybór płci przy starcie (AoC 0x5FDDED, EE 0x5EFB91)
         sb->ustaw_produkcje(p);
         return sb;
     };
@@ -2261,7 +2262,9 @@ int test_produkcja() {
         auto sb = przygotuj(w);
         IdJednostki b = sb->jednostki().front().id;
         const std::uint32_t r0 = sb->generator().stan();
-        const bool ok = sb->rozkaz_produkcji(b, 1451);
+        // etap 53: przycisk zamawia Citizen 1074; start losuje (wynik ≥ 0,5 → Female Citizen 1451, obiekt 480)
+        const int typ_oczekiwany = double((214013u * r0 + 2531011u) & 0x7FFFFFFFu) / 2147483648.0 >= 0.5 ? 480 : 32;
+        const bool ok = sb->rozkaz_produkcji(b, 1074);
         const int l_start = losowania(r0, sb->generator().stan());
         const auto z = sb->zasoby(1);
         const int ms0 = sb->jednostka(b)->prod_ms;
@@ -2277,7 +2280,7 @@ int test_produkcja() {
                     n ? n->x : 0.0, n ? n->y : 0.0, n ? n->typ_db : -1, n ? n->orientacja.m01() : 0.0, n ? n->orientacja.m11() : 0.0,
                     sb->populacja(1), sb->jednostka(b)->prod_biezaca);
         sprawdz(ok && z[0] == 1061 && ms0 == 28000 && l_start == 1 && takt_konca == 824 && n && std::abs(n->x - 14.15) < 1e-5 &&
-                    std::abs(n->y - 9.85) < 1e-5 && n->typ_db == 480 && n->stan == 5000 && sb->populacja(1) == 2 &&
+                    std::abs(n->y - 9.85) < 1e-5 && n->typ_db == typ_oczekiwany && n->stan == 5000 && sb->populacja(1) == 2 &&
                     sb->jednostka(b)->prod_biezaca == -1 && l_konca == w.losowania_utworzenia,
                 std::string(w.nazwa) + ": koszt przy rozkazie, start 28000, 824 takty, wyjście (X + r; Y − r), populacja +1, losowania (677/679)");
     }
@@ -2329,6 +2332,191 @@ int test_produkcja() {
         sprawdz(!brak && bez_zmian && ok && czeka && start && an && sb->zasoby(1)[0] == 1111 && sb->jednostka(b)->prod_biezaca == -1,
                 "brak zasobów – odmowa (678); populacja = limit – pozycja czeka; anulowanie – pełny zwrot (0x5FD8F3)");
     }
+    // 4. etap 53 – wybór płci (AoC 0x5FDDED / EE 0x5EFB91 [W]; 7/7 startów 677–679 [P]): wynik losowania ≥ 0,5 → 1451;
+    //    technologia bez zamiennika (1451 zamówiona wprost) nie losuje
+    {
+        int zgodne = 0, kobiety = 0;
+        for (std::uint32_t ziarno = 1; ziarno <= 40; ++ziarno) {
+            auto sb = przygotuj(WariantTitan::aoc());
+            IdJednostki b = sb->jednostki().front().id;
+            sb->generator().ustaw_ziarno(ziarno * 7919u);
+            const std::uint32_t r0 = sb->generator().stan();
+            const bool k = double((214013u * r0 + 2531011u) & 0x7FFFFFFFu) / 2147483648.0 >= 0.5;
+            sb->rozkaz_produkcji(b, 1074);
+            if (sb->jednostka(b)->prod_biezaca == (k ? 1451 : 1074)) ++zgodne;
+            kobiety += k;
+        }
+        auto sb = przygotuj(WariantTitan::aoc());
+        IdJednostki b = sb->jednostki().front().id;
+        const std::uint32_t r0 = sb->generator().stan();
+        sb->rozkaz_produkcji(b, 1451);
+        std::printf("  płeć: zgodne z losowaniem %d/40 (kobiet %d); 1451 wprost – losowań %d\n", zgodne, kobiety,
+                    losowania(r0, sb->generator().stan()));
+        sprawdz(zgodne == 40 && kobiety > 5 && kobiety < 35 && losowania(r0, sb->generator().stan()) == 0,
+                "start obywatela losuje płeć (≥ 0,5 → 1451); technologia bez zamiennika nie losuje");
+    }
+    return bledy ? FAIL : PASS;
+}
+
+// Etap 53 – produkcja wojskowa w koszarach (docs/titan/produkcja.md § 5): ten sam mechanizm co obywatel, dane z dbtechtree
+// (Inf03 - Maceman 3011: obiekt 21, 30 żywności + 30 żelaza, 32000 ms – jednakowe w EE i AoC [P: odczyt bazy]). Pomiary
+// AoC 704/705, EE 706 [P]: koszt przy rozkazie, brak losowania przy starcie, 942 takty, wyjście (X + r; Y − r) z r = 0,25,
+// kurs −y, populacja +1, losowania utworzenia EE 3 / AoC 1; anulowanie PPM – kolejka od początku, potem bieżąca, zwrot 1,0.
+int test_produkcja_wojskowa() {
+    auto tab = tablice_lub_skip();
+    if (!tab) return SKIP;
+    auto przygotuj = [&](WariantTitan w) {
+        auto sb = std::make_unique<Swiat>(tab, TerenSiatka::syntetyczny_etap27(), w);
+        ParametryWalki kb = dom_37();
+        kb.hp_max = 1500;
+        sb->dodaj_obiekt_budynku(1, 34, 14, 10, 2, 15.0, 11.0, 0.0, kb, 1500, true, 0x701, false);
+        sb->ustaw_zasoby(1, {1111, 1222, 1333, 1444, 1555});
+        sb->ustaw_populacje(1, 1, 100);
+        ParametryProdukcji p;
+        p.tech_id = 3011; p.typ_db = 21; p.koszt = {30, 0, 0, 0, 30}; p.czas_ms = 32000; p.populacja = 1;
+        p.ruch.vmax = 0.6; p.ruch.rozmiar = 0.5; p.ruch.a = 2.0; p.ruch.c4 = 0.5;
+        p.walka = gwardia_ee(); p.hp = 150; p.skrypt = "piechota";
+        sb->ustaw_produkcje(p);
+        p.tech_id = 2024; p.typ_db = 24;   // Inf02 - Spearman: ten sam koszt i czas [W: dbtechtree]
+        sb->ustaw_produkcje(p);
+        return sb;
+    };
+    auto losowania = [](std::uint32_t a, std::uint32_t b) {
+        for (int n = 0; n < 64; ++n) { if (a == b) return n; a = (214013u * a + 2531011u) & 0x7FFFFFFFu; }
+        return -1;
+    };
+    // 1. jedna i dwie pozycje w obu wariantach
+    for (WariantTitan w : {WariantTitan::ee(), WariantTitan::aoc()}) {
+        auto sb = przygotuj(w);
+        IdJednostki b = sb->jednostki().front().id;
+        const std::uint32_t r0 = sb->generator().stan();
+        const bool ok = sb->rozkaz_produkcji(b, 3011);
+        const int l_start = losowania(r0, sb->generator().stan());
+        const auto z = sb->zasoby(1);
+        const int ms0 = sb->jednostka(b)->prod_ms;
+        sb->takt();
+        sb->rozkaz_produkcji(b, 3011);
+        const auto z2 = sb->zasoby(1);
+        std::vector<int> konce, los;
+        std::vector<std::pair<double, double>> poz;
+        const Jednostka* n1 = nullptr;
+        for (int k = 2; k <= 1900; ++k) {
+            const std::uint32_t ra = sb->generator().stan();
+            sb->takt();
+            for (IdJednostki id : sb->nowe_jednostki()) {
+                konce.push_back(k); los.push_back(losowania(ra, sb->generator().stan()) - 2);   // 2 losowania taktu (0x546CE9, 0x547C09)
+                poz.push_back({sb->jednostka(id)->x, sb->jednostka(id)->y});
+                if (!n1) n1 = sb->jednostka(id);
+            }
+        }
+        std::printf("  %s: rozkaz %d, zasoby %d/%d → %d/%d, licznik %d, losowania startu %d, końce", w.nazwa, int(ok), z[0], z[4], z2[0],
+                    z2[4], ms0, l_start);
+        for (std::size_t i = 0; i < konce.size(); ++i) std::printf(" %d (%.3f, %.3f; +%d los.)", konce[i], poz[i].first, poz[i].second, los[i]);
+        std::printf(", populacja %d\n", sb->populacja(1));
+        sprawdz(ok && z[0] == 1081 && z[4] == 1525 && z[1] == 1222 && z2[0] == 1051 && z2[4] == 1495 && ms0 == 32000 && l_start == 0 &&
+                    konce.size() == 2 && konce[0] == 942 && konce[1] == 1884 && std::abs(poz[0].first - 14.25) < 1e-5 &&
+                    std::abs(poz[0].second - 9.75) < 1e-5 && std::abs(poz[1].first - 14.75) < 1e-5 && los[0] == w.losowania_utworzenia &&
+                    los[1] == w.losowania_utworzenia && sb->populacja(1) == 3,
+                std::string(w.nazwa) + ": Maceman – koszt 30 + 30 przy rozkazie, 32000 ms bez losowania startu, 942 takty na pozycję, wyjście co 2r (704/706)");
+    }
+    // 2. anulowanie z interfejsu (0x5FD984 / 0x5FD8F3; 705/706 [P])
+    {
+        auto sb = przygotuj(WariantTitan::aoc());
+        IdJednostki b = sb->jednostki().front().id;
+        for (int i = 0; i < 3; ++i) sb->rozkaz_produkcji(b, 3011);
+        for (int k = 0; k < 300; ++k) sb->takt();
+        const std::uint32_t r0 = sb->generator().stan();
+        std::vector<std::array<int, 4>> kroki;   // {wynik, kolejka, bieżąca, żywność}
+        for (int i = 0; i < 4; ++i) {
+            const bool a = sb->anuluj_technologie(b, 3011);
+            kroki.push_back({int(a), int(sb->jednostka(b)->prod_kolejka.size()), sb->jednostka(b)->prod_biezaca, sb->zasoby(1)[0]});
+        }
+        std::printf("  anulowanie:");
+        for (const auto& k : kroki) std::printf(" [%d kolejka %d bieżąca %d żywność %d]", k[0], k[1], k[2], k[3]);
+        std::printf(", licznik %d, żelazo %d, populacja %d\n", sb->jednostka(b)->prod_ms, sb->zasoby(1)[4], sb->populacja(1));
+        sprawdz(kroki[0] == std::array<int, 4>{1, 1, 3011, 1051} && kroki[1] == std::array<int, 4>{1, 0, 3011, 1081} &&
+                    kroki[2] == std::array<int, 4>{1, 0, -1, 1111} && kroki[3] == std::array<int, 4>{0, 0, -1, 1111} &&
+                    sb->jednostka(b)->prod_ms == 0 && sb->zasoby(1)[4] == 1555 && sb->populacja(1) == 1 && sb->generator().stan() == r0,
+                "anulowanie PPM: kolejka 2 → 1 → 0, potem bieżąca; pełny zwrot; populacja i generator bez zmian (705/706)");
+    }
+    // 3. kolejka mieszana [W: 0x5FD984]: usuwana jest pierwsza pozycja danej technologii, pozostałe zachowują kolejność;
+    //    bieżąca tylko wtedy, gdy w kolejce nie ma tej technologii; następna pozycja startuje w kolejnym takcie
+    {
+        auto sb = przygotuj(WariantTitan::ee());
+        IdJednostki b = sb->jednostki().front().id;
+        sb->rozkaz_produkcji(b, 3011); sb->rozkaz_produkcji(b, 2024); sb->rozkaz_produkcji(b, 3011); sb->rozkaz_produkcji(b, 2024);
+        const bool a1 = sb->anuluj_technologie(b, 3011);     // z kolejki [2024, 3011, 2024] → [2024, 2024]
+        const auto k1 = sb->jednostka(b)->prod_kolejka;
+        const bool a2 = sb->anuluj_technologie(b, 3011);     // w kolejce brak 3011 → bieżąca
+        const int cur2 = sb->jednostka(b)->prod_biezaca;
+        sb->takt();
+        const int cur3 = sb->jednostka(b)->prod_biezaca, ms3 = sb->jednostka(b)->prod_ms;
+        std::printf("  kolejka mieszana: %d kolejka %zu [%d, %d]; %d bieżąca %d; po takcie bieżąca %d licznik %d kolejka %zu\n", int(a1),
+                    k1.size(), k1.size() > 0 ? k1[0] : -1, k1.size() > 1 ? k1[1] : -1, int(a2), cur2, cur3, ms3,
+                    sb->jednostka(b)->prod_kolejka.size());
+        sprawdz(a1 && k1.size() == 2 && k1[0] == 2024 && k1[1] == 2024 && a2 && cur2 == -1 && cur3 == 2024 && ms3 == 32000 &&
+                    sb->jednostka(b)->prod_kolejka.size() == 1,
+                "kolejka mieszana: pierwsza pozycja technologii z kolejki, potem bieżąca; następna startuje w kolejnym takcie [W]");
+    }
+    return bledy ? FAIL : PASS;
+}
+
+// Etap 53 – integracja eksperymentów Fable (docs/titan/EKSPERYMENT_FABLE_DUZE_JEDNOSTKI.md § 3, § 9):
+// (1) nowa para kontaktu trafia na początek listy [P: zad. 691/693, 696/697]; (2) para dwóch obiektów o rozmiarze ≥ 1,0
+// z ruchomym drugim uczestnikiem nie przechodzi przez odpychanie małe 0x549179 [W: pętla 0x5498C4; P: 698–701].
+int test_kontakty_duze() {
+    auto tab = tablice_lub_skip();
+    if (!tab) return SKIP;
+    ParametryRuchu taran = gwardia();
+    taran.a = 1.0; taran.vmax = 0.5; taran.alfa = 1.74533; taran.wmax = 0.87266; taran.rozmiar = 1.0; taran.promien_kolizji = 1.0;
+    taran.c4 = 1.0; taran.c8 = 1.0 / 1.74533;
+    {   // kolejność listy: trzy jednostki w jednym oknie, pary dopisywane kolejno przy tworzeniu
+        Swiat s(tab, TerenSiatka::syntetyczny_etap27(), WariantTitan::ee());
+        const auto a = s.dodaj_jednostke(gwardia(), 10.5, 10.5, 0.0);
+        const auto b = s.dodaj_jednostke(gwardia(), 10.6, 10.9, 0.0);   // to samo pole co a
+        const auto c = s.dodaj_jednostke(gwardia(), 10.9, 10.6, 0.0);
+        const auto& la = s.jednostka(a)->lista_kontaktow;
+        const auto& lb = s.jednostka(b)->lista_kontaktow;
+        const auto& lc = s.jednostka(c)->lista_kontaktow;
+        std::printf("  listy: a [%zu:", la.size());
+        for (auto x : la) std::printf(" %u", unsigned(x));
+        std::printf("] b [%zu] c [%zu]\n", lb.size(), lc.size());
+        sprawdz(la.size() == 2 && la[0] == c && la[1] == b, "nowa para na początku listy: a ma [c, b] (c dopisane później)");
+        sprawdz(lb.size() == 2 && lb[0] == c && lb[1] == a && lc.size() == 2 && lc[0] == b && lc[1] == a,
+                "listy b i c: nowsza para przed starszą; para c dopisana w kolejności przeglądu (a, potem b → [b, a])");
+        // przebudowa okna jednostki a (zmiana pola) usuwa ją z cudzych list i dopisuje ponownie na ich początek
+        s.odbuduj_kontakty_wszystkich();
+        const auto& la2 = s.jednostka(a)->lista_kontaktow;
+        sprawdz(la2.size() == 2 && s.jednostka(b)->lista_kontaktow.size() == 2 && s.jednostka(c)->lista_kontaktow.size() == 2,
+                "pełna odbudowa zachowuje symetrię list (po 2 kontakty)");
+    }
+    {   // dwa tarany (1,0 / 1,0, ruchome): gałąź duża – bez odpychania małego; taran i gwardia: odpychanie małe działa
+        Swiat s(tab, TerenSiatka::syntetyczny_etap27(), WariantTitan::ee());
+        const auto a = s.dodaj_jednostke(taran, 10.5, 10.5, 0.0);
+        const auto b = s.dodaj_jednostke(taran, 10.5, 12.5, 0.0);     // stoi na trasie a
+        s.rozkaz_ruchu(a, 10.5, 15.5);
+        double min_d = 1e9;
+        for (int t = 0; t < 900; ++t) {
+            s.takt();
+            min_d = std::min(min_d, std::hypot(s.jednostka(a)->x - s.jednostka(b)->x, s.jednostka(a)->y - s.jednostka(b)->y));
+        }
+        const auto& d = s.diagnostyka();
+        std::printf("  taran–taran: pary duże %" PRIu64 ", kolizje małe %" PRIu64 ", min. odległość %.3f, b (%.4f, %.4f), a koniec (%.3f, %.3f)\n",
+                    d.pary_duze, d.kolizje, min_d, s.jednostka(b)->x, s.jednostka(b)->y, s.jednostka(a)->x, s.jednostka(a)->y);
+        sprawdz(d.pary_duze > 0 && d.kolizje == 0 && s.jednostka(b)->x == 10.5 && s.jednostka(b)->y == 12.5,
+                "para taran–taran idzie do gałęzi dużej: brak odpychania małego, stojący taran nieruszony");
+        sprawdz(min_d < 1.0 && std::abs(s.jednostka(a)->y - 15.5) < 0.2,
+                "taran objeżdża stojący taran trasą A* (kara pola) i dojeżdża do celu mimo zbliżenia poniżej sumy promieni");
+        Swiat s2(tab, TerenSiatka::syntetyczny_etap27(), WariantTitan::ee());
+        const auto a2 = s2.dodaj_jednostke(taran, 10.5, 10.5, 0.0);
+        const auto g2 = s2.dodaj_jednostke(gwardia(), 11.1, 12.5, 0.0);   // gwardia w sąsiednim polu, 0,6 od osi trasy: S = 0,75
+        s2.rozkaz_ruchu(a2, 10.5, 15.5);
+        for (int t = 0; t < 900; ++t) s2.takt();
+        std::printf("  taran–gwardia: pary duże %" PRIu64 ", kolizje małe %" PRIu64 ", gwardia (%.4f, %.4f)\n", s2.diagnostyka().pary_duze,
+                    s2.diagnostyka().kolizje, s2.jednostka(g2)->x, s2.jednostka(g2)->y);
+        sprawdz(s2.diagnostyka().pary_duze == 0 && s2.diagnostyka().kolizje > 0 && s2.jednostka(g2)->x > 11.1,
+                "para taran–gwardia: odpychanie małe, gwardia zepchnięta z drogi (jak w nagraniach fable_*_5)");
+    }
     return bledy ? FAIL : PASS;
 }
 
@@ -2336,7 +2524,7 @@ int main(int argc, char** argv) {
     const std::map<std::string, std::function<int()>> grupy = {
         {"trygonometria", test_trygonometria}, {"rng", test_rng}, {"teren", test_teren}, {"ruch", test_ruch},
         {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka}, {"walka_swiat", test_walka_swiat}, {"morale", test_morale}, {"budynki", test_budynki}, {"produkcja", test_produkcja},
-        {"podsystemy", test_podsystemy}};
+        {"podsystemy", test_podsystemy}, {"produkcja_wojskowa", test_produkcja_wojskowa}, {"kontakty_duze", test_kontakty_duze}};
     std::vector<std::string> wybrane;
     for (int i = 1; i < argc; ++i) wybrane.push_back(argv[i]);
     if (wybrane.empty())

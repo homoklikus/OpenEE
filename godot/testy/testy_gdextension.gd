@@ -144,6 +144,7 @@ func _testy() -> void:
 	_test_etapu50(dll)
 	_test_etapu51(dll)
 	_test_etapu52(dll)
+	_test_etapu53(dll)
 	_koniec()
 
 
@@ -1140,7 +1141,7 @@ func _test_etapu52(dll: String) -> void:
 		var c: Object = CoreCpp.nowa_symulacja()
 		if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
 		c.utworz_swiat(war)
-		if war == "ee": _wynik("wersja Core – etap 52", str(c.wersja()).contains("etap 52"), c.wersja())
+		if war == "ee": _wynik("wersja Core – etap 52 lub nowszy", str(c.wersja()).contains("etap 5"), c.wersja())
 		var b: int = c.dodaj_budynek(tc)
 		c.ustaw_zasoby(1, [1111, 1222, 1333, 1444, 1555])
 		c.ustaw_populacje(1, 1, 100, 0, 0)
@@ -1176,3 +1177,93 @@ func _test_etapu52(dll: String) -> void:
 	var an0: bool = c3.anuluj_produkcje(b3, 0)
 	_wynik("produkcja: brak zasobów – odmowa; anulowanie kolejki i bieżącej – pełny zwrot", not brak and kol == 1 and an1 and an0
 		and c3.zasoby(1) == [1111, 1222, 1333, 1444, 1555] and int(c3.jednostka(b3).get("prod_biezaca", 0)) == -1, JSON.stringify(c3.zasoby(1)))
+
+
+# Etap 53 – produkcja wojskowa w koszarach (docs/titan/produkcja.md § 5): dane technologii 3011 Inf03 - Maceman z dbtechtree
+# (30 żywności + 30 żelaza, 32000 ms, obiekt 21), pomiary AoC 704/705/709 i EE 706/710; wybór płci obywatela przy starcie;
+# anulowanie z interfejsu; kolejność listy kontaktów i wybór gałęzi kolizji (eksperymenty Fable).
+func _test_etapu53(dll: String) -> void:
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var kosz := {"gracz": 1, "typ": 34, "X": 14, "Y": 10, "kwadrat": 2, "x": 15.0, "y": 11.0, "z": 0.0, "hp": 1500, "hp_max": 1500,
+		"pole_widzenia": 2.0, "rozmiar": 1.0, "typ_jednostki": 2, "typ_bazy": 34, "id_mapy": "0x701"}
+	var mace := {"tech_id": 3011, "typ_db": 21, "koszt": [30, 0, 0, 0, 30], "czas_ms": 32000, "mnoznik_czasu": 1.0, "populacja": 1,
+		"ruch": p, "walka": {"pole_widzenia": 4.0, "rozmiar": 0.5, "typ_bazy": 21}, "hp": 150, "skrypt": "Land Patrolling"}
+	var wyniki := {}
+	for war in ["ee", "aoc"]:
+		var c: Object = CoreCpp.nowa_symulacja()
+		if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+		c.utworz_swiat(war)
+		if war == "ee": _wynik("wersja Core – etap 53", str(c.wersja()).contains("etap 53"), c.wersja())
+		var b: int = c.dodaj_budynek(kosz)
+		c.ustaw_zasoby(1, [1111, 1222, 1333, 1444, 1555])
+		c.ustaw_populacje(1, 1, 100, 0, 0)
+		c.ustaw_produkcje(mace)
+		var r0 := int(c.diagnostyka().get("rng_losowan", 0))
+		var ok: bool = c.rozkaz_produkcji(b, 3011)
+		var los_startu := int(c.diagnostyka().get("rng_losowan", 0)) - r0
+		var ms0 := int(c.jednostka(b).get("prod_ms", -1))
+		var takt_konca := -1; var nowa := {}
+		for k in range(1, 1000):
+			c.takt(1)
+			var nw: Array = c.nowe_jednostki()
+			if not nw.is_empty(): takt_konca = k; nowa = c.jednostka(int(nw[0])); break
+		wyniki[war] = [ok, c.zasoby(1), ms0, los_startu, takt_konca, snappedf(float(nowa.get("x", 0)), 0.001),
+			snappedf(float(nowa.get("y", 0)), 0.001), int(nowa.get("typ_db", -1)), int(nowa.get("stan", -1)), int(c.populacja(1))]
+	var w: Array = wyniki["ee"]
+	_wynik("produkcja wojskowa: 30 żywności + 30 żelaza przy rozkazie, 32000 ms bez losowania startu, 942 takty, wyjście (14,25; 9,75)",
+		w[0] and w[1] == [1081, 1222, 1333, 1444, 1525] and w[2] == 32000 and w[3] == 0 and w[4] == 942 and w[5] == 14.25 and w[6] == 9.75
+		and w[7] == 21 and w[8] == 5000 and w[9] == 2, JSON.stringify(wyniki))
+	_wynik("produkcja wojskowa AoC – ten sam przebieg co EE", wyniki["aoc"] == wyniki["ee"], JSON.stringify(wyniki["aoc"]))
+	# anulowanie z interfejsu (0x5FD984 / 0x5FD8F3): pierwsza pozycja technologii z kolejki, potem bieżąca; pełny zwrot
+	var c2: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c2.zaladuj_tablice(dll)["ok"]: c2.uzyj_tablic_przyblizonych()
+	c2.utworz_swiat("aoc")
+	var b2: int = c2.dodaj_budynek(kosz)
+	c2.ustaw_zasoby(1, [1111, 1222, 1333, 1444, 1555]); c2.ustaw_populacje(1, 1, 100, 0, 0)
+	c2.ustaw_produkcje(mace)
+	var wlocz := mace.duplicate(); wlocz["tech_id"] = 2024; wlocz["typ_db"] = 24
+	c2.ustaw_produkcje(wlocz)
+	for t in [3011, 2024, 3011, 2024]: c2.rozkaz_produkcji(b2, t)
+	var a1: bool = c2.anuluj_technologie(b2, 3011)
+	var kol1 := int(c2.jednostka(b2).get("prod_kolejka_n", -1)); var cur1 := int(c2.jednostka(b2).get("prod_biezaca", 0))
+	var a2: bool = c2.anuluj_technologie(b2, 3011)
+	var cur2 := int(c2.jednostka(b2).get("prod_biezaca", 0))
+	var a3: bool = c2.anuluj_technologie(b2, 3011)
+	c2.takt(1)
+	var cur3 := int(c2.jednostka(b2).get("prod_biezaca", 0))
+	_wynik("anulowanie PPM: pozycja z kolejki, potem bieżąca tej technologii; następna startuje w kolejnym takcie; zwrot kosztu",
+		a1 and kol1 == 2 and cur1 == 3011 and a2 and cur2 == -1 and not a3 and cur3 == 2024 and c2.zasoby(1) == [1051, 1222, 1333, 1444, 1495],
+		"kolejka %d, bieżąca %d → %d → %d, zasoby %s" % [kol1, cur1, cur2, cur3, str(c2.zasoby(1))])
+	# wybór płci: przycisk zamawia 1074, start losuje (≥ 0,5 → 1451)
+	var zg := 0; var kob := 0
+	var pc := {"a": 1.2, "vmax": 0.5, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.83333, "c8": 0.08185, "t488": 0.5}
+	for z in range(1, 21):
+		var c3: Object = CoreCpp.nowa_symulacja()
+		if dll == "" or not c3.zaladuj_tablice(dll)["ok"]: c3.uzyj_tablic_przyblizonych()
+		c3.utworz_swiat("aoc")
+		var b3: int = c3.dodaj_budynek(kosz)
+		c3.ustaw_zasoby(1, [1111, 0, 0, 0, 0]); c3.ustaw_populacje(1, 1, 100, 0, 0)
+		c3.ustaw_produkcje({"tech_id": 1451, "typ_db": 480, "koszt": [50, 0, 0, 0, 0], "czas_ms": 28000, "ruch": pc, "hp": 65})
+		c3.ustaw_produkcje({"tech_id": 1074, "typ_db": 32, "koszt": [50, 0, 0, 0, 0], "czas_ms": 28000, "ruch": pc, "hp": 65, "losowy_zamiennik": 1451})
+		var st := z * 7919
+		c3.ustaw_stan_rng(st)
+		var nast := (214013 * st + 2531011) & 0x7FFFFFFF
+		var oczek := 1451 if float(nast) / 2147483648.0 >= 0.5 else 1074
+		c3.rozkaz_produkcji(b3, 1074)
+		if int(c3.jednostka(b3).get("prod_biezaca", -1)) == oczek: zg += 1
+		if oczek == 1451: kob += 1
+	_wynik("start obywatela losuje płeć (URandom ≥ 0,5 → Female Citizen 1451)", zg == 20 and kob > 2 and kob < 18, "zgodne %d/20, kobiet %d" % [zg, kob])
+	# gałąź kolizji: dwa tarany (rozmiar 1,0, ruchome) – bez odpychania małego; licznik par dużych w diagnostyce
+	var pt := {"a": 1.0, "vmax": 0.5, "alfa": 1.74533, "wmax": 0.87266, "rozmiar": 1.0, "promien_kolizji": 1.0, "c4": 1.0, "c8": 0.57296, "t488": 0.5}
+	var c4: Object = CoreCpp.nowa_symulacja()
+	if dll == "" or not c4.zaladuj_tablice(dll)["ok"]: c4.uzyj_tablic_przyblizonych()
+	c4.utworz_swiat("ee")
+	var ta: int = c4.dodaj_jednostke(pt, 10.5, 10.5, 0.0)
+	var tb: int = c4.dodaj_jednostke(pt, 10.5, 12.5, 0.0)
+	c4.rozkaz_ruchu(ta, 10.5, 15.5, null, false)
+	c4.takt(900)
+	var dg: Dictionary = c4.diagnostyka()
+	_wynik("para taran–taran: gałąź duża (bez odpychania małego), stojący taran nieruszony", int(dg.get("pary_duze", 0)) > 0
+		and int(dg.get("kolizje", -1)) == 0 and float(c4.jednostka(tb).get("x", 0)) == 10.5 and float(c4.jednostka(tb).get("y", 0)) == 12.5,
+		"pary duże %d, kolizje małe %d" % [int(dg.get("pary_duze", 0)), int(dg.get("kolizje", -1))])
+

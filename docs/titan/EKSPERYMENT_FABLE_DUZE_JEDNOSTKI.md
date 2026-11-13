@@ -345,6 +345,13 @@ Kolejność według stosunku pewności do kosztu:
 Nie zalecam implementowania „systemu kolizji dużych jednostek” z samego kształtu funkcji – z pięciu zmierzonych
 układów tylko jeden uruchomił skutki, a ich wzory są nieodczytane.
 
+## 12a. Stan po etapie 53
+
+- Zalecenie 1 (parametry tarana, odtworzenie torów) – wykonane: `kolizje_objazdy.md`, rozdział „Etap 53”.
+- Zalecenie 2 (wybór gałęzi) – wykonane; gałąź duża nadal bez wzorów skutków.
+- Zalecenie 3 (kolejność listy) – wykonane bez zmiany wyników regresji; przerwanie pętli nieodwzorowane.
+- § 11 pkt 6 – typy 128 i 158 nadal nie powstają w scenariuszu testowym [N].
+
 ## 13. Koszt eksperymentu
 
 - Zadania MCP: 12 (690–701), po 6 w EE i AoC; nagrania: 12 (`fable2_{ee,aoc}_{a…f}`, łącznie 48 468 próbek, ok. 0,98 GB

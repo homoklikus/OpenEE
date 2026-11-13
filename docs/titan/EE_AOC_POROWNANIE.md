@@ -56,7 +56,17 @@ mechanik, prędkość, kolizje), 30–32 (walka: przeładowanie, obrót, tablice
 | Filtr par kontaktu (flagi typu) | maska 4 (morski / niemorski) | maska 0xC (dodatkowo kosmiczny / niekosmiczny) + wyjątek grupy typu 0x22 (`Sp15 - Space Fighter`, tylko AoC) | ZMIENIONY [W] | EE 0x5E90D1, AoC 0x5F69CA; flagi z grupy typu: EE 0x61CCEC, AoC 0x62FD1C (maska 8 = grupy 31–34, których nie ma w dbobjects EE); dla typów wspólnych wynik ten sam; bez pomiaru w grze – Fable 2 § 8 |
 | Kara A\* za stojącą jednostkę (objazd o pole) | 0x41CFFF: +50 / +150 | 0x419595: +50 / +150 | WSPÓLNY [P] | te same trasy w 8 parach nagrań (taran i gwardia wokół gwardii, tarana, domu); jednostki w ruchu nieomijane; Core zgodny 4299/4299 i 4329/4329 próbek – Fable 2 § 4, § 10 |
 | Wybór gałęzi kolizji (mała / duża) | pętla 0x5498C4; duża 0x548A3C (vt+0x40), morska 0x54F84C | pętla 0x5560CF; duża 0x555247 (vt+0x44), morska 0x55C1CB | WSPÓLNY [W] (kod instrukcja w instrukcję; indeks metody przesunięty o 1) | warunek: oba rozmiary ≥ 1,0 i o ruchomy; **skutek ZMIENIONY [P]**: w EE taran objeżdżający stojący taran odpycha go (0,026; −0,026), w AoC para powstaje za późno i reakcji nie ma (zad. 700/701) – konsekwencja okna kontaktów; Fable 2 § 6.4 |
-| Kolejność listy kontaktów | nowa para na początku | nowa para na początku | WSPÓLNY [P] | zad. 691/693, 696/697 – Fable 2 § 9 |
+| Kolejność listy kontaktów | nowa para na początku | nowa para na początku | WSPÓLNY [P] | zad. 691/693, 696/697 – Fable 2 § 9; Core od etapu 53 |
+| Produkcja wojskowa (koszary, 3011 Maceman) | koszt, czas 32000, 942 takty, miejsce, kurs, stan 5000, populacja +1 | to samo | WSPÓLNY [P] | zad. 706 / 704, 709; Core 2387, 3920 / 2646, 4984, 1967 próbek – `produkcja.md` § 5 |
+| Losowanie przy starcie pozycji (płeć obywatela) | 0x5EFB91: obiekt 32 → URandom ≥ 0,5 → obywatelka | 0x5FDDED: to samo | WSPÓLNY [W + P] | 7/7 startów 677–679; start wojskowy bez losowania 5 + 5 |
+| Anulowanie produkcji (PPM na przycisku) | pierwsza pozycja technologii z kolejki, potem bieżąca; zwrot 1,0 | to samo (0x5FD984, 0x5FD8F3) | WSPÓLNY [P] | zad. 706, 710 / 705, 709; funkcje EE nieodczytane [N] |
+| Punkt zbiórki | cel EEUGLocation w 2. poziomie kolejki budynku; jednostka powstaje od strony punktu, stan 8000 | to samo | WSPÓLNY [P] (1 układ) | zad. 706 / 705; Core nie odwzorowuje |
+| Zawartość panelu koszar (2. przycisk) | 2024 Spearman | 3107 Gallic Warrior | ZMIENIONY (dane) | zad. 710 / 709 |
+| Budowa domu – koniec pracy obywatela | 4002 → 4028 → 5000 | 4002 → 5000 (bez próbki 4028) | ZMIENIONY [P] | zad. 660 / 707; koszt, HP, rytm, czas WSPÓLNE [P] – `budowa.md` § 8 |
+| Zbieranie drewna (cykl, udźwig, oddanie) | Gather.tai 4004…4023, +5 co 22 059 ms, udźwig 15 | to samo | WSPÓLNY [P] | zad. 673 / 708; Core 5069 / 4783 próbek – `zbieranie.md` § 5 |
+| Dom a limit populacji | – | ukończenie i zniszczenie domu nie zmienia pól gracza | NIEZWERYFIKOWANY w EE | zad. 707 [P AoC] |
+| Zegar gry powyżej 524 288 ms | – | +34,0625 ms na takt (kwant f32) | NIEZWERYFIKOWANY w EE | `e52_677_dwa`, 705 [P AoC] |
+| Tor tarana (typ 102) i jego kolizje z gwardią | zgodny z Core co takt na płaskim | zgodny z Core co takt na płaskim | WSPÓLNY kod ruchu, ZMIENIONE okno kontaktów [P] | `kolizje_objazdy.md`, rozdział „Etap 53” |
 | Przeładowanie | stałe | losowe [lo, hi] | ZMIENIONY | walka.md § 11 [P: 580/581] |
 | Narastanie przewijania krawędzią | brak | ~1 s | NIEZWERYFIKOWANY (możliwe ustawienie myszy) | POROWNANIE_MECHANIK § 2 |
 | Wybór płci produkowanego obywatela | 1074, 1074 | 1451, 1451, 1074, 1074, 1074 | NIEZWERYFIKOWANY (reguła [N]) | 677–679 |
@@ -107,19 +117,19 @@ Kolumna „dowody” – wersja, w której zebrano dowody ocen A/B/C: **EE**, **
 | 11 | Cele i rozkazy | EE (+AoC 454) | NIEZWERYFIKOWANY |
 | 12 | Walka | EE+AoC (580/581/583/584/588) | ZMIENIONY (przeładowanie, obrót) |
 | 13 | Śmierć | EE | NIEZWERYFIKOWANY |
-| 14 | Budynki i budowanie | EE | NIEZWERYFIKOWANY (dane `dbtechtree` wspólne [P]) |
-| 15 | Jednostki cywilne | EE (+AoC produkcja obywatela) | NIEZWERYFIKOWANY |
-| 16 | Zbieranie | EE | NIEZWERYFIKOWANY |
+| 14 | Budynki i budowanie | EE+AoC (707) | WSPÓLNY (koszt, HP, rytm, czas domu) / ZMIENIONY (brak próbki 4028 w AoC) |
+| 15 | Jednostki cywilne | EE+AoC (budowa 707, zbieranie 708, produkcja) | WSPÓLNY w zmierzonych przebiegach |
+| 16 | Zbieranie | EE+AoC (673 / 708) | WSPÓLNY [P] – drewno |
 | 17 | Ekonomia | EE+AoC | ZMIENIONY (przesunięcia), limit WSPÓLNY [P] |
-| 18 | Produkcja | EE+AoC | WSPÓLNY (czas, koszt, miejsce) / ZMIENIONY (kolejka, losowania) |
+| 18 | Produkcja | EE+AoC (obywatel i wojsko) | WSPÓLNY (czas, koszt, miejsce, płeć, anulowanie, punkt zbiórki) / ZMIENIONY (kolejka, losowania utworzenia, zawartość paneli) |
 | 19 | Technologie, epoki | EE+AoC (bazy) | ZMIENIONY (liczba epok 14/15) |
 | 20 | AI | EE | NIEZWERYFIKOWANY |
 | 21–23 | Dyplomacja, widoczność, świat | EE | NIEZWERYFIKOWANY |
 | 24, 25, 29, 31, 38 | niebadane | – | NIEZWERYFIKOWANY |
 | 26–28 | Animacja, efekty, interfejs | EE+AoC (kamera etap 12) | WSPÓLNY (kamera), reszta NIEZWERYFIKOWANY |
 | 30 | Multiplayer | EE+AoC [W: DLL] | NIEZWERYFIKOWANY |
-| 32 | Losowość | EE (+AoC produkcja) | ZMIENIONY (losowania przy utworzeniu) |
-| 33 | Zegar | EE+AoC [W] | NIEZWERYFIKOWANY dynamicznie w AoC |
+| 32 | Losowość | EE (+AoC produkcja) | ZMIENIONY (losowania przy utworzeniu); losowanie płci WSPÓLNE [W + P] |
+| 33 | Zegar | EE+AoC [W]; AoC: kwant zegara powyżej 524 288 ms [P] | NIEZWERYFIKOWANY w EE dla długich gier |
 | 34–37 | Efekty obszarowe, bohaterowie, kalamity, szyk | EE | NIEZWERYFIKOWANY |
 
 ## 6. Status pomiarów i metodologia
@@ -131,13 +141,15 @@ Metodologia każdego porównania:
 3. Odtworzenie w Core z `--wariant=ee|aoc`; porównanie próbka po próbce.
 4. Różnica wejścia (np. inna płeć, inne dane bazy) nie jest klasyfikowana jako zmiana silnika.
 
-Wykonane porównania kontrolne: produkcja obywatela (677/679) – etap 52.
+Wykonane porównania kontrolne: produkcja obywatela (677/679) – etap 52; produkcja wojskowa, anulowanie i punkt zbiórki
+(704–706, 709/710), budowa domu (707 / 660), zbieranie drewna (708 / 673), tarany (690–701) – etap 53.
 
 ## 7. Eksperymenty do powtórzenia
 
-**W AoC (główna wersja; dotąd tylko EE):** ruch pojedynczy i trasa (644, 648), kolizje i omijanie (652), budowa domu i
-koszar (658–674), zbieranie drewna (673), śmierć i zapadanie budynku (649/651), regeneracja i bohater (619/620).
-Priorytet: budowa i zbieranie (koszt i wzór 0x60BF56 – czy wspólne), ruch 648 (prorok).
+**W AoC (główna wersja; dotąd tylko EE):** ruch pojedynczy i trasa (644, 648), kolizje i omijanie (652), budowa
+koszar i dwóch budowniczych (663, 674), śmierć i zapadanie budynku (649/651), regeneracja i bohater (619/620).
+Wykonane w etapie 53: budowa domu (707), zbieranie drewna (708). Priorytet: ruch 648 (prorok), koszary 674, dwóch
+budowniczych 663.
 
 **W EE (dotąd tylko AoC):** przeładowanie losowe i obrót (580–588) – kontrola, czy EE ma stałe przeładowanie w tym samym
-scenariuszu; anulowanie produkcji (gdy znajdzie się miejsce w interfejsie).
+scenariuszu; dom a limit populacji (707); zegar gry powyżej 524 288 ms. Anulowanie produkcji – wykonane (706, 710).

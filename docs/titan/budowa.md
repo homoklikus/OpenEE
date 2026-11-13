@@ -176,3 +176,34 @@ zmierzone w etapie 51 (opłata 660/674, K z +0x27C). Importery (`EpokiDB.techtre
 `czas_ms`. Odtworzenia budowy nadal biorą K i koszt z `budowa_typow` (ten sam wynik) – przełączenie na bazę: etap 53.
 Budowy w AoC dotąd nie mierzono (`EE_AOC_POROWNANIE.md` § 7).
 
+## 8. Etap 53 – walidacja w AoC (dom 37) i poprawka stanu 4012
+
+Pomiar: zadanie 707, AoC (`EE-AOC.exe`, proces c636a2ab…), scenariusz `e42_e51_ekonomia` – ten sam plik i ten sam
+układ co EE 660; nagrania `e53_707_ob` (obywatel, gracz, nowe obiekty) i `e53_707_bud` (fundament) [P].
+
+| Wielkość | AoC 707 | EE 660 |
+|---|---|---|
+| koszt i chwila pobrania | 50 drewna + 40 kamienia w próbce rozkazu (t = 46568) | to samo (etap 51) |
+| fundament | dom 37, kotwica (163, 113), HP 1, nieukończony (+0x34C = 0) | to samo (+0x340 = 0) |
+| stany obywatela | 8017 → 8000 → 2015 → 10003 → 9000 → 9006 → 5001 → 4017 → 4012 → 4002 | to samo |
+| punkt pracy | (164,164; 114,183) | (164,169; 114,196) – inne kliknięcie |
+| przyrost HP | +15 co 989 / 1023 ms (29–30 taktów); 1 → 496 → 500 | to samo (K = 35000) |
+| czas budowy (4002) | 34 092 ms | 34 094 ms |
+| ukończenie | HP 500 (t = 84205), flaga ukończenia w następnym takcie | to samo |
+| po ukończeniu | **4002 → 5000** (bez próbki 4028) | 4002 → **4028** → 5000 |
+| prędkość przy pracy | v i ω zerowane w próbce wejścia w 4012 (z 0,2955 i 0,4165) | to samo (z 0,0106) |
+| klasa celu budowy | vtable 0x84740C | vtable 0x8319F0 |
+
+- **Różnica przebiegu [P]:** w AoC próbka ze stanem 4028 (TaskSmartCitizen) nie występuje – obywatel przechodzi z 4002
+  do 5000 w takcie, w którym EE pokazuje 4028. Przyczyna w kodzie [N]. Core zachowuje przebieg EE (4028 przez jeden
+  takt); porównanie liczy tę próbkę AoC jako nieaktualną (1 z 2581).
+- **Poprawka Core (mały, jednoznaczny błąd):** stan 4012 (WaitForBuildSiteToClear) ustawia tryb 3 oraz v = 0 i ω = 0,
+  stan 4002 – tryb 6 [P: EE 660 t = 62760 / 62794; AoC 707 t = 50113 / 50147]. Wcześniej Core zostawiał prędkość z
+  dojazdu. W EE resztka 0,0106 nie dawała różnicy, w AoC (dojazd kończy się przy v = 0,2955) obywatel po ukończeniu
+  budynku zjeżdżał o 0,02 pola – pierwsza rozbieżność 707 przed poprawką: t = 84273, pozycja.
+- Zgodność Core (`--wariant=aoc`): obywatel 2580/2581 próbek + 1 nieaktualna, fundament 1312/1312 (HP co takt), bez
+  rozbieżności. Regresja EE bez zmian: 658 ×2, 659, 660, 674 w całości, 663 jak w etapie 51.
+- Aktualizacja grafu przejezdności po ukończeniu w AoC nie była odczytywana (rejestrator pól mapy działa tylko w EE) [N].
+- Populacja: ukończenie i zniszczenie domu (klawisz Delete, stan 6000) nie zmienia żadnego pola gracza w zakresie
+  +0xA00…+0xE00 – ani populacji (+0xB14), ani składników limitu (+0xB20, +0xB24 = 0) [P: AoC 707]. Dom nie podnosi
+  limitu populacji; limit = 1 + a + b + globalny (100) = 101 przed i po.

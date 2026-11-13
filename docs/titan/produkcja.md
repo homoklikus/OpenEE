@@ -1,4 +1,4 @@
-# Produkcja jednostek w budynkach (etap 52)
+# Produkcja jednostek w budynkach (etapy 52–53)
 
 Atlas mechanizmu produkcji jednostek w Titan i jego odpowiednik w OpenEE Core. Główna wersja badawcza: AoC
 (`EE-AOC.exe` db8fc5ce…); kontrolnie EE (`Empire Earth.exe` e352d7ae…). Obie kompilacje GOG + NeoEE. Adresy każdej gry
@@ -69,6 +69,7 @@ tworzenia AoC 0x631B55 nieprzeczytana [N].
 
 Wybór płci obywatela (przycisk produkuje 1451 Female Citizen albo 1074 Citizen) [N]: sekwencje AoC 1451, 1451, 1074,
 1074, 1074; EE 1074, 1074; hipoteza wyrównywania płci obalona (678). Losowanie generatora przy kliknięciu: brak [P].
+**[Etap 53 – zastąpione]** Płeć losuje **start pozycji**: wynik URandom ≥ 0,5 → Female Citizen – § 5.2 [W + P].
 
 ### 1.4. Dane (`dbtechtree`)
 
@@ -94,8 +95,8 @@ cywilizacji i technologii kosztów – nieodczytane [N].
 - `Jednostka`: `prod_kolejka`, `prod_biezaca`, `prod_ms`.
 - `krok_produkcji` – osobny przebieg po pętli fizyki (żywe budynki są poza kolejką fizyki), od końca listy; nowe jednostki
   dodawane po przebiegu na koniec listy.
-- Losowania: start pozycji +1 [P obie gry]; utworzenie – `WariantTitan::losowania_utworzenia` (EE 3, AoC 1) [P: 679 /
-  677]. To pierwszy jawny wariant mechaniki z etapu 52 (różnica kodu: EE tworzy jednostkę w 0x624DF8, AoC w osobnej
+- Losowania: start pozycji +1 [P obie gry] – **[Etap 53 – zastąpione]: tylko technologia obywatela (wybór płci), § 5.2**;
+  utworzenie – `WariantTitan::losowania_utworzenia` (EE 3, AoC 1) [P: 679 / 677; 706 / 704]. To pierwszy jawny wariant mechaniki z etapu 52 (różnica kodu: EE tworzy jednostkę w 0x624DF8, AoC w osobnej
   0x631B55).
 - Koszt i czas z `dbtechtree` przez importery (`EpokiDB.techtree` – pola `koszt`, `czas_ms`, `czy_obiekt`; Python
   `narzedzia/eeformaty/epoki.py`); w danych (`parametry_jednostek_ee.json → produkcja`) tylko mnożnik i koszt populacji.
@@ -129,3 +130,131 @@ punkt zbiórki, produkcja w innych budynkach.
   `populacja`, `nowe`.
 - Potyczka `dane/potyczka/potyczka_e52_produkcja.json` (`demo_e52`): Centrum Miasta produkuje dwóch obywateli; raport
   co sekundę (pozycja, licznik, kolejka, zasoby, populacja) i lista nowych jednostek z modelem.
+
+## 5. Etap 53 – produkcja wojskowa, płeć obywatela, anulowanie, punkt zbiórki
+
+Główna wersja: AoC (`EE-AOC.exe` db8fc5ce…, proces testowy c636a2ab…), kontrola: EE (e352d7ae…, proces 846350a8…).
+Scenariusz `e42_e53_koszary` (SCN 231, czysta mapa): ukończone koszary 34 gracza 1 (kotwica 164, 112; 2×2), obywatel,
+zasoby 1111 / 1222 / 1333 / 1444 / 1555, populacja 1, brak AI w pobliżu. Ten sam plik w obu grach.
+
+### 5.1. Produkcja wojskowa [P: AoC 704, 705, 709; EE 706, 710]
+
+Pierwszy przycisk panelu koszar w obu grach: technologia **3011 „Inf03 - Maceman”** (obiekt dbobjects 21; skrót S).
+Dane `dbtechtree` identyczne w EE i AoC: 30 żywności + 30 żelaza, Build time 32000 ms, budują 34 i 530. `dbobjects` 21:
+HP 150, atak 13, prędkość 0,6, rozmiar 0,5, „Population count” 1 – identyczne w obu grach.
+
+| Wielkość | AoC | EE |
+|---|---|---|
+| koszt | 30 żywności + 30 żelaza w próbce kliknięcia, także dla pozycji czekającej | to samo |
+| licznik startowy | 32000 ms w próbce kliknięcia (budynek wolny) | to samo |
+| odliczanie | −34 ms na takt; 942 takty na jednostkę | to samo |
+| utworzenie | próbka z licznikiem 6 → 0; bieżąca := brak; populacja +1 | to samo |
+| druga pozycja | start w takcie utworzenia pierwszej (licznik 32000, bez odliczenia w tym takcie) | to samo |
+| miejsce | (164,25; 111,75), (164,75; 111,75), (165,25; 111,75): x = X + r + k·2r, y = Y − r, r = 0,25 | to samo |
+| kurs | −y (m01 = 0, m11 = −1) | to samo |
+| stan początkowy | 5000 (Idle), bez celu i trasy | to samo |
+| losowania przy starcie | **0** | **0** |
+| losowania przy utworzeniu | 1 | 3 |
+
+- Mechanizm jest ten sam co dla obywatela (§ 1.3); jedyna różnica przebiegu to brak losowania przy starcie (§ 5.2).
+- Różnica EE/AoC: tylko liczba losowań przy utworzeniu (znana z etapu 52, `WariantTitan::losowania_utworzenia`).
+- Drugi przycisk panelu różni się **danymi**: AoC 3107 „x Gallic Warrior” (jednostka dodatku), EE 2024 „Inf02 -
+  Spearman” [P: 709/710]. To zmiana zawartości bazy, nie mechaniki.
+- Parametry ruchu jednostki z ulepszenia gracza nie były odczytywane; nowa jednostka stała, więc nie wpływają na wynik.
+
+### 5.2. Losowanie przy starcie pozycji = wybór płci obywatela [W + P]
+
+Start pozycji (AoC 0x5FDC58, EE 0x5EF9FF), po sprawdzeniu warunków gracza (vt+0x54):
+
+- gdy technologia jest obiektem, a jej obiekt to dbobjects 32 (Citizen; AoC 0x5FDE00 `cmp [typ+0x1BC], 0x20`, EE
+  0x5EFB91 `cmp [typ+0x4B8], 0x20`), funkcja woła `URandom::Generate` i porównuje wynik z 0,5 (AoC stała 0x838AAC, EE
+  0x824AD0);
+- przy wyniku ≥ 0,5 i dostępnej technologii obywatelki bieżącą pozycją zostaje technologia Female Citizen (id z typu
+  obiektu obywatelki, pole +0x1E4);
+- czas liczony jest z technologii z kolejki: 1 ms przy fladze gracza +0xB45, 2 ms przy fladze pozycji i technologii-
+  obiekcie, inaczej round(Build time × ulepszenie +0x94) [W].
+
+Pomiar: we wszystkich 7 startach obywatela z nagrań 677–679 ostatnie losowanie taktu startu rozstrzyga płeć zgodnie z
+regułą (0,83 → 1451; 0,60 → 1451; 0,58 → 1451; 0,39 → 1074; 0,09 → 1074; EE 0,33 → 1074; 0,18 → 1074) [P]. Start
+jednostki wojskowej nie losuje (10 startów: 5 AoC, 5 EE) [P]. Kolejka przechowuje technologię przycisku (1074), płeć
+ustala się dopiero przy starcie.
+
+### 5.3. Anulowanie [P: AoC 705, 709; EE 706, 710] + [W: AoC 0x5FD984, 0x5FD8F3, komunikat 0x4C47xx]
+
+Sposób wskazania: **prawy przycisk myszy na przycisku technologii** w panelu budynku. Ikon pozycji kolejki nie ma –
+kliknięcia w lewy dolny róg z etapu 52 trafiały w tło panelu.
+
+- 0x5FD984 (technologia, flaga „wszystkie” = 0): przegląd kolejki od początku; pasuje ta sama technologia albo para
+  1074/1451 (0x6414D2). **Pierwsza** pasująca pozycja jest usuwana, pozostałe zachowują kolejność [W; P: kolejka
+  [3011, X, 3011] → [X, 3011] w obu grach].
+- Gdy w kolejce nie ma tej technologii, a bieżąca pozycja pasuje – 0x5FD8F3: bieżąca := brak, licznik := 0 [P].
+- Gdy bieżąca jest inną technologią – nic się nie zmienia [P: 709/710, trzeci PPM].
+- Zwrot: pełny koszt (mnożnik 1,0, gracz vt+0x44) w takcie kliknięcia, także po 12,7 s produkcji [P].
+- Populacja i generator bez zmian [P]. Licznik rezerwacji klasy 0x1B (+0xB2C) maleje tylko dla tej klasy [W].
+- Następna pozycja nie startuje w funkcji anulowania; rusza w aktualizacji budynku [W]. Chwila startu po anulowaniu
+  bieżącej pozycji przy niepustej kolejce nie została zmierzona [N].
+- EE i AoC: ten sam przebieg we wszystkich zmierzonych krokach.
+
+### 5.4. Punkt zbiórki [P: AoC 705, EE 706] – rozpoznany, **nieodwzorowany w Core**
+
+- Ustawienie: budynek zaznaczony, PPM w teren. Punkt trafia jako `EEUGLocation` (pochodzenie 1) do **drugiego poziomu**
+  kolejki celów budynku z dokładnym miejscem kliknięcia, np. (168,957; 115,813). Zapis natychmiast, przed produkcją.
+- Obowiązuje dla kolejnych jednostek z kolejki (2 z 2).
+- Nowa jednostka powstaje w innym miejscu niż bez punktu zbiórki: (166,25; 114,25) – narożnik budynku od strony punktu
+  (X + n + r; Y + n + r) – zamiast (164,25; 111,75). Druga jednostka – to samo miejsce (pierwsza już odeszła).
+- Kurs początkowy: kierunek od miejsca powstania do punktu kliknięcia (AoC 30,0°, EE 29,0° – kliknięcia różniły się o
+  0,05 pola).
+- Stan początkowy 8000 z celem `EEUGLocation` (pochodzenie 1); w kolejnych taktach 2015 → 10003 → … → 5000.
+- Cel jednostki to nie punkt kliknięcia, tylko miejsce w polu punktu: pierwsza (168,25; 115,25), druga
+  (168,25; 115,75) – odstęp 2r.
+- Reguła wyboru miejsca powstania i kolejnych miejsc docelowych: jeden układ – [H: najbliższe miejsce obwodu; kolejne
+  ćwiartki pola]. Bez drugiego układu nie implementuję.
+
+### 5.5. Zmiany Core (etap 53)
+
+- `ParametryProdukcji::losowy_zamiennik` – start losuje tylko dla technologii z zamiennikiem; wynik ≥ 0,5 → zamiennik
+  (dane: `parametry_jednostek_ee.json → produkcja → 1074 → losowy_zamiennik = 1451`). [Zastąpione: losowanie przy
+  każdym starcie.]
+- `Swiat::anuluj_technologie(budynek, tech)` – reguła 0x5FD984 / 0x5FD8F3; `anuluj_produkcje(budynek, indeks)` bez zmian.
+- Jednostka z produkcji: parametry z pomiaru albo z rekordu `dbobjects` (`godot/silnik/symulacja/parametry_typow_db.gd`:
+  a, vmax, α, ωmax, rozmiar, c4 = 1/a, c8 = 1/α; HP, atak, pancerze, zasięg, pole widzenia, przeładowanie, klasy
+  trafień). Reguły dają dokładnie wartości zmierzone dla 422, 32, 216, 173; koszt populacji z „Population count”.
+  Nie ma kodu ani wpisu danych specjalnie dla jednej jednostki wojskowej poza mnożnikiem czasu 3011.
+- GDExtension: `ustaw_produkcje` (pole `losowy_zamiennik`), `anuluj_technologie`.
+
+### 5.6. Zgodność Core z nagraniami (odtworzenie `opis_produkcji` → `odtworz_scenariusz.gd --od-startu=0`)
+
+| Nagranie | Gra | Stan produkcji (bieżąca, licznik, kolejka, zasoby, populacja) | Nowe jednostki | Losowania |
+|---|---|---|---|---|
+| 704 jeden | AoC | 2646/2647 + 1 próbka nieaktualna rejestratora | (rejestrator bez nowych jednostek) | 2/2 taktów |
+| 704 dwa | AoC | 4984/4984 | – | 3/3 |
+| 705 anulowanie | AoC | 1008/1008 | – | 2/2 |
+| 709 nowa | AoC | 1967/1967 | 1/1: Δt 0 taktów, typ, pozycja, kurs, stan | 2/2 |
+| 706 jeden | EE | 2387/2387 | 1/1 | 2/2 |
+| 706 dwa | EE | 3920/3920 | 2/2 | 3/3 |
+| 706 anulowanie | EE | 860/860 | – | 2/2 |
+| 677 jeden (obywatel) | AoC | 1897/1897; płeć z generatora (`--rng-nagranie`) = gra (1451) | typ 480 | 2/2 |
+| 677 dwa | AoC | 3170/3170; płeć 1451, potem 1074 = gra | typy 480, 32 | 3/3 |
+| 679 | EE | 2995/2995; płeć 1074, 1074 = gra | typy 32, 32 | 3/3 |
+
+- Pierwsza rozbieżność: brak w każdym nagraniu. Próbka nieaktualna 704 (t = 181133): rejestrator zwrócił stan z
+  poprzedniego taktu, następna próbka znów zgodna.
+- Nagrania 705/706 „zbiórka” nie są odtwarzane (punkt zbiórki nieodwzorowany).
+- Liczby 677/679 różnią się od etapu 52 (1898, 3101, 2996), bo porównanie idzie teraz po numerze taktu, a nie po
+  czasie (§ 5.7); 677 „dwa” obejmuje całe nagranie.
+
+### 5.7. Zegar gry powyżej 524 288 ms [P]
+
+Czas gry (EEPhysics +0xD0) rośnie o 1500/44 = 34,0909 ms na takt tylko poniżej 524 288 ms. Powyżej tej wartości
+przyrost wynosi 34,0625 ms (16 taktów po 34 ms na 1 takt 35 ms), w tym samym nagraniu po obu stronach granicy
+(`e52_677_dwa`: 34,0935 → 34,0627; 705: 34,0625). [H]: zegar jest liczbą f32, a 1/16 ms to kwant f32 w przedziale
+[2^19, 2^20). Licznik produkcji tego nie widzi (odejmuje stałe 34). Skutek dla narzędzi: próbki i rozkazy są
+dopasowywane po numerze taktu (`takt_przed`, `koniec_takt` w opisie; `--od-startu=0`), bo czas rozjeżdża się z siatką
+Core o 0,03 ms na takt. Zob. `precyzja_numeryczna.md`.
+
+### 5.8. Niezmierzone
+
+Limit populacji osiągnięty w grze (start czekający na miejsce), zajęte miejsca wyjścia (ponowienie 5000 ms), wybór
+budynku o najkrótszej kolejce, produkcja z Shift (5 sztuk), technologie bez obiektu (ulepszenia), produkcja w innych
+budynkach niż Centrum Miasta i koszary, punkt zbiórki na obiekcie.
+

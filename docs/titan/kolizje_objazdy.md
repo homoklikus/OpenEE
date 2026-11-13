@@ -414,3 +414,25 @@ następnej aktualizacji fizyki. Po poprawce 634 – 6413/6413 próbek wszystkich
   dodaje w odtworzeniach tylko budynki graczy („Unit type” 2 i brama 25) [N].
 - Kolejność w liście 0x5498C4: pierwszy kontakt, dla którego vt+0x3C zwróci prawdę, kończy pętlę; 0x549179 zawsze
   zwraca fałsz, więc dla małych jednostek przetwarzane są wszystkie kontakty [W].
+
+## Etap 53 – integracja eksperymentów Fable w Core
+
+- **Kolejność listy kontaktów:** Core wstawia nową parę na początek obu list (jak EE 0x5F240E / AoC 0x600D8B). Regresja
+  wszystkich nagrań (czyste, e46, e48, 648, 652, 654, budowa, zbieranie, tarany) bez zmiany wyniku – w zmierzonych
+  układach kolejność nie wpływa na tor. Test `kontakty_duze`.
+- **Wybór gałęzi:** para o rozmiarach ≥ 1,0 z ruchomym drugim uczestnikiem nie przechodzi przez odpychanie małe
+  (`krok_koncowy`, licznik `pary_duze`). Gałąź duża 0x548A3C nie jest odwzorowana – para pozostaje bez reakcji. To zgodne z
+  grą, gdy warunek geometryczny nie zachodzi; różni się w EE przy objeździe stojącego tarana (push 0,026 pola).
+- **Niezaimplementowane [W]:** przerwanie pętli po prawdzie metody, filtr celu +0x347, filtry par (morski, kosmiczny).
+- **Tarany (typ 102, parametry z dbobjects, macierz z nagrania):**
+
+| Układ | EE | AoC |
+|---|---|---|
+| taran obok gwardii (kontakt bez push) | taran i gwardia 5880/5880 | 5923/5923 |
+| taran między dwiema gwardiami (dwa kontakty, push obu) | 3 × 4581/4581 | 3 × 4605/4605 |
+| taran → stojąca gwardia na trasie (objazd A\*, kontakt, push) | 3275/3275 obu | 3305/3305 obu |
+| taran bez przeszkody, wiersz ze stokiem | do t = 55226 (1488 próbek), potem reguła stoku | do t = 54715 (1476) |
+| objazd stojącego tarana, potem oba w ruchu | do t = 57749 (stok); taran 2 do 69749 (push gałęzi dużej w grze) | do t = 76091 (2103–2113 próbek), oba tarany w ruchu |
+
+  Przed zmianą wyboru gałęzi AoC rozchodziło się w t = 70772 – w chwili powstania pary taran–taran, bo Core stosował
+  odpychanie małe.
