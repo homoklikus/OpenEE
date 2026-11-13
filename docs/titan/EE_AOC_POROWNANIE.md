@@ -52,7 +52,8 @@ mechanik, prędkość, kolizje), 30–32 (walka: przeładowanie, obrót, tablice
 | Populacja gracza | +0xB10 | +0xB14 | ZMIENIONY (przesunięcie) | [P: 679 / 677] |
 | Pole bieżącej produkcji / licznik | +0x25C / +0x27C | +0x260 / +0x280 | ZMIENIONY (przesunięcie) | [W + P] |
 | Klasa jednostki – typ dbobjects | +0x4B8 | +0x1BC | ZMIENIONY (przesunięcie) | [P: etap 12] |
-| Odbudowa kontaktów przy zmianie pola | po zapisie | przed zapisem | ZMIENIONY [W] | kolizje_objazdy.md; bez testu dynamicznego |
+| Odbudowa kontaktów przy zmianie pola | okno ±R od nowej pozycji (zapis macierzy, potem 0x5E8F0E) | okno od pozycji sprzed zapisu (0x5FE611 → 0x5F6817, potem zapis) | ZMIENIONY | [W + P: zadania 681–689, 7 nagrań – reguła gry 0 niezgodności list]; obserwowalne dla rozmiaru kolizji 1,0 (taran – każda zmiana pola, kontakt o pole później w AoC, inny push przy zderzeniu czołowym), nieobserwowalne dla rozmiaru < 1 przy zwykłym przejściu granicy pola; `EKSPERYMENT_FABLE_KOLIZJE.md` |
+| Filtr par kontaktu (flagi typu) | maska 4 | maska 0xC + wyjątek grupy typu 0x22 | ZMIENIONY [W] | EE 0x5E90D1, AoC 0x5F69CA; znaczenie [N], bez pomiaru |
 | Przeładowanie | stałe | losowe [lo, hi] | ZMIENIONY | walka.md § 11 [P: 580/581] |
 | Narastanie przewijania krawędzią | brak | ~1 s | NIEZWERYFIKOWANY (możliwe ustawienie myszy) | POROWNANIE_MECHANIK § 2 |
 | Wybór płci produkowanego obywatela | 1074, 1074 | 1451, 1451, 1074, 1074, 1074 | NIEZWERYFIKOWANY (reguła [N]) | 677–679 |
@@ -97,7 +98,7 @@ Kolumna „dowody” – wersja, w której zebrano dowody ocen A/B/C: **EE**, **
 | 5 | Graf nawigacji | EE | NIEZWERYFIKOWANY |
 | 6 | Pathfinding | EE+AoC (444/445 EE, 454 AoC) | WSPÓLNY w zmierzonych przypadkach |
 | 7 | Fizyka ruchu | EE (AoC: prędkość etap 13) | NIEZWERYFIKOWANY poza prędkością |
-| 8 | Kolizje | EE (AoC [W]) | ZMIENIONY [W] – kolejność odbudowy kontaktów |
+| 8 | Kolizje | EE (AoC: kontakty – eksperyment Fable) | ZMIENIONY [P] – okno list kontaktów (stara / nowa pozycja); odpychanie piechoty NIEZWERYFIKOWANY |
 | 9 | Kolejka fizyki | EE | NIEZWERYFIKOWANY |
 | 10 | Maszyny stanów | EE | NIEZWERYFIKOWANY |
 | 11 | Cele i rozkazy | EE (+AoC 454) | NIEZWERYFIKOWANY |
