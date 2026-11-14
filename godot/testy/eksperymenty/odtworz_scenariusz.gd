@@ -16,6 +16,12 @@ var _typ_gry := {}   # etap 50: id gry → typ (przyrost budowy wg typu budując
 
 const ParametryTypowDB := preload("res://silnik/symulacja/parametry_typow_db.gd")   # etap 53
 
+func _scal(cel: Dictionary, zm: Dictionary) -> void:
+	for k in zm:
+		if cel.get(k) is Dictionary and zm[k] is Dictionary: _scal(cel[k], zm[k])
+		else: cel[k] = zm[k]
+
+
 func _arg(n: String, d: String) -> String:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--%s=" % n): return a.split("=", true, 1)[1]
@@ -33,6 +39,8 @@ func _start() -> void:
 		print("BŁĄD SCN: ", s.blad); quit(1); return
 	var opis: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(_arg("opis", "")))
 	var par: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://../dane/testy_walki/parametry_jednostek_ee.json"))
+	# etap 54: nadpisania wariantu gry (sekcja „warianty” pliku) – tylko potwierdzone różnice EE/AoC
+	_scal(par, par.get("warianty", {}).get(_arg("wariant", "ee"), {}))
 	var c: Object = CoreCpp.nowa_symulacja()
 	var rodz := {}
 	for r in Z.tabela("dbterrain"):
@@ -150,7 +158,9 @@ func _start() -> void:
 	for zr in opis.get("zrodla", []):
 		var zid: int = c.dodaj_zrodlo({"gracz": 0, "typ": int(zr["typ"]), "X": int(zr["X"]), "Y": int(zr["Y"]),
 			"x": float(zr["X"]) + 0.5, "y": float(zr["Y"]) + 0.5, "hp": int(zr["hp"]), "ilosc": int(zr["ilosc"]),
-			"zasob_typ": int(ob.get(int(zr["typ"]), {}).get("Resource type", 0)), "zasob_indeks": 1, "tempo_indeks": 0,
+			"zasob_typ": int(ob.get(int(zr["typ"]), {}).get("Resource type", 0)),
+			"zasob_indeks": int(ParametryTypowDB.zrodlo(ob.get(int(zr["typ"]), {})).zasob_indeks),   # etap 54: z dbobjects
+			"tempo_indeks": int(ParametryTypowDB.zrodlo(ob.get(int(zr["typ"]), {})).tempo_indeks),
 			"id_mapy": str(zr["id"])})
 		zrodla_id[str(zr["id"])] = zid; core_id[str(zr["id"])] = zid
 	for gid in core_id:
@@ -212,6 +222,7 @@ func _start() -> void:
 	var ostatnie_trasy := {}
 	var diag_rozkazu := []
 	wynik["trasy"] = []
+	var nowe_core: Array[int] = []
 	for k in takty:
 		var t_przed := int(round(T0 + TAKT_MS * k))
 		for dt in [0, -1, 1]:
@@ -225,8 +236,12 @@ func _start() -> void:
 		for r in rozkazy.get(k, []):
 			var kto: int = core_id[str(r["kto"])]
 			var w
-			if r["rodzaj"] == "budowa" or r["rodzaj"] == "zbieranie" or r["rodzaj"] == "produkcja" or r["rodzaj"] == "anuluj":   # etap 50–53: po takcie
+			if r["rodzaj"] == "budowa" or r["rodzaj"] == "produkcja" or r["rodzaj"] == "anuluj" or r["rodzaj"] == "zbiorka":   # etap 50–54: po takcie
 				po_takcie.append(r); continue
+			if r["rodzaj"] == "zbieranie":   # etap 54: przed taktem – stan początkowy MoveToWaitingArea, w takcie przejście [P: 673, 715]
+				w = c.rozkaz_zbierania(kto, core_id[str(r["zrodla"][0])], float(r["x"]), float(r["y"]))
+				wynik.rozkazy.append([k, str(r["kto"]), "zbieranie", w])
+				continue
 			if r["rodzaj"] == "atak": w = c.rozkaz_ataku(kto, core_id[str(r["cel"])])
 			else: w = c.rozkaz_ruchu(kto, float(r["x"]), float(r["y"]), float(r["kat"]) if r.get("kat") != null else null, false)
 			wynik.rozkazy.append([k, str(r["kto"]), str(r["rodzaj"]), w])
@@ -242,6 +257,10 @@ func _start() -> void:
 			if r["rodzaj"] == "produkcja":   # etap 52: koszt i start w próbce kliknięcia [P: 677/679]
 				w = c.rozkaz_produkcji(kto, int(r["tech"]))
 				wynik.rozkazy.append([k, str(r["kto"]), "produkcja", w])
+				continue
+			if r["rodzaj"] == "zbiorka":   # etap 54: PPM w teren przy zaznaczonym budynku [P: 705/706/713/714]
+				w = c.ustaw_punkt_zbiorki(kto, float(r["x"]), float(r["y"]))
+				wynik.rozkazy.append([k, str(r["kto"]), "zbiorka", w])
 				continue
 			if r["rodzaj"] == "anuluj":   # etap 53: PPM na przycisku technologii [P: 705/706]
 				w = c.anuluj_technologie(kto, int(r["tech"]))
@@ -304,6 +323,13 @@ func _start() -> void:
 					if int(d2.id) == int(nid): kurs_n = float(d2.kurs)
 				if not wynik.has("nowe"): wynik["nowe"] = []
 				wynik["nowe"].append([snappedf(T0 + TAKT_MS * (k + 1), 0.1), int(nj.get("typ_db", -1)), float(nj.get("x", 0)), float(nj.get("y", 0)), kurs_n, int(nj.get("stan", -1))])
+				nowe_core.append(int(nid))   # etap 54: przebieg nowej jednostki co takt (ruch do punktu zbiórki)
+				if not wynik.has("nowe_seria"): wynik["nowe_seria"] = []
+				wynik["nowe_seria"].append([])
+			if not nowe_core.is_empty():
+				for d3 in c.stan_jednostek():
+					var ni := nowe_core.find(int(d3.id))
+					if ni >= 0: wynik["nowe_seria"][ni].append([k, int(d3.stan), float(d3.x), float(d3.y), float(d3.kurs)])
 		if _arg("graf-scn", "0") == "1":   # etap 47: menedżer przebudowy (termin, flaga, zmienione sektory) i kolejka fizyki
 			var sg: Dictionary = c.stan_grafu()
 			pr["graf"] = [int(sg["d4"]), bool(sg["d8"]), int(sg["zmienione_sektory"]), int(sg["przebudowy_sektorow"]), int(sg["maks_id"])]

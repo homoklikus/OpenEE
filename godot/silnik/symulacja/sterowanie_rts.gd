@@ -23,6 +23,9 @@ var kamera: Camera3D
 var komunikat := ""
 var zaznaczenie := ZaznaczenieEE.new()
 var gracz: int = -1                # właściciel jednostek wybieranych ramką (−1 – wszyscy)
+## Etap 54: przechwycenie PPM przez scenę (np. punkt zbiórki zaznaczonego budynku). Wywołanie (ekran, dolacz) → true,
+## gdy scena obsłużyła kliknięcie – zwykły rozkaz ruchu nie jest wtedy wysyłany.
+var przechwyt_ppm := Callable()
 var _start_ramki := Vector2.INF
 var _ramka: ReferenceRect
 
@@ -111,6 +114,7 @@ func ramka(r: Rect2, mod: String = "") -> Array:
 
 
 func klik_prawy(ekran: Vector2, dolacz := false) -> bool:
+	if przechwyt_ppm.is_valid() and bool(przechwyt_ppm.call(ekran, dolacz)): return true
 	if widok.zaznaczone.is_empty():
 		komunikat = "najpierw zaznacz jednostki (LPM lub ramka)"; return false
 	var r := _promien(ekran)

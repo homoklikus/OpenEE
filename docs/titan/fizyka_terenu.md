@@ -229,3 +229,9 @@ macierz. Osobnej wysokości kontaktu nie ma. Tylko AoC dla jednostek pływający
 - **Obrót AoC** różni się od EE (0x554F56 / 0x554738), co wyjaśnia +15 taktów AoC 505 (`precyzja_numeryczna.md` § 6).
 - **Teren:** reguły GetMeshZ i nachylenia bez zmian. Syntetyczne przypadki podjazdu i zjazdu (S6, S7) w
   `dane/testy_ruchu/ruch_syntetyczne_etap27.json`.
+
+## Etap 54 – wysokość obiektów wczytanych ze scenariusza
+
+Wysokość jednostki pochodzi z GetMeshZ dopiero w kroku ruchu i przy utworzeniu przez produkcję. Obiekt wczytany ze
+scenariusza zachowuje z z macierzy rekordu, dopóki się nie ruszy; budynek – na stałe [P: AoC 711, EE 712]. Opis,
+funkcje i poprawka generatora map testowych: `WYSOKOSC_OBIEKTOW_SCN.md`.

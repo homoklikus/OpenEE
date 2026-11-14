@@ -125,3 +125,9 @@ z SCN do Core: premie w odtworzeniach nadal pochodzą z pomiaru (`premie_cywiliz
 5 → +0x500, 6 → +0x4F4, 7 → +0x4EC, 8 → +0x534 (≤ 0 → +0x580), 9 → +0x55C, 10 → +0x538, 11 → f32 +0x420,
 12 → +0x554, 14 → f32 +0x430, 15 → +0x570; 13 i pozostałe → 0. Znaczenie pól (które jest prędkością, HP, atakiem
 itd.) potwierdzono dotąd tylko dla premii prędkości (etap 49); reszta [N].
+
+## Etap 54 – wysokość obiektów w rekordzie SCN
+
+Pozycja obiektu złożonego to translacja macierzy rekordu (elementy 3, 7, 11); z jest bezwzględne i gra nie poprawia go
+przy wczytaniu. Core liczy wysokość jednostki z terenu, więc import mapy do Core nie zależy od z rekordu. Walidacja
+scenariuszy (`narzedzia/titan/wysokosc_obiektow.py`) i reguła generatora: `WYSOKOSC_OBIEKTOW_SCN.md`.

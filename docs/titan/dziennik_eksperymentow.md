@@ -161,3 +161,19 @@ Eksperymenty Fable (zadania 681–701) opisują `EKSPERYMENT_FABLE_KOLIZJE.md` i
 | 709 | AoC | e42_e53_koszary | Nowa jednostka w rejestratorze; kolejka mieszana | `produkcja_rozkaz` ×5 (dwa przyciski), PPM ×3 | – | 2. przycisk = 3107 Gallic Warrior; PPM usuwa pierwszą pozycję 3011 z kolejki, nie rusza bieżącej innej technologii | Core 1967/1967, nowa jednostka zgodna |
 | 710 | EE | jw. | Kolejka mieszana w EE | jw. | jak AoC | 2. przycisk = 2024 Spearman; ta sama reguła anulowania | – |
 
+## Etap 54 – wysokość obiektów, punkt zbiórki, kamień, budowa w AoC
+
+| Nr | Gra | Scenariusz | Pytanie | Metoda | Oczekiwanie | Wynik | Wniosek |
+|---|---|---|---|---|---|---|---|
+| 711 | AoC | e42_e54_wysokosc | Kiedy gra koryguje wysokość obiektu; czy poprawiony generator daje obiekty na terenie | rejestrator 12 obiektów + nowe, `obs_rozkaz` ×7, `produkcja_rozkaz` ×4, zrzuty | – | tryb „teren”: różnica 0 (budynek +0,01) od wczytania i w ruchu; stary tryb: 1,02 / 1,84 / 1,85 do pierwszego kroku ruchu, koszary bez zmiany; jednostki z produkcji na terenie | `WYSOKOSC_OBIEKTOW_SCN.md` |
+| 712 | EE | jw. | To samo w EE | jw. + zbliżenia koszar, obywatela, tarana | jak AoC | te same wartości; na zrzutach obiekty poprawione stoją na ziemi | WSPÓLNY |
+| 713 | AoC | e42_e54_zbiorka | Miejsce powstania i cel dla 5 punktów zbiórki, zmiana punktu | `obs_rozkaz` na budynek ×5, `produkcja_rozkaz` (2 + 4 × 1), rejestrator z `nowe_gracza` | reguła z emulacji 0x641299 / 0x63F697 | 6/6 miejsc i celów zgodnych z regułą | Core 14046/14046, 6/6, przebieg 5 jednostek w całości |
+| 714 | EE | jw. | Trzy punkty w EE | jw. | jak AoC | 4/4 zgodne | Core 8752/8752, 4/4, przebieg 3 jednostek w całości |
+| 715 | AoC | e42_e54_kamien | Kamień: jeden zbieracz, potem drugi przy tej samej kopalni | `ppm_na_obiekt` ×2, rejestrator (obywatele, Centrum, kopalnia, gracz) | jak drewno | 4027 przed 4004, cykl 262/524/787…, +15 kamienia, osobne miejsca pracy | Core 5317/5317; łącznie 10423/10423 ×2, gospodarka 10422/10422 |
+| 716 | EE | jw. | To samo w EE + `ulepszenie_odczyt` | jw. | jak AoC | cykl 262/525/787… (okres 8926), reszta jak AoC | Core 5288/5288; łącznie 10357/10357 ×2 |
+| 717 | AoC | e42_e51_zbieranie | Budowa koszar (odpowiednik 674), `ulepszenie_odczyt` | `budowa_rozkaz` | jak EE 674 | koszt 225 drewna; okres kamienia w ulepszeniu 8925 | Core 3120/3121, fundament 1688/1688 |
+| 718 | AoC | e42_e51_dwaj | Dwóch budowniczych (odpowiednik 663) | `budowa_rozkaz` z pomocnikiem | jak EE 663 | pomocnik w (164,15; 113,15) | Core: pierwszy 2205/2206, fundament 1020/1020, pomocnik do t = 63374 |
+
+Bez uruchamiania gry: emulacja funkcji AoC 0x63F697, 0x64BB36, 0x641299, 0x646A26, 0x64720E na obrazie `EE-AOC.exe`
+(Unicorn; sztuczna mapa bez obiektów) – wzór miejsc w polu i kolejność pól obwodu.
+

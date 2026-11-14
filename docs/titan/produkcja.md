@@ -258,3 +258,122 @@ Limit populacji osiągnięty w grze (start czekający na miejsce), zajęte miejs
 budynku o najkrótszej kolejce, produkcja z Shift (5 sztuk), technologie bez obiektu (ulepszenia), produkcja w innych
 budynkach niż Centrum Miasta i koszary, punkt zbiórki na obiekcie.
 
+## 6. Etap 54 – miejsce powstania jednostki i punkt zbiórki
+
+Pomiary: AoC 711, 713; EE 712, 714; ponownie nagrania 705/706 z etapu 53. Kod: AoC `EE-AOC.exe` db8fc5ce…, emulacja
+funkcji (Unicorn) na obrazie pliku – bez uruchamiania gry.
+
+### 6.1. Funkcje [W]
+
+| Rola | AoC | EE |
+|---|---|---|
+| utworzenie jednostki z produkcji | 0x631B55 | w funkcji odliczania 0x624DF8 |
+| punkt zbiórki budynku (cel z poziomu 1 albo 2 kolejki celów) | 0x5ED63B, vt+0x28 celu | [N] |
+| wybór miejsca (pierścienie pól wokół budynku) | 0x64352F → 0x643561 | 0x62E1CF → 0x62E201 |
+| pola pierścienia bez punktu zbiórki | 0x64BB36 | [N] |
+| pola pierścienia z punktem zbiórki (sortowanie) | 0x641299 | [N] |
+| listy pól: krawędzie / narożniki | 0x646A26 / 0x64720E | [N] |
+| miejsce w polu (wolne miejsce, lista obiektów pola 0x64C3DF) | 0x640DDB | [N] |
+| wzór miejsc pola (start, kroki, liczba) | 0x63F697 | [N] |
+| kurs nowej jednostki na punkt | 0x64240D | 0x62D528 |
+| wysokość nowej jednostki z terenu | 0x6438F1 → 0x4C0894 | 0x62E54B → 0x4C0201 |
+
+Adresy EE: tylko funkcja wyboru miejsca (stała π 0x62E25F, wywołanie wysokości). Zgodność reguł w EE wynika z pomiaru.
+
+### 6.2. Algorytm [W: emulacja + P]
+
+1. Gracz-człowiek: tylko pierwszy pierścień pól wokół budynku n × n (argument „pierścień maksymalny” = 1). Brak
+   wolnego miejsca → ponowna próba po 5000 ms (etap 52).
+2. **Kolejność pól bez punktu zbiórki** (0x64BB36):
+   - n = 2 (12 pól): od pola (0, −1) wzdłuż dolnej krawędzi w stronę +x, prawą krawędzią w górę, górną w stronę −x,
+     lewą w dół – (0,−1), (1,−1), (2,−1), (2,0), (2,1), (2,2), (1,2), (0,2), (−1,2), (−1,1), (−1,0), (−1,−1);
+   - n = 1 (8 pól): pole samego budynku, potem takie samo obejście;
+   - inne n: lista bez zmiany kolejności – dla każdego i lewa i prawa krawędź, potem dolna i górna, na końcu narożniki
+     (−1,−1), (−1,n), (n,−1), (n,n).
+3. **Kolejność pól z punktem zbiórki** (0x641299): ta sama lista (krawędzie, narożniki) posortowana rosnąco według
+   (dx − zdx)² + (dy − zdy)², gdzie (zdx, zdy) = pole punktu zbiórki względem kotwicy budynku. Liczby całkowite –
+   liczy się pole punktu, nie dokładne miejsce kliknięcia. Remisy zostają w kolejności listy (40 losowych punktów
+   emulacji, n = 2; dla n ≥ 4 lista ma ponad 16 pól i kolejność remisów nie jest ustalona [N]).
+4. Pole jest pomijane, gdy nie istnieje, jest nieprzejezdne dla klasy jednostki albo leży na brzegu mapy; dla pól
+   w innym regionie niż budynek dodatkowy test łączności regionów [W; w Core tylko przejezdność].
+5. **Miejsca w polu** (0x63F697; s = min(rozmiar jednostki, 1), h = s/2, k = floor(1/s)):
+
+| Pole względem budynku | Pierwsze miejsce (ułamek pola) | Następne | Liczba |
+|---|---|---|---|
+| dolna krawędź (dy = −1, 0 ≤ dx < n) | (h; 1 − h) | x + s | k |
+| narożnik (n, −1) | (h; 1 − h) | – | 1 |
+| prawa krawędź (dx = n, 0 ≤ dy < n) | (h; h) | y + s | k |
+| narożnik (n, n) | (h; h) | – | 1 |
+| górna krawędź (dy = n, 0 ≤ dx < n) | (1 − h; h) | x − s | k |
+| narożnik (−1, n) | (1 − h; h) | – | 1 |
+| lewa krawędź (dx = −1), dy ≥ 1 | (1 − h; h) | y − s (z zawinięciem do pola) | k |
+| lewa krawędź, dy = 0 | (1 − h; 1 − h) | y − s | k |
+| narożnik (−1, −1) | (1 − h; 1 − h) | – | 1 |
+| pole wewnętrzne (także pole punktu zbiórki) | (h; h) | (h; h + s), potem kolumna x + s | k² |
+
+   Wszystkie miejsca obwodu przylegają do budynku (odstęp h od krawędzi).
+6. **Miejsce zajęte** (0x640F29–0x64100E) [W + P]: dla jednostki o rozmiarze o stojącej **w tym samym polu**
+   d² + 0,1·s < ((o + s)/2)², d = odległość miejsca od jednostki. Warunki klasy tej gałęzi (flagi +0x2FC / +0x303,
+   +0x317, rozmiar < 1,5) nie są odczytane z danych [N]; w Core – każda żywa jednostka niebędąca budynkiem.
+7. Kurs: z punktem zbiórki kąt od miejsca powstania do dokładnego punktu kliknięcia (0x64240D); bez punktu π
+   (stała 0x40490FDB).
+8. Wysokość: teren w miejscu powstania (`WYSOKOSC_OBIEKTOW_SCN.md`).
+9. **Cel nowej jednostki** [P]: `EEUGLocation` (pochodzenie 1, kąt 0, bez obrotu końcowego) w pierwszym wolnym miejscu
+   pola punktu zbiórki – miejsca pola wewnętrznego: pierwsza jednostka (X + h; Y + h), druga (X + h; Y + h + s).
+   Jednostka od pierwszej próbki w stanie 8000 z gotową trasą.
+10. Zmiana punktu działa od następnej utworzonej jednostki; punkt jest danymi budynku (cel w drugim poziomie jego
+    kolejki celów).
+
+### 6.3. Pomiary [P]
+
+Koszary 2 × 2, kotwica (164, 112); jednostka Maceman (s = 0,5).
+
+| Punkt zbiórki | Pole punktu | Pole wyjścia | Miejsce powstania | Cel | AoC 713 | EE 714 |
+|---|---|---|---|---|---|---|
+| brak (704–712) | – | (0, −1), potem (1, −1) | (164,25; 111,75), (164,75; 111,75), (165,25; 111,75) | – | ✓ | ✓ |
+| (155,34; 113,36) – zachód, 2 jednostki | (155, 113) | (−1, 1) | (163,75; 113,25) obie | (155,25; 113,25), (155,25; 113,75) | ✓ | ✓ |
+| (165,90; 107,11) – południe | (165, 107) | (1, −1) | (165,25; 111,75) | (165,25; 107,25) | ✓ | – |
+| (164,38; 118,73) – północ | (164, 118) | (0, 2) | (164,75; 114,25) | (164,25; 118,25) | ✓ | ✓ |
+| (178,41; 124,57) – daleko | (178, 124) | (2, 2) | (166,25; 114,25) | (178,25; 124,25) | ✓ | – |
+| (168,96; 115,81) – etap 53 | (168, 115) | (2, 2) | (166,25; 114,25) ×2 | (168,25; 115,25), (168,25; 115,75) | ✓ 705 | ✓ 706 |
+| (166,45; 112,55) – pole obwodu | (166, 112) | (2, 0) | (166,25; 112,25) | to samo miejsce | ✓ | ✓ |
+
+- Wszystkie 13 miejsc powstania i 12 celów zgadza się z regułą z emulacji, w obu grach.
+- Zajęte pierwsze miejsce (711/712): obywatel w (162,43; 111,58) blokuje (162,25; 111,75) – d² + 0,05 = 0,112 < 0,16 –
+  jednostka powstaje w (162,75; 111,75). Obywatel w (176,48; 111,48) nie blokuje (176,25; 111,75): 0,175 ≥ 0,16.
+  Reguła „bliżej niż 2r” z etapu 52 dawała tu złą odpowiedź.
+- Dojście do celu bez obrotu końcowego: 9000 → 9006 (1 takt) → 5001 → 5000. Jednostka, która już stoi w 9006, zaczyna
+  obrót ku kursowi 0 (EE 714: 1,7175 → 1,6891 → 1,6465 → 1,6182 → 1,604); jednostka jeszcze hamująca nie obraca się.
+
+### 6.4. Core
+
+- `Jednostka::zbiorka`, `zbiorka_x/y`; `Swiat::ustaw_punkt_zbiorki`, `usun_punkt_zbiorki`.
+- `Swiat::pola_wyjscia(n, zbiorka, zdx, zdy)`, `miejsca_w_polu(n, dx, dy, s)`, `miejsce_wolne` (test z pkt 6),
+  `miejsce_wyjscia` (zastępuje regułę krawędzi y = Y − r z etapu 52 – dla n = 2 bez punktu daje te same miejsca),
+  `miejsce_zbiorki`.
+- Nowa jednostka z punktem: kurs na punkt, cel `CelRuchu` z `bez_obrotu` i kątem 0, stan 8000 w takcie utworzenia.
+  `UnitFacingNotRequired` dla celu bez obrotu jest prawdą od razu.
+- GDExtension: `ustaw_punkt_zbiorki`, `usun_punkt_zbiorki`; słownik jednostki: `zbiorka`, `zbiorka_x`, `zbiorka_y`,
+  `prod_kolejka`.
+- Reguła obowiązuje dla każdego n (dane budynku), ale zmierzona jest tylko dla koszar i Centrum Miasta (n = 2).
+
+### 6.5. Zgodność Core z nagraniami (`opis_produkcji` → `odtworz_scenariusz.gd --od-startu=0`)
+
+| Nagranie | Produkcja (próbki) | Utworzenie (takt, typ, miejsce, kurs, stan) | Przebieg nowych jednostek co takt |
+|---|---|---|---|
+| AoC 713 (5 punktów, 6 jednostek) | 14046/14046 | 6/6 | 10607/10607, 9665/9665, 7175/7175, 5285/5285, 2485/2485; szósta 1/588 |
+| EE 714 (3 punkty, 4 jednostki) | 8752/8752 | 4/4 | 5633/5633, 4691/4691, 2333/2333; czwarta 1/581 |
+| AoC 705 zbiórka (etap 53) | 3688/3688 | 2/2 | 1946/1946, 1004/1004 |
+| EE 706 zbiórka (etap 53) | 3555/3555 | 2/2 | 1939/1939, 997/997 |
+
+- Przebieg = stan, pozycja (≤ 0,002 pola), kurs (≤ 0,002 rad) w każdym takcie od utworzenia do końca nagrania.
+- Jedyna rozbieżność: punkt zbiórki w polu obwodu (cel = miejsce powstania). Gra: 8000 → 9006 → 5001 → 5000 z pustą
+  trasą; Core: 8000 → 2015 → 10003 → 9000 → 9006. Pozycja zgodna, stany 3 takty później, kurs końcowy różny
+  o 0,04 rad [N: przejście 8000 → 9006].
+- Losowania w taktach startu i utworzenia: zgodne poza jednym taktem AoC 713 (t = 431927: gra 19, Core 2) – takt
+  rozkazu produkcji przy stojących 4 jednostkach; źródło 17 losowań nieustalone [N].
+
+### 6.6. Niezmierzone
+
+Budynki 1 × 1 i 3 × 3; brak wolnego miejsca w całym pierścieniu; punkt zbiórki na jednostce albo budynku; pole punktu
+zajęte w całości; gracz komputerowy (pierścienie do 5); usuwanie punktu w grze (w Core `usun_punkt_zbiorki`).

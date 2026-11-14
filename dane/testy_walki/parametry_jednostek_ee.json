@@ -357,5 +357,38 @@
   }
  },
  "produkcja_uwaga": "Etap 52: koszt, czas i obiekt – z dbtechtree w chwili odtworzenia (EpokiDB.techtree: Citizen 1074 / Female Citizen 1451 – Food cost 50, Build time 28000, obiekty 32 / 480, identyczne w EE i AoC). Tu tylko wartości spoza bazy: mnożnik czasu = ulepszenie +0x94 (1,0) [W: AoC 0x5FDDAF, EE 0x5EFB48; P: 677/679 – licznik 28000] i koszt populacji (klasa vt+0x6C) 1 [P: 677/679 – populacja +1 na jednostkę].",
- "produkcja_uwaga_e53": "Etap 53: 1074 → losowy_zamiennik 1451 – start pozycji obywatela losuje płeć (URandom ≥ 0,5 → Female Citizen) [W: AoC 0x5FDDED–0x5FDE6B, EE 0x5EFB91; P: 7/7 startów nagrań 677–679]. 3011 (Inf03 - Maceman, obiekt 21) – produkcja wojskowa w koszarach: mnożnik czasu 1,0 [P: 704/706 – licznik 32000 = Build time], koszt populacji 1 [P]. Technologie bez wpisu: mnożnik 1,0, koszt populacji z dbobjects „Population count”, parametry jednostki z pomiaru („ruch”, „walka”) albo wyprowadzone z dbobjects (godot/silnik/symulacja/parametry_typow_db.gd)."
+ "produkcja_uwaga_e53": "Etap 53: 1074 → losowy_zamiennik 1451 – start pozycji obywatela losuje płeć (URandom ≥ 0,5 → Female Citizen) [W: AoC 0x5FDDED–0x5FDE6B, EE 0x5EFB91; P: 7/7 startów nagrań 677–679]. 3011 (Inf03 - Maceman, obiekt 21) – produkcja wojskowa w koszarach: mnożnik czasu 1,0 [P: 704/706 – licznik 32000 = Build time], koszt populacji 1 [P]. Technologie bez wpisu: mnożnik 1,0, koszt populacji z dbobjects „Population count”, parametry jednostki z pomiaru („ruch”, „walka”) albo wyprowadzone z dbobjects (godot/silnik/symulacja/parametry_typow_db.gd).",
+ "warianty": {
+  "opis": "Etap 54: nadpisania parametrów dla wariantu gry (scalane z resztą pliku przy --wariant=<nazwa>). AoC: tempo zbierania kamienia obywatela 8925 ms (EE 8926 – odczyt ulepszenia +0x114 [P: 665]); AoC [P: 715 – zdarzenia cyklu w taktach 262, 524, 787, …, 3937, 4199 od wejścia w GatherResource dają okres w (8923,9; 8925]].",
+  "aoc": {
+   "walka": {
+    "32": {
+     "p": {
+      "tempo_zbierania": [
+       4400,
+       8925,
+       6000,
+       6000,
+       3500,
+       5200,
+       4600
+      ]
+     }
+    },
+    "480": {
+     "p": {
+      "tempo_zbierania": [
+       4400,
+       8925,
+       6000,
+       6000,
+       3500,
+       5200,
+       4600
+      ]
+     }
+    }
+   }
+  }
+ }
 }

@@ -2222,7 +2222,8 @@ int test_budynki() {
                     maks_niesie, sb->jednostka(drz)->ilosc_40, sb->zasoby(1)[1]);
         for (int st : stany) std::printf(" %d", st);
         std::printf("\n");
-        sprawdz(stany.front() == 8008 && ma(4004) && ma(4024) && ma(4007) && ma(8009) && ma(4005) && ma(4016) && ma(4023) &&
+        // etap 54: rozkaz (przed taktem) ustawia MoveToWaitingArea 4023; po pierwszym takcie 8008 – jak próbka kliknięcia [P: 673]
+        sprawdz(stany.front() == 4023 && stany.size() > 1 && stany[1] == 8008 && ma(4004) && ma(4024) && ma(4007) && ma(8009) && ma(4005) && ma(4016) && ma(4023) &&
                     maks_niesie == 15 && sb->jednostka(drz)->ilosc_40 == 385 && sb->zasoby(1)[1] == 1237 && k_scinka > 0,
                 "Gather.tai: ścięcie drzewa, 15 × 1 drewna co 4400 ms, oddanie w magazynie (+15), powrót do źródła (673)");
     }
@@ -2464,6 +2465,158 @@ int test_produkcja_wojskowa() {
 // Etap 53 – integracja eksperymentów Fable (docs/titan/EKSPERYMENT_FABLE_DUZE_JEDNOSTKI.md § 3, § 9):
 // (1) nowa para kontaktu trafia na początek listy [P: zad. 691/693, 696/697]; (2) para dwóch obiektów o rozmiarze ≥ 1,0
 // z ruchomym drugim uczestnikiem nie przechodzi przez odpychanie małe 0x549179 [W: pętla 0x5498C4; P: 698–701].
+int test_zbieranie_kamien() {
+    // Etap 54 – drugi surowiec (kamień, „Resource type” 4) tym samym mechanizmem co drewno [P: AoC 715, EE 716]:
+    // próbka kliknięcia PrepareToMove 8000 (4023 → 8008 natychmiast, w takcie 8008 → 8000), dojście … 9000 → 9006 → 5001 →
+    // HasResourceGoal 4027 → GatherResource 4004; pierwszy cykl zeruje HP złoża, każdy następny +1; zdarzenia cyklu
+    // w taktach od wejścia w 4004: AoC (okres 8925) 262, 524, 787, 1049, 1312; EE (8926) 262, 525, 787, 1050, 1312;
+    // po 15 jednostkach 4024 → 4007 → 8009 → … → 4005 (kamień +15) → 4016 → 8008 (bez widocznego 4023) → 8000.
+    auto tab = tablice_lub_skip();
+    if (!tab) return SKIP;
+    const ParametryWalki g = gwardia_ee_pelna();
+    for (int okres : {8925, 8926}) {
+        Swiat sb(tab, TerenSiatka::syntetyczny_etap27(), okres == 8925 ? WariantTitan::aoc() : WariantTitan::ee());
+        sb.ustaw_tablice_walki(tablice_syntetyczne(), wagi_ee_575());
+        sb.ustaw_wejscie_mapy(wejscie_syntetyczne(21, {}), 7);
+        ParametryRuchu pr;
+        pr.vmax = 0.5; pr.rozmiar = 0.3; pr.a = 1.2; pr.c4 = 1.0 / 1.2;
+        ParametryWalki pc = g;
+        pc.pole_widzenia = 3.0f; pc.atak = 5.0f; pc.udzwig = 15;
+        pc.tempo_zbierania = {4400, okres, 6000, 6000, 3500, 5200, 4600};
+        const IdJednostki c = sb.dodaj_jednostke(pr, 12.5, 8.5, 0.0);
+        sb.ustaw_walke(c, 1, true, pc, 65);
+        sb.ustaw_skrypt_jednostki(c, "obywatel");
+        // złoże (10, 11) 1 × 1, HP 1, 300000; magazyn 2 × 2 od (14, 10) – układ jak kopalnia (194, 131) i Centrum (198, 130)
+        const IdJednostki zl = sb.dodaj_zrodlo(0, 38, 10, 11, 10.5, 11.5, 0.0, 1, 300000, 4, 2, 1, 0x19ce);
+        ParametryWalki tc = dom_37();
+        tc.hp_max = 4000;
+        const IdJednostki m = sb.dodaj_obiekt_budynku(1, 35, 14, 10, 2, 15.0, 11.0, 0.0, tc, 4000, true, 0x701, false);
+        sb.ustaw_magazyn(m, true);
+        sb.ustaw_zasoby(1, {1111, 1222, 1333, 1444, 1555});
+        sb.rozkaz_zbierania(c, zl, 11.15, 10.85);        // punkt pracy: narożnik (n, −1) złoża, miejsce (h, 1 − h)
+        std::vector<int> stany{sb.jednostka(c)->stan};
+        std::vector<int> zdarzenia;
+        int wejscie = -1, k_dostawa = -1, niesie = 0, hp = 1;
+        double sx = 0, sy = 0, wx = 0, wy = 0;
+        for (int k = 0; k < 14000; ++k) {
+            sb.takt();
+            const Jednostka* u = sb.jednostka(c);
+            if (u->stan != stany.back()) stany.push_back(u->stan);
+            if (u->stan == 4004 && wejscie < 0) wejscie = k;
+            const int hp2 = sb.jednostka(zl)->boj->s.hp;
+            if (wejscie >= 0 && k_dostawa < 0 && (u->ilosc_40 != niesie || hp2 != hp) && zdarzenia.size() < 16) zdarzenia.push_back(k - wejscie);
+            niesie = u->ilosc_40; hp = hp2;
+            if (u->stan == 4005 && k_dostawa < 0) { k_dostawa = k; sx = u->x; sy = u->y; }
+            if (k_dostawa >= 0 && u->stan == 4004) { wx = u->x; wy = u->y; break; }
+        }
+        std::printf("  kamień %d: zdarzenia", okres);
+        for (std::size_t i = 0; i < 6 && i < zdarzenia.size(); ++i) std::printf(" %d", zdarzenia[i]);
+        std::printf(" … %d, oddanie (%.3f, %.3f), powrót (%.3f, %.3f), kamień %d, złoże %d, stany:", zdarzenia.empty() ? -1 : zdarzenia.back(), sx, sy,
+                    wx, wy, sb.zasoby(1)[2], sb.jednostka(zl)->ilosc_40);
+        for (int st : stany) std::printf(" %d", st);
+        std::printf("\n");
+        const std::vector<int> wz = okres == 8925 ? std::vector<int>{262, 524, 787, 1049, 1312, 1574} : std::vector<int>{262, 525, 787, 1050, 1312, 1575};
+        bool ok = zdarzenia.size() == 16 && std::equal(wz.begin(), wz.end(), zdarzenia.begin()) && zdarzenia.back() == (okres == 8925 ? 4199 : 4200);
+        // sekwencje stanów: początek, wejście w zbieranie, powrót po oddaniu
+        auto nast = [&](std::initializer_list<int> seq) {
+            return std::search(stany.begin(), stany.end(), seq.begin(), seq.end()) != stany.end();
+        };
+        ok = ok && stany.size() > 2 && stany[0] == 8008 && stany[1] == 8000 && nast({9000, 9006, 5001, 4027, 4004}) &&
+             nast({4024, 4007, 8009}) && nast({4005, 4016, 8008, 8000}) && std::count(stany.begin(), stany.end(), 4023) == 0 &&
+             sb.zasoby(1)[2] == 1348 && sb.zasoby(1)[1] == 1222 && sb.jednostka(zl)->ilosc_40 == 299985 &&
+             std::abs(sx - 13.85) < 0.06 && std::abs(sy - 11.15) < 0.06 && std::abs(wx - 11.15) < 0.06 && std::abs(wy - 11.15) < 0.06;
+        sprawdz(ok, std::string(okres == 8925 ? "AoC" : "EE") + ": kamień – stany, takty cyklu, punkt oddania (X − r; Y + 1 + r) i powrotu, +15 kamienia (715/716)");
+    }
+    return bledy ? FAIL : PASS;
+}
+
+int test_punkt_zbiorki() {
+    // etap 54: kolejność pól obwodu i miejsc w polu [W: emulacja AoC 0x64BB36, 0x641299, 0x63F697] + przebieg z punktem
+    // zbiórki [P: AoC 705/713, EE 706/714]
+    using P = std::pair<int, int>;
+    const std::vector<P> bez = Swiat::pola_wyjscia(2, false, 0, 0);
+    const std::vector<P> wz{{0, -1}, {1, -1}, {2, -1}, {2, 0}, {2, 1}, {2, 2}, {1, 2}, {0, 2}, {-1, 2}, {-1, 1}, {-1, 0}, {-1, -1}};
+    sprawdz(bez == wz, "pola wyjścia bez punktu, budynek 2 × 2: obejście od (0, −1) (0x64BB36)");
+    const std::vector<P> b1 = Swiat::pola_wyjscia(1, false, 0, 0);
+    sprawdz(b1.size() == 9 && b1[0] == P{0, 0} && b1[1] == P{0, -1} && b1[8] == P{-1, -1}, "budynek 1 × 1: pole własne, potem obejście");
+    const std::vector<P> b3 = Swiat::pola_wyjscia(3, false, 0, 0);
+    sprawdz(b3.size() == 16 && b3[0] == P{-1, 0} && b3[1] == P{3, 0} && b3[6] == P{0, -1} && b3[15] == P{3, 3},
+            "budynek 3 × 3: lista krawędzi i narożników bez zmiany kolejności");
+    // punkt (168,957; 115,813), budynek (164, 112): pole punktu (4, 3) [W: emulacja – pełna kolejność]
+    const std::vector<P> zb = Swiat::pola_wyjscia(2, true, 4, 3);
+    const std::vector<P> wzb{{2, 2}, {2, 1}, {1, 2}, {2, 0}, {0, 2}, {2, -1}, {1, -1}, {-1, 2}, {-1, 1}, {0, -1}, {-1, 0}, {-1, -1}};
+    sprawdz(zb == wzb, "pola wyjścia z punktem zbiórki: sortowanie po odległości pól, remisy w kolejności listy (0x641299)");
+    const std::vector<P> zr = Swiat::pola_wyjscia(2, true, 0, -1);   // pole punktu = (0, −1): remisy (1,−1)/(−1,−1)
+    sprawdz(zr[0] == P{0, -1} && zr[1] == P{1, -1} && zr[2] == P{-1, -1} && zr[3] == P{-1, 0}, "remisy: (1, −1) przed (−1, −1)");
+    auto rowne = [](const std::vector<std::pair<double, double>>& a, std::initializer_list<std::pair<double, double>> b) {
+        if (a.size() != b.size()) return false;
+        std::size_t i = 0;
+        for (const auto& q : b) { if (std::abs(a[i].first - q.first) > 1e-6 || std::abs(a[i].second - q.second) > 1e-6) return false; ++i; }
+        return true;
+    };
+    sprawdz(rowne(Swiat::miejsca_w_polu(2, 0, -1, 0.5), {{0.25, 0.75}, {0.75, 0.75}}) &&
+                rowne(Swiat::miejsca_w_polu(2, 2, -1, 0.5), {{0.25, 0.75}}) &&
+                rowne(Swiat::miejsca_w_polu(2, 2, 1, 0.5), {{0.25, 0.25}, {0.25, 0.75}}) &&
+                rowne(Swiat::miejsca_w_polu(2, 2, 2, 0.5), {{0.25, 0.25}}) &&
+                rowne(Swiat::miejsca_w_polu(2, 1, 2, 0.5), {{0.75, 0.25}, {0.25, 0.25}}) &&
+                rowne(Swiat::miejsca_w_polu(2, -1, 2, 0.5), {{0.75, 0.25}}) &&
+                rowne(Swiat::miejsca_w_polu(2, -1, 1, 0.5), {{0.75, 0.25}, {0.75, 0.75}}) &&
+                rowne(Swiat::miejsca_w_polu(2, -1, 0, 0.5), {{0.75, 0.75}, {0.75, 0.25}}) &&
+                rowne(Swiat::miejsca_w_polu(2, -1, -1, 0.5), {{0.75, 0.75}}),
+            "miejsca w polach obwodu, rozmiar 0,5 (0x63F697)");
+    sprawdz(rowne(Swiat::miejsca_w_polu(2, 0, -1, 0.3), {{0.15, 0.85}, {0.45, 0.85}, {0.75, 0.85}}) &&
+                rowne(Swiat::miejsca_w_polu(1, 0, 0, 0.5), {{0.25, 0.25}, {0.25, 0.75}, {0.75, 0.25}, {0.75, 0.75}}),
+            "obywatel 0,3: trzy miejsca na krawędzi; pole wewnętrzne: cztery miejsca");
+    auto tab = tablice_lub_skip();
+    if (!tab) return SKIP;
+    for (WariantTitan w : {WariantTitan::aoc(), WariantTitan::ee()}) {
+        Swiat sb(tab, TerenSiatka::syntetyczny_etap27(), w);
+        ParametryWalki kb = dom_37();
+        kb.hp_max = 1500;
+        sb.dodaj_obiekt_budynku(1, 34, 14, 10, 2, 15.0, 11.0, 0.0, kb, 1500, true, 0x701, false);
+        sb.ustaw_zasoby(1, {1111, 1222, 1333, 1444, 1555});
+        sb.ustaw_populacje(1, 1, 100);
+        ParametryProdukcji p;
+        p.tech_id = 3011; p.typ_db = 21; p.koszt = {30, 0, 0, 0, 30}; p.czas_ms = 32000; p.populacja = 1;
+        p.ruch.vmax = 0.6; p.ruch.rozmiar = 0.5; p.ruch.a = 2.0; p.ruch.c4 = 0.5;
+        p.walka = gwardia_ee(); p.hp = 150; p.skrypt = "piechota";
+        sb.ustaw_produkcje(p);
+        const IdJednostki b = sb.jednostki().front().id;
+        const bool okz = sb.ustaw_punkt_zbiorki(b, 18.957, 13.813);
+        sb.rozkaz_produkcji(b, 3011);
+        sb.rozkaz_produkcji(b, 3011);
+        sb.rozkaz_produkcji(b, 3011);
+        std::vector<IdJednostki> nowe;
+        std::vector<std::array<double, 5>> pocz;
+        for (int k = 1; k <= 3200; ++k) {
+            if (k == 2000) sb.ustaw_punkt_zbiorki(b, 9.4, 11.3);      // zmiana punktu przed trzecią jednostką: zachód
+            sb.takt();
+            for (IdJednostki id : sb.nowe_jednostki()) {
+                const Jednostka* u = sb.jednostka(id);
+                nowe.push_back(id);
+                pocz.push_back({u->x, u->y, double(u->stan), u->orientacja.m[1], u->orientacja.m[4]});
+            }
+        }
+        bool ok = okz && nowe.size() == 3;
+        if (ok) {
+            const Jednostka* u1 = sb.jednostka(nowe[0]);
+            const Jednostka* u2 = sb.jednostka(nowe[1]);
+            const Jednostka* u3 = sb.jednostka(nowe[2]);
+            std::printf("  %s: 1: (%.3f, %.3f) stan %d kurs (%.4f, %.4f) → (%.3f, %.3f); 2: (%.3f, %.3f) → (%.3f, %.3f); 3: (%.3f, %.3f) → (%.3f, %.3f)\n",
+                        w.nazwa, pocz[0][0], pocz[0][1], int(pocz[0][2]), pocz[0][3], pocz[0][4], u1->x, u1->y, pocz[1][0], pocz[1][1], u2->x,
+                        u2->y, pocz[2][0], pocz[2][1], u3->x, u3->y);
+            ok = std::abs(pocz[0][0] - 16.25) < 1e-5 && std::abs(pocz[0][1] - 12.25) < 1e-5 && int(pocz[0][2]) == 8000 &&
+                 std::abs(pocz[0][3] - 0.866) < 2e-3 && std::abs(pocz[0][4] - 0.5) < 2e-3 &&
+                 std::abs(pocz[1][0] - 16.25) < 1e-5 && std::abs(pocz[1][1] - 12.25) < 1e-5 &&
+                 std::hypot(u1->x - 18.25, u1->y - 13.25) < 0.1 && std::hypot(u2->x - 18.25, u2->y - 13.75) < 0.1 &&
+                 std::abs(pocz[2][0] - 13.75) < 1e-5 && std::abs(pocz[2][1] - 11.25) < 1e-5 && std::hypot(u3->x - 9.25, u3->y - 11.25) < 0.1 &&
+                 u1->stan == 5000 && u2->stan == 5000 && u3->stan == 5000;
+        }
+        sprawdz(ok, std::string(w.nazwa) + ": punkt zbiórki – narożnik od strony punktu, kurs na punkt, stan 8000, miejsca w polu punktu co 2r, zmiana punktu (705/706/713)");
+    }
+    return bledy ? FAIL : PASS;
+}
+
 int test_kontakty_duze() {
     auto tab = tablice_lub_skip();
     if (!tab) return SKIP;
@@ -2524,7 +2677,7 @@ int main(int argc, char** argv) {
     const std::map<std::string, std::function<int()>> grupy = {
         {"trygonometria", test_trygonometria}, {"rng", test_rng}, {"teren", test_teren}, {"ruch", test_ruch},
         {"odpychanie", test_odpychanie}, {"dll", test_dll}, {"tai", test_tai}, {"determinizm", test_determinizm}, {"astar", test_astar}, {"porownanie_gra", test_porownanie_gra}, {"krok", test_krok}, {"kolizje_takt", test_kolizje_takt}, {"kolejka", test_kolejka}, {"scenariusze", test_scenariusze}, {"astar_gra", test_astar_gra}, {"mapa", test_mapa}, {"walka", test_walka}, {"walka_swiat", test_walka_swiat}, {"morale", test_morale}, {"budynki", test_budynki}, {"produkcja", test_produkcja},
-        {"podsystemy", test_podsystemy}, {"produkcja_wojskowa", test_produkcja_wojskowa}, {"kontakty_duze", test_kontakty_duze}};
+        {"podsystemy", test_podsystemy}, {"produkcja_wojskowa", test_produkcja_wojskowa}, {"kontakty_duze", test_kontakty_duze}, {"punkt_zbiorki", test_punkt_zbiorki}, {"zbieranie_kamien", test_zbieranie_kamien}};
     std::vector<std::string> wybrane;
     for (int i = 1; i < argc; ++i) wybrane.push_back(argv[i]);
     if (wybrane.empty())

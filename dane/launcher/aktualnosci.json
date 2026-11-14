@@ -6,6 +6,18 @@
   {
    "data": "2026-11-14",
    "tytul": {
+    "pl": "Etap 54: punkt zbiórki i kamień",
+    "en": "Stage 54: rally point and stone"
+   },
+   "tekst": {
+    "pl": "Budynki w OpenEE mają punkt zbiórki: nowa jednostka powstaje przy tej krawędzi budynku, która jest najbliżej punktu, i od razu do niego idzie – tak samo jak w Empire Earth i The Art of Conquest, takt po takcie. Obywatele wydobywają kamień tym samym mechanizmem co drewno, także we dwóch przy jednej kopalni. W potyczce pojawił się panel produkcji koszar: lewy przycisk szkoli, prawy anuluje, prawy przycisk w teren ustawia punkt zbiórki. Wyjaśniliśmy też, dlaczego jednostki na mapach testowych wisiały w powietrzu – generator map kopiował wysokość z miejsca wzoru; jest poprawiony.",
+    "en": "Buildings in OpenEE now have a rally point: a new unit appears at the building edge nearest to the point and walks there at once – tick for tick as in Empire Earth and The Art of Conquest. Citizens mine stone with the same mechanism as wood, also two at one mine. The skirmish has a Barracks production panel: left click trains, right click cancels, right click on the ground sets the rally point. We also found why units on test maps were hanging in the air – the map generator copied the height of the template's location; it is fixed."
+   },
+   "raport": "RAPORT_ETAP_54.md"
+  },
+  {
+   "data": "2026-11-14",
+   "tytul": {
     "pl": "Etap 53: koszary szkolą wojsko",
     "en": "Stage 53: the Barracks train soldiers"
    },
@@ -13,7 +25,7 @@
     "pl": "Koszary w OpenEE szkolą jednostki wojskowe tak jak w Empire Earth: maczugier kosztuje 30 żywności i 30 żelaza, powstaje po 32 sekundach przy krawędzi budynku, a prawy przycisk myszy na przycisku jednostki anuluje pozycję z kolejki i zwraca cały koszt. Sprawdziliśmy też w The Art of Conquest budowę domu i zbieranie drewna oraz ruch tarana – OpenEE zgadza się z grą w każdym takcie. Wyjaśniła się zagadka z poprzedniego etapu: płeć obywatela gra losuje w chwili rozpoczęcia produkcji.",
     "en": "Barracks in OpenEE now train military units just like in Empire Earth: a maceman costs 30 food and 30 iron, appears after 32 seconds at the edge of the building, and a right click on the unit button cancels a queued unit with a full refund. We also checked house building, wood gathering and ram movement in The Art of Conquest – OpenEE matches the game on every tick. A puzzle from the previous stage is solved too: the game rolls the citizen's gender at the moment production starts."
    },
-   "raport": "RAPORT_ETAP_53.md"
+   "raport": "raporty/archiwum/RAPORT_ETAP_53.md"
   },
   {
    "data": "2026-11-13",

@@ -64,6 +64,13 @@ mechanik, prędkość, kolizje), 30–32 (walka: przeładowanie, obrót, tablice
 | Zawartość panelu koszar (2. przycisk) | 2024 Spearman | 3107 Gallic Warrior | ZMIENIONY (dane) | zad. 710 / 709 |
 | Budowa domu – koniec pracy obywatela | 4002 → 4028 → 5000 | 4002 → 5000 (bez próbki 4028) | ZMIENIONY [P] | zad. 660 / 707; koszt, HP, rytm, czas WSPÓLNE [P] – `budowa.md` § 8 |
 | Zbieranie drewna (cykl, udźwig, oddanie) | Gather.tai 4004…4023, +5 co 22 059 ms, udźwig 15 | to samo | WSPÓLNY [P] | zad. 673 / 708; Core 5069 / 4783 próbek – `zbieranie.md` § 5 |
+| Wysokość obiektu ze scenariusza (z macierzy rekordu) | bez korekty przy wczytaniu; teren w pierwszym kroku ruchu; produkcja – od razu teren | to samo, te same wartości | WSPÓLNY [P] | zad. 711 / 712 – `WYSOKOSC_OBIEKTOW_SCN.md` |
+| Miejsce powstania jednostki, punkt zbiórki, cel w polu punktu | pola obwodu wg odległości od pola punktu, wzór miejsc, test zajętości | to samo (13 miejsc) | WSPÓLNY [P; W: AoC] | zad. 713 / 714, 705 / 706 – `produkcja.md` § 6 |
+| Obrót w 9006 przy celu bez obrotu końcowego | jednostka stojąca obraca się ku kursowi 0 (714) | w 713 jednostki jeszcze hamowały – bez obrotu | NIEZWERYFIKOWANY jako różnica (Core odtwarza oba jedną regułą) | `produkcja.md` § 6.3 |
+| Zbieranie kamienia (stany, cykl, dwóch zbieraczy, punkty pracy) | 4027 przed 4004, bez widocznego 4023, punkty z pól obwodu | to samo | WSPÓLNY [P] | zad. 715 / 716 – `zbieranie.md` § 6 |
+| Okres zbierania kamienia (ulepszenie obywatela +0x114) | **8926 ms** | **8925 ms** | ZMIENIONY [P: odczyt pamięci 716 / 717 i takty cyklu] | `zbieranie.md` § 6.1; parametr `warianty.aoc` |
+| Budowa koszar, dwóch budowniczych (miejsca pracy, podział pracy, HP) | 674, 663 | 717, 718 – to samo | WSPÓLNY [P] | `budowa.md` § 9 |
+| Zegar gry 65 536…524 288 ms | +34,09375 ms na takt | to samo | WSPÓLNY [P] | 713–716 – `precyzja_numeryczna.md` § 11 |
 | Dom a limit populacji | – | ukończenie i zniszczenie domu nie zmienia pól gracza | NIEZWERYFIKOWANY w EE | zad. 707 [P AoC] |
 | Zegar gry powyżej 524 288 ms | – | +34,0625 ms na takt (kwant f32) | NIEZWERYFIKOWANY w EE | `e52_677_dwa`, 705 [P AoC] |
 | Tor tarana (typ 102) i jego kolizje z gwardią | zgodny z Core co takt na płaskim | zgodny z Core co takt na płaskim | WSPÓLNY kod ruchu, ZMIENIONE okno kontaktów [P] | `kolizje_objazdy.md`, rozdział „Etap 53” |
@@ -105,7 +112,7 @@ Kolumna „dowody” – wersja, w której zebrano dowody ocen A/B/C: **EE**, **
 | # | Podsystem | Dowody | Status EE/AoC |
 |---|---|---|---|
 | 1 | Pliki i bazy db*.dat | EE+AoC | ZMIENIONY (dane), dekodery obu wersji |
-| 2 | SCN | EE+AoC | ZMIENIONY (wersje 231/250) |
+| 2 | SCN | EE+AoC | ZMIENIONY (wersje 231/250); wysokość obiektu rekordu – WSPÓLNY [P] |
 | 3 | Mapa i teren | EE+AoC [W: DLL obu] | NIEZWERYFIKOWANY (pomiary EE) |
 | 4 | Obiekty mapy | EE | NIEZWERYFIKOWANY |
 | 5 | Graf nawigacji | EE | NIEZWERYFIKOWANY |
@@ -117,9 +124,9 @@ Kolumna „dowody” – wersja, w której zebrano dowody ocen A/B/C: **EE**, **
 | 11 | Cele i rozkazy | EE (+AoC 454) | NIEZWERYFIKOWANY |
 | 12 | Walka | EE+AoC (580/581/583/584/588) | ZMIENIONY (przeładowanie, obrót) |
 | 13 | Śmierć | EE | NIEZWERYFIKOWANY |
-| 14 | Budynki i budowanie | EE+AoC (707) | WSPÓLNY (koszt, HP, rytm, czas domu) / ZMIENIONY (brak próbki 4028 w AoC) |
+| 14 | Budynki i budowanie | EE+AoC (707, 717, 718) | WSPÓLNY (koszt, HP, rytm, czas domu i koszar, dwóch budowniczych) / ZMIENIONY (brak próbki 4028 w AoC) |
 | 15 | Jednostki cywilne | EE+AoC (budowa 707, zbieranie 708, produkcja) | WSPÓLNY w zmierzonych przebiegach |
-| 16 | Zbieranie | EE+AoC (673 / 708) | WSPÓLNY [P] – drewno |
+| 16 | Zbieranie | EE+AoC (673 / 708, 716 / 715) | WSPÓLNY [P] – drewno, kamień / ZMIENIONY – okres kamienia 8926 / 8925 |
 | 17 | Ekonomia | EE+AoC | ZMIENIONY (przesunięcia), limit WSPÓLNY [P] |
 | 18 | Produkcja | EE+AoC (obywatel i wojsko) | WSPÓLNY (czas, koszt, miejsce, płeć, anulowanie, punkt zbiórki) / ZMIENIONY (kolejka, losowania utworzenia, zawartość paneli) |
 | 19 | Technologie, epoki | EE+AoC (bazy) | ZMIENIONY (liczba epok 14/15) |
@@ -148,8 +155,10 @@ Wykonane porównania kontrolne: produkcja obywatela (677/679) – etap 52; produ
 
 **W AoC (główna wersja; dotąd tylko EE):** ruch pojedynczy i trasa (644, 648), kolizje i omijanie (652), budowa
 koszar i dwóch budowniczych (663, 674), śmierć i zapadanie budynku (649/651), regeneracja i bohater (619/620).
-Wykonane w etapie 53: budowa domu (707), zbieranie drewna (708). Priorytet: ruch 648 (prorok), koszary 674, dwóch
-budowniczych 663.
+Wykonane w etapie 53: budowa domu (707), zbieranie drewna (708). Wykonane w etapie 54: koszary (717), dwóch
+budowniczych (718), kamień i dwóch zbieraczy (715), punkt zbiórki (713). Priorytet: ruch 648 (prorok) i obrót końcowy
+652 – nadal tylko EE.
 
 **W EE (dotąd tylko AoC):** przeładowanie losowe i obrót (580–588) – kontrola, czy EE ma stałe przeładowanie w tym samym
 scenariuszu; dom a limit populacji (707); zegar gry powyżej 524 288 ms. Anulowanie produkcji – wykonane (706, 710).
+Etap 54 w EE: wysokość obiektów (712), punkt zbiórki (714), kamień (716).

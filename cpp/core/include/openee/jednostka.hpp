@@ -57,6 +57,7 @@ struct CelRuchu {
     // EEUGAttackUnit (etap 31): +0x30 jednostka celu, +0x34/+0x38 pole celu (−10000 bez celu), punkt +0x20/+0x24
     std::uint32_t cel_jednostka = 0;
     std::int64_t pole_x = -10000, pole_y = -10000;
+    bool bez_obrotu = false;              // cel+0x31 = 0: bez obrotu końcowego – cel nadany przy punkcie zbiórki (etap 54)
 };
 
 /// Ustawienia AI jednostki (EE +0x208 → bajty): +7 pościg poza LOS miejsca kontaktu, +8 szuka wrogów bez celu,
@@ -157,6 +158,9 @@ struct Jednostka {
     // 0x624DF8; P: 677/678]: kolejka – obiekt +0x48 (wektor pozycji {technologia, flaga}), bieżąca pozycja – AoC +0x260 /
     // EE +0x25C (100000 = brak), pozostały czas ms – AoC +0x280 / EE +0x27C
     std::deque<int> prod_kolejka;
+    // etap 54: punkt zbiórki budynku (EEUGLocation w drugim poziomie kolejki celów budynku; dokładny punkt kliknięcia)
+    bool zbiorka = false;
+    double zbiorka_x = 0.0, zbiorka_y = 0.0;
     int prod_biezaca = -1;          // identyfikator technologii (dbtechtree) albo −1
     int prod_ms = 0;
     bool kolizyjny = true;          // +0x2D8 (0x5ED24B: typ +0x606 „Collidable” ≠ 0 i nie wyjątki) – uczestnik list kontaktów
@@ -174,6 +178,7 @@ struct Jednostka {
     // --- cel (kolejka celów, uproszczona do bieżącego celu) ---
     TypCelu cel = TypCelu::brak;
     bool cel_od_gracza = true;
+    bool cel_bez_obrotu = false;   // etap 54: bieżący cel bez obrotu końcowego (cel+0x31 = 0)
     std::optional<double> kurs_koncowy;  // cel+0x2C
 
     // --- liczniki i flagi ruchu ---

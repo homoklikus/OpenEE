@@ -207,3 +207,39 @@ układ co EE 660; nagrania `e53_707_ob` (obywatel, gracz, nowe obiekty) i `e53_7
 - Populacja: ukończenie i zniszczenie domu (klawisz Delete, stan 6000) nie zmienia żadnego pola gracza w zakresie
   +0xA00…+0xE00 – ani populacji (+0xB14), ani składników limitu (+0xB20, +0xB24 = 0) [P: AoC 707]. Dom nie podnosi
   limitu populacji; limit = 1 + a + b + globalny (100) = 101 przed i po.
+
+## 9. Etap 54 – koszary i dwóch budowniczych w AoC, miejsce pracy budowniczego
+
+### 9.1. Budowa koszar w AoC [P: 717 – odpowiednik EE 674]
+
+- Scenariusz `e42_e51_zbieranie`, przycisk koszar, fundament (147, 114) 2 × 2, środek (148; 115), z = 0,826 (teren
+  w środku budynku na stoku).
+- Koszt 225 drewna przy rozkazie. Stany obywatela jak w EE.
+- Core (`--wariant=aoc`): obywatel 3120/3121 próbek (+1 nieaktualna rejestratora), fundament 1688/1688 – przyrost HP,
+  czas i stany bez różnic. EE 674: 3803/3804 i 2335/2335.
+
+### 9.2. Dwóch budowniczych w AoC [P: 718 – odpowiednik EE 663]
+
+- Dom (163, 113), pierwszy obywatel z (164,5; 115,5), pomocnik z (166,5; 115,5), rozkaz pomocnika po 11,7 s.
+- Miejsca pracy: pierwszy (164,15; 114,15) – narożnik (1, 1); pomocnik **(164,15; 113,15)** – prawa krawędź. To samo
+  w EE 663.
+
+### 9.3. Reguła miejsca pracy [P: 658, 663, 718; H: funkcja nieodczytana]
+
+Pierwsze wolne miejsce (wzór miejsc pola) w polach obwodu budynku uporządkowanych według odległości pola od pola
+obywatela – reguła z `produkcja.md` § 6.2 (pkt 3, 5, 6). Pomocnik: najbliższe pole (1, 1) zajęte przez pierwszego
+budowniczego → następne pole listy (1, 0). Etap 50 wybierał najbliższy punkt obwodu i dawał obu to samo miejsce.
+
+| Nagranie | Przed etapem 54 | Po zmianie reguły |
+|---|---|---|
+| EE 663 pierwszy obywatel | do t = 77216 | 2270/2270 |
+| EE 663 pomocnik | do t = 58465 | do t = 62863 (kurs 1,1210 / 1,1233 przy wejściu w budowę) |
+| EE 663 fundament | 767 + 305 nieaktualnych | 1072/1072 |
+| AoC 718 pierwszy obywatel | – | 2205/2206 (+1 nieaktualna) |
+| AoC 718 pomocnik | – | do t = 63374 (kurs 1,1206 / 1,1229); stan t = 76670 (4002 / 4028) |
+| AoC 718 fundament | – | 1020/1020 |
+
+- Podział pracy i przyrost HP przy dwóch budowniczych zgadzają się w całości (fundament co takt) w obu grach.
+- Otwarte: kurs pomocnika w chwili wejścia w budowę różni się o 0,0023 rad (próg 0,002) w obu grach – ta sama
+  rozbieżność, więc nie różnica wersji; koniec budowy pomocnika w AoC o jedną próbkę (4002 / 4028).
+- Budowy z jednym obywatelem (658 ×2, 659, 660, 674, 707, 717) po zmianie reguły bez różnic.

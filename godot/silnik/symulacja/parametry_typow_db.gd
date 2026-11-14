@@ -60,3 +60,16 @@ static func uzupelnij(par: Dictionary, obiekty: Dictionary, typ: int) -> bool:
 	if not par["ruch"].has(ty): par["ruch"][ty] = ruch(o)
 	if not par["walka"].has(ty): par["walka"][ty] = walka(o, wzorzec_walki(par, obiekty, o))
 	return true
+
+
+## Etap 54: źródło surowca z rekordu dbobjects – indeks zasobu gracza (żywność 0, drewno 1, kamień 2, złoto 3, żelazo 4:
+## EEPlayer +0xAF8 + 4·i) i indeks tempa w ulepszeniu zbieracza (+0x110 + 4·i: drewno 0, kamień 1, złoto 2, żelazo 3).
+## „Resource type”: 3 drewno, 4 kamień, 5 złoto, 6 żelazo [W: dbobjects; P: drewno 673/708, kamień 715/716]. Złoto i
+## żelazo – kolejność pól ulepszenia [P: odczyt 665], cykl niezmierzony. Żywność (2: polowanie, zbieractwo, farma,
+## ryby) ma kilka indeksów tempa wybieranych w 0x636C96 [N] – tu indeks 5 (zbieractwo) tylko jako wartość zastępcza.
+static func zrodlo(o: Dictionary) -> Dictionary:
+	var rt := int(o.get("Resource type", 0))
+	if rt >= 3 and rt <= 6:
+		return {"zasob_typ": rt, "zasob_indeks": rt - 2, "tempo_indeks": rt - 3, "pewne": rt <= 4}
+	return {"zasob_typ": rt, "zasob_indeks": 0, "tempo_indeks": 5, "pewne": false}
+

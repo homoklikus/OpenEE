@@ -32,12 +32,12 @@ Podsystem może mieć wysokie A i niskie B (wiemy, ale nie napisaliśmy) albo wy
 Żaden podsystem nie ma oceny 5: nawet najlepiej zbadane (ruch, A*) mają znane braki. Ocena 4 nie oznacza
 kompletności, tylko szerokie potwierdzenie zakresu, który już zbadano.
 
-## 3. Katalog podsystemów i oceny (stan po etapie 53)
+## 3. Katalog podsystemów i oceny (stan po etapie 54)
 
 | # | Podsystem | A rozpoznanie | B implementacja | C zgodność | Pewność | Główny dowód | Dowody (wersja) |
 |---|---|---|---|---|---|---|---|
 | 1 | Wczytywanie plików i baz db*.dat | 4 | 4 | 4 | wysoka | FORMATY*.md, importery Godot, porównania tabel EE/AoC | EE+AoC |
-| 2 | Format SCN i serializacja | 3 | 3 | 3 | średnia | import_mapy.md, generator czystych map, 4133 rekordów e42 | EE+AoC |
+| 2 | Format SCN i serializacja | 3 | 3 | 3 | średnia | import_mapy.md, generator czystych map, 4133 rekordów e42; wysokość obiektu w rekordzie = z bezwzględne macierzy, gra nie osadza przy wczytaniu (711/712) – `WYSOKOSC_OBIEKTOW_SCN.md`, generator poprawiony | EE+AoC |
 | 3 | Mapa i warstwy terenu | 3 | 3 | 3 | wysoka | GetMeshZ bitowo z DLL, klasyfikacja pól 99,6 % | EE+AoC [W] |
 | 4 | Obiekty mapy i zajętość pól | 3 | 3 | 3 | średnia | listy pól EEMap (zad. 552), 647/650 – budynek na 4 polach | EE |
 | 5 | Graf nawigacji (podsektory) | 3 | 3 | 3 | średnia | e35_a zgodna, przebudowa przyrostowa, koszary 2×2 = gra, budynek postawiony w grze (659: termin, id) | EE |
@@ -49,11 +49,11 @@ kompletności, tylko szerokie potwierdzenie zakresu, który już zbadano.
 | 11 | System celów i rozkazów | 3 | 3 | 3 | średnia | kolejka celów, Shift, EEUGAttackUnit, EEUGLocation | EE |
 | 12 | Walka i obrażenia | 3 | 3 | 3 | średnia | pojedynek 564, 631–634, dom 1v1 / 3v1 do śmierci | EE+AoC |
 | 13 | Śmierć i usuwanie | 3 | 3 | 3 | średnia | 6000–6003, gruz 361/362, zapadanie budynku | EE |
-| 14 | Budynki i budowanie | 4 | 3 | 4 | średnia | dom i koszary, koszt (potwierdzony w dbtechtree), wzór 0x60BF56 (K, m, n), dwóch budowniczych – 658 ×2, 659, 660, 674 zgodne w całości, 663 częściowo; dom w AoC (707) zgodny w całości | EE+AoC (dom) |
+| 14 | Budynki i budowanie | 4 | 3 | 4 | średnia | dom i koszary, koszt (potwierdzony w dbtechtree), wzór 0x60BF56 (K, m, n), dwóch budowniczych – 658 ×2, 659, 660, 674 zgodne w całości, 663 częściowo; dom w AoC (707) zgodny w całości; etap 54: koszary w AoC (717) w całości, dwóch budowniczych EE 663 i AoC 718 – fundament w całości, miejsce pracy pomocnika z reguły pól obwodu | EE+AoC (dom) |
 | 15 | Jednostki cywilne | 3 | 3 | 3 | średnia | ucieczka (638), budowa (658–674, AoC 707), zbieranie drewna (673, AoC 708) | EE+AoC |
-| 16 | Zbieranie surowców | 3 | 2 | 3 | średnia | EEUGGather 0x611420/0x611801, Gather.tai; drewno – pełny cykl zgodny w EE (673: 5069 próbek) i AoC (708: 4783 próbki, gospodarka 4782) | EE+AoC (drewno) |
+| 16 | Zbieranie surowców | 3 | 3 | 3 | średnia | EEUGGather 0x611420/0x611801, Gather.tai; drewno – pełny cykl zgodny w EE (673: 5069 próbek) i AoC (708: 4783 próbki, gospodarka 4782); etap 54: kamień w obu grach (715/716: jeden zbieracz 5317/5288 próbek, dwóch zbieraczy 10423/10357, gospodarka co takt), okres 8925 AoC / 8926 EE, punkty pracy z reguły pól obwodu | EE+AoC (drewno, kamień) |
 | 17 | Ekonomia (zasoby, populacja) | 3 | 2 | 2 | średnia | zasoby (EE +0xAF8, AoC +0xAFC), populacja (EE +0xB10, AoC +0xB14), limit 1 + a + b + globalny (100), koszty z dbtechtree; 660–679; zwrot przy anulowaniu; dom nie zmienia limitu (AoC 707) | EE+AoC |
-| 18 | Produkcja jednostek | 4 | 3 | 4 | średnia | „Research Technology” → kolejka +0x48, start (płeć obywatela z losowania), odliczanie, utworzenie, anulowanie 0x5FD984/0x5FD8F3 [W: AoC i EE]; obywatel 677 ×2, 679 i wojsko 704 ×2, 705, 709 (AoC), 706 ×3 (EE) zgodne w całości; punkt zbiórki zmierzony, nieodwzorowany | EE+AoC |
+| 18 | Produkcja jednostek | 4 | 4 | 4 | średnia | „Research Technology” → kolejka +0x48, start (płeć obywatela z losowania), odliczanie, utworzenie, anulowanie 0x5FD984/0x5FD8F3 [W: AoC i EE]; obywatel 677 ×2, 679 i wojsko 704 ×2, 705, 709 (AoC), 706 ×3 (EE) zgodne w całości; punkt zbiórki zmierzony, nieodwzorowany; etap 54: miejsce powstania i punkt zbiórki z kodu (AoC 0x643561, 0x64BB36, 0x641299, 0x63F697 – emulacja) i z pomiaru – 13 miejsc w obu grach, przebieg 16 jednostek co takt (713, 714, 705, 706) | EE+AoC |
 | 19 | Technologie, epoki, ulepszenia | 2 | 1 | 1 | niska | premia prędkości 0x627078 [W+P]; schemat dbtechtree (koszt, czas, budujący), ścieżka badania „Research Technology” [W] | EE+AoC (bazy) |
 | 20 | AI gracza komputerowego | 1 | 0 | 0 | niska | klasy EEComputerPlayer ×5 w każdej grze testowej (652) | EE |
 | 21 | Dyplomacja i relacje | 1 | 1 | 1 | niska | tablica gracza +0x9E4 (wrogowie), sojusz 644 | EE |
@@ -63,7 +63,7 @@ kompletności, tylko szerokie potwierdzenie zakresu, który już zbadano.
 | 25 | Lotnictwo | 0 | 0 | 0 | – | – | – |
 | 26 | Animacja jednostek | 2 | 2 | 1 | średnia | sekwencje dbgraphics, klatki śmierci (Core) | nieustalone |
 | 27 | Efekty graficzne i dźwięk | 1 | 1 | 1 | niska | render Godot (RAPORT_ZGODNOSCI_RENDEROWANIA) | AoC (dane) |
-| 28 | Sterowanie gracza i interfejs | 2 | 2 | 1 | średnia | kamera [P], PPM/ramka/Shift w potyczce | EE+AoC |
+| 28 | Sterowanie gracza i interfejs | 2 | 2 | 1 | średnia | kamera [P], PPM/ramka/Shift w potyczce; panel produkcji w potyczce (przyciski, kolejka, PPM – anulowanie, punkt zbiórki) na rozkazach Core | EE+AoC |
 | 29 | Warunki zwycięstwa, scenariusze, wyzwalacze | 0 | 1 | 0 | – | prosty warunek w potyczce | – |
 | 30 | Multiplayer i synchronizacja | 1 | 0 | 0 | niska | lockstep, przydział taktów (DLL) | EE+AoC [W] |
 | 31 | Zapis i wczytanie stanu gry | 0 | 0 | 0 | – | – | – |
@@ -92,15 +92,15 @@ symulacji”.
 | Oś | 0 | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|---|
 | A | 5 | 7 | 5 | 14 | 7 | 0 |
-| B | 9 | 5 | 5 | 15 | 4 | 0 |
+| B | 9 | 5 | 4 | 15 | 5 | 0 |
 | C | 10 | 6 | 4 | 11 | 7 | 0 |
 
-- Podsystemy z zasadniczym mechanizmem (ocena ≥ 3): A 21, B 19, C 18 z 38 (etap 52: 21 / 19 / 17; etap 51: 19 / 18 / 16; etap 50: 17 / 17 / 15).
-- Podsystemy niebadane albo tylko wstępnie rozpoznane (≤ 1): A 12, B 14, C 16 z 38 (bez zmiany od etapu 52; etap 51: 14 / 16 / 18).
+- Podsystemy z zasadniczym mechanizmem (ocena ≥ 3): A 21, B 20, C 18 z 38 (etap 53: 21 / 19 / 18; etap 52: 21 / 19 / 17; etap 51: 19 / 18 / 16; etap 50: 17 / 17 / 15).
+- Podsystemy niebadane albo tylko wstępnie rozpoznane (≤ 1): A 12, B 14, C 16 z 38 (bez zmiany od etapu 52, także po etapie 54; etap 51: 14 / 16 / 18).
 - Niebadane wcale (A = 0): Transport lądowy i morski, Lotnictwo, Warunki zwycięstwa, scenariusze, wyzwalacze, Zapis i wczytanie stanu gry, Edytor scenariuszy.
 
-**Średnia ocen bez wag** (tylko jako wskaźnik kierunku zmian, nie procent silnika): A 2,29, B 2,00,
-C 1,97 na 5 (etap 52: 2,26 / 2,00 / 1,89; etap 51: 2,13 / 1,89 / 1,79; etap 50: 1,95 / 1,79 / 1,66; etap 49: 1,89 / 1,74 / 1,61). Skala jest porządkowa, a podsystemy nie mają równej wielkości, więc średnia **nie jest** procentem
+**Średnia ocen bez wag** (tylko jako wskaźnik kierunku zmian, nie procent silnika): A 2,29, B 2,05,
+C 1,97 na 5 (etap 53: 2,29 / 2,00 / 1,97; etap 52: 2,26 / 2,00 / 1,89; etap 51: 2,13 / 1,89 / 1,79; etap 50: 1,95 / 1,79 / 1,66; etap 49: 1,89 / 1,74 / 1,61). Skala jest porządkowa, a podsystemy nie mają równej wielkości, więc średnia **nie jest** procentem
 ukończenia. Wag nie przypisujemy, bo nie ma wiarygodnej miary wielkości podsystemów.
 
 **Wskaźniki obiektywne pokrycia kodu oryginału** (EE `Empire Earth.exe`, e352d7ae…) [P: narzędzia]:
@@ -114,6 +114,7 @@ ukończenia. Wag nie przypisujemy, bo nie ma wiarygodnej miary wielkości podsys
 | klasy RTTI wymienione w dokumentacji / Core | 88 | ok. 7 %; wymienienie ≠ rozpoznanie |
 | kod Core | ok. 5 500 wierszy C++ (etap 50: 5023, etap 51: 5348, etap 52: 5478, etap 53: 5536) | `cpp/core/src` |
 | etap 53 – te same dwa wskaźniki jedną metodą (wyrażenie `0x[4-6]` + 5 cyfr szesnastkowych, różne wartości) | `docs/titan`: 939 → 982; `cpp/core/src`: 345 → 357 | liczby dla HEAD etapu 52 i etapu 53 policzone tym samym skryptem; wcześniejsze wiersze tabeli liczono inaczej |
+| etap 54 – ta sama metoda | `docs/titan`: 982 → 1007; `cpp/core/src`: 357 → 369; kod Core 5536 → 5725 wierszy | – |
 
 Wniosek: rozpoznana i odtworzona jest głównie **warstwa symulacji ruchu i walki pojedynczych jednostek lądowych**
 (ruch, trasy, kolizje, stany `.tai`, walka wręcz, śmierć, budynki jako cele i przeszkody). To rdzeń, od którego
@@ -130,14 +131,17 @@ lotnictwo, zapis gry i multiplayer są prawie nietknięte.
   (`WariantTitan`: reguła obrotu, kolejność odbudowy kontaktów, losowania przy utworzeniu jednostki). Etap 53 nie dodał
   wariantu.
 
-**Stan po etapie 53 w trzech ujęciach:**
-- *AoC (główna wersja)* – zgodność Core potwierdzona nagraniami AoC: produkcja obywatela i wojskowa z anulowaniem (18),
-  budowa domu (14), zbieranie drewna (16), ruch i kolizje tarana z gwardią (7, 8), kara A\* (6), okno kontaktów (8),
-  walka częściowo (12). Bez nagrań AoC pozostają m.in. walka z budynkiem, śmierć, bohater, prorok, graf nawigacji.
-- *EE* – oceny C w tabeli; w etapie 53 doszły kontrolne nagrania produkcji wojskowej, anulowania i taranów.
-- *Brakujące mechanizmy pierwszej grywalnej wersji:* interfejs produkcji i budowy, punkt zbiórki, pozostałe surowce i
-  farmy, technologie i epoki, jednostki dystansowe, AI komputera, widoczność. *Pełna rekonstrukcja Titan* wymaga
-  ponadto transportu, lotnictwa, okrętów, kalamit, wyzwalaczy, zapisu gry i multiplayera (§ 5).
+**Stan po etapie 54 w trzech ujęciach:**
+- *AoC (główna wersja)* – zgodność Core potwierdzona nagraniami AoC: produkcja obywatela i wojskowa z anulowaniem i
+  punktem zbiórki (18), budowa domu i koszar, dwóch budowniczych (14), zbieranie drewna i kamienia, dwóch zbieraczy
+  (16), ruch i kolizje tarana z gwardią (7, 8), kara A\* (6), okno kontaktów (8), walka częściowo (12). Bez nagrań AoC
+  pozostają m.in. walka z budynkiem, śmierć, bohater, prorok, graf nawigacji.
+- *EE* – oceny C w tabeli; w etapie 54 doszły kontrolne nagrania wysokości obiektów, punktu zbiórki i kamienia, a stara
+  rozbieżność dwóch budowniczych (663) zmalała do kursu pomocnika.
+- *Brakujące mechanizmy pierwszej grywalnej wersji:* interfejs budowy i zbierania, złoto, żelazo i żywność (farmy,
+  polowanie), wyczerpanie źródeł, technologie i epoki, jednostki dystansowe, AI komputera, widoczność. *Pełna
+  rekonstrukcja Titan* wymaga ponadto transportu, lotnictwa, okrętów, kalamit, wyzwalaczy, zapisu gry i multiplayera
+  (§ 5).
 
 ## 5. Pozostałe prace do pełnej rekonstrukcji
 
@@ -158,9 +162,9 @@ lotnictwo, zapis gry i multiplayer są prawie nietknięte.
 | 13 | Śmierć i usuwanie | zwłoki jednostek, Spawn on death, efekty śmierci | kod | 12 | niska | zwłoki i Spawn on death |
 | 14 | Budynki i budowanie | K i koszt z dbtechtree w odtworzeniach budowy (schemat znany od etapu 52), naprawa (gałąź +0x340 = 1), BuildSiteValid/Clear, pole zajęte, zwrot kosztu, koszary i dwóch budowniczych w AoC, przyczyna braku próbki 4028 w AoC | wiedza+kod | 11, 17 | średnia | budowa domu w AoC (wspólność wzoru 0x60BF56) i naprawa |
 | 15 | Jednostki cywilne | zbieranie, naprawa, garnizon, TaskSmartCitizen (kolejne zadanie) | wiedza | 14, 16 | wysoka | obywatel z rozkazem zbierania |
-| 16 | Zbieranie surowców | inne surowce (współczynnik tempa, indeks 0x636C96), wyczerpanie, wielu zbieraczy (WaitingArea), farmy, zwierzęta, wybór punktu kliknięcia | wiedza+weryfikacja | 15, 17 | wysoka | kamień/złoto i dwóch zbieraczy przy jednym źródle |
+| 16 | Zbieranie surowców | złoto, żelazo, żywność (indeks 0x636C96), wyczerpanie, zbieracze w jednym polu (WaitingArea), farmy, zwierzęta, funkcja punktu pracy | wiedza+weryfikacja | 15, 17 | wysoka | złoto albo zbieractwo; dwóch zbieraczy w jednym polu obwodu |
 | 17 | Ekonomia (zasoby, populacja) | co zmienia +0xB20/+0xB24 (dom nie zmienia – 707), śmierć jednostki, osiągnięty limit, modyfikatory kosztów cywilizacji, wymiana i daniny | wiedza | 16 | średnia | produkcja przy osiągniętym limicie populacji |
-| 18 | Produkcja jednostek | punkt zbiórki w Core (reguła miejsca powstania i miejsc docelowych z jednego układu), zajęte miejsce wyjścia, limit populacji osiągnięty, 0x631B55, Shift (5 sztuk), najkrótsza kolejka, technologie bez obiektu | wiedza+weryfikacja | 14, 17 | średnia | drugi układ punktu zbiórki i implementacja |
+| 18 | Produkcja jednostek | cel w miejscu powstania (8000 → 9006), budynki 1 × 1 i 3 × 3, brak miejsca w pierścieniu, limit populacji osiągnięty, flagi klasy w teście zajętości, Shift (5 sztuk), najkrótsza kolejka, technologie bez obiektu | wiedza+weryfikacja | 14, 17 | średnia | drugi układ punktu zbiórki i implementacja |
 | 19 | Technologie, epoki, ulepszenia | badanie technologii (technologie bez obiektu), epoki, pozostałe atrybuty cywilizacji | wiedza+kod | 2, 17 | wysoka | badanie jednej technologii w AoC |
 | 20 | AI gracza komputerowego | całość; losowania RNG AI [N] | wiedza | 32 | bardzo wysoka | funkcja planująca AI i jej losowania |
 | 21 | Dyplomacja i relacje | zmiana relacji, edykty, głosowanie | wiedza | – | średnia | pomiar zmiany relacji |
@@ -170,7 +174,7 @@ lotnictwo, zapis gry i multiplayer są prawie nietknięte.
 | 25 | Lotnictwo | całość | wiedza | 7 | wysoka | EEUCAir* – rozpoznanie |
 | 26 | Animacja jednostek | zgodność czasów animacji z grą | weryfikacja | 13 | średnia | pomiar klatek animacji ataku |
 | 27 | Efekty graficzne i dźwięk | efekty EEEffect, dźwięki, muzyka | wiedza+kod | 26 | średnia | efekty śmierci |
-| 28 | Sterowanie gracza i interfejs | panele, przyciski, budowa z interfejsu OpenEE, skróty | kod | 11 | wysoka | przycisk budowy w interfejsie OpenEE (rozkaz Core już jest) |
+| 28 | Sterowanie gracza i interfejs | panele, przyciski, budowa z interfejsu OpenEE, skróty | kod | 11 | wysoka | przycisk budowy i rozkaz zbierania w interfejsie OpenEE (panel produkcji jest od etapu 54) |
 | 29 | Warunki zwycięstwa, scenariusze, wyzwalacze | wyzwalacze, kampanie, cele scenariusza | wiedza | 2 | wysoka | EEVictoryCondition – rozpoznanie |
 | 30 | Multiplayer i synchronizacja | całość | wiedza | 32 | bardzo wysoka | – |
 | 31 | Zapis i wczytanie stanu gry | całość | wiedza | wszystkie | wysoka | format zapisu gry |
@@ -259,3 +263,17 @@ Zmiany w samym etapie 49 (wliczone w tabelę):
   [P: AoC]), 32 Losowość (losowanie płci), 33 Zegar (kwant zegara gry powyżej 524 288 ms [P]).
 - Ocen nie podniosłem tam, gdzie doszedł tylko odczyt statyczny (filtr kosmiczny AoC) albo jeden układ (punkt zbiórki).
 
+**Etap 54.** Zmiany ocen:
+- 18 Produkcja jednostek: B 3 → 4 – miejsce powstania jednostki i punkt zbiórki odwzorowane według kodu (kolejność pól
+  obwodu, wzór miejsc w polu, test zajętości) i potwierdzone 13 miejscami powstania w AoC i EE; 16 jednostek z punktem
+  zbiórki zgodnych co takt od utworzenia do zatrzymania (stan, pozycja, kurs). A 4, C 4 bez zmiany – budynki inne niż
+  2 × 2, limit populacji i cel w miejscu powstania nadal otwarte.
+- 16 Zbieranie surowców: B 2 → 3 – drugi surowiec tym samym mechanizmem (parametry źródła z dbobjects), dwóch
+  zbieraczy, punkty pracy i oddania z jednej reguły. A 3, C 3 bez zmiany: zgodność kamienia i drewna jest pełna w
+  zmierzonych układach (do 10423 próbek na obywatela), ale złoto, żelazo, żywność, wyczerpanie źródła i oczekiwanie na
+  miejsce są niezmierzone.
+- Bez zmiany ocen, nowe dowody: 2 Format SCN (wysokość obiektów – przyczyna lewitacji, poprawka generatora, AoC i EE),
+  3 Mapa (wysokość terenu w walidatorze scenariuszy), 14 Budynki (koszary w AoC, dwóch budowniczych w obu grach – stara
+  rozbieżność 663 zmalała do kursu pomocnika), 15 Jednostki cywilne, 17 Ekonomia (kamień gracza co takt), 28 Sterowanie
+  (panel produkcji w potyczce), 33 Zegar (model zegara gry od 65 536 ms: 34,09375 ms na takt [P]).
+- Ocen C nie podnosiłem: nowe zgodności dotyczą dwóch budynków 2 × 2, jednej kopalni i jednego typu jednostki.

@@ -6,7 +6,7 @@ target_compile_definitions(openee_tests PRIVATE
   OPENEE_INSTALACJA_DOMYSLNA="${OPENEE_INSTALACJA}")
 target_compile_options(openee_tests PRIVATE ${OPENEE_OSTRZEZENIA})
 
-foreach(grupa trygonometria rng teren ruch odpychanie dll tai determinizm astar astar_gra krok kolizje_takt kolejka scenariusze porownanie_gra mapa walka walka_swiat morale budynki produkcja produkcja_wojskowa kontakty_duze podsystemy)
+foreach(grupa trygonometria rng teren ruch odpychanie dll tai determinizm astar astar_gra krok kolizje_takt kolejka scenariusze porownanie_gra mapa walka walka_swiat morale budynki produkcja produkcja_wojskowa kontakty_duze punkt_zbiorki zbieranie_kamien podsystemy)
   add_test(NAME core_${grupa} COMMAND openee_tests ${grupa})
   set_tests_properties(core_${grupa} PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 300)
 endforeach()

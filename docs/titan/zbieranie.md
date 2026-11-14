@@ -74,3 +74,90 @@ Pierwsze kliknięcie trafiło w teren (zwykły rozkaz ruchu, t = 40431), rozkaz 
   przypadkowego rozkazu ruchu pod drzewem; ten sam rodzaj co otwarta pozycja EE 673 „zatrzymanie w 9006 przy v ≠ 0”.
   Nie przedstawiam całego nagrania jako zgodnego.
 - Wybór źródła i magazynu, inne surowce, kilku zbieraczy – nadal niezmierzone w żadnej grze.
+
+## 6. Etap 54 – kamień, dwóch zbieraczy, punkty pracy
+
+Pomiary: AoC 715 (`e54_715_jeden`, `_dwaj`), EE 716; scenariusz `e42_e54_kamien` – dwóch obywateli, Centrum Miasta
+(198, 130) 2 × 2, kopalnia kamienia 38 „Res - Stone Mine” (0x19CE, pole (194, 131), 1 × 1, obiekt Świata kampanii).
+
+### 6.1. Kamień wobec drewna [P]
+
+| Cecha | Drewno (673, 708) | Kamień (715, 716) |
+|---|---|---|
+| „Resource type” źródła | 3 | 4 |
+| stan źródła | HP 1, ilość 400 (drzewo 339) | HP 1, ilość 300 000 |
+| pierwszy cykl | zeruje HP (ścięcie), bez surowca | zeruje HP, bez surowca |
+| kolejne cykle | źródło −1, obywatel +1 | to samo |
+| okres (ulepszenie obywatela +0x110 + 4·i) | i = 0: 4400 ms | i = 1: **EE 8926 ms, AoC 8925 ms** |
+| udźwig | 15 | 15 |
+| próbka kliknięcia | MoveToResource 8008, bez ruchu | PrepareToMove 8000, już pierwszy krok ruchu |
+| wejście w zbieranie | 9000 → 4004 | 9000 → 9006 → 5001 → HasResourceGoal 4027 → 4004 |
+| po oddaniu | 4005 → 4016 → 4023 → 8008 → 8000 | 4005 → 4016 → 8008 → 8000 |
+| oddanie | zasób gracza +15 w próbce wejścia w 4005 | to samo (kamień: indeks 2) |
+
+- Zdarzenia cyklu w taktach od wejścia w 4004: AoC 262, 524, 787, 1049, 1312, … 3937, 4199; EE 262, 525, 787, 1050,
+  1312, … 3937, 4200 – zgodne z licznikiem „−34 ms na takt z przeniesieniem reszty” dla okresu 8925 (AoC) i 8926 (EE).
+- Okres odczytany z pamięci ulepszenia obywatela: EE +0x114 = 8926 (716), AoC +0x114 = 8925 (717). Pozostałe pola
+  jednakowe: 4400, 6000, 6000, 3500, 5200, 4600; udźwig 15. dbobjects ma 10500 – mnożnik 0,85 gracza [H].
+- Wyjście po 15 jednostkach: 4024 → 4007 (pierwszy kurs) / 4021 (kolejne) → 8009, jak przy drewnie.
+- Wyczerpanie złoża: nieosiągalne (300 000) – niezmierzone.
+
+### 6.2. Dwóch zbieraczy [P]
+
+- Drugi obywatel dostał rozkaz na tę samą kopalnię, gdy pierwszy wracał z magazynu.
+- Każdy pracuje we własnym miejscu: pierwszy (195,15; 131,15), drugi (195,15; 132,15) – różne pola obwodu kopalni.
+- Nie wystąpiło oczekiwanie (WaitForOpenPosition) ani MoveToWaitingArea; cykle biegną niezależnie, każdy 15 jednostek
+  na kurs.
+- Każdy oddaje w swoim miejscu przy Centrum Miasta: (197,85; 131,15) i (197,85; 132,15).
+- Kamień gracza: 1333 → 1348 → 1363 → 1378 (trzy dostawy w nagraniu); złoże 300 000 → 299 953.
+- Dwóch zbieraczy w **tym samym** polu obwodu (zajęte miejsce) – nie wystąpiło [N].
+
+### 6.3. Punkt pracy i punkt oddania [H: 9 punktów z pomiaru]
+
+Punkt przy obiekcie = pierwsze miejsce (wzór miejsc pola, `produkcja.md` § 6.2 pkt 5) w polu obwodu obiektu
+najbliższym polu punktu odniesienia – ta sama reguła co miejsce powstania jednostki z punktem zbiórki.
+
+| Sytuacja | Punkt odniesienia | Pole obwodu | Punkt |
+|---|---|---|---|
+| kamień, 1. obywatel z (196,5; 128,5) | pozycja obywatela | narożnik (1, −1) kopalni | (195,15; 130,85) |
+| → magazyn | (195,15; 130,85) → pole (195, 131) | lewa krawędź, dy = 1 | (197,85; 131,15) |
+| → powrót | (197,85; 131,15) → pole (198, 131) | prawa krawędź | (195,15; 131,15) |
+| kamień, 2. obywatel z (196,5; 133,5) | pozycja obywatela | narożnik (1, 1) | (195,15; 132,15) |
+| → magazyn / powrót | – | narożnik (−1, 2) / (1, 1) | (197,85; 132,15) / (195,15; 132,15) |
+| drewno 673 | – | narożnik (1, 1) drzewa, lewa krawędź dy = 1 magazynu | (140,15; 111,15) ↔ (145,85; 111,15) |
+
+- Pole odniesienia dla punktu oddania i powrotu = poprzedni punkt celu zaokrąglony do najbliższej liczby całkowitej
+  [H]. Rzut prostopadły z etapu 51 dawał dla kamienia (197,85; 130,85) i rozbieżność od t = 183929.
+- Funkcja Titan dla celu zbierania nieodczytana [N].
+
+### 6.4. Rozkaz i stany [P + H]
+
+- Rozkaz (przed taktem) ustawia stan początkowy MoveToWaitingArea 4023. Drzewo: w takcie 4023 → MoveToResource 8008
+  (przejście Gather.tai `ResourceTargetIsTree`). Inne źródło: wejście w 4023 przechodzi od razu do 8008, a w takcie
+  8008 → PrepareToMove 8000 z pierwszym krokiem ruchu. To wyjaśnia obie próbki kliknięcia jednym mechanizmem.
+- Ten sam skrót działa po oddaniu: kamień nie pokazuje stanu 4023.
+- [H]: natychmiastowe przejście jest akcją stanu w kodzie (wolne miejsce pracy), nie przejściem Gather.tai. Plik
+  Gather.tai obu gier ma te same przejścia co zapis w Core.
+
+### 6.5. Core
+
+- Jeden mechanizm dla wszystkich surowców: `dodaj_zrodlo(…, zasob_typ, zasob_indeks, tempo_indeks)`; indeksy z dbobjects
+  („Resource type” 3…6 → zasób typ − 2, tempo typ − 3) – `ParametryTypowDB.zrodlo`. Złoto i żelazo: tylko kolejność pól
+  ulepszenia [P: odczyt], cykl niezmierzony.
+- `rozkaz_zbierania` ustawia 4023; `wejdz_w_stan(4023)` dla źródła innego niż drzewo → 8008.
+- `punkt_przy_obiekcie` (reguła § 6.3) zamiast rzutu prostopadłego w 8008 / 8009.
+- Okres kamienia jest parametrem obywatela: `parametry_jednostek_ee.json` → `warianty.aoc` (8925); EE 8926.
+
+### 6.6. Zgodność Core z nagraniami
+
+| Nagranie | Obywatel 1 | Obywatel 2 | Gospodarka (kamień gracza, ładunek, ilość i HP złoża) |
+|---|---|---|---|
+| AoC 715 jeden (od startu scenariusza) | 5317/5317 | 5317/5317 (stoi) | 5316/5316 |
+| AoC 715 oba nagrania łącznie (359 s) | 10423/10423 | 10423/10423 | 10422/10422 dla każdego obywatela |
+| EE 716 jeden | 5288/5288 | 5288/5288 | 5287/5287 |
+| EE 716 oba nagrania łącznie | 10357/10357 | 10357/10357 | 10356/10356 |
+| drewno EE 673 od t = 80000 / AoC 708 od t = 90000 | 5069/5069 / 4783/4783 | – | 5069/5069 / 4782/4782 (bez zmian) |
+
+- Próbka = stan, pozycja, kurs co takt. Nagrania łączne: dwa kolejne nagrania tej samej sesji (przerwa 14 taktów)
+  odtworzone jednym przebiegiem Core.
+- Test syntetyczny CTest `zbieranie_kamien`: stany, takty cyklu dla 8925 i 8926, punkty oddania i powrotu, +15 kamienia.

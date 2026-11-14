@@ -372,6 +372,18 @@ public:
     /// pozycja kolejki tej technologii (obywatel i obywatelka są równoważne), a gdy żadnej nie ma – bieżąca pozycja tej
     /// technologii (0x5FD8F3). Pełny zwrot kosztu [P: AoC 705, EE 706]. false = nic nie anulowano.
     bool anuluj_technologie(IdJednostki budynek, int tech_id);
+    /// Etap 54: punkt zbiórki budynku (PPM w teren przy zaznaczonym budynku). Obowiązuje dla jednostek tworzonych od
+    /// tej chwili: miejsce powstania = pierwsze wolne miejsce w polach obwodu budynku uporządkowanych według odległości
+    /// pola od pola punktu, kurs na punkt, rozkaz ruchu do wolnego miejsca w polu punktu (docs/titan/produkcja.md § 6).
+    bool ustaw_punkt_zbiorki(IdJednostki budynek, double x, double y);
+    bool usun_punkt_zbiorki(IdJednostki budynek);
+    /// Pola obwodu budynku [X..X+n−1]² w kolejności prób miejsca powstania [W: AoC 0x64BB36 bez punktu, 0x641299 z
+    /// punktem – emulacja kodu]. Współrzędne względne (dx, dy) do kotwicy budynku.
+    static std::vector<std::pair<int, int>> pola_wyjscia(int n, bool zbiorka, int zdx, int zdy);
+    /// Miejsca w polu (dx, dy) względem budynku n × n dla jednostki o rozmiarze s [W: AoC 0x63F697 – emulacja]:
+    /// kolejne przesunięcia w polu (ułamki pola), najwyżej floor(1/s) (krawędź), 1 (narożnik) albo floor(1/s)² (pole
+    /// wewnętrzne – także miejsca w polu punktu zbiórki).
+    static std::vector<std::pair<double, double>> miejsca_w_polu(int n, int dx, int dy, double s);
     /// Identyfikatory jednostek utworzonych w ostatnim takcie (do mapowania na obiekty gry w odtworzeniach).
     const std::vector<IdJednostki>& nowe_jednostki() const { return nowe_jednostki_; }
     std::uint64_t wersja_grafu() const { return wersja_grafu_; }
@@ -483,12 +495,15 @@ private:
     std::map<int, std::array<int, 5>> zasoby_;   // etap 51
     std::map<int, ParametryProdukcji> produkcja_typow_;   // etap 52
     std::map<int, std::array<int, 4>> populacja_;         // etap 52: populacja, globalny, a, b
-    struct NowaJednostka { int tech_id; IdJednostki budynek; double x, y; };
+    struct NowaJednostka { int tech_id; IdJednostki budynek; double x, y; bool zbiorka = false; double zx = 0, zy = 0; };
     std::vector<NowaJednostka> do_utworzenia_;
     std::vector<IdJednostki> nowe_jednostki_;
     void krok_produkcji(Jednostka& b);
     bool start_produkcji(Jednostka& b);
     bool miejsce_wyjscia(const Jednostka& b, const ParametryProdukcji& p, double& x, double& y) const;
+    Punkt2 punkt_przy_obiekcie(const Jednostka& ob, double px, double py, double rozmiar) const;   // etap 54
+    bool miejsce_zbiorki(const Jednostka& b, const ParametryProdukcji& p, double& x, double& y) const;
+    bool miejsce_wolne(double x, double y, double s, bool z_oczekujacymi = true, IdJednostki pomin = 0) const;
     std::map<std::string, SkryptStanow> skrypty_;   // etap 45: skrypty typów (adresy stabilne – std::map)
     const SkryptStanow& skr(const Jednostka& u) const { return u.skrypt ? *u.skrypt : skrypt_; }
     int losuj_zakres(int lo, int hi);

@@ -145,6 +145,7 @@ func _testy() -> void:
 	_test_etapu51(dll)
 	_test_etapu52(dll)
 	_test_etapu53(dll)
+	_test_etapu54(dll)
 	_koniec()
 
 
@@ -1182,6 +1183,62 @@ func _test_etapu52(dll: String) -> void:
 # Etap 53 – produkcja wojskowa w koszarach (docs/titan/produkcja.md § 5): dane technologii 3011 Inf03 - Maceman z dbtechtree
 # (30 żywności + 30 żelaza, 32000 ms, obiekt 21), pomiary AoC 704/705/709 i EE 706/710; wybór płci obywatela przy starcie;
 # anulowanie z interfejsu; kolejność listy kontaktów i wybór gałęzi kolizji (eksperymenty Fable).
+## Etap 54: punkt zbiórki przez GDExtension (ustaw / zmień / usuń), dane panelu produkcji (kolejka technologii, punkt)
+## i miejsce powstania przy zajętym pierwszym miejscu [P: AoC 711/713, EE 712/714].
+func _test_etapu54(dll: String) -> void:
+	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
+	var kosz := {"gracz": 1, "typ": 34, "X": 14, "Y": 10, "kwadrat": 2, "x": 15.0, "y": 11.0, "z": 0.0, "hp": 1500, "hp_max": 1500,
+		"pole_widzenia": 2.0, "rozmiar": 1.0, "typ_jednostki": 2, "typ_bazy": 34, "id_mapy": "0x701"}
+	var mace := {"tech_id": 3011, "typ_db": 21, "koszt": [30, 0, 0, 0, 30], "czas_ms": 32000, "mnoznik_czasu": 1.0, "populacja": 1,
+		"ruch": p, "walka": {"pole_widzenia": 4.0, "rozmiar": 0.5, "typ_bazy": 21}, "hp": 150, "skrypt": "Land Patrolling"}
+	var wyniki := {}
+	for war in ["aoc", "ee"]:
+		var c: Object = CoreCpp.nowa_symulacja()
+		if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
+		c.utworz_swiat(war)
+		if war == "aoc": _wynik("wersja Core – etap 54", str(c.wersja()).contains("etap 54"), c.wersja())
+		var b: int = c.dodaj_budynek(kosz)
+		c.ustaw_zasoby(1, [1111, 1222, 1333, 1444, 1555]); c.ustaw_populacje(1, 1, 100, 0, 0)
+		c.ustaw_produkcje(mace)
+		var ok_z: bool = c.ustaw_punkt_zbiorki(b, 18.957, 13.813)
+		var jb: Dictionary = c.jednostka(b)
+		for i in 3: c.rozkaz_produkcji(b, 3011)
+		var kol: Array = c.jednostka(b).get("prod_kolejka", [])
+		var nowe := []
+		for k in range(1, 2900):
+			if k == 1000: c.ustaw_punkt_zbiorki(b, 9.4, 11.3)       # po pierwszej jednostce: punkt na zachód
+			if k == 1950: c.usun_punkt_zbiorki(b)                     # przed trzecią: bez punktu
+			c.takt(1)
+			for nid in c.nowe_jednostki():
+				var j: Dictionary = c.jednostka(int(nid))
+				nowe.append([k, snappedf(float(j.get("x", 0)), 0.001), snappedf(float(j.get("y", 0)), 0.001), int(j.get("stan", -1))])
+		wyniki[war] = [ok_z, bool(jb.get("zbiorka", false)), snappedf(float(jb.get("zbiorka_x", 0)), 0.001), kol, nowe,
+			bool(c.jednostka(b).get("zbiorka", true))]
+	var w: Array = wyniki["aoc"]
+	_wynik("punkt zbiórki: dane budynku, kolejka technologii w słowniku jednostki", w[0] and w[1] and w[2] == 18.957 and w[3] == [3011, 3011],
+		JSON.stringify(w.slice(0, 4)))
+	_wynik("punkt zbiórki: narożnik od strony punktu (16,25; 12,25) w stanie 8000; po zmianie punktu lewa krawędź (13,75; 11,25); po usunięciu (14,25; 9,75) w stanie 5000",
+		w[4].size() == 3 and w[4][0] == [942, 16.25, 12.25, 8000] and w[4][1] == [1884, 13.75, 11.25, 8000] and w[4][2] == [2826, 14.25, 9.75, 5000]
+		and w[5] == false, JSON.stringify(w[4]))
+	_wynik("punkt zbiórki EE – ten sam przebieg co AoC", wyniki["ee"] == wyniki["aoc"], JSON.stringify(wyniki["ee"][4]))
+	# zajęte pierwsze miejsce: jednostka w polu (14, 9) blisko (14,25; 9,75) → drugie miejsce (14,75; 9,75) [P: 711/712 –
+	# obywatel (162,43; 111,58), d² + 0,1·s = 0,112 < 0,16]; dalsza (d² + 0,1·s ≥ ((o + s)/2)²) nie blokuje [P: (176,48; 111,48)]
+	var poz := []
+	for stoi in [Vector2(14.4306, 9.5778), Vector2(14.4766, 9.4784)]:
+		var c2: Object = CoreCpp.nowa_symulacja()
+		if dll == "" or not c2.zaladuj_tablice(dll)["ok"]: c2.uzyj_tablic_przyblizonych()
+		c2.utworz_swiat("aoc")
+		var b2: int = c2.dodaj_budynek(kosz)
+		c2.ustaw_zasoby(1, [1111, 1222, 1333, 1444, 1555]); c2.ustaw_populacje(1, 1, 100, 0, 0)
+		c2.ustaw_produkcje(mace)
+		c2.dodaj_jednostke({"a": 1.2, "vmax": 0.5, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.3, "c4": 0.83333, "c8": 0.08185, "t488": 0.5}, stoi.x, stoi.y, 0.0)
+		c2.rozkaz_produkcji(b2, 3011)
+		for k in 960:
+			c2.takt(1)
+			for nid in c2.nowe_jednostki(): poz.append(snappedf(float(c2.jednostka(int(nid)).get("x", 0)), 0.001))
+	_wynik("miejsce powstania: zajęte pierwsze miejsce → drugie (14,75); obywatel dalej niż próg nie blokuje (14,25)", poz == [14.75, 14.25], str(poz))
+
+
 func _test_etapu53(dll: String) -> void:
 	var p := {"a": 2.0, "vmax": 0.6, "alfa": 12.21731, "wmax": 13.96264, "rozmiar": 0.5, "c4": 0.5, "c8": 0.08185, "t488": 0.5}
 	var kosz := {"gracz": 1, "typ": 34, "X": 14, "Y": 10, "kwadrat": 2, "x": 15.0, "y": 11.0, "z": 0.0, "hp": 1500, "hp_max": 1500,
@@ -1193,7 +1250,7 @@ func _test_etapu53(dll: String) -> void:
 		var c: Object = CoreCpp.nowa_symulacja()
 		if dll == "" or not c.zaladuj_tablice(dll)["ok"]: c.uzyj_tablic_przyblizonych()
 		c.utworz_swiat(war)
-		if war == "ee": _wynik("wersja Core – etap 53", str(c.wersja()).contains("etap 53"), c.wersja())
+		if war == "ee": _wynik("wersja Core – etap 53 lub nowszy", str(c.wersja()).contains("etap 5"), c.wersja())
 		var b: int = c.dodaj_budynek(kosz)
 		c.ustaw_zasoby(1, [1111, 1222, 1333, 1444, 1555])
 		c.ustaw_populacje(1, 1, 100, 0, 0)

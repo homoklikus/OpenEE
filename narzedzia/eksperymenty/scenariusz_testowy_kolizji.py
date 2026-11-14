@@ -13,7 +13,14 @@ Użycie:
   python3 narzedzia/eksperymenty/scenariusz_testowy_kolizji.py zbuduj <wejście.scn> <wyjście.scn> <uklad.json> [--riverlands=<.py>]
 uklad.json: {"grupy": {"A": {"wzor": "0x100011a", "gracz": <numer gracza, domyślnie 1 – etap 30>,
              "zrodlo": <opcjonalnie inny plik .scn tej wersji>,
-             "z": <opcjonalna wysokość>, "pozycje": [[x, y], ...]}, ...}} – pozycje mapy (x = kolumna, y = wiersz).
+             "z": <opcjonalna wysokość bezwzględna>, "z_tryb": "teren" (domyślnie) | "wzor",
+             "pozycje": [[x, y], ...]}, ...}} – pozycje mapy (x = kolumna, y = wiersz).
+Wysokość (etap 54, docs/titan/WYSOKOSC_OBIEKTOW_SCN.md): z w macierzy rekordu jest bezwzględne i gra NIE poprawia go
+przy wczytaniu. Domyślnie ("z_tryb": "teren") kopia dostaje z = teren(nowe x, y) + (z wzoru − teren(x, y wzoru)), czyli
+stoi na terenie z tym samym przesunięciem co wzór w scenariuszu źródłowym (budynki kampanii: +0,01; mury: +0,001).
+Wzór pływający (teren pod wzorem < 0, z ≥ 0) zachowuje z bezwzględne i wymaga wody w nowym miejscu. Wzór, który sam
+nie stoi na terenie (różnica > PROG_Z), jest odrzucany – trzeba podać "z" albo "z_tryb": "wzor" (stare zachowanie:
+z skopiowane ze wzoru). "z_tryb" na najwyższym poziomie układu ustawia tryb domyślny wszystkich grup.
 Wynik: plik .scn i <wyjście>.uklad.json z identyfikatorami jednostek każdej grupy. Pliki wynikowe zostają lokalnie
 (dane scenariusza z gry nie są publikowane).
 """
@@ -27,6 +34,50 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # narzedzia/ – e
 from eeformaty import gracze as G          # noqa: E402
 from eeformaty import scn as S             # noqa: E402
 from eeformaty.dcl import maybe_unpack     # noqa: E402
+
+
+PROG_Z = 0.05   # jak narzedzia/titan/wysokosc_obiektow.py: 1/4 kwantu wysokości terenu
+
+
+def _siatka(blob):
+    """Wysokości wierzchołków terenu {(ix, iy): z} z kawałka 4."""
+    t = S.teren(_kawalek(blob, 4)["surowe"])
+    h, i = {}, 0
+    for y, (lo, hi) in enumerate(t["wiersze_punktow"]):
+        for x in range(lo, hi + 1):
+            h[(x, y)] = t["wysokosc"][i]
+            i += 1
+    return h
+
+
+def wysokosc_terenu(h, x, y):
+    """GetMeshZ (docs/titan/fizyka_terenu.md § 1): dwa trójkąty z przekątną (ix, iy)–(ix+1, iy+1)."""
+    import math
+    ix, iy = math.floor(x), math.floor(y)
+    fx, fy = x - ix, y - iy
+    try:
+        h00, h10, h01, h11 = h[(ix, iy)], h[(ix + 1, iy)], h[(ix, iy + 1)], h[(ix + 1, iy + 1)]
+    except KeyError:
+        raise SystemExit(f"wysokość: punkt ({x}; {y}) poza siatką terenu")
+    if fy >= fx:
+        return h00 + (h11 - h01) * fx + (h01 - h00) * fy
+    return h00 + (h10 - h00) * fx + (h11 - h10) * fy
+
+
+def wysokosc_kopii(h_zr, h_cel, mac_wzoru, x, y, nazwa=""):
+    """z kopii wzoru w punkcie (x, y): teren celu + przesunięcie wzoru nad terenem źródła; wzór pływający – z bez zmian.
+    mac_wzoru = (x, y, z) translacji macierzy wzoru."""
+    xs, ys, zs = mac_wzoru
+    ts = wysokosc_terenu(h_zr, xs, ys)
+    tc = wysokosc_terenu(h_cel, x, y)
+    if ts < 0 and 0 <= zs < PROG_Z:                       # okręt, dok, most: poziom wody
+        if tc >= 0:
+            raise SystemExit(f"wysokość: grupa {nazwa}: wzór pływający, a w ({x}; {y}) jest ląd (teren {tc:.3f})")
+        return zs
+    if abs(zs - ts) > PROG_Z:
+        raise SystemExit(f"wysokość: grupa {nazwa}: wzór nie stoi na terenie (z {zs:.4f}, teren {ts:.4f}) – "
+                         'podaj "z" albo "z_tryb": "wzor"')
+    return tc + (zs - ts)
 
 
 class _RO(G._R):
@@ -242,6 +293,8 @@ def zbuduj(wej, wyj, uklad_plik, riverlands):
     wersja = k5["minor"]
     d5 = bytearray(maybe_unpack(k5["surowe"]))
     wynik_grup = {}
+    h_cel = _siatka(blob)                                # etap 54: teren scenariusza docelowego
+    siatki_zr = {}
     # etap 30: grupa może należeć do innego gracza ("gracz": N, domyślnie 1) – np. przeciwnik w pojedynku.
     # Wzór jednostki zawsze z gracza 1 (kopia bajt w bajt); identyfikator = (N << 24) | następna instancja gracza N.
     # Graczy przetwarzamy od ostatniego: wstawki u gracza N nie przesuwają offsetów graczy wcześniejszych.
@@ -269,6 +322,16 @@ def zbuduj(wej, wyj, uklad_plik, riverlands):
                 struct.pack_into("<f", rec, t + 12, float(x)); struct.pack_into("<f", rec, t + 28, float(y))
                 if "z" in grp:
                     struct.pack_into("<f", rec, t + 44, float(grp["z"]))
+                elif grp.get("z_tryb", uklad.get("z_tryb", "teren")) == "teren":
+                    # etap 54: kopia stoi na terenie nowego miejsca (gra nie poprawia z przy wczytaniu)
+                    klucz = grp.get("zrodlo") or ""
+                    if klucz not in siatki_zr:
+                        siatki_zr[klucz] = _siatka(zr)
+                    mw = struct.unpack_from("<16f", rek_wzor, t)
+                    struct.pack_into("<f", rec, t + 44, wysokosc_kopii(siatki_zr[klucz], h_cel, (mw[3], mw[7], mw[11]),
+                                                                       float(x), float(y), nazwa))
+                elif grp.get("z_tryb", uklad.get("z_tryb")) != "wzor":
+                    raise SystemExit(f"grupa {nazwa}: nieznany z_tryb {grp.get('z_tryb', uklad.get('z_tryb'))}")
                 # etap 47: nadpisanie pól rekordu (np. "u3c" – część HP przy wczytaniu, "type" – typ obiektu z tym samym
                 # układem rekordu); format pola z gramatyki jednostki
                 for pole, wart in grp.get("pola", {}).items():

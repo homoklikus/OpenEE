@@ -43,6 +43,12 @@ var _budynki_wejscie: Array = []      # te same budynki w formacie obiektów pó
 var _budynki_core := {}               # id Core budynku → id obiektu mapy
 var _nowe_z_produkcji: Array = []      # etap 52: [takt, id, typ, x, y] jednostek z produkcji
 var _gruz_znaczniki := {}             # etap 49: id gruzu Core → TYMCZASOWY znacznik diagnostyczny (brak legalnego modelu)
+var _panel_prod: PanelContainer       # etap 54: panel produkcji zaznaczonego budynku
+var _panel_opis: Label
+var _panel_przyciski: HBoxContainer
+var _panel_bud := -1                  # budynek, dla którego zbudowano przyciski
+var _prod_dostepne := {}              # id budynku Core → [id technologii] (układ: produkcja.dostepne)
+var _prod_info := {}                  # id technologii → {nazwa, koszt, czas_ms}
 var _typy_pol := {}                   # flagi typów obiektów pól z Core (+0x568, +0x600, +0x4B4, +0x612)
 
 
@@ -109,7 +115,9 @@ func _po_zbudowaniu() -> void:
 			for x in range(okno.y, okno.y + okno.z): l += "." if core.pole_przejezdne(x, y) else "#"
 			w.append("%d %s" % [y, l])
 		_raport_p["siatka_od_x"] = okno.y; _raport_p["siatka"] = w
-	if _arg("potyczka-demo", "") != "" and uklad.has("demo_e53"):
+	if _arg("potyczka-demo", "") != "" and uklad.has("demo_e54"):
+		await _demo_e54(float(_arg("potyczka-demo", "150")))
+	elif _arg("potyczka-demo", "") != "" and uklad.has("demo_e53"):
 		await _demo_e53(float(_arg("potyczka-demo", "120")))
 	elif _arg("potyczka-demo", "") != "" and uklad.has("demo_e52"):
 		await _demo_e52(float(_arg("potyczka-demo", "90")))
@@ -302,6 +310,8 @@ func nowa_bitwa() -> bool:
 	if not start_zle.is_empty():
 		ImporterEE.zglos("uwaga", "potyczka", "Jednostki na polach nieprzejezdnych: %s" % str(start_zle))
 	sterowanie = SterowanieRTS.new(sym, widok, zegar, _kamera); sterowanie.gracz = gl; add_child(sterowanie)
+	sterowanie.przechwyt_ppm = _ppm_budynek   # etap 54: PPM przy zaznaczonym budynku produkcyjnym = punkt zbiórki
+	_panel_bud = -1
 	zegar.po_takcie.connect(_po_takcie_walki)
 	_raport_p["bitwa_%d" % bitwa] = {"jednostki": sym.jednostki.size(), "modele": wb, "mapa_core": im.get("skrot", ""),
 		"obiekty_mapy": _obiekty_core.size(), "start_nieprzejezdny": start_zle, "tablice": _info_tablic, "wersja_core": str(core.call("wersja")) if core.has_method("wersja") else ""}
@@ -400,6 +410,16 @@ func _interfejs() -> void:
 	_wynik_lab.add_theme_color_override("font_outline_color", Color.BLACK)
 	_wynik_lab.add_theme_constant_override("outline_size", 8)
 	cl.add_child(_wynik_lab)
+	# etap 54: panel produkcji – widoczny po zaznaczeniu własnego budynku z listą „dostepne”; dane i rozkazy tylko przez Core
+	_panel_prod = PanelContainer.new()
+	_panel_prod.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_panel_prod.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_panel_prod.position = Vector2(12, -64)   # nad przyciskiem powrotu do launchera
+	_panel_prod.visible = false
+	var vb := VBoxContainer.new(); _panel_prod.add_child(vb)
+	_panel_opis = Label.new(); vb.add_child(_panel_opis)
+	_panel_przyciski = HBoxContainer.new(); vb.add_child(_panel_przyciski)
+	cl.add_child(_panel_prod)
 	if get_tree().root.get_node_or_null("Powrot") == null and not Konfiguracja.tryb_testow():
 		var pw: CanvasLayer = load("res://launcher/powrot.gd").new(); pw.name = "Powrot"
 		get_tree().root.call_deferred("add_child", pw)
@@ -424,6 +444,17 @@ func _rysuj_paski() -> void:
 		var kol := Color(0.2, 0.9, 0.2) if int(sym.gracz_jednostki[id]) == sym.gracz_lokalny else Color(0.95, 0.2, 0.15)
 		if _miganie.has(id): kol = kol.lerp(Color.WHITE, 0.7)
 		_rysunek.draw_rect(Rect2(r.position, Vector2(szer * f, 4)), kol)
+	# etap 54: znacznik punktu zbiórki zaznaczonego budynku (dane z Core)
+	var bz := _budynek_produkcji()
+	if bz >= 0:
+		var jb: Dictionary = core.jednostka(bz)
+		if bool(jb.get("zbiorka", false)):
+			var pz := Vector2(float(jb.get("zbiorka_x", 0)), float(jb.get("zbiorka_y", 0)))
+			var wz := UkladEE.godot(pz, mapa.wysokosc(pz))
+			if not _kamera.is_position_behind(wz):
+				var sz := _kamera.unproject_position(wz)
+				_rysunek.draw_line(sz, sz - Vector2(0, 26), Color.WHITE, 2.0)
+				_rysunek.draw_colored_polygon(PackedVector2Array([sz - Vector2(0, 26), sz + Vector2(14, -20), sz - Vector2(0, 14)]), _kolor_gracza(sym.gracz_lokalny))
 
 
 func _process(d: float) -> void:
@@ -463,6 +494,7 @@ func _process(d: float) -> void:
 			str(sym.cel_walki[id]) if int(sym.cel_walki[id]) != 0 else "–"]
 	t += sterowanie.komunikat + "\n" + "\n".join(dziennik_walki)
 	_hud.text = t
+	_odswiez_panel_produkcji()
 	_wynik_lab.text = "" if wynik == "" else ("ZWYCIĘSTWO" if wynik == "wygrana" else "PORAŻKA") + "\nR – nowa bitwa"
 	_wynik_lab.add_theme_color_override("font_color", Color(1, 0.85, 0.2) if wynik == "wygrana" else Color(1, 0.3, 0.3))
 	_wynik_lab.position = get_viewport().get_visible_rect().size / 2 - _wynik_lab.size / 2
@@ -672,8 +704,17 @@ func _ustaw_produkcje(id_bud: Array) -> void:
 	var pop: Array = pr.get("populacja", [0, 100])
 	core.ustaw_populacje(gl, int(pop[0]), int(pop[1]), 0, 0)
 	var info := {}
-	for r in pr.get("rozkazy", []):
-		var tid := int(r["tech"])
+	# etap 54: technologie dostępne w budynkach (panel produkcji) – rejestrowane w Core tak samo jak technologie rozkazów
+	_prod_dostepne.clear(); _prod_info.clear()
+	var do_rejestracji: Array = []
+	for r0 in pr.get("rozkazy", []): do_rejestracji.append({"tech": int(r0["tech"]), "rozkaz": r0})
+	for dd in pr.get("dostepne", []):
+		var bidd := int(id_bud[int(dd["budynek"])])
+		_prod_dostepne[bidd] = []
+		for tt2 in dd.get("tech", []): do_rejestracji.append({"tech": int(tt2), "budynek_dostepny": bidd})
+	for r1 in do_rejestracji:
+		var r: Dictionary = r1.get("rozkaz", {})
+		var tid := int(r1["tech"])
 		var rt: Dictionary = tech.get(tid, {})
 		if rt.is_empty():
 			ImporterEE.zglos("uwaga", "potyczka", "Brak technologii %d w dbtechtree" % tid); continue
@@ -697,9 +738,102 @@ func _ustaw_produkcje(id_bud: Array) -> void:
 			"skrypt": String(_obiekty.get(int(typ), {}).get("TAI Script", ""))})
 		info[str(tid)] = {"nazwa": rt["nazwa"], "obiekt": int(rt["obiekt"]), "koszt": rt["koszt"], "czas_ms": int(rt["czas_ms"]),
 			"parametry_z_dbobjects": pochodne}
+		_prod_info[tid] = info[str(tid)]
+		if r1.has("budynek_dostepny"):
+			if not _prod_dostepne[int(r1["budynek_dostepny"])].has(tid): _prod_dostepne[int(r1["budynek_dostepny"])].append(tid)
+			continue
 		for k in int(r.get("ile", 1)):
 			core.rozkaz_produkcji(int(id_bud[int(r["budynek"])]), tid)
 	_raport_p["produkcja_typy"] = info
+
+
+## Etap 54: budynek z panelem produkcji – dokładnie jeden zaznaczony obiekt, własny, z listą dostępnych technologii.
+func _budynek_produkcji() -> int:
+	if widok == null or sym == null or widok.zaznaczone.size() != 1: return -1
+	var id := int(widok.zaznaczone[0])
+	if not _prod_dostepne.has(id) or not sym.zywa(id) or int(sym.gracz_jednostki[id]) != sym.gracz_lokalny: return -1
+	return id
+
+
+func _opis_kosztu(koszt: Array) -> String:
+	var n := ["żywność", "drewno", "kamień", "złoto", "żelazo"]
+	var cz := PackedStringArray()
+	for i in mini(koszt.size(), 5):
+		if int(koszt[i]) > 0: cz.append("%d %s" % [int(koszt[i]), n[i]])
+	return ", ".join(cz) if not cz.is_empty() else "bez kosztu"
+
+
+func _odswiez_panel_produkcji() -> void:
+	if _panel_prod == null: return
+	var bud := _budynek_produkcji()
+	_panel_prod.visible = bud >= 0
+	if bud < 0:
+		_panel_bud = -1; return
+	if bud != _panel_bud:
+		_panel_bud = bud
+		for ch in _panel_przyciski.get_children(): ch.queue_free()
+		for tid in _prod_dostepne[bud]:
+			var inf: Dictionary = _prod_info.get(int(tid), {})
+			var b := Button.new()
+			b.name = "tech_%d" % int(tid)
+			b.text = "%s\n%s · %d s" % [String(inf.get("nazwa", str(tid))), _opis_kosztu(inf.get("koszt", [])), int(round(float(inf.get("czas_ms", 0)) / 1000.0))]
+			b.tooltip_text = "LPM: produkuj · PPM: anuluj"
+			b.gui_input.connect(_wejscie_przycisku.bind(int(tid)))
+			_panel_przyciski.add_child(b)
+	var jb: Dictionary = core.jednostka(bud)
+	var gl := sym.gracz_lokalny
+	var biez := int(jb.get("prod_biezaca", -1))
+	var t := "%s – produkcja\n" % String(sym.jednostki[bud].nazwa if "nazwa" in sym.jednostki[bud] else "Budynek")
+	if biez >= 0:
+		t += "Bieżąca: %s – pozostało %.1f s\n" % [String(_prod_info.get(biez, {}).get("nazwa", str(biez))), float(jb.get("prod_ms", 0)) / 1000.0]
+	else:
+		t += "Bieżąca: brak\n"
+	var kol := PackedStringArray()
+	for tk in jb.get("prod_kolejka", []): kol.append(String(_prod_info.get(int(tk), {}).get("nazwa", str(tk))))
+	t += "Kolejka (%d): %s\n" % [kol.size(), ", ".join(kol) if not kol.is_empty() else "–"]
+	var z: Array = core.zasoby(gl)
+	t += "Zasoby: żywność %d · drewno %d · kamień %d · złoto %d · żelazo %d · populacja %d/%d\n" % [int(z[0]), int(z[1]), int(z[2]), int(z[3]),
+		int(z[4]), int(core.populacja(gl)), int(core.limit_populacji(gl))]
+	t += "Punkt zbiórki: %s (PPM w teren)" % ("(%.2f; %.2f)" % [float(jb.get("zbiorka_x", 0)), float(jb.get("zbiorka_y", 0))] if bool(jb.get("zbiorka", false)) else "brak")
+	_panel_opis.text = t
+
+
+func _wejscie_przycisku(e: InputEvent, tid: int) -> void:
+	if e is InputEventMouseButton and e.pressed:
+		if e.button_index == MOUSE_BUTTON_LEFT: _ui_produkuj(tid)
+		elif e.button_index == MOUSE_BUTTON_RIGHT: _ui_anuluj(tid)
+		_panel_przyciski.accept_event()
+
+
+## LPM na przycisku: rozkaz produkcji w Core (koszt pobiera Core przy rozkazie).
+func _ui_produkuj(tid: int) -> bool:
+	var bud := _budynek_produkcji()
+	if bud < 0: return false
+	var ok: bool = core.rozkaz_produkcji(bud, tid)
+	sterowanie.komunikat = ("produkcja: %s" if ok else "produkcja odrzucona: %s (koszt albo limit)") % String(_prod_info.get(tid, {}).get("nazwa", str(tid)))
+	return ok
+
+
+## PPM na przycisku: anulowanie jak w Titan – pierwsza pozycja tej technologii z kolejki, inaczej bieżąca (Core).
+func _ui_anuluj(tid: int) -> bool:
+	var bud := _budynek_produkcji()
+	if bud < 0: return false
+	var ok: bool = core.anuluj_technologie(bud, tid)
+	sterowanie.komunikat = ("anulowano: %s" if ok else "nie ma czego anulować: %s") % String(_prod_info.get(tid, {}).get("nazwa", str(tid)))
+	return ok
+
+
+## PPM w teren przy zaznaczonym budynku produkcyjnym: punkt zbiórki (Core); zwykły rozkaz ruchu nie jest wysyłany.
+func _ppm_budynek(ekran: Vector2, _dolacz: bool) -> bool:
+	var bud := _budynek_produkcji()
+	if bud < 0: return false
+	var te := Zaznaczanie.teren(sym.mapa, _kamera.project_ray_origin(ekran), _kamera.project_ray_normal(ekran))
+	if te.is_empty():
+		sterowanie.komunikat = "kliknięcie poza terenem"; return true
+	var p: Vector2 = te.punkt
+	var ok: bool = core.ustaw_punkt_zbiorki(bud, p.x, p.y)
+	sterowanie.komunikat = "punkt zbiórki (%.2f; %.2f)" % [p.x, p.y] if ok else "punkt zbiórki odrzucony"
+	return true
 
 
 func _zarejestruj_nowa(id: int) -> void:
@@ -788,6 +922,88 @@ func _demo_e53(sekundy: float) -> void:
 	przebieg["nowe_koniec"] = konce
 	przebieg["koniec"] = {"zasoby": core.zasoby(gl), "populacja": core.populacja(gl), "limit": core.limit_populacji(gl), "takt": sym.takt}
 	_raport_p["demo_e53"] = przebieg
+	_koniec_automatu(0)
+
+
+## Etap 54: automat interfejsu produkcji – te same ścieżki co gracz: kliknięcie budynku, przyciski panelu (LPM / PPM),
+## PPM w teren (punkt zbiórki). Raport: stan panelu, kolejka, zasoby, miejsca powstania i końcowe jednostek.
+func _demo_e54(sekundy: float) -> void:
+	var kat := _arg("potyczka-zrzuty", "")
+	if kat != "": DirAccess.make_dir_recursive_absolute(kat)
+	var d: Dictionary = uklad.get("demo_e54", {})
+	var gl := int(uklad.get("gracz_lokalny", 1))
+	var bud := -1
+	for bid in _budynki_core: bud = int(bid)
+	var przebieg := {"budynek": bud, "kroki": [], "co_sekunde": []}
+	await _czekaj(0.5, "", "", przebieg)
+	# 1. zaznaczenie budynku kliknięciem w jego środek
+	var jb0: Dictionary = core.jednostka(bud)
+	var pb := Vector2(float(jb0.get("x", 0)), float(jb0.get("y", 0)))
+	var ekran := _kamera.unproject_position(UkladEE.godot(pb, mapa.wysokosc(pb) + 0.5))
+	var klik := sterowanie.klik_lewy(ekran)
+	przebieg["klik_budynku"] = {"ekran": [ekran.x, ekran.y], "trafiony": klik, "zaznaczone": widok.zaznaczone.duplicate()}
+	if widok.zaznaczone != [bud]:
+		widok.zaznaczone.clear(); widok.zaznaczone.append(bud); sterowanie.zaznaczenie.ids = [bud]
+		przebieg["klik_budynku"]["zaznaczenie_wymuszone"] = true
+	await _czekaj(0.3, "", "", przebieg)
+	var przyciski := []
+	for ch in _panel_przyciski.get_children(): przyciski.append(String(ch.text).replace("\n", " | "))
+	przebieg["panel"] = {"widoczny": _panel_prod.visible, "przyciski": przyciski}
+	# 2. trzy pozycje pierwszej technologii (LPM), anulowanie jednej (PPM)
+	var tid := int(_prod_dostepne.get(bud, [0])[0])
+	var z0: Array = core.zasoby(gl)
+	var wyniki := []
+	for i in int(d.get("produkuj", 3)):
+		var ev := InputEventMouseButton.new(); ev.button_index = MOUSE_BUTTON_LEFT; ev.pressed = true
+		_wejscie_przycisku(ev, tid)
+		wyniki.append(int(core.jednostka(bud).get("prod_kolejka_n", -1)))
+	var z1: Array = core.zasoby(gl)
+	var evp := InputEventMouseButton.new(); evp.button_index = MOUSE_BUTTON_RIGHT; evp.pressed = true
+	_wejscie_przycisku(evp, tid)
+	przebieg["produkcja"] = {"tech": tid, "zasoby_przed": z0, "zasoby_po_rozkazach": z1, "kolejka_po_rozkazach": wyniki,
+		"zasoby_po_anulowaniu": core.zasoby(gl), "kolejka_po_anulowaniu": int(core.jednostka(bud).get("prod_kolejka_n", -1)),
+		"biezaca": int(core.jednostka(bud).get("prod_biezaca", -1))}
+	# 3. punkt zbiórki: PPM w teren
+	var pz: Array = d.get("zbiorka", [])
+	if pz.size() >= 2:
+		var pv := Vector2(float(pz[0]), float(pz[1]))
+		var ez := _kamera.unproject_position(UkladEE.godot(pv, mapa.wysokosc(pv)))
+		var obsl := sterowanie.klik_prawy(ez)
+		var jb1: Dictionary = core.jednostka(bud)
+		przebieg["zbiorka"] = {"zadany": pz, "obsluzony": obsl, "core": [bool(jb1.get("zbiorka", false)), snappedf(float(jb1.get("zbiorka_x", 0)), 0.001),
+			snappedf(float(jb1.get("zbiorka_y", 0)), 0.001)]}
+	await _czekaj(0.3, kat, "e54_panel", przebieg)
+	przebieg["panel_tekst"] = _panel_opis.text
+	# 4. czekanie na jednostki; druga część: zmiana punktu zbiórki po pierwszej jednostce
+	var t := 0.0; var nr := 0
+	var cel_n := int(d.get("jednostek", 2))
+	var koniec_po := -1.0
+	var zmieniono := false
+	while t < sekundy:
+		await _czekaj(1.0, kat if nr % 20 == 19 else "", "e54_%02d" % nr, przebieg)
+		var jb: Dictionary = core.jednostka(bud)
+		przebieg.co_sekunde.append([sym.takt, int(jb.get("prod_biezaca", -1)), int(jb.get("prod_ms", 0)), int(jb.get("prod_kolejka_n", 0)),
+			core.zasoby(gl), int(core.populacja(gl))])
+		var pz2: Array = d.get("zbiorka_druga", [])
+		if not zmieniono and _nowe_z_produkcji.size() >= 1 and pz2.size() >= 2:
+			var pv2 := Vector2(float(pz2[0]), float(pz2[1]))
+			widok.zaznaczone.clear(); widok.zaznaczone.append(bud); sterowanie.zaznaczenie.ids = [bud]
+			sterowanie.klik_prawy(_kamera.unproject_position(UkladEE.godot(pv2, mapa.wysokosc(pv2))))
+			zmieniono = true
+			przebieg["zbiorka_druga"] = {"takt": sym.takt, "core": [snappedf(float(core.jednostka(bud).get("zbiorka_x", 0)), 0.001),
+				snappedf(float(core.jednostka(bud).get("zbiorka_y", 0)), 0.001)]}
+		if _nowe_z_produkcji.size() >= cel_n and koniec_po < 0: koniec_po = t + float(d.get("czekaj_na_ruch_s", 14))
+		if koniec_po >= 0 and t >= koniec_po: break
+		t += 1.0; nr += 1
+	await _czekaj(0.5, kat, "e54_koniec", przebieg)
+	var konce := []
+	for n in _nowe_z_produkcji:
+		var j: Dictionary = core.jednostka(int(n[1]))
+		konce.append({"id": int(n[1]), "typ": int(n[2]), "takt": int(n[0]), "start": [n[3], n[4]], "koniec": [snappedf(float(j.get("x", 0)), 0.001),
+			snappedf(float(j.get("y", 0)), 0.001)], "stan": int(j.get("stan", -1))})
+	przebieg["nowe"] = konce
+	przebieg["koniec"] = {"zasoby": core.zasoby(gl), "populacja": core.populacja(gl), "limit": core.limit_populacji(gl), "takt": sym.takt}
+	_raport_p["demo_e54"] = przebieg
 	_koniec_automatu(0)
 
 

@@ -144,5 +144,49 @@ class TZestawyJednostek(unittest.TestCase):
         self.assertEqual([t for t in self.ob if self.n(3, t)], [2, 3])     # 1 wyłączony zestawem 4, 3 z zestawu 2
 
 
+class WysokoscObiektow(unittest.TestCase):
+    """Etap 54: wysokość obiektów SCN względem terenu (wysokosc_obiektow.py) i wysokość kopii wzoru w generatorze
+    scenariuszy testowych (scenariusz_testowy_kolizji.wysokosc_kopii) – siatki syntetyczne, bez danych gry."""
+
+    def setUp(self):
+        import importlib
+        import wysokosc_obiektow as W
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "eksperymenty"))
+        self.W = W
+        self.G = importlib.import_module("scenariusz_testowy_kolizji")
+        # teren: płaskowyż 1,0 dla x < 4, stok do 0 między x = 4 i 5, dalej 0; pas wody (−0,5) dla y ≥ 8
+        self.h = {(x, y): (-0.5 if y >= 8 else (1.0 if x <= 4 else 0.0)) for x in range(0, 11) for y in range(0, 11)}
+
+    def test_interpolacja_trojkatow(self):
+        h = {(0, 0): 0.0, (1, 0): 1.0, (0, 1): 2.0, (1, 1): 4.0}
+        self.assertAlmostEqual(self.W.wysokosc_terenu(h, 0.5, 0.5), 2.0)       # przekątna (0,0)–(1,1)
+        self.assertAlmostEqual(self.W.wysokosc_terenu(h, 0.75, 0.25), 1.5)     # trójkąt h00, h10, h11
+        self.assertAlmostEqual(self.W.wysokosc_terenu(h, 0.25, 0.75), 2.0)     # trójkąt h00, h01, h11
+        self.assertIsNone(self.W.wysokosc_terenu(h, 5.0, 5.0))
+
+    def test_podejrzane(self):
+        ob = [{"gracz": 1, "id": 1, "typ": 32, "x": 6.5, "y": 2.5, "z": 1.02, "teren": 0.0, "dz": 1.02},     # lewituje
+              {"gracz": 1, "id": 2, "typ": 34, "x": 2.0, "y": 2.0, "z": 1.01, "teren": 1.0, "dz": 0.01},     # budynek +0,01
+              {"gracz": 1, "id": 3, "typ": 110, "x": 5.5, "y": 9.5, "z": 0.0, "teren": -0.5, "dz": 0.5},     # okręt na wodzie
+              {"gracz": 0, "id": 4, "typ": 359, "x": 1.0, "y": 1.0, "z": 9.0, "teren": 1.0, "dz": 8.0}]      # obiekt Świata
+        self.assertEqual([o["id"] for o in self.W.podejrzane(ob)], [1])
+
+    def test_kopia_stoi_na_terenie(self):
+        k = self.G.wysokosc_kopii
+        # wzór na płaskowyżu 1,0 (z = 1,0) przeniesiony na teren 0 → 0; budynek z przesunięciem +0,01 zachowuje je
+        self.assertAlmostEqual(k(self.h, self.h, (2.5, 2.5, 1.0), 6.5, 2.5), 0.0)
+        self.assertAlmostEqual(k(self.h, self.h, (2.0, 2.0, 1.01), 7.0, 3.0), 0.01)
+        # stok: wysokość z interpolacji w nowym miejscu
+        self.assertAlmostEqual(k(self.h, self.h, (2.5, 2.5, 1.0), 4.5, 2.5), 0.5)
+
+    def test_kopia_plywajaca_i_bledy(self):
+        k = self.G.wysokosc_kopii
+        self.assertAlmostEqual(k(self.h, self.h, (5.5, 9.5, 0.0), 6.5, 9.5), 0.0)      # okręt: poziom wody bez zmian
+        with self.assertRaises(SystemExit):
+            k(self.h, self.h, (5.5, 9.5, 0.0), 6.5, 2.5)                              # okręt na lądzie
+        with self.assertRaises(SystemExit):
+            k(self.h, self.h, (6.5, 2.5, 1.84), 7.5, 2.5)                             # wzór sam lewituje – wymaga jawnej decyzji
+
+
 if __name__ == "__main__":
     unittest.main()

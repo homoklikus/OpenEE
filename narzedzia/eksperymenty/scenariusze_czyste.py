@@ -41,8 +41,18 @@ def main():
         for g, (wzor, gracz, poz, *reszta) in opis["warianty"][nazwa].items():
             grupy[g] = {"wzor": opis["wzory"][wzor], "zrodlo": str(mapy / opis["zrodlo_wzorow"]), "gracz": gracz,
                         "pozycje": poz}
+            # etap 54: tryb wysokości wariantu; "*" = domyślny. Warianty sprzed etapu 54 mają "wzor" (z skopiowane ze
+            # wzoru – tak powstały mapy wszystkich wcześniejszych nagrań), nowe – "teren" (obiekt stoi na terenie).
+            ztw = opis.get("z_tryb_wariantow", {})
+            zt = ztw.get(nazwa, ztw.get("*"))
+            if zt:
+                grupy[g]["z_tryb"] = zt
             if reszta:   # etap 47: nadpisanie pól rekordu (np. {"u3c": 0,3} – część HP)
-                grupy[g]["pola"] = reszta[0]
+                pola = dict(reszta[0])
+                if "_z_tryb" in pola:                # etap 54: tryb wysokości jednej grupy
+                    grupy[g]["z_tryb"] = pola.pop("_z_tryb")
+                if pola:
+                    grupy[g]["pola"] = pola
         wej = mapy / f"e42_{nazwa}.uklad_wej.json"
         dod = opis.get("surowce_wariantow", {}).get(nazwa)   # etap 51: surowce startowe graczy
         wej.write_text(json.dumps({"grupy": grupy, **({"surowce": dod, "surowce_obecne": opis.get("surowce_bazy")}

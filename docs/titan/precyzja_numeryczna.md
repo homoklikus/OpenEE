@@ -175,3 +175,17 @@ Reguła stoku, test kroku i kolizje: `fizyka_terenu.md` § 3–4, `kolizje_objaz
    vmax·(1 − s·0,5)); Core odtwarza oscylację, ale w jednym takcie hamuje, gdy gra przyspiesza (EE t = 55226, AoC
    t = 54715; EE 57749 na innym wierszu), po czym wzór wraca przesunięty o takt, a pozycja różni się o 0,0023 pola.
    v jest wtedy równe progowi co do zaokrąglenia f32. Czułość typu +0x488 tarana nie była odczytana (przyjęto 0,5).
+
+## 11. Etap 54 – model zegara gry w narzędziach porównania
+
+- Zegar gry (EEPhysics +0xD0, f32) rośnie co takt o 1500/44 ms zaokrąglone do kwantu f32 bieżącej wartości:
+  **34,09375 ms dla 65 536…524 288 ms** (kwant 1/128…1/32 ms) i 34,0625 ms powyżej 524 288 ms (etap 53) [P: AoC 713 –
+  czas utworzenia jednostki 303 189 ms wobec siatki 1500/44: +19,8 ms = 6970 taktów × 0,00284; EE 714, 716 – to samo].
+- Skutek: po około 5600 taktach powyżej 65 536 ms surowy czas próbki odbiega od siatki Core o ponad pół taktu i
+  dopasowanie „najbliższa próbka w ±16 ms” wybiera sąsiedni takt.
+- `odtworzenie_nagrania.py`: `takt_zegara(t)` przelicza czas gry na numer taktu; `porownaj` i `porownaj_zbieranie`
+  dopasowują próbki po czasie przeliczonym na siatkę 1500/44. Dla t ≤ 65 536 ms przeliczenie jest tożsamością, więc
+  wcześniejsze wyniki się nie zmieniają (regresja etapu 54). `porownaj_produkcje` liczy takty różnicami czasu
+  (etap 53); czas utworzenia i przebieg nowych jednostek – po numerze taktu.
+- Symulacja Core nie zależy od zegara gry (takt = 1500/44 ms); zmiana dotyczy tylko narzędzi.
+

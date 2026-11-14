@@ -118,6 +118,7 @@ bool Swiat::nadaj_trase(IdJednostki id, const std::vector<Punkt2>& punkty, std::
     }
     u->cel = TypCelu::miejsce;
     u->cel_od_gracza = true;
+    u->cel_bez_obrotu = false;
     u->kurs_koncowy = kurs_koncowy;
     u->trasa_gotowa = true;
     u->kolejka_celow.clear();
@@ -182,6 +183,8 @@ std::optional<bool> Swiat::zdarzenie(Jednostka& u, const std::string& n) {
         if (u.cel == TypCelu::brak) return false;
         if (u.cel != TypCelu::miejsce) return true;
         if (u.kolejka_celow.size() > 1) return true;
+        // etap 54 [P: 713/714 – cel z punktu zbiórki (obrót 0): 9006 trwa 1 takt przy v > 0, dalej 5001 → 5000]
+        if (u.cel_bez_obrotu) return true;
         // cel+0x31 = 0 odpowiada w Core brakowi kursu końcowego; warunek v = ω = 0 – model v4 [W] (S1–S7)
         return !u.kurs_koncowy && u.v == 0.0 && u.omega == 0.0;
     }
@@ -219,6 +222,17 @@ bool Swiat::ocen_przejscie(Jednostka& u, const Przejscie& p) {
 }
 
 void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
+    // etap 54 [P: AoC 715, EE 716 – kamień]: MoveToWaitingArea (4023) przy źródle innym niż drzewo nie jest widoczny –
+    // po AddResourceToStorage 4005 → CheckPreviousResource 4016 następną próbką jest MoveToResource 8008 (drewno: 4016 →
+    // 4023 → 8008). Akcja stanu przechodzi od razu do MoveToResource, gdy jest wolne miejsce pracy [H: akcja w kodzie,
+    // nie przejście Gather.tai; miejsce oczekiwania i brak wolnego miejsca – niezmierzone [N]].
+    if (s.numer == 4023 && !u.kolejka_celow.empty() && u.kolejka_celow.front().typ == TypCelu::zbieranie) {
+        const Jednostka* zr = jednostka(u.kolejka_celow.front().cel_jednostka);
+        const bool pelny = u.boj && u.ilosc_40 >= u.boj->p.udzwig;
+        if (zr && zr->zasob_typ != 3 && !pelny) {
+            if (const StanSkryptu* s2 = skr(u).stan(8008)) { wejdz_w_stan(u, *s2); return; }
+        }
+    }
     u.stan = s.numer;
     switch (s.numer) {
         case 5000:  // Idle: tryb 3, czyści trasę, zdejmuje cel, +0x254 = 0xFFFFFFFF
@@ -309,13 +323,13 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
                 if (s.numer == 8009) {
                     u.zb_tryb = 0;
                     if (const Jednostka* m = jednostka(u.magazyn_id)) {
-                        const Punkt2 p = punkt_obwodu(*m, c.x, c.y, r);
+                        const Punkt2 p = punkt_przy_obiekcie(*m, c.x, c.y, u.param.rozmiar);
                         c.x = p.x; c.y = p.y;
                     }
                 } else {
                     if (u.zb_tryb != 1) {   // powrót do źródła (po oddaniu); pierwszy dojazd – punkt rozkazu
                         if (const Jednostka* z = jednostka(c.cel_jednostka)) {
-                            const Punkt2 p = punkt_obwodu(*z, c.x, c.y, r);
+                            const Punkt2 p = punkt_przy_obiekcie(*z, c.x, c.y, u.param.rozmiar);
                             c.x = p.x; c.y = p.y;
                         }
                     }
@@ -459,6 +473,7 @@ void Swiat::wejdz_w_stan(Jednostka& u, const StanSkryptu& s) {
                 u.kolejka_celow.push_front({TypCelu::miejsce, u.boj->icl_x, u.boj->icl_y, u.boj->icl_kurs, false, false, 0});
                 u.cel = TypCelu::miejsce;
                 u.cel_od_gracza = false;
+                u.cel_bez_obrotu = false;
                 u.kurs_koncowy = u.boj->icl_kurs;
                 u.trasa.clear();
                 u.zdjete_punkty = 0;
@@ -619,11 +634,37 @@ void Swiat::takt() {
         const int gracz = bb ? bb->gracz : 0;
         const bool czl = bb ? bb->czlowiek : true;
         // kurs: nowa jednostka zwrócona na −y (macierz m01 = 0, m11 = −1) [P: 677 – 4 jednostki]
-        const IdJednostki id = dodaj_jednostke(p.ruch, n.x, n.y, std::atan2(-0.0, -1.0));
+        // etap 54: z punktem zbiórki kurs na punkt (0x64240D = kąt do celu) [W + P: 705/706/713]
+        const double kurs = n.zbiorka ? mat_.kat_do_celu(f32(n.x), f32(n.y), n.zx, n.zy) : std::atan2(-0.0, -1.0);
+        // miejsce w polu punktu wybierane przed dodaniem jednostki: nowa jednostka nie zajmuje własnego miejsca
+        // [P: 713 – punkt w polu obwodu: cel = miejsce powstania (166,25; 112,25)]
+        double zcx = 0, zcy = 0;
+        bool zcel = false;
+        if (n.zbiorka && bb) zcel = miejsce_zbiorki(*bb, p, zcx, zcy);
+        const IdJednostki id = dodaj_jednostke(p.ruch, n.x, n.y, kurs);
         if (p.walka.hp_max > 0 || p.hp > 0) ustaw_walke(id, gracz, czl, p.walka, p.hp);
         if (!p.skrypt.empty()) ustaw_skrypt_jednostki(id, p.skrypt);
         if (Jednostka* u = jednostka(id)) { u->typ_db = p.typ_db; u->gracz = gracz; }
         nowe_jednostki_.push_back(id);
+        if (n.zbiorka) {
+            // rozkaz ruchu do miejsca w polu punktu – jednostka od pierwszego taktu w stanie 8000 [P: 705/706/713]
+            if (zcel) {
+                // cel EEUGLocation bez obrotu końcowego (cel+0x31 = 0) [P: 713 – 9006 jeden takt]
+                if (Jednostka* u = jednostka(id)) {
+                    // kąt celu 0 (cel+0x2C = 0) bez wymogu obrotu: w 9006 jednostka stojąca zaczyna obrót ku kursowi 0
+                    // [P: 714 EE – kurs 1,7175 → 1,6891 → 1,6465 → 1,6182 → 1,604; 713 – jednostka w ruchu bez obrotu]
+                    CelRuchu c{TypCelu::miejsce, f32(zcx), f32(zcy), 0.0, true, false, 0};
+                    c.etap_grafu = true;
+                    c.bez_obrotu = true;
+                    u->kolejka_celow.clear();
+                    u->kolejka_celow.push_front(c);
+                    aktywuj_cel(*u);
+                    // cel w miejscu powstania [P: 713, 714]: gra 8000 → 9006 → 5001 → 5000 (trasa pusta już w 1. próbce);
+                    // Core przechodzi zwykłą ścieżkę 8000 → 2015 → 10003 → 9000 → 9006 – pozycja zgodna, stany 3 takty
+                    // później [N: przejście 8000 → 9006].
+                }
+            }
+        }
     }
     do_utworzenia_.clear();
 }
@@ -679,6 +720,7 @@ void Swiat::aktywuj_cel(Jednostka& u) {
         // po zdjęciu punktu +0x32: 9000 → (8021) → 2016 → 2012]
         u.cel = c.typ;
         u.cel_od_gracza = c.od_gracza;
+        u.cel_bez_obrotu = c.bez_obrotu;
         u.kurs_koncowy.reset();
         u.trasa.clear();
         u.dl_przed.clear();
@@ -690,6 +732,7 @@ void Swiat::aktywuj_cel(Jednostka& u) {
     }
     u.cel = c.typ;
     u.cel_od_gracza = c.od_gracza;
+    u.cel_bez_obrotu = c.bez_obrotu;
     u.kurs_koncowy = c.kurs_koncowy;
     u.trasa.clear();
     u.dl_przed.clear();
@@ -1015,6 +1058,23 @@ bool Swiat::ustaw_magazyn(IdJednostki budynek, bool m) {
     return true;
 }
 
+Punkt2 Swiat::punkt_przy_obiekcie(const Jednostka& ob, double px, double py, double rozmiar) const {
+    // Etap 54: punkt pracy przy źródle i punkt oddania przy magazynie = pierwsze miejsce (wzór miejsc 0x63F697) w polu
+    // obwodu obiektu najbliższym polu punktu odniesienia – ta sama reguła co miejsce powstania jednostki z punktem
+    // zbiórki [H: zgodne z 9 punktami – drewno EE 673 / AoC 708, kamień AoC 715 / EE 716; rzut prostopadły z etapu 51
+    // dawał dla kamienia (197,85; 130,85) zamiast (197,85; 131,15)]. Punkt odniesienia = poprzedni punkt celu
+    // zaokrąglony do najbliższego pola [H]. Zajęte miejsce (drugi zbieracz w tym samym polu) – niezmierzone [N].
+    const int n = std::max(1, ob.kwadrat);
+    const int zdx = int(std::lround(px)) - int(ob.komorka_x), zdy = int(std::lround(py)) - int(ob.komorka_y);
+    const double s = std::min(1.0, double(f32(rozmiar)));
+    for (const auto& pole : pola_wyjscia(n, true, zdx, zdy)) {
+        const auto m = miejsca_w_polu(n, pole.first, pole.second, s);
+        if (m.empty()) continue;
+        return Punkt2{f32(double(ob.komorka_x + pole.first) + m.front().first), f32(double(ob.komorka_y + pole.second) + m.front().second)};
+    }
+    return punkt_obwodu(ob, px, py, f32(0.5 * rozmiar));
+}
+
 bool Swiat::rozkaz_zbierania(IdJednostki obywatel, IdJednostki zrodlo, double x, double y) {
     // PPM na źródle (cel EEUGGather): MoveToResource 8008 w próbce po kliknięciu, tryb 0 [P: 673]; punkt pracy z
     // kliknięcia (rzut miejsca kliknięcia na obwód źródła [H]) – podawany przez wołającego
@@ -1028,6 +1088,7 @@ bool Swiat::rozkaz_zbierania(IdJednostki obywatel, IdJednostki zrodlo, double x,
     u->kolejka_celow.push_front(c);
     u->cel = c.typ;
     u->cel_od_gracza = true;
+    u->cel_bez_obrotu = false;
     u->kurs_koncowy.reset();
     u->trasa.clear();
     u->dl_przed.clear();
@@ -1035,7 +1096,12 @@ bool Swiat::rozkaz_zbierania(IdJednostki obywatel, IdJednostki zrodlo, double x,
     u->zdjete_punkty = 0;
     u->trasa_gotowa = false;
     u->zb_tryb = 1;
-    if (const StanSkryptu* s = skr(*u).stan(8008)) wejdz_w_stan(*u, *s);
+    // etap 54: rozkaz ustawia MoveToWaitingArea 4023 (stan początkowy celu Gather.tai), wykonywany przed taktem.
+    // Drzewo: w takcie 4023 → MoveToResource 8008 – próbka kliknięcia 8008, tryb 0, bez ruchu [P: 673]. Inne źródło:
+    // akcja 4023 przechodzi od razu do 8008 (wejdz_w_stan), w takcie 8008 → PrepareToMove 8000 z pierwszym krokiem
+    // ruchu – próbka kliknięcia 8000, v = 0,0409 [P: AoC 715, EE 716].
+    if (const StanSkryptu* s = skr(*u).stan(4023)) wejdz_w_stan(*u, *s);
+    else if (const StanSkryptu* s8 = skr(*u).stan(8008)) wejdz_w_stan(*u, *s8);
     return true;
 }
 
@@ -1110,28 +1176,24 @@ bool Swiat::oplac(int gracz, const std::array<int, 5>& koszt) {
 }
 
 Punkt2 Swiat::miejsce_budowy(const Jednostka& u, const Jednostka& b) const {
-    // [P: 658 – jeden pomiar: obywatel (164,65; 115,46), dom (163, 113) → (164,15; 114,15) = narożnik obwodu odsuniętego
-    // o r = 0,5·rozmiar obywatela (0,3); H: reguła ogólna] kandydaci jak przy ataku na budynek (boki + narożniki),
-    // wybór – najbliższy punkt (odległość euklidesowa od pozycji obywatela); funkcja Titan [N].
-    const double r = f32(0.5 * u.param.rozmiar);
-    const int X = int(b.komorka_x), Y = int(b.komorka_y), n = std::max(1, b.kwadrat);
-    std::vector<Punkt2> m;
-    for (int x = X; x < X + n; ++x) { m.push_back({f32(x + 0.25), f32(Y - r)}); m.push_back({f32(x + 0.75), f32(Y - r)}); }
-    m.push_back({f32(X + n + r), f32(Y - r)});
-    for (int y = Y; y < Y + n; ++y) { m.push_back({f32(X + n + r), f32(y + 0.25)}); m.push_back({f32(X + n + r), f32(y + 0.75)}); }
-    m.push_back({f32(X + n + r), f32(Y + n + r)});
-    for (int x = X + n - 1; x >= X; --x) { m.push_back({f32(x + 0.75), f32(Y + n + r)}); m.push_back({f32(x + 0.25), f32(Y + n + r)}); }
-    m.push_back({f32(X - r), f32(Y + n + r)});
-    for (int y = Y + n - 1; y >= Y; --y) { m.push_back({f32(X - r), f32(y + 0.75)}); m.push_back({f32(X - r), f32(y + 0.25)}); }
-    m.push_back({f32(X - r), f32(Y - r)});
-    Punkt2 best = m.front();
-    double bd = 1e300;
-    for (const auto& c : m) {
-        if (!teren_.pole_przejezdne(podloga(c.x), podloga(c.y))) continue;
-        const double d = (c.x - u.x) * (c.x - u.x) + (c.y - u.y) * (c.y - u.y);
-        if (d < bd) { bd = d; best = c; }
+    // Etap 54: miejsce pracy budowniczego = pierwsze wolne miejsce (wzór miejsc 0x63F697) w polach obwodu budynku
+    // uporządkowanych według odległości pola od pola obywatela – ta sama reguła co miejsce powstania jednostki z punktem
+    // zbiórki i punkt pracy przy źródle [P: 658 – (164,15; 114,15); 663 EE / 718 AoC – pomocnik przy zajętym narożniku
+    // (164, 114) dostaje (164,15; 113,15) w następnym polu listy; etap 50 wybierał najbliższy punkt obwodu i dawał
+    // pomocnikowi to samo miejsce co pierwszemu budowniczemu]. Funkcja Titan dla celu budowy nieodczytana [N].
+    const int n = std::max(1, b.kwadrat);
+    const double s = std::min(1.0, double(f32(u.param.rozmiar)));
+    const int zdx = int(podloga(u.x) - b.komorka_x), zdy = int(podloga(u.y) - b.komorka_y);
+    for (const auto& pole : pola_wyjscia(n, true, zdx, zdy)) {
+        const int cx = int(b.komorka_x) + pole.first, cy = int(b.komorka_y) + pole.second;
+        if (!teren_.pusty() && !teren_.pole_przejezdne(cx, cy)) continue;
+        for (const auto& m : miejsca_w_polu(n, pole.first, pole.second, s)) {
+            const double xk = f32(double(cx) + m.first), yk = f32(double(cy) + m.second);
+            if (miejsce_wolne(xk, yk, u.param.rozmiar, false, u.id)) return Punkt2{xk, yk};
+        }
     }
-    return best;
+    const double r = f32(0.5 * u.param.rozmiar);
+    return Punkt2{f32(double(b.komorka_x) - r), f32(double(b.komorka_y) - r)};
 }
 
 bool Swiat::rozkaz_budowy(IdJednostki obywatel, IdJednostki budynek) {
@@ -1151,6 +1213,7 @@ bool Swiat::rozkaz_budowy(IdJednostki obywatel, IdJednostki budynek) {
     // 10003 – jeden stan na takt]; trasa liczona dopiero w PrepareToMove (RepairSiteInRange = fałsz)
     u->cel = c.typ;
     u->cel_od_gracza = c.od_gracza;
+    u->cel_bez_obrotu = c.bez_obrotu;
     u->kurs_koncowy.reset();
     u->trasa.clear();
     u->dl_przed.clear();
@@ -1545,6 +1608,7 @@ bool Swiat::rozkaz_ataku(IdJednostki id, IdJednostki cel) {
     u->kolejka_celow.push_front(c);
     u->cel = TypCelu::jednostka;
     u->cel_od_gracza = true;
+    u->cel_bez_obrotu = false;
     u->kurs_koncowy.reset();
     u->trasa.clear();
     u->zdjete_punkty = 0;
@@ -2208,6 +2272,7 @@ bool Swiat::szukaj_wroga(Jednostka& u) {
     u.kolejka_celow.push_front(c);
     u.cel = TypCelu::jednostka;
     u.cel_od_gracza = false;
+    u.cel_bez_obrotu = false;
     ++diag_.wybory_celu;
     zdarzenia_walki_.push_back({takty_, u.id, best->id, "wybor_celu", best_wynik});
     return true;
@@ -2639,6 +2704,7 @@ void Swiat::ucieczka(Jednostka& u) {
         u.kolejka_celow.push_front(cel);
         u.cel = TypCelu::miejsce;
         u.cel_od_gracza = true;    // pochodzenie +0x1C = 1 [P: 638]
+        u.cel_bez_obrotu = false;
         u.kurs_koncowy.reset();
         u.trasa.clear();
         u.dl_przed.clear();
@@ -3061,6 +3127,7 @@ void Swiat::etap_grafu(Jednostka& u) {
     const CelRuchu& f = u.kolejka_celow.front();
     u.cel = f.typ;
     u.cel_od_gracza = f.od_gracza;
+    u.cel_bez_obrotu = false;
     u.kurs_koncowy = f.kurs_koncowy;
     u.trasa.clear();
     u.dl_przed.clear();
@@ -3151,28 +3218,150 @@ bool Swiat::start_produkcji(Jednostka& b) {
     return true;
 }
 
+bool Swiat::ustaw_punkt_zbiorki(IdJednostki budynek, double x, double y) {
+    Jednostka* b = jednostka(budynek);
+    if (!b || !b->budynek) return false;
+    b->zbiorka = true;
+    b->zbiorka_x = f32(x);
+    b->zbiorka_y = f32(y);
+    return true;
+}
+
+bool Swiat::usun_punkt_zbiorki(IdJednostki budynek) {
+    Jednostka* b = jednostka(budynek);
+    if (!b || !b->budynek) return false;
+    b->zbiorka = false;
+    return true;
+}
+
+std::vector<std::pair<int, int>> Swiat::pola_wyjscia(int n, bool zbiorka, int zdx, int zdy) {
+    // Listy AoC 0x646A26 (krawędzie: dla i – lewa, prawa; potem dla i – dolna, górna) i 0x64720E (narożniki) [W: emulacja]
+    std::vector<std::pair<int, int>> a;
+    for (int i = 0; i < n; ++i) { a.push_back({-1, i}); a.push_back({n, i}); }
+    for (int i = 0; i < n; ++i) { a.push_back({i, -1}); a.push_back({i, n}); }
+    a.push_back({-1, -1}); a.push_back({-1, n}); a.push_back({n, -1}); a.push_back({n, n});
+    if (zbiorka) {
+        // 0x641299: sortowanie według (dx − zdx)² + (dy − zdy)² – odległość pola od pola punktu, liczby całkowite.
+        // Remisy w kolejności listy [W: emulacja, 40 losowych punktów, budynek 2 × 2 – sortowanie przez wstawianie
+        // biblioteki dla ≤ 16 elementów; budynki ≥ 4 × 4 (20 pól) – kolejność remisów nieustalona [N]].
+        std::stable_sort(a.begin(), a.end(), [&](const std::pair<int, int>& p, const std::pair<int, int>& q) {
+            const int kp = (p.first - zdx) * (p.first - zdx) + (p.second - zdy) * (p.second - zdy);
+            const int kq = (q.first - zdx) * (q.first - zdx) + (q.second - zdy) * (q.second - zdy);
+            return kp < kq;
+        });
+        return a;
+    }
+    // 0x64BB36 bez punktu: 12 pól (n = 2) i 8 pól (n = 1) – obejście obwodu od (0, −1) w stronę +x, dalej w górę
+    // prawą krawędzią, górną w stronę −x i lewą w dół; n = 1 zaczyna od pola samego budynku. Inne rozmiary: lista
+    // bez zmiany kolejności [W: emulacja n = 1…4].
+    if (n == 1 || n == 2) {
+        std::vector<std::pair<int, int>> o;
+        if (n == 1) o.push_back({0, 0});
+        for (int i = 0; i <= n; ++i) o.push_back({i, -1});
+        for (int i = 0; i <= n; ++i) o.push_back({n, i});
+        for (int i = n - 1; i >= -1; --i) o.push_back({i, n});
+        for (int i = n - 1; i >= -1; --i) o.push_back({-1, i});
+        return o;
+    }
+    return a;
+}
+
+std::vector<std::pair<double, double>> Swiat::miejsca_w_polu(int n, int dx, int dy, double s) {
+    // 0x63F697 (start, kroki, liczba) + pętla 0x640DDB (przejście do następnego miejsca z zawinięciem do pola) [W]
+    const double h = 0.5 * s;
+    const int ile1 = std::max(1, int(std::floor(double(f32(1.0 / s)))));
+    double x0 = h, y0 = h, kx = 0.0, ky = 0.0;   // kx = krok +0x10 (x), ky = krok +0x8 (y)
+    int ile = 1;
+    const bool wx = dx >= 0 && dx < n, wy = dy >= 0 && dy < n;
+    if (wx && wy) { x0 = h; y0 = h; ky = s; ile = ile1 * ile1; }                        // pole wewnętrzne
+    else if (dy == -1 && dx >= 0) { x0 = h; y0 = 1.0 - h; kx = s; ile = wx ? ile1 : 1; }    // dolna krawędź, róg (n, −1)
+    else if (dx == n && dy >= 0) { x0 = h; y0 = h; ky = wy ? s : h; ile = wy ? ile1 : 1; }  // prawa krawędź, róg (n, n)
+    else if (dy == n) {                                                                  // górna krawędź, róg (−1, n)
+        x0 = 1.0 - h; y0 = h;
+        if (wx) { kx = -s; ile = ile1; } else { ky = -s; ile = 1; }
+    } else if (dx == -1) {                                                               // lewa krawędź, róg (−1, −1)
+        x0 = 1.0 - h; y0 = dy >= 1 ? h : 1.0 - h;
+        if (wy) { ky = -s; ile = ile1; }
+    } else {
+        return {};
+    }
+    std::vector<std::pair<double, double>> w;
+    double x = x0, y = y0;
+    for (int i = 0; i < ile; ++i) {
+        w.push_back({f32(x), f32(y)});
+        const double ny = f32(ky + y);
+        if (ny > 1.0) { y = y0; x = f32(ky + x); }
+        else {
+            const double nx = f32(kx + x);
+            if (nx > 1.0) { x = x0; y = f32(kx + y); }
+            else { x = nx; y = ny; }
+        }
+        while (x > 1.0) x = f32(x - 1.0);
+        while (x < 0.0) x = f32(x + 1.0);
+        while (y > 1.0) y = f32(y - 1.0);
+        while (y < 0.0) y = f32(y + 1.0);
+    }
+    return w;
+}
+
+bool Swiat::miejsce_wolne(double x, double y, double s, bool z_oczekujacymi, IdJednostki pomin) const {
+    // AoC 0x640F29–0x64100E [W + P: 711–714, 4 przypadki w obu grach]: miejsce zajęte, gdy dla jednostki o rozmiarze o
+    // stojącej w tym samym polu d² + 0,1·s < ((o + s)/2)² (d – odległość miejsca od jednostki, s – rozmiar nowej
+    // jednostki). Warunki klasy z tej gałęzi (flagi +0x2FC/+0x303, +0x317, rozmiar < 1,5) – nieodczytane z danych [N];
+    // w Core: każda żywa jednostka niebędąca budynkiem.
+    const std::int64_t cx = podloga(x), cy = podloga(y);
+    for (const auto& o : jednostki_) {
+        if (o.budynek || o.id == pomin || (o.boj && o.boj->s.hp <= 0)) continue;   // 0x640F58: sama jednostka pomijana
+        if (podloga(o.x) != cx || podloga(o.y) != cy) continue;      // lista obiektów pola (0x64C3DF)
+        const double dx = o.x - x, dy = o.y - y;
+        const double a = f32((f32(o.param.rozmiar) + f32(s)) * 0.5);
+        if (f32(dx * dx + dy * dy) + f32(0.1f * f32(s)) < a * a) return false;
+    }
+    if (!z_oczekujacymi) return true;
+    for (const auto& n : do_utworzenia_) {
+        if (podloga(n.x) != cx || podloga(n.y) != cy) continue;
+        const double dx = n.x - x, dy = n.y - y;
+        const double os = std::min(1.0, double(f32(produkcja_typow_.at(n.tech_id).ruch.rozmiar)));
+        const double a = f32((os + f32(s)) * 0.5);
+        if (f32(dx * dx + dy * dy) + f32(0.1f * f32(s)) < a * a) return false;
+    }
+    return true;
+}
+
 bool Swiat::miejsce_wyjscia(const Jednostka& b, const ParametryProdukcji& p, double& x, double& y) const {
-    // [P: 677 – Centrum Miasta kotwica (146, 110), n = 2; kolejne jednostki: (146,15; 109,85), (146,45; 109,85),
-    // (146,75; 109,85) – krawędź y = Y − r, x = X + r + k·2r, r = 0,5·rozmiar (obywatel 0,15)]; reguła wyboru wolnego
-    // miejsca (pierwsze bez jednostki bliżej niż 2r) [H]; funkcja tworzenia AoC 0x631B55 – nieprzeczytana [N].
-    const double r = f32(0.5 * p.ruch.rozmiar);
-    const double y0 = f32(double(b.komorka_y) - r);
-    const int maks = std::max(1, int(std::floor(double(b.kwadrat) / (2.0 * r) + 1e-9)));
-    for (int k = 0; k < maks; ++k) {
-        const double xk = f32(double(b.komorka_x) + r + double(k) * 2.0 * r);
-        bool wolne = true;
-        for (const auto& o : jednostki_) {
-            if (o.budynek || (o.boj && o.boj->s.hp <= 0)) continue;
-            const double dx = o.x - xk, dy = o.y - y0;
-            if (dx * dx + dy * dy < (2.0 * r) * (2.0 * r) - 1e-9) { wolne = false; break; }
+    // AoC 0x631B55 → 0x643561 (gracz-człowiek: tylko pierwszy pierścień pól wokół budynku): pola obwodu w kolejności
+    // pola_wyjscia, w każdym polu miejsca miejsca_w_polu; pierwsze wolne miejsce w przejezdnym polu [W + P: 677, 704–713].
+    // Bez punktu zbiórki i dla budynku 2 × 2 daje to krawędź y = Y − r, x = X + r + k·2r z etapu 52.
+    const double s = std::min(1.0, double(f32(p.ruch.rozmiar)));
+    const double r = f32(0.5 * s);
+    const int n = std::max(1, b.kwadrat);
+    const int zdx = b.zbiorka ? int(podloga(b.zbiorka_x) - b.komorka_x) : 0;
+    const int zdy = b.zbiorka ? int(podloga(b.zbiorka_y) - b.komorka_y) : 0;
+    for (const auto& pole : pola_wyjscia(n, b.zbiorka, zdx, zdy)) {
+        const int cx = int(b.komorka_x) + pole.first, cy = int(b.komorka_y) + pole.second;
+        if (pole.first >= 0 && pole.first < n && pole.second >= 0 && pole.second < n) continue;   // pole budynku
+        if (!teren_.pusty() && !teren_.pole_przejezdne(cx, cy)) continue;
+        for (const auto& m : miejsca_w_polu(n, pole.first, pole.second, s)) {
+            const double xk = f32(double(cx) + m.first), yk = f32(double(cy) + m.second);
+            if (miejsce_wolne(xk, yk, p.ruch.rozmiar)) { x = xk; y = yk; return true; }
         }
-        for (const auto& n : do_utworzenia_) {
-            const double dx = n.x - xk, dy = n.y - y0;
-            if (dx * dx + dy * dy < (2.0 * r) * (2.0 * r) - 1e-9) { wolne = false; break; }
-        }
-        if (wolne) { x = xk; y = y0; return true; }
     }
     return false;
+}
+
+bool Swiat::miejsce_zbiorki(const Jednostka& b, const ParametryProdukcji& p, double& x, double& y) const {
+    // cel nowej jednostki: wolne miejsce w polu punktu zbiórki (miejsca pola wewnętrznego: (h, h), (h, h + s), …)
+    // [P: 705/706/713 – pierwsza (X + 0,25; Y + 0,25), druga (X + 0,25; Y + 0,75)]; wszystkie zajęte – pierwsze [H].
+    const double s = std::min(1.0, double(f32(p.ruch.rozmiar)));
+    const double r = f32(0.5 * s);
+    const int cx = int(podloga(b.zbiorka_x)), cy = int(podloga(b.zbiorka_y));
+    const auto m = miejsca_w_polu(1, 0, 0, s);
+    for (const auto& q : m) {
+        const double xk = f32(double(cx) + q.first), yk = f32(double(cy) + q.second);
+        if (miejsce_wolne(xk, yk, p.ruch.rozmiar, false)) { x = xk; y = yk; return true; }
+    }
+    x = f32(double(cx) + m.front().first); y = f32(double(cy) + m.front().second);
+    return true;
 }
 
 void Swiat::krok_produkcji(Jednostka& b) {
@@ -3187,7 +3376,7 @@ void Swiat::krok_produkcji(Jednostka& b) {
             if (miejsce_wyjscia(b, p, x, y)) {
                 // utworzenie jednostki: populacja += koszt; losowania – wariant (EE 3, AoC 1) [P: 679 / 677]
                 for (int k = 0; k < wariant_.losowania_utworzenia; ++k) rng_.krok();
-                do_utworzenia_.push_back({b.prod_biezaca, b.id, x, y});
+                do_utworzenia_.push_back({b.prod_biezaca, b.id, x, y, b.zbiorka, b.zbiorka_x, b.zbiorka_y});
                 populacja_[b.gracz][0] += p.populacja;
                 b.prod_ms = 0;
                 b.prod_biezaca = -1;   // pozycja zakończona – w tej samej próbce brak bieżącej [P: 677, 431620]

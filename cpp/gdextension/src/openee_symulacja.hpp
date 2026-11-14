@@ -88,6 +88,8 @@ public:
     bool rozkaz_produkcji(int64_t budynek, int64_t tech_id);
     bool anuluj_produkcje(int64_t budynek, int64_t indeks);
     bool anuluj_technologie(int64_t budynek, int64_t tech_id);
+    bool ustaw_punkt_zbiorki(int64_t budynek, double x, double y);   // etap 54
+    bool usun_punkt_zbiorki(int64_t budynek);
     void ustaw_populacje(int64_t gracz, int64_t populacja, int64_t globalny, int64_t a, int64_t b);
     int64_t populacja(int64_t gracz) const;
     int64_t limit_populacji(int64_t gracz) const;

@@ -7,4 +7,7 @@
  "T_GRD": {"wzor": "0x100018b", "gracz": 5, "pozycje": [[168.5, 104.5]]},
  "T_HERO": {"wzor": "0x100055c", "gracz": 5, "pozycje": [[164.5, 104.5]]},
  "T_BLD": {"wzor": "0x1000039", "gracz": 5, "pozycje": [[158.5, 112.5]]}
-}}
+},
+ "z_tryb": "wzor",
+ "z_tryb_uwaga": "Etap 54: scenariusz e35_a powstał przed poprawką wysokości – tryb wzor odtwarza go bajt w bajt (z skopiowane ze wzoru). Nowe układy pomijają to pole (tryb teren: obiekt stoi na terenie) – docs/titan/WYSOKOSC_OBIEKTOW_SCN.md."
+}
